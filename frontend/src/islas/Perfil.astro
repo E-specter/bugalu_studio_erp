@@ -1,0 +1,110 @@
+---
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+---
+
+<!-- Un bloque por estado (estados-sistema): se pintan en servidor y la isla clona el que toca. Sin JS queda "Cargando…". -->
+<bugalu-perfil>
+  <div data-salida>
+    <Panel titulo="Tus datos" cargando />
+  </div>
+
+  <template data-estado="cargando">
+    <Panel titulo="Tus datos" cargando />
+  </template>
+
+  <template data-estado="datos">
+    <Panel titulo="Tus datos">
+      <dl class="datos">
+        <div><dt>Nombre</dt><dd data-campo="nombre"></dd></div>
+        <div><dt>Rol</dt><dd data-campo="rol"></dd></div>
+        <div><dt>Especialidad</dt><dd data-campo="especialidad"></dd></div>
+      </dl>
+    </Panel>
+  </template>
+
+  <template data-estado="no-autenticado">
+    <Panel titulo="Tus datos">
+      <!-- /acceso aún no existe: lo crea RF-01 (fase 7). -->
+      <Aviso variante="aviso" titulo="Tu sesión no es válida" texto="Inicia sesión para ver tu perfil." accion={{ etiqueta: 'Ir al acceso', href: '/acceso' }} />
+    </Panel>
+  </template>
+
+  <template data-estado="sin-perfil">
+    <Panel titulo="Tus datos">
+      <Aviso variante="error" titulo="No encontramos tu perfil" texto="Tu cuenta existe, pero aún no tiene perfil. Pide al estudio que lo cree." />
+    </Panel>
+  </template>
+
+  <template data-estado="error">
+    <Panel titulo="Tus datos">
+      <Aviso variante="error" titulo="No pudimos cargar tu perfil" texto="Inténtalo de nuevo.">
+        <div class="reintentar"><Boton variante="secundario" data-reintentar>Reintentar</Boton></div>
+      </Aviso>
+    </Panel>
+  </template>
+</bugalu-perfil>
+
+<script>
+  import { obtenerPerfil } from '../servicios/api.js';
+
+  class BugaluPerfil extends HTMLElement {
+    connectedCallback() {
+      this.addEventListener('click', (e) => {
+        if ((e.target as Element).closest('[data-reintentar]')) this.cargar();
+      });
+      this.cargar();
+    }
+
+    mostrar(estado: string) {
+      const plantilla = this.querySelector<HTMLTemplateElement>(`template[data-estado="${estado}"]`)!;
+      this.querySelector('[data-salida]')!.replaceChildren(plantilla.content.cloneNode(true));
+    }
+
+    async cargar() {
+      this.mostrar('cargando');
+      try {
+        const perfil = await obtenerPerfil();
+        this.mostrar('datos');
+        const texto = { nombre: perfil.nombre ?? 'Sin nombre', rol: perfil.rol, especialidad: perfil.especialidad ?? 'Sin especialidad' };
+        for (const [campo, valor] of Object.entries(texto)) this.querySelector(`[data-campo="${campo}"]`)!.textContent = valor;
+      } catch (error: any) {
+        if (error.estado === 401) return void this.mostrar('no-autenticado');
+        if (error.estado === 404) return void this.mostrar('sin-perfil');
+        this.mostrar('error');
+        const textos: Record<string, [string, string]> = {
+          sin_conexion: ['Sin conexión', 'No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo.'],
+          autenticacion_no_disponible: ['Servicio no disponible', 'El servicio de acceso no responde. Inténtalo de nuevo en unos minutos.'],
+        };
+        const [titulo, mensaje] = textos[error.codigo] ?? ['No pudimos cargar tu perfil', 'Algo salió mal. Inténtalo de nuevo.'];
+        this.querySelector('.aviso-titulo')!.textContent = titulo;
+        this.querySelector('.aviso-texto')!.textContent = mensaje;
+      }
+    }
+  }
+  if (!customElements.get('bugalu-perfil')) customElements.define('bugalu-perfil', BugaluPerfil);
+</script>
+
+<style>
+  .datos {
+    display: grid;
+    gap: var(--espacio-4);
+    margin: 0;
+  }
+  .datos dt {
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .datos dd {
+    margin: 0;
+    color: var(--color-texto-principal);
+    font-size: var(--fuente-tamano-lectura);
+    overflow-wrap: anywhere;
+  }
+  .reintentar {
+    margin-block-start: var(--espacio-2);
+  }
+</style>

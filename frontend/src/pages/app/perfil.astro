@@ -1,0 +1,10 @@
+---
+import LayoutApp from '../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../componentes/EncabezadoPantalla.astro';
+import Perfil from '../../islas/Perfil.astro';
+---
+
+<LayoutApp titulo="Perfil">
+  <EncabezadoPantalla titulo="Perfil" ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Perfil' }]} descripcion="Los datos de tu cuenta en el estudio." />
+  <Perfil />
+</LayoutApp>
