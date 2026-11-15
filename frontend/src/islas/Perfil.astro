@@ -6,6 +6,8 @@ import Boton from '../componentes/Boton.astro';
 
 <!-- Un bloque por estado (estados-sistema): se pintan en servidor y la isla clona el que toca. Sin JS, el noscript oculta la carga y muestra el error. -->
 <bugalu-perfil>
+  <!-- Región viva estable, presente antes de cualquier texto (ficha de Aviso). -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
   <div data-salida>
     <Panel titulo="Tus datos" cargando />
   </div>
@@ -58,7 +60,7 @@ import Boton from '../componentes/Boton.astro';
   class BugaluPerfil extends HTMLElement {
     connectedCallback() {
       this.addEventListener('click', (e) => {
-        if ((e.target as Element).closest('[data-reintentar]')) this.cargar();
+        if ((e.target as Element).closest('[data-reintentar]')) this.cargar(true);
       });
       this.cargar();
     }
@@ -68,16 +70,35 @@ import Boton from '../componentes/Boton.astro';
       this.querySelector('[data-salida]')!.replaceChildren(plantilla.content.cloneNode(true));
     }
 
-    async cargar() {
+    // Foco al título del panel (tabindex -1: sin anillo propio de control) para no caer en <body> al sustituirse el contenido.
+    enfocar() {
+      const titulo = this.querySelector<HTMLElement>('[data-salida] .panel-titulo')!;
+      titulo.tabIndex = -1;
+      titulo.focus();
+    }
+
+    // La región viva estable anuncia el estado una sola vez: el aviso clonado pierde su rol vivo.
+    async cargar(reintento = false) {
+      const anuncio = this.querySelector('[data-anuncio]')!;
+      anuncio.textContent = '';
       this.mostrar('cargando');
+      if (reintento) this.enfocar();
+      await this.resolver();
+      this.querySelectorAll('[data-salida] [role]').forEach((e) => e.removeAttribute('role'));
+      const aviso = this.querySelector('[data-salida] .aviso');
+      anuncio.textContent = aviso ? `${aviso.querySelector('.aviso-titulo')!.textContent}. ${aviso.querySelector('.aviso-texto')?.textContent ?? ''}` : 'Perfil cargado.';
+      if (reintento) this.enfocar();
+    }
+
+    async resolver() {
       try {
         const perfil = await obtenerPerfil();
         this.mostrar('datos');
         const texto = { nombre: perfil.nombre ?? 'Sin nombre', rol: perfil.rol, especialidad: perfil.especialidad ?? 'Sin especialidad' };
         for (const [campo, valor] of Object.entries(texto)) this.querySelector(`[data-campo="${campo}"]`)!.textContent = valor;
       } catch (error: any) {
-        if (error.estado === 401) return void this.mostrar('no-autenticado');
-        if (error.estado === 404) return void this.mostrar('sin-perfil');
+        if (error.estado === 401) return this.mostrar('no-autenticado');
+        if (error.estado === 404) return this.mostrar('sin-perfil');
         this.mostrar('error');
         const textos: Record<string, [string, string]> = {
           sin_conexion: ['Sin conexión', 'No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo.'],

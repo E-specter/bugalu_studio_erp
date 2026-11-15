@@ -71,6 +71,9 @@ const rol = variante === 'error' || variante === 'critico' ? 'alert' : 'status';
   }
   .aviso-accion {
     align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--medida-control-tactil);
     margin-block-start: var(--espacio-2);
     color: var(--color-texto-principal);
     font-weight: var(--fuente-peso-medio);

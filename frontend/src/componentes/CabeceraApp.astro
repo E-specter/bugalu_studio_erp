@@ -172,6 +172,12 @@ const conMenu = Boolean(usuario) || Astro.slots.has('menu');
     background: var(--color-fondo-superficie);
     border-block-end: var(--borde-grosor-base) solid var(--color-borde-fuerte);
   }
+  /* Enlaces de la ranura del menú: objetivo táctil. */
+  .cabecera-menu-panel :global(a) {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--medida-control-tactil);
+  }
   .cabecera-usuario {
     margin: 0;
     color: var(--color-texto-principal);

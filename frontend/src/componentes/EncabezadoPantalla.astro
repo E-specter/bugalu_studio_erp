@@ -29,9 +29,10 @@ const conContexto = variante === 'app' && (ruta.length > 0 || fecha);
     </div>
   )}
   {indice && <p class="encabezado-indice">{indice}</p>}
-  {Astro.slots.has('acciones') && <div class="encabezado-acciones"><slot name="acciones" /></div>}
+  <!-- Orden de lectura: título, descripción, acciones; la posición visual la fija la rejilla. -->
   <h1 class="encabezado-titulo">{titulo}</h1>
   {descripcion && <p class="encabezado-descripcion">{descripcion}</p>}
+  {Astro.slots.has('acciones') && <div class="encabezado-acciones"><slot name="acciones" /></div>}
 </header>
 
 <style>

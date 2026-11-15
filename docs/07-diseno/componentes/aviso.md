@@ -41,6 +41,7 @@ Base del patrón de [estados del sistema](../patrones/estados-sistema.md). El re
 ## Accesibilidad
 
 - Resultado de una acción: `role="status"` (información, éxito, aviso) o `role="alert"` (error, crítico), presente en el DOM antes de insertar el texto.
+- Dentro de una isla que mantiene su propia región viva estable (p. ej. `<bugalu-perfil>`), el aviso que muestra cada estado no lleva rol: lo anuncia la región, una sola vez, y el foco va al título del panel.
 - El color nunca es el único indicador: título + icono.
 - No desaparece solo: el usuario lo cierra o cambia de vista.
 
