@@ -2,7 +2,7 @@
 id: actores-roles
 titulo: Actores del sistema
 estado: borrador
-depende_de: [D-10]
+depende_de: [ADR-008]
 ---
 
 # Actores del sistema
@@ -17,6 +17,6 @@ depende_de: [D-10]
 | Banco / billetera | Externo, sin integración | Donde el cliente paga (transferencia, Yape, Plin, tarjeta); el sistema solo recibe la captura ([ADR-004](../00-proyecto/decisiones/ADR-004-pagos-validacion-manual.md)) |
 | Almacenamiento Cloud | Sistema externo | Supabase Storage: custodia multipistas, mezclas, másteres y capturas de pago ([ADR-003](../00-proyecto/decisiones/ADR-003-almacenamiento-supabase-storage.md)) |
 
-Actores de negocio sin rol definido en el sistema: Sello discográfico / Mánager y Músico de sesión (D-10, ver [decisiones](../00-proyecto/decisiones/README.md)).
+Sello discográfico / Mánager y Músico de sesión no tienen cuenta en la v1 ([ADR-008](../00-proyecto/decisiones/ADR-008-acceso-y-roles-v1.md)). El personal interno solicita acceso y el Administrador lo aprueba; el primer Administrador se crea por CLI.
 
 Los privilegios por rol se definen en [RF-01](../03-requerimientos/RF-01.md).

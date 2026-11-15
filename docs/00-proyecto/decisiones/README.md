@@ -15,7 +15,7 @@ Registro de decisiones abiertas. Cuando una se cierra, se crea `ADR-<nnn>-<tema>
 | D-07 | Proveedor de correo transaccional | Sin definir | — |
 | D-08 | Hosting de backend y frontend | Sin definir | — |
 | D-09 | Moneda, impuestos y facturación electrónica | Moneda **PEN** decidida ([ADR-004](ADR-004-pagos-validacion-manual.md)); impuestos y "comprobante fiscal" sin definir | Parcial |
-| D-10 | Sello/Mánager y Músico de sesión | ¿Roles del sistema o fuera de alcance v1? | — |
+| D-10 | Sello/Mánager y Músico de sesión | ¿Roles del sistema o fuera de alcance v1? | **Cerrada:** [ADR-008](ADR-008-acceso-y-roles-v1.md) (fuera de la v1) |
 | D-11 | Políticas de cancelación y reembolso del anticipo | Sin definir | — |
 | D-12 | Asignación de personal | El informe usa `idIngeniero` único en `reserva`; RF-07 exige varios roles por sesión | — |
 | D-13 | Archivo y plan de Figma | URL del archivo maestro, plan y asiento (determinan límites de uso del MCP) | **Cerrada:** [ADR-001](ADR-001-figma-fuente-extraccion.md) |
