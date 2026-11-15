@@ -36,16 +36,30 @@ Fuente de verdad visual del proyecto. Se extrajo una vez de Figma ([origen](figm
 
 **Voz:** español, segunda persona ("tu proyecto"), frases cortas. Títulos y etiquetas en mayúsculas técnicas; contenido en minúsculas. Los anglicismos de Figma ("READY", "CREATORS WELCOME") se traducen; se conservan los términos de oficio del audio (WAV, máster, mezcla).
 
+### Origen de cada decisión
+
+Verificado en Figma el 2026-11-15 ([registro](figma.md#verificación-cerrada-tarea-201b)).
+
+| Viene de Figma | Decidido en el brief (y por qué) |
+|---|---|
+| Paleta de cinco colores y sus variables (`86:70`, `86:20`) | Colores de estado: éxito verde, aviso ámbar, error naranja oscuro; Figma no los define (**usuario**, 2026-11-15) |
+| Unbounded 900, Mona Sans, Geist y **Geist Mono** (`86:100`, `86:154`; Geist Mono confirmada por el **usuario**) | Texto mínimo 11 px: las pantallas `erp` usan 8 px, ilegible |
+| Radio 0, borde 2 px navy, etiqueta con radio 4 px (`86:152`, `161:705`) | Texto secundario `#4A4B7D` y tinta sobre naranja: los valores de Figma no pasan AA |
+| Superficie del color del lienzo, campos blancos, una sombra plana lavanda de 4 px (`161:705`, `112:365`) | Acción principal en lavanda (guía `86:161`); el naranja de las pantallas `erp` (`161:695`) queda para el hover |
+| Botón secundario lienzo con texto navy (`86:168`) | Todo el texto en navy; Figma usa tinta en párrafos |
+| Navegación táctil móvil arriba, bajo la cabecera (`169:5490`; conservada por el **usuario**) | Movimiento, foco y puntos de quiebre: Figma no los dibuja |
+| Logotipo en tres variantes, exportado en SVG (`58:2`, `40:150`, `58:77`; **usuario**) | Solo iconos Lucide; ilustraciones de Streamline descartadas (**usuario**) |
+
 ## Índice
 
 | Tema | Archivo | Estado |
 |---|---|---|
-| Logotipo y variantes | [logotipo](fundamentos/logotipo.md) | Borrador (SVG pendientes) |
+| Logotipo y variantes | [logotipo](fundamentos/logotipo.md) | Borrador (SVG exportados de Figma) |
 | Color | [color](fundamentos/color.md) | Borrador |
 | Tipografía | [tipografía](fundamentos/tipografia.md) | Borrador |
 | Espaciado y retícula | [espaciado y retícula](fundamentos/espaciado-reticula.md) | Borrador |
 | Forma y elevación | [forma y elevación](fundamentos/forma-elevacion.md) | Borrador |
-| Movimiento | [movimiento](fundamentos/movimiento.md) | Borrador (inferido) |
+| Movimiento | [movimiento](fundamentos/movimiento.md) | Borrador (decisión del brief) |
 | Iconografía e imagen | [iconografía e imagen](fundamentos/iconografia-imagen.md) | Borrador |
 | Tokens | [tokens](tokens.md) | Borrador |
 | Componentes | [catálogo](componentes/README.md) (28 fichas) | Borrador |

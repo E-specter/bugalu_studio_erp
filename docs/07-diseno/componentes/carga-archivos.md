@@ -11,7 +11,7 @@ depende_de: [diseno-tokens, comp-barra-progreso, arq-frontend-islas]
 
 ## Anatomía
 
-1. Zona de soltar: [panel](panel.md) con `borde-grosor-base` discontinuo, icono `upload`, texto "Arrastra el archivo o selecciónalo" y botón contorno "Seleccionar archivo". Formatos y tamaño máximo visibles.
+1. Zona de soltar: [panel](panel.md) con `borde-grosor-base` discontinuo, icono `upload`, texto "Arrastra el archivo o selecciónalo" y botón secundario "Seleccionar archivo". Formatos y tamaño máximo visibles.
 2. Archivo en carga: nombre (`fuente-familia-tecnica`), forma de onda (audio) o miniatura (imagen), [barra de progreso](barra-progreso.md) Carga.
 3. Validación técnica (audio): lista de pruebas con [indicador](indicador-estado.md) por prueba (formato, frecuencia de muestreo, profundidad de bits, picos, integridad).
 4. Resultado: [archivo](archivo.md) Adjunto.

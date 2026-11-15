@@ -13,7 +13,7 @@ Capa "Campo" del brief de proyecto (`141:28788`: "Etiqueta y ayuda" + "Entrada")
 
 1. Etiqueta: `fuente-familia-tecnica`, `fuente-tamano-micro`, mayúsculas; en accesos con prefijo `//` (`// CORREO REGISTRADO`). Indicador de obligatorio: texto "(obligatorio)", no solo asterisco.
 2. Ayuda opcional a la derecha de la etiqueta o debajo: `fuente-tamano-pequeno`, `color-texto-secundario`.
-3. Entrada: `color-fondo-superficie`, `borde-grosor-base` `color-borde-fuerte`, `borde-radio-ninguno`, alto `medida-control-base`, relleno `espacio-4`, valor en `fuente-familia-texto` `fuente-tamano-base`.
+3. Entrada: `color-fondo-claro`, `borde-grosor-base` `color-borde-fuerte`, `borde-radio-ninguno`, `sombra-plana` (`112:365`), alto `medida-control-base`, relleno `espacio-4`, valor en `fuente-familia-texto` `fuente-tamano-base`.
 4. Mensaje de error bajo la entrada.
 
 Separación etiqueta → entrada: `espacio-2`. Campos en fila: hueco `espacio-3`.
@@ -43,7 +43,7 @@ Comunes: [catálogo](README.md#estados-comunes). Propios:
 
 ## Tokens
 
-`color-fondo-superficie`, `color-fondo-lienzo`, `color-borde-fuerte`, `color-texto-principal`, `color-texto-secundario`, `color-texto-alerta`, `borde-grosor-base`, `borde-grosor-fino`, `borde-radio-ninguno`, `medida-control-base`, `medida-icono-sm`, `espacio-2`, `espacio-3`, `espacio-4`, `fuente-*`.
+`color-fondo-claro`, `color-fondo-lienzo`, `sombra-plana`, `color-borde-fuerte`, `color-texto-principal`, `color-texto-secundario`, `color-texto-alerta`, `borde-grosor-base`, `borde-grosor-fino`, `borde-radio-ninguno`, `medida-control-base`, `medida-icono-sm`, `espacio-2`, `espacio-3`, `espacio-4`, `fuente-*`.
 
 ## Relaciones
 

@@ -12,7 +12,7 @@ depende_de: [diseno-tokens, comp-boton]
 ## Anatomía
 
 1. Regla superior `borde-grosor-base` `color-borde-fuerte`, separación `espacio-4`.
-2. Izquierda: [botón](boton.md) contorno grande ("Anterior") y nota (`fuente-tamano-pequeno`, `color-texto-secundario`: "Tu avance se guarda automáticamente").
+2. Izquierda: [botón](boton.md) secundario grande ("Anterior") y nota (`fuente-tamano-pequeno`, `color-texto-secundario`: "Tu avance se guarda automáticamente").
 3. Derecha: botón primario grande ("Continuar" + `arrow-right`).
 
 ## Variantes
@@ -20,7 +20,7 @@ depende_de: [diseno-tokens, comp-boton]
 | Variante | Uso |
 |---|---|
 | Flujo | Anterior + nota + continuar |
-| Formulario | Cancelar (contorno) + guardar (primario) |
+| Formulario | Cancelar (secundario) + guardar (primario) |
 | Decisión | Rechazar (peligro) + aprobar (primario): validación de pagos, aprobación de versión |
 | Móvil | Botones a ancho completo, apilados; el principal arriba |
 

@@ -11,7 +11,7 @@ Fuentes: guía brutalista secciones [05] "Tratamiento imagen" (`86:198`) y [06] 
 
 ## Iconos
 
-Figma usa dos sistemas: glifos de texto como marcadores en las pantallas del `erp` (capas "Icono") e iconos de trazo con nombres de Lucide en landing y accesos (`arrow-right`, `check-circle`, `eye`, `audio-waveform`). **Se unifica en Lucide** (inferido: los glifos son marcadores de posición y Lucide ya es el sistema nombrado).
+Figma usa dos sistemas: glifos de texto como marcadores en las pantallas del `erp` (capas "Icono") e iconos de trazo con nombres de Lucide en landing y accesos (`arrow-right`, `check-circle`, `eye`, `audio-waveform`). **Se unifica en Lucide** (decisión del usuario, 2026-11-15: los glifos son marcadores de posición y Lucide ya es el sistema nombrado).
 
 1. Estilo: trazo, sin relleno, extremos rectos; grosor de trazo 2 px, igual que `borde-grosor-base`.
 2. Tamaños: `medida-icono-sm` en línea con texto y dentro de campos; `medida-icono-md` en navegación. No hay otros tamaños.
@@ -71,4 +71,4 @@ Los efectos refuerzan la estética **sin perder legibilidad** (`88:156`): nunca 
 
 ## Ilustración
 
-El archivo de referencias incluye ilustraciones de *Streamline Bangalore* (`14:3`, `14:76`). No se adoptan: no aparecen en ninguna pantalla y chocan con la dirección fotográfica (inferido, ver [brief](../brief.md#decisiones-artísticas)).
+El archivo de referencias incluye ilustraciones de *Streamline Bangalore* (`14:3`, `14:76`). **Descartadas** (decisión del usuario, 2026-11-15): no aparecen en ninguna pantalla y chocan con la dirección fotográfica. Solo iconos Lucide ([brief](../brief.md#decisiones-artísticas)).

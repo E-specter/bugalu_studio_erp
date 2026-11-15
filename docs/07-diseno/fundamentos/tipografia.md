@@ -30,7 +30,7 @@ Jerarquía de la guía brutalista (`86:100`, "Jerarquía tipográfica y escala")
 | Lectura | `fuente-tamano-lectura` | texto | `fuente-interlineado-lectura` | Ninguna |
 | Interfaz | `fuente-tamano-base` | texto | `fuente-interlineado-interfaz` | Ninguna |
 | Navegación, ayuda, ruta | `fuente-tamano-pequeno` | texto | `fuente-interlineado-interfaz` | Ninguna |
-| Etiqueta técnica, columna, metadato | `fuente-tamano-micro` | técnica | `fuente-interlineado-interfaz` | Mayúsculas + `fuente-espaciado-etiqueta` |
+| Etiqueta técnica, columna, metadato | `fuente-tamano-micro` | técnica | `fuente-interlineado-interfaz` | Mayúsculas |
 
 ## Reglas
 
@@ -47,4 +47,5 @@ Jerarquía de la guía brutalista (`86:100`, "Jerarquía tipográfica y escala")
 
 - La guía v1.0 (`86:106`) fija Unbounded / Mona Sans / Geist. La ficha de marca anterior (`35:29`, `12:40`) decía Mona Sans + Google Sans: **manda la guía**, que es la versión compilada.
 - La ficha de marca pide una escala basada en φ (1,618). La guía la aproxima con 48 / 24 / 16; la escala de interfaz la completa con pasos compatibles (11–14 px) para la densidad del panel interno.
-- **Inferido:** Geist Mono (las pantallas usan registro técnico pero la guía no nombra la familia); peso 900 para "Heavy"; 11 px como mínimo (Figma usa ≈10 px, subido por legibilidad).
+- **Verificado en Figma (TAREA-201b):** Geist Mono es la familia técnica (`86:154`, `86:164`; confirmada por el usuario); "Heavy" se dibuja con Unbounded Black, 900 (`86:108`); la guía rotula a 11 px en Geist Mono SemiBold (`86:164`) y no usa espaciado de letras.
+- **Decisión del brief:** las pantallas `erp` bajan a 8–10 px (`161:702`, `161:690`); no se adopta, el mínimo es 11 px por legibilidad.

@@ -7,14 +7,14 @@ depende_de: [diseno-tokens, fund-color]
 
 # Aviso
 
-Mensaje en línea que informa el resultado de una acción o una condición de la vista. En Figma solo aparece como "Alerta" y "Aviso de fase" (texto en panel, `161:609`); la anatomía y las variantes son **inferidas** para cubrir los estados del sistema.
+Mensaje en línea que informa el resultado de una acción o una condición de la vista. En Figma solo aparece como "Alerta" y "Aviso de fase" (texto en panel, `161:609`); la anatomía y las variantes son **decisión del brief** para cubrir los estados del sistema (colores de estado aprobados por el usuario, 2026-11-15).
 
 ## Anatomía
 
 1. Contenedor: `color-fondo-superficie`, `borde-grosor-base` en el color de la variante, `borde-radio-ninguno`, relleno `espacio-4`.
 2. Icono `medida-icono-sm` en el color de la variante.
 3. Título corto (`fuente-familia-titulo`, `fuente-tamano-base`) y texto (`fuente-tamano-base`).
-4. Acción opcional: enlace o [botón](boton.md) contorno ("Reintentar", "Ver pago").
+4. Acción opcional: enlace o [botón](boton.md) secundario ("Reintentar", "Ver pago").
 
 ## Variantes
 

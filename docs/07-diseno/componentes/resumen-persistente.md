@@ -11,7 +11,7 @@ depende_de: [diseno-tokens, comp-panel]
 
 ## Anatomía
 
-1. Contenedor de `medida-columna-lateral`, `color-fondo-superficie`, `borde-grosor-base`, `sombra-plana-md`, relleno `espacio-5`.
+1. Contenedor de `medida-columna-lateral`, `color-fondo-superficie`, `borde-grosor-base`, `sombra-plana`, relleno `espacio-5`.
 2. Cabecera: título (`fuente-familia-titulo`) + [etiqueta](etiqueta-tecnica.md) de estado ("BORRADOR"), regla `borde-grosor-fino`.
 3. Datos: lista de pares — etiqueta (`fuente-tamano-pequeno`, `color-texto-secundario`) / valor (`fuente-tamano-base`, alineado a la derecha si es cifra), filas separadas por `borde-grosor-fino`.
 4. Total opcional al pie: `fuente-tamano-titulo-sm`, `tabular-nums`.
@@ -31,7 +31,7 @@ Estático; se actualiza al cambiar de paso (recarga del servidor). Dato aún no 
 
 ## Tokens
 
-`medida-columna-lateral`, `color-fondo-superficie`, `color-borde-fuerte`, `color-texto-secundario`, `borde-grosor-base`, `borde-grosor-fino`, `sombra-plana-md`, `espacio-5`, `fuente-*`.
+`medida-columna-lateral`, `color-fondo-superficie`, `color-borde-fuerte`, `color-texto-secundario`, `borde-grosor-base`, `borde-grosor-fino`, `sombra-plana`, `espacio-5`, `fuente-*`.
 
 ## Relaciones
 

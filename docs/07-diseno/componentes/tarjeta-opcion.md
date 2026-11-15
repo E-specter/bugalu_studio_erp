@@ -11,7 +11,7 @@ depende_de: [diseno-tokens, comp-casilla]
 
 ## Anatomía
 
-1. Contenedor: `color-fondo-superficie`, `borde-grosor-base` `color-borde-fuerte`, `sombra-plana-sm`, relleno `espacio-5`.
+1. Contenedor: `color-fondo-superficie`, `borde-grosor-base` `color-borde-fuerte`, relleno `espacio-5`.
 2. Control de selección (radio) arriba a la izquierda, con su texto de estado.
 3. Título: `fuente-familia-titulo`, `fuente-tamano-titulo-sm`, mayúsculas.
 4. Descripción: `fuente-tamano-base`.
@@ -32,13 +32,13 @@ Comunes: [catálogo](README.md#estados-comunes). Propios:
 
 | Estado | Visual |
 |---|---|
-| Hover | Fondo `color-fondo-lienzo` |
-| Seleccionada | Fondo `color-fondo-destacado`, `sombra-plana-md`; el control marcado y la etiqueta de estado dice "Seleccionado" |
+| Hover | Fondo `color-fondo-claro` |
+| Seleccionada | Fondo `color-fondo-destacado`, `sombra-plana`; el control marcado y la etiqueta de estado dice "Seleccionado" |
 | No disponible | Deshabilitado común + metadato que explica por qué ("Sin horarios esta semana") |
 
 ## Tokens
 
-`color-fondo-superficie`, `color-fondo-lienzo`, `color-fondo-destacado`, `color-borde-fuerte`, `borde-grosor-base`, `sombra-plana-sm`, `sombra-plana-md`, `espacio-3`, `espacio-5`, `fuente-*`.
+`color-fondo-superficie`, `color-fondo-claro`, `color-fondo-destacado`, `color-borde-fuerte`, `borde-grosor-base`, `sombra-plana`, `espacio-3`, `espacio-5`, `fuente-*`.
 
 ## Relaciones
 

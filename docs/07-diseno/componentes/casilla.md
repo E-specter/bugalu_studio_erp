@@ -11,7 +11,7 @@ Capa "Casilla" del brief de proyecto (`141:28788`, "Necesidades": control 20 × 
 
 ## Anatomía
 
-1. Control cuadrado de `medida-icono-md`: `borde-grosor-base` `color-borde-fuerte`, `borde-radio-ninguno`, fondo `color-fondo-superficie`.
+1. Control cuadrado de `medida-icono-md`: `borde-grosor-base` `color-borde-fuerte`, `borde-radio-ninguno`, fondo `color-fondo-claro`.
 2. Marca: icono `check` en `color-texto-principal` sobre `color-fondo-destacado` cuando está marcada.
 3. Etiqueta (`fuente-tamano-base`) y detalle opcional (`fuente-tamano-pequeno`, `color-texto-secundario`), separados del control por `espacio-3`.
 
@@ -28,7 +28,7 @@ Comunes: [catálogo](README.md#estados-comunes). Propios: marcada (fondo `color-
 
 ## Tokens
 
-`medida-icono-md`, `borde-grosor-base`, `borde-radio-ninguno`, `color-borde-fuerte`, `color-fondo-superficie`, `color-fondo-destacado`, `color-texto-principal`, `color-texto-secundario`, `espacio-3`, `fuente-tamano-base`, `fuente-tamano-pequeno`.
+`medida-icono-md`, `borde-grosor-base`, `borde-radio-ninguno`, `color-borde-fuerte`, `color-fondo-claro`, `color-fondo-destacado`, `color-texto-principal`, `color-texto-secundario`, `espacio-3`, `fuente-tamano-base`, `fuente-tamano-pequeno`.
 
 ## Relaciones
 

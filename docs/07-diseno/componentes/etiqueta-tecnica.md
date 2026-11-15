@@ -12,7 +12,7 @@ depende_de: [diseno-tokens, fund-forma-elevacion]
 ## Anatomía
 
 1. Contenedor: `borde-grosor-fino` en `color-borde-fuerte`, `borde-radio-etiqueta`, relleno `espacio-1-5` / `espacio-3`. Sin sombra.
-2. Texto: `fuente-familia-tecnica`, `fuente-tamano-micro`, mayúsculas, `fuente-espaciado-etiqueta`.
+2. Texto: `fuente-familia-tecnica`, `fuente-tamano-micro`, mayúsculas.
 3. Señal opcional a la izquierda (`medida-senal`) cuando es un estado en vivo ("LIVE", sincronizado).
 
 ## Variantes
@@ -35,7 +35,7 @@ Estática: no tiene estados interactivos. La variante **Filtro** es un enlace y 
 
 ## Tokens
 
-`borde-grosor-fino`, `borde-radio-etiqueta`, `color-borde-fuerte`, `color-fondo-destacado`, `color-fondo-invertido`, `color-fondo-alerta`, `color-texto-*`, `espacio-1-5`, `espacio-3`, `fuente-familia-tecnica`, `fuente-tamano-micro`, `fuente-espaciado-etiqueta`, `medida-senal`.
+`borde-grosor-fino`, `borde-radio-etiqueta`, `color-borde-fuerte`, `color-fondo-destacado`, `color-fondo-invertido`, `color-fondo-alerta`, `color-texto-*`, `espacio-1-5`, `espacio-3`, `fuente-familia-tecnica`, `fuente-tamano-micro`, `medida-senal`.
 
 ## Relaciones
 

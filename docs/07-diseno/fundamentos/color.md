@@ -22,10 +22,10 @@ Paleta de cinco colores de marca (guía brutalista `86:70` y ficha de marca `35:
 ## Reglas
 
 1. **Proporción:** lienzo y superficie dominan (~70 %), navy estructura (~20 %: texto, bordes), lavanda marca jerarquía (~8 %), naranja es un acento puntual (≤2 % por pantalla). Si una pantalla tiene más de un foco naranja, sobra uno.
-2. **El naranja nunca es texto ni borde informativo sobre fondos claros** (2,65:1). Como relleno lleva texto `color-texto-sobre-alerta`, no blanco (3,12:1). Para error o alerta en texto se usa `color-texto-alerta`.
+2. **El naranja nunca es texto ni borde informativo sobre fondos claros** (2,65:1). Como relleno lleva texto `color-texto-sobre-alerta`, ni blanco (3,12:1) ni lienzo (2,65:1), aunque Figma lo dibuje así (`86:179`, `161:695`). Para error o alerta en texto se usa `color-texto-alerta`.
 3. **Lavanda sobre lienzo no transmite información** (1,31:1): las líneas técnicas y marcas de registro lavanda son decorativas. Un borde que delimita un control usa `color-borde-fuerte`.
 4. **El estado nunca se comunica solo con color:** cada etiqueta de estado lleva texto, y la señal de color va junto a una palabra ([indicador-estado](../componentes/indicador-estado.md)).
-5. **Superficies invertidas (navy):** texto `color-texto-invertido`, acentos lavanda, foco `color-foco-invertido`. Se usan en paneles de acceso, botón secundario y cabeceras de tabla.
+5. **Superficies invertidas (navy):** texto `color-texto-invertido`, acentos lavanda, foco `color-foco-invertido`. Se usan en paneles de acceso, cabeceras de tabla y la etiqueta invertida.
 6. **Éxito y aviso** son los únicos colores fuera de la marca; existen solo como texto o borde, nunca como relleno de superficie, para no romper la paleta.
 7. Duotono e imagen: solo lavanda + navy ([iconografía e imagen](iconografia-imagen.md)).
 
@@ -36,7 +36,7 @@ WCAG 2.2 AA: 4,5:1 texto normal, 3:1 texto grande (≥24 px o ≥18,66 px en neg
 | Texto / elemento | Fondo | Razón | Resultado |
 |---|---|---|---|
 | Navy | Lienzo | 11,83 | AA texto |
-| Navy | Superficie blanca | 13,91 | AA texto |
+| Navy | Fondo claro (blanco) | 13,91 | AA texto |
 | Navy | Lavanda | 9,05 | AA texto |
 | Lienzo | Navy | 11,83 | AA texto |
 | Lavanda | Navy | 9,05 | AA texto |
@@ -45,6 +45,7 @@ WCAG 2.2 AA: 4,5:1 texto normal, 3:1 texto grande (≥24 px o ≥18,66 px en neg
 | Blanco | Naranja | 3,12 | **No usar** para texto normal |
 | Naranja | Lienzo | 2,65 | **No usar** (ni texto ni borde informativo) |
 | Naranja | Navy | 4,46 | Solo no textual (señal, anillo) |
+| Secundario de Figma `#5D5F89` | Lienzo / blanco / lavanda | 5,16 / 6,06 / 3,95 | **No usar**: falla sobre lavanda |
 | Secundario `#4A4B7D` | Lienzo / blanco / lavanda | 6,89 / 8,10 / 5,27 | AA texto |
 | Alerta `#9A3009` | Lienzo / blanco / lavanda | 6,38 / 7,50 / 4,88 | AA texto |
 | Éxito `#14633A` | Lienzo / blanco / lavanda | 6,21 / 7,30 / 4,75 | AA texto |
@@ -56,4 +57,6 @@ WCAG 2.2 AA: 4,5:1 texto normal, 3:1 texto grande (≥24 px o ≥18,66 px en neg
 ## Por qué
 
 - La guía define el contraste como principio ("Contraste puro", `86:69`): lavanda + navy generan la tensión audiófila; el naranja reactivo es el único color "caliente" y por eso se reserva.
-- `#4A4B7D`, `#9A3009`, `#14633A` y `#6E4700` son **inferidos**: la guía no define texto secundario ni estados semánticos, y el naranja de marca no pasa AA como texto. Se eligieron dentro de la familia navy/naranja y validados sobre las tres superficies claras.
+- Figma tiene variables de color (`color/brand/primary`, `color/text/primary` = tinta, `color/text/secondary` = navy, `color/surface/default` = lienzo, `color/border/default` = navy; `86:20`, `161:705`). El brief las renombra por rol y unifica el texto en navy.
+- `#4A4B7D` es el gris azulado de las pantallas (`#5D5F89`, `161:702`) oscurecido hasta pasar AA sobre lavanda.
+- `#9A3009`, `#14633A` y `#6E4700` son decisión del brief aprobada por el usuario (2026-11-15): Figma no define estados semánticos y el naranja de marca no pasa AA como texto.

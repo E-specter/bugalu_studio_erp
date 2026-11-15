@@ -35,4 +35,12 @@ En las cabeceras de la app el logo apilado va dentro de una **placa** (`161:611`
 
 ## Assets
 
-Los SVG **no se pudieron exportar** en esta extracción (el volcado local no contiene vectores y el MCP de Figma no estuvo disponible). Destino: `fundamentos/assets/logo-icono.svg`, `logo-texto.svg`, `logo-apilado.svg`, con `currentColor` como relleno. Pendiente: exportarlos desde Figma (3 nodos) o desde los archivos del taller de marca.
+Exportados de Figma el 2026-11-15 (TAREA-201b, `download_assets`):
+
+| Variante | Archivo | Nodo | Caja |
+|---|---|---|---|
+| Icono | [logo-icono.svg](assets/logo-icono.svg) | `58:2` | 36 × 36 |
+| Texto | [logo-texto.svg](assets/logo-texto.svg) | `40:150` | 94 × 31 |
+| Icono + texto (apilado) | [logo-apilado.svg](assets/logo-apilado.svg) | `58:77` | 94 × 86 |
+
+Limpieza aplicada a la exportación: se quitó el fondo `#1E1E1E` del marco y los rellenos navy (`#262757` en el icono, `#23275C` en el texto) pasan a `currentColor`, para que el color lo dé la regla 3. Los trazados no se tocaron.

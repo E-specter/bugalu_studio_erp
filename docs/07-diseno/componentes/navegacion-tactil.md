@@ -7,7 +7,7 @@ depende_de: [diseno-tokens, comp-navegacion-lateral]
 
 # Navegación táctil
 
-"Navegación táctil" de las pantallas móviles del portal (`169:5490`): cinco destinos de 78 × 56 (icono + etiqueta) en una barra fija **bajo la cabecera**.
+"Navegación táctil" de las pantallas móviles del portal (`169:5490`): cinco destinos de 78 × 56 (icono + etiqueta) en una barra fija **bajo la cabecera** (decisión del usuario, 2026-11-15: arriba, como en Figma).
 
 ## Anatomía
 

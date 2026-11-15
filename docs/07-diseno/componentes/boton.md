@@ -11,8 +11,8 @@ depende_de: [diseno-tokens, fund-forma-elevacion]
 
 ## Anatomía
 
-1. Contenedor rectangular: `borde-grosor-base` en `color-borde-fuerte`, `borde-radio-ninguno`, `sombra-plana-sm`.
-2. Etiqueta: `fuente-familia-titulo`, `fuente-peso-titulo`, `fuente-tamano-base`, mayúsculas, `fuente-espaciado-etiqueta`.
+1. Contenedor rectangular: `borde-grosor-base` en `color-borde-fuerte`, `borde-radio-ninguno`, **sin sombra** (`86:161`, `86:168`, `161:695`).
+2. Etiqueta: `fuente-familia-titulo`, `fuente-peso-titulo`, `fuente-tamano-base`, mayúsculas.
 3. Icono opcional al final (`arrow-right` si avanza), `medida-icono-sm`, separado `espacio-2`.
 
 Relleno horizontal `espacio-5`; alto `medida-control-base`.
@@ -22,9 +22,8 @@ Relleno horizontal `espacio-5`; alto `medida-control-base`.
 | Variante | Fondo | Texto | Uso |
 |---|---|---|---|
 | Primario | `color-fondo-destacado` | `color-texto-principal` | La acción principal de la vista. **Una por vista** |
-| Secundario | `color-fondo-invertido` | `color-texto-invertido` | Acción fuerte alternativa (escuchar master, publicar) |
-| Contorno | `color-fondo-superficie` | `color-texto-principal` | Acciones de apoyo, "anterior", "ver todos" |
-| Peligro | `color-fondo-superficie`, borde `color-texto-alerta` | `color-texto-alerta` | Cancelar reserva, rechazar pago (inferido) |
+| Secundario | `color-fondo-superficie` | `color-texto-principal` | Acciones de apoyo: escuchar máster, "anterior", "ver todos" (`86:168`) |
+| Peligro | `color-fondo-superficie`, borde `color-texto-alerta` | `color-texto-alerta` | Cancelar reserva, rechazar pago (brief: Figma no dibuja acciones destructivas) |
 
 | Tamaño | Alto | Uso |
 |---|---|---|
@@ -39,13 +38,15 @@ Comunes: [catálogo](README.md#estados-comunes). Propios:
 
 | Estado | Visual |
 |---|---|
-| Hover (primario, secundario, contorno) | Fondo `color-fondo-alerta`, texto `color-texto-sobre-alerta` (la guía reserva el naranja para el hover interactivo, `86:99`) |
+| Hover (primario, secundario) | Fondo `color-fondo-alerta`, texto `color-texto-sobre-alerta` (la guía reserva el naranja para el hover interactivo, `86:99`) |
 | Hover (peligro) | Fondo `color-texto-alerta`, texto `color-texto-invertido` |
 | Carga | Etiqueta cambia a verbo en gerundio ("Publicando…"), `aria-busy="true"`, `disabled` para evitar doble envío; mismo ancho |
 
+Las pantallas `erp` rellenan la acción de naranja con texto lienzo (`161:695`, 2,65:1): no se adopta; el naranja queda para el hover, como en la guía.
+
 ## Tokens
 
-`color-fondo-destacado`, `color-fondo-invertido`, `color-fondo-superficie`, `color-fondo-alerta`, `color-texto-*`, `color-borde-fuerte`, `borde-grosor-base`, `borde-radio-ninguno`, `sombra-plana-sm`, `fuente-*`, `espacio-2`, `espacio-5`, `medida-control-*`, `movimiento-duracion-rapida`.
+`color-fondo-destacado`, `color-fondo-superficie`, `color-fondo-alerta`, `color-texto-*`, `color-borde-fuerte`, `borde-grosor-base`, `borde-radio-ninguno`, `fuente-*`, `espacio-2`, `espacio-5`, `medida-control-*`, `movimiento-duracion-rapida`.
 
 ## Relaciones
 

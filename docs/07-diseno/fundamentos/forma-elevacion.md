@@ -32,24 +32,21 @@ Principio "Brutalismo técnico" (`86:63`): estructuras explícitas, bordes marca
 
 No hay sombras difusas. La profundidad se expresa con tres recursos, en este orden de preferencia:
 
-1. **Borde + contraste de superficie:** superficie blanca sobre lienzo, o navy sobre lienzo.
-2. **Sombra plana:** desplazada, sin desenfoque, en `color-borde-fuerte`.
-   - `sombra-plana-sm`: controles en reposo (botón, tarjeta-opción).
-   - `sombra-plana-md`: panel o tarjeta que se debe leer "por encima" (tarjeta de proyecto arrastrable, resumen persistente).
+1. **Borde:** en Figma la superficie es del mismo color que el lienzo (`color/surface/default`, `161:705`): el borde navy es lo que separa. Para más peso, relleno lavanda o navy.
+2. **Sombra plana** (`sombra-plana`, `112:365`): 4 px abajo a la derecha, sin desenfoque, en lavanda. Solo en campos de entrada y en la pieza que se lee "por encima" (tarjeta-opción seleccionada, resumen persistente, tarjeta en arrastre). Botones, paneles y tarjetas de proyecto no llevan sombra (`86:161`, `161:695`, `161:727`).
 3. **Transparencias superpuestas** (efecto 13, `88:409`): 2–3 capas lavanda a `efecto-opacidad-capa`, para fondos de panel; nunca bajo texto sin superficie opaca.
 
 | Nivel | Recurso | Ejemplos |
 |---|---|---|
 | 0 | Plano, sin borde | Lienzo, texto suelto |
-| 1 | Borde base | Panel, campo, tabla, métrica |
-| 2 | Borde + `sombra-plana-sm` | Botón, tarjeta-opción, tarjeta de proyecto |
-| 3 | Borde + `sombra-plana-md` | Tarjeta en arrastre, resumen persistente, menú abierto |
+| 1 | Borde base | Botón, panel, tabla, métrica, tarjeta de proyecto |
+| 2 | Borde + `sombra-plana` | Campo, tarjeta-opción seleccionada, tarjeta en arrastre, resumen persistente, menú abierto |
 
 ## Interacción física
 
-La sombra plana se comporta como una tecla de consola: en `:active` el elemento se desplaza lo que mide su sombra (`translate`) y la sombra pasa a 0. Con `prefers-reduced-motion: reduce` el desplazamiento se elimina y solo cambia el color.
+Un elemento interactivo con `sombra-plana` se comporta como una tecla de consola: en `:active` se desplaza lo que mide su sombra (`translate`) y la sombra pasa a 0. Con `prefers-reduced-motion: reduce` el desplazamiento se elimina y solo cambia el color.
 
 ## Por qué
 
-- La guía habla de "sombras planas sin difuminar" pero no da el desplazamiento: **inferido** 2 px y 4 px, coherentes con el grosor de borde de 2 px.
+- La guía habla de "sombras planas sin difuminar"; el único caso dibujado es el campo de acceso (`112:365`: 4 px, lavanda). Por eso hay una sola sombra y en lavanda: es decorativa (1,31:1 sobre lienzo) y nunca es lo único que delimita.
 - La sección de componentes de la guía pide "esquinas rectas y bordes sutiles" y evitar el contraste extremo (`88:341`): por eso los divisores internos son de 1 px y solo el contorno es de 2 px.

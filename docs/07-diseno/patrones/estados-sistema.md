@@ -7,7 +7,7 @@ depende_de: [comp-aviso, comp-indicador-estado]
 
 # Estados vacío, carga, error y éxito
 
-Figma solo dibuja el estado "con datos". Este patrón es **inferido** y obligatorio: toda vista y todo bloque que muestra datos del servidor especifica sus cuatro estados en su spec de pantalla.
+Figma solo dibuja el estado "con datos". Este patrón es **decisión del brief** y obligatorio: toda vista y todo bloque que muestra datos del servidor especifica sus cuatro estados en su spec de pantalla.
 
 ## Vacío
 

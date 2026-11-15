@@ -7,7 +7,7 @@ depende_de: [diseno-tokens, diseno-brief]
 
 # Movimiento
 
-Figma no define animación (no hay prototipos ni duraciones). Este fundamento es **inferido** desde los principios de la guía: "Rigor sonoro" (`86:66`, medición precisa, sin ornamentos) y "Strokes dinámicos" (`88:491`, movimiento ondulado en elementos de acción). Valores en [tokens](../tokens.md#movimiento-y-efectos).
+Figma no define animación (no hay prototipos ni duraciones). Este fundamento es **decisión del brief** (verificado en TAREA-201b: Figma no tiene prototipos), derivada de los principios de la guía: "Rigor sonoro" (`86:66`, medición precisa, sin ornamentos) y "Strokes dinámicos" (`88:491`, movimiento ondulado en elementos de acción). Valores en [tokens](../tokens.md#movimiento-y-efectos).
 
 ## Principios
 

@@ -31,13 +31,13 @@ Comunes: [catálogo](README.md#estados-comunes). Propios:
 
 | Estado | Visual |
 |---|---|
-| Hover | Fondo `color-fondo-lienzo` |
+| Hover | Fondo `color-fondo-claro` |
 | Actual | Fondo `color-fondo-destacado`, `borde-grosor-base` `color-borde-fuerte`, etiqueta en `fuente-peso-titulo` |
 | Con pendientes | Metadato en [etiqueta](etiqueta-tecnica.md) Alerta (p. ej. pagos por validar) |
 
 ## Tokens
 
-`medida-nav-lateral`, `medida-control-base`, `medida-icono-md`, `color-fondo-superficie`, `color-fondo-lienzo`, `color-fondo-destacado`, `color-borde-fuerte`, `color-texto-secundario`, `borde-grosor-base`, `espacio-2`, `espacio-4`, `fuente-*`.
+`medida-nav-lateral`, `medida-control-base`, `medida-icono-md`, `color-fondo-superficie`, `color-fondo-claro`, `color-fondo-destacado`, `color-borde-fuerte`, `color-texto-secundario`, `borde-grosor-base`, `espacio-2`, `espacio-4`, `fuente-*`.
 
 ## Relaciones
 

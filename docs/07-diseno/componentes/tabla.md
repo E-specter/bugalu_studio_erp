@@ -14,7 +14,7 @@ depende_de: [diseno-tokens, comp-panel]
 1. Contenedor: `color-fondo-superficie`, `borde-grosor-base` `color-borde-fuerte`.
 2. Cabecera: fondo `color-fondo-invertido`, texto `color-texto-invertido`, `fuente-familia-tecnica` `fuente-tamano-micro` mayúsculas, relleno `espacio-3` / `espacio-4`.
 3. Fila: relleno `espacio-4`, divisor inferior `borde-grosor-fino`. Celda principal con [avatar](avatar.md) o código + nombre y dato secundario debajo (`color-texto-secundario`).
-4. Celdas de estado con [etiqueta técnica](etiqueta-tecnica.md); celda de acción con [botón](boton.md) contorno o enlace.
+4. Celdas de estado con [etiqueta técnica](etiqueta-tecnica.md); celda de acción con [botón](boton.md) secundario o enlace.
 5. Pie opcional: totales (cotización) o paginación.
 
 Cifras alineadas a la derecha con `tabular-nums`; texto a la izquierda.
@@ -31,7 +31,7 @@ Cifras alineadas a la derecha con `tabular-nums`; texto a la izquierda.
 
 | Estado | Visual |
 |---|---|
-| Fila hover (si toda la fila enlaza) | Fondo `color-fondo-lienzo` |
+| Fila hover (si toda la fila enlaza) | Fondo `color-fondo-claro` |
 | Fila seleccionada | Fondo `color-fondo-destacado` |
 | Cabecera ordenable | Botón en la celda con icono `arrow-up-down`; la columna ordenada muestra `arrow-up` o `arrow-down` |
 | Vacía, carga, error | [Estados del sistema](../patrones/estados-sistema.md): una fila con el mensaje a todo el ancho |
@@ -42,7 +42,7 @@ Cifras alineadas a la derecha con `tabular-nums`; texto a la izquierda.
 
 ## Tokens
 
-`color-fondo-superficie`, `color-fondo-invertido`, `color-fondo-lienzo`, `color-fondo-destacado`, `color-texto-invertido`, `color-texto-secundario`, `color-borde-fuerte`, `borde-grosor-base`, `borde-grosor-fino`, `espacio-3`, `espacio-4`, `fuente-*`, `punto-quiebre-escritorio`.
+`color-fondo-superficie`, `color-fondo-invertido`, `color-fondo-claro`, `color-fondo-destacado`, `color-texto-invertido`, `color-texto-secundario`, `color-borde-fuerte`, `borde-grosor-base`, `borde-grosor-fino`, `espacio-3`, `espacio-4`, `fuente-*`, `punto-quiebre-escritorio`.
 
 ## Relaciones
 
