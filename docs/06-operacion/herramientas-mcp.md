@@ -19,7 +19,7 @@ Regla: **una sola entrada por servidor**. Verificación: `claude mcp list` y `/m
 | Context7 | Plugin de usuario | Documentación actualizada de Astro, FastAPI, Supabase y `uv` | Consulta; no reemplaza `docs/` |
 | GitHub | CLI `gh` | Issues y PR | Sin merge automático |
 
-No hay suscripción a Supabase: no existe proyecto alojado y no se usa el MCP remoto (`mcp.supabase.com`). Ninguna credencial se versiona; el validador lo comprueba sobre `.mcp.json`.
+No hay suscripción a Supabase: no existe proyecto alojado y no se usa el MCP remoto (`mcp.supabase.com`). Si el conector de Supabase de claude.ai está conectado, sus herramientas de escritura (migraciones, SQL, proyectos, ramas, funciones y notebooks) también están denegadas en `.claude/settings.json` (decisión del usuario, 2026-11-15); las de consulta quedan disponibles. Ninguna credencial se versiona; el validador lo comprueba sobre `.mcp.json`.
 
 ## Matriz MCP por rol
 
