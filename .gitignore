@@ -1,0 +1,30 @@
+# Claude Code: worktrees y ajustes locales por persona
+.claude/worktrees/
+.claude/settings.local.json
+
+# Secretos
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Astro
+node_modules/
+dist/
+.astro/
+
+# Supabase local
+supabase/.temp/
+
+# SO / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
