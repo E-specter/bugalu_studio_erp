@@ -80,6 +80,27 @@ test('perfil: Reintentar vuelve a pedir y muestra los datos', async ({ page }) =
   expect(llamadas).toBe(2);
 });
 
+test('perfil: Reintentar enfoca el título una sola vez y anuncia una sola vez', async ({ page }) => {
+  let llamadas = 0;
+  await page.route(API, (r) => (++llamadas === 1 ? r.fulfill(error(503, 'autenticacion_no_disponible', 'x')) : r.fulfill(error(401, 'no_autenticado', 'x'))));
+  await page.goto('/app/perfil');
+  await expect(page.getByRole('button', { name: 'Reintentar' })).toBeVisible();
+  await page.evaluate(() => {
+    window.__foco = 0;
+    window.__anuncios = 0;
+    document.addEventListener('focusin', (e) => e.target.classList?.contains('panel-titulo') && window.__foco++);
+    const vivo = document.querySelector('[data-anuncio]');
+    new MutationObserver(() => vivo.textContent && window.__anuncios++).observe(vivo, { childList: true, characterData: true });
+  });
+  await page.getByRole('button', { name: 'Reintentar' }).click();
+  await expect(page.getByText('Tu sesión no es válida').first()).toBeVisible();
+  const foco = await page.evaluate(() => window.__foco);
+  expect(foco).toBe(1);
+  await expect(page.locator('[data-salida] .panel-titulo')).toBeFocused();
+  expect(await page.evaluate(() => window.__anuncios)).toBe(1);
+  await expect(page.locator('[data-anuncio]')).toHaveText(/Tu sesión no es válida/);
+});
+
 test('api: Authorization Bearer solo con sesion', async ({ page }) => {
   const cabeceras = [];
   await page.route(API, (r) => {

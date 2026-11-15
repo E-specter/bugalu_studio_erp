@@ -82,7 +82,6 @@ import Boton from '../componentes/Boton.astro';
       const anuncio = this.querySelector('[data-anuncio]')!;
       anuncio.textContent = '';
       this.mostrar('cargando');
-      if (reintento) this.enfocar();
       await this.resolver();
       this.querySelectorAll('[data-salida] [role]').forEach((e) => e.removeAttribute('role'));
       const aviso = this.querySelector('[data-salida] .aviso');
