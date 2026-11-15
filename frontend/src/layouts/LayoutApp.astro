@@ -42,7 +42,7 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
 
 <script>
   import { obtenerPerfil } from '../servicios/api.js';
-  import { obtenerToken, cerrarSesion } from '../servicios/sesion.js';
+  import { obtenerToken, cerrarSesion, areaRecordada } from '../servicios/sesion.js';
 
   // Rol del perfil cargado: muestra los destinos del Administrador y fija la variante (Estudio o Portal).
   let rol: string | null = null;
@@ -63,8 +63,10 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
   document.querySelectorAll<HTMLElement>('[data-cerrar-sesion]').forEach((boton) => {
     boton.hidden = false;
     boton.addEventListener('click', async () => {
+      // Sin rol aún (perfil cargando o fallido) manda el área desde la que se entró.
+      const interno = rol ? rol !== 'cliente' : areaRecordada() === 'estudio';
       await cerrarSesion();
-      location.assign(`${rol === 'personal' || rol === 'administrador' ? '/acceso/interno' : '/acceso'}?aviso=sesion-cerrada`);
+      location.assign(`${interno ? '/acceso/interno' : '/acceso'}?aviso=sesion-cerrada`);
     });
   });
 </script>

@@ -270,6 +270,23 @@ test.describe('cerrar sesion (punto 3)', () => {
     await page.waitForURL('**/acceso/interno?aviso=sesion-cerrada');
   });
 
+  // Sin rol conocido (perfil retenido o fallido) el destino sale del area desde la que se entro.
+  const sinRol = { retenido: () => {}, 'fallido (503)': (r) => r.fulfill(errorApi(503, 'x')) };
+  for (const [caso, respuesta] of Object.entries(sinRol)) {
+    for (const [area, destino] of [['estudio', '/acceso/interno'], ['portal', '/acceso']]) {
+      test(`rol aun desconocido (${caso}), area ${area}: va a ${destino}`, async ({ page }) => {
+        await conSesion(page);
+        await page.addInitScript((a) => localStorage.setItem('bugalu-area', a), area);
+        await page.route(`${API}/perfil`, respuesta);
+        await simularAuth(page, { '/logout': (r) => r.fulfill({ status: 204 }) });
+        await page.goto('/app/');
+        await page.locator('.cabecera-menu > summary').click();
+        await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+        await page.waitForURL(`**${destino}?aviso=sesion-cerrada`);
+      });
+    }
+  }
+
   test('con la sesion cerrada, /app/perfil muestra sesion no valida', async ({ page }) => {
     await page.route(`${API}/perfil`, (r) => r.fulfill(r.request().headers().authorization ? json(200, { id: 'u1', correo: 'a@b.c', correo_confirmado: true, nombre: 'Ana', telefono: null, nombre_artistico: null, rol: 'cliente', especialidad: null }) : errorApi(401, 'no_autenticado')));
     await page.goto('/app/perfil');

@@ -289,7 +289,7 @@ test.describe('acceso de artistas: registro', () => {
     await page.goto('/acceso/registro');
     await rellenarRegistro(page);
     await page.getByRole('button', { name: 'Crear cuenta de artista' }).click();
-    await expect(page.locator('[data-avisos] .aviso-informacion')).toContainText('Cuenta creada. Confirma tu correo con el enlace que te enviamos y luego inicia sesión.');
+    await expect(page.locator('[data-avisos] .aviso-informacion')).toContainText('Cuenta creada. Verifica tu correo con el enlace que te enviamos y luego inicia sesión.');
     await expect(page.locator('form')).toBeHidden();
     await sinViolaciones(page);
   });
@@ -322,6 +322,8 @@ test.describe('acceso interno', () => {
     await rellenarIniciar(page);
     await page.getByRole('button', { name: 'Entrar a la sala' }).click();
     await page.waitForURL('**/app/');
+    // El área de origen queda para cerrar sesión antes de conocer el rol.
+    expect(await page.evaluate(() => localStorage.getItem('bugalu-area'))).toBe('estudio');
   });
 
   test('administrador con volver propio va a volver', async ({ page }) => {
@@ -365,8 +367,10 @@ test.describe('acceso interno', () => {
       await page.getByRole('button', { name: 'Reintentar' }).click();
       await page.waitForURL('**/app/');
       expect(llamadas.filter((l) => l.ruta === '/token')).toHaveLength(1);
-      // /app/ pide el perfil una vez más para la navegación por rol.
-      expect(perfiles).toBeGreaterThanOrEqual(2);
+      // Fallo + Reintentar + la navegación por rol de /app/: exactamente 3.
+      await expect.poll(() => perfiles).toBe(3);
+      await page.waitForLoadState('networkidle');
+      expect(perfiles).toBe(3);
     });
   }
 
@@ -494,7 +498,7 @@ test.describe('solicitar acceso interno', () => {
     await page.goto('/acceso/interno/registro');
     await rellenar(page);
     await page.getByRole('button', { name: 'Enviar solicitud' }).click();
-    await expect(page.locator('[data-avisos] .aviso-informacion')).toContainText('Cuenta creada. Confirma tu correo');
+    await expect(page.locator('[data-avisos] .aviso-informacion')).toContainText('Cuenta creada. Verifica tu correo');
     expect(posts).toBe(0);
   });
 });

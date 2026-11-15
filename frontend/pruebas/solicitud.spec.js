@@ -40,6 +40,16 @@ for (const e of estados) {
   }
 }
 
+test('estado fuera de la lista cerrada: respuesta inesperada con Reintentar, sin TypeError', async ({ page }) => {
+  const consola = vigilarConsola(page);
+  await page.route(MIA, (r) => r.fulfill(json(200, datos({ estado: 'archivada' }))));
+  await page.goto(RUTA);
+  await expect(page.getByRole('main')).toContainText('Respuesta inesperada del servidor');
+  await expect(page.getByRole('main')).not.toContainText('Algo salió mal');
+  await expect(page.getByRole('button', { name: 'Reintentar' })).toBeVisible();
+  expect(consola).toEqual([]);
+});
+
 test('estado pendiente: etiqueta de estado con texto propio y una sola region viva estable', async ({ page }) => {
   await page.route(MIA, (r) => r.fulfill(json(200, datos())));
   await page.goto(RUTA);

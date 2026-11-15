@@ -374,6 +374,24 @@ test('editar: id invalido o desconocido', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Volver a usuarios' })).toHaveAttribute('href', '/app/usuarios');
 });
 
+test('editar: rol fuera de la lista cerrada muestra respuesta inesperada, no un fallo generico', async ({ page }) => {
+  const consola = vigilarConsola(page);
+  await simular(page, 'GET', '/usuarios', json(200, [usr(U2, 'Luis Mora', 'superusuario')]));
+  await simular(page, 'GET', '/perfil', perfil({ id: U1 }));
+  await page.goto(EDITAR);
+  await expect(page.getByRole('main')).toContainText('Respuesta inesperada del servidor');
+  await expect(page.getByRole('main')).not.toContainText('Algo salió mal');
+  await expect(page.getByRole('button', { name: 'Reintentar' })).toBeVisible();
+  expect(consola).toEqual([]);
+});
+
+test('usuarios: rol fuera de la lista cerrada muestra respuesta inesperada', async ({ page }) => {
+  await simular(page, 'GET', '/usuarios', json(200, [usr(U2, 'Luis Mora', 'superusuario')]));
+  await page.goto('/app/usuarios');
+  await expect(page.getByRole('main')).toContainText('Respuesta inesperada del servidor');
+  await expect(page.getByRole('table')).toHaveCount(0);
+});
+
 for (const t of tamanos) {
   test(`editar: datos de la persona, rol y especialidad a ${t.nombre}`, async ({ page }) => {
     const consola = vigilarConsola(page);

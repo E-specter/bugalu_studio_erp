@@ -214,8 +214,14 @@ const opcionesRol = (cliente: boolean) => [
     usuario: ['No encontramos este usuario', 'Puede que el enlace esté mal escrito o que la cuenta ya no exista.'],
   };
 
+  // Un dato del servidor fuera de la lista cerrada no se usa en selectores ni plantillas: se trata como respuesta inesperada.
+  const rolValido = (rol: unknown) => {
+    if (typeof rol !== 'string' || !Object.hasOwn(roles, rol)) throw Object.assign(new Error('respuesta_inesperada'), { inesperada: true });
+    return rol;
+  };
+
   const mensajeError = (e: any): [string, string] =>
-    e.estado === 0 ? ['Sin conexión', 'Revisa tu red e inténtalo de nuevo.'] : e.estado === 503 ? ['El servicio no responde', 'Inténtalo de nuevo en unos minutos.'] : ['Algo salió mal', 'Inténtalo de nuevo.'];
+    e.inesperada ? ['Respuesta inesperada del servidor', 'Inténtalo de nuevo más tarde.'] : e.estado === 0 ? ['Sin conexión', 'Revisa tu red e inténtalo de nuevo.'] : e.estado === 503 ? ['El servicio no responde', 'Inténtalo de nuevo en unos minutos.'] : ['Algo salió mal', 'Inténtalo de nuevo.'];
 
   // Relativa (< 7 dias) con la absoluta en title; despues, D MMM AAAA.
   function fechaEnvio(iso: string): [string, string?] {
@@ -367,9 +373,10 @@ const opcionesRol = (cliente: boolean) => [
         if (!filtro) this.querySelector('[data-quitar]')!.remove();
         return filtro ? 'No hay usuarios con ese rol' : 'Todavía no hay usuarios';
       }
+      lista.forEach((u: any) => rolValido(u.rol));
       this.mostrar('datos');
       this.pintarTabla(lista, (fila, u) => {
-        fila.querySelector('.etiqueta span:last-child')!.textContent = roles[u.rol] ?? u.rol;
+        fila.querySelector('.etiqueta span:last-child')!.textContent = roles[u.rol];
         fila.querySelector('[data-especialidad]')!.textContent = u.especialidad ?? '—';
         fila.querySelector('[data-objeto]')!.textContent = ` de ${u.nombre ?? u.correo}`;
         fila.querySelector<HTMLAnchorElement>('[data-accion]')!.href = `/app/usuarios/editar?id=${encodeURIComponent(u.id)}`;
@@ -437,6 +444,7 @@ const opcionesRol = (cliente: boolean) => [
         this.mostrar('no-encontrada');
         return null;
       }
+      rolValido(u.rol);
       this.yo = yo;
       this.mostrar('datos');
       this.llenarDatos({ nombre: u.nombre ?? 'Sin nombre', correo: u.correo, telefono: u.telefono, nombre_artistico: u.nombre_artistico });

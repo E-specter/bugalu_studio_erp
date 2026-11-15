@@ -150,6 +150,8 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
           location.assign('/app/');
           return 'Solicitud aprobada';
         }
+        // Estado fuera de la lista cerrada: no hay plantilla ni texto que mostrar.
+        if (!Object.hasOwn(siguiente, s.estado)) throw Object.assign(new Error('respuesta_inesperada'), { inesperada: true });
         this.mostrar('datos');
         const campos: Record<string, string | null> = { especialidad: s.especialidad, mensaje: s.mensaje, creada_en: s.creada_en && formatearFecha(s.creada_en), revisada_en: s.revisada_en && formatearFecha(s.revisada_en), motivo: s.motivo };
         for (const [campo, valor] of Object.entries(campos)) {
@@ -171,7 +173,8 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
         }
         this.mostrar('error');
         const [titulo, texto] =
-          error.estado === 403 ? ['Sin permiso', 'No tienes permiso para ver esta solicitud.']
+          error.inesperada ? ['Respuesta inesperada del servidor', 'Inténtalo de nuevo más tarde.']
+          : error.estado === 403 ? ['Sin permiso', 'No tienes permiso para ver esta solicitud.']
           : error.estado >= 500 ? ['El servicio de acceso no responde', 'Inténtalo de nuevo en unos minutos.']
           : error.estado === 0 ? ['No hay conexión con el servidor', 'Revisa tu red e inténtalo de nuevo.']
           : ['No pudimos cargar tu solicitud', 'Algo salió mal. Inténtalo de nuevo.'];

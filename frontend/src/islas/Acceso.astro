@@ -84,7 +84,7 @@ const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar l
 </bugalu-acceso>
 
 <script>
-  import { iniciarSesion, registrar, iniciarConGoogle, recuperarContrasena, fijarContrasena, esperarRecuperacion, rutaPropia, normalizarTelefono, ErrorAcceso } from '../servicios/sesion.js';
+  import { iniciarSesion, registrar, iniciarConGoogle, recuperarContrasena, fijarContrasena, esperarRecuperacion, recordarArea, rutaPropia, normalizarTelefono, ErrorAcceso } from '../servicios/sesion.js';
   import { obtenerPerfil } from '../servicios/api.js';
   import { enviarSolicitud } from '../servicios/solicitudes.js';
   import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, mostrarAvisoDeUrl } from '../servicios/formulario.js';
@@ -221,6 +221,7 @@ const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar l
 
     ir(destino: string) {
       this.navegando = true; // el botón sigue en carga hasta que cambie la página
+      if (this.modo !== 'restablecer') recordarArea(this.modo === 'interno' || this.modo === 'solicitar' ? 'estudio' : 'portal');
       location.assign(destino);
     }
 
@@ -277,7 +278,7 @@ const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar l
 
     sinSesion() {
       this.form.hidden = true;
-      enfocarAviso(mostrarAviso(this, 'informacion', 'Cuenta creada', 'Confirma tu correo con el enlace que te enviamos y luego inicia sesión.'));
+      enfocarAviso(mostrarAviso(this, 'informacion', 'Cuenta creada', 'Verifica tu correo con el enlace que te enviamos y luego inicia sesión.'));
     }
 
     correoEnviado() {

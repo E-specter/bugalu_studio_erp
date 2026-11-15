@@ -78,7 +78,7 @@ El formulario se pinta en el servidor; la isla lo envía. Errores de Supabase Au
 | 5xx del servicio | Aviso Error; datos conservados | "El servicio de acceso no responde. Inténtalo de nuevo en unos minutos." |
 | Red caída | Aviso Error; datos conservados | "Sin conexión. Revisa tu red y vuelve a intentarlo." |
 | Otra respuesta (no JSON, desconocida) | Aviso Error | "Algo salió mal. Inténtalo de nuevo." |
-| Cuenta creada sin sesión (el servicio exige confirmar) | Aviso Información; formulario oculto | "Cuenta creada. Confirma tu correo con el enlace que te enviamos y luego inicia sesión." |
+| Cuenta creada sin sesión (el servicio exige confirmar) | Aviso Información; formulario oculto | "Cuenta creada. Verifica tu correo con el enlace que te enviamos y luego inicia sesión." |
 | `?error=google` | Aviso Error arriba | "No pudimos entrar con Google. Inténtalo de nuevo o usa tu correo." |
 | `?aviso=sesion-cerrada` | Aviso Información arriba | "Cerraste sesión." |
 | Éxito | Navega al destino; el destino muestra `cuenta-creada` | "Cuenta creada. Ya puedes reservar." |

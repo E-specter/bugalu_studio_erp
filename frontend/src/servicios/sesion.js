@@ -154,6 +154,23 @@ export function esperarRecuperacion() {
 
 export const fijarContrasena = (nueva) => llamar(auth().updateUser({ password: nueva }));
 
+// Area desde la que se entro ('estudio' o 'portal'): decide el destino de cerrar sesion si el perfil aun no dio el rol.
+const CLAVE_AREA = 'bugalu-area';
+export function recordarArea(area) {
+  try {
+    localStorage.setItem(CLAVE_AREA, area);
+  } catch {
+    // Sin almacenamiento: cerrar sesion cae al acceso de artistas.
+  }
+}
+export function areaRecordada() {
+  try {
+    return localStorage.getItem(CLAVE_AREA);
+  } catch {
+    return null;
+  }
+}
+
 // CA-12: borra la sesion del navegador aunque falle la red.
 export async function cerrarSesion() {
   try {
@@ -163,6 +180,7 @@ export async function cerrarSesion() {
   }
   try {
     localStorage.removeItem(CLAVE_SESION);
+    localStorage.removeItem(CLAVE_AREA);
   } catch {
     // Sin almacenamiento no hay sesion que borrar.
   }
