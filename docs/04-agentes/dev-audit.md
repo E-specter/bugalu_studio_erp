@@ -11,7 +11,7 @@ depende_de: [protocolo-implementacion, protocolo-pruebas, agentes-equipo]
 
 **Alcance de escritura:** ninguno. No corrige: reporta, y la corrección vuelve al responsable. Puede ejecutar comandos de verificación, pero no modifica archivos ni el estado de git. `leader` guarda el informe.
 
-**Modelo:** Sonnet por tarea; Opus en las [compuertas](equipo.md#compuertas-opus).
+Modelo y compuertas Opus: [equipo](equipo.md#compuertas-opus).
 
 ## Criterios de auditoría
 

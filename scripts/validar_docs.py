@@ -45,6 +45,12 @@ def leer_frontmatter(texto: str) -> dict | None:
     return campos
 
 
+def anclas(ruta: Path) -> set[str]:
+    """Anclas de los encabezados al estilo GitHub: minúsculas, sin puntuación, espacios → guiones (conserva tildes)."""
+    titulos = re.findall(r"^#+ (.+)$", ruta.read_text(encoding="utf-8"), re.MULTILINE)
+    return {re.sub(r"[^\w\- ]", "", t.strip().lower()).replace(" ", "-") for t in titulos}
+
+
 def validar(raiz: Path, fuente_ids: Path | None) -> list[str]:
     errores: list[str] = []
     definidos: dict[str, list[Path]] = {}
@@ -72,11 +78,14 @@ def validar(raiz: Path, fuente_ids: Path | None) -> list[str]:
                     ids.add(fm["id"])
 
         for destino in RE_ENLACE.findall(texto):
-            if destino.startswith(("http://", "https://", "mailto:", "#")):
+            if destino.startswith(("http://", "https://", "mailto:")):
                 continue
-            objetivo = destino.split("#", 1)[0]
-            if objetivo and not (ruta.parent / objetivo).exists():
+            objetivo, _, ancla = destino.partition("#")
+            archivo = ruta.parent / objetivo if objetivo else ruta
+            if not archivo.exists():
                 errores.append(f"{rel}: enlace roto {destino}")
+            elif ancla and archivo.suffix == ".md" and ancla not in anclas(archivo):
+                errores.append(f"{rel}: ancla rota {destino}")
 
         for i in ids:
             definidos.setdefault(i, []).append(rel)
@@ -123,9 +132,13 @@ def validar_agentes(dir_agentes: Path, equipo: Path) -> list[str]:
     """Compara el frontmatter de .claude/agents/*.md con la tabla '## Subagentes' de equipo.md."""
     texto = equipo.read_text(encoding="utf-8")
     seccion = texto.split("## Subagentes", 1)[1].split("\n## ", 1)[0] if "## Subagentes" in texto else ""
-    esperados = {}
+    esperados, errores = {}, []
     for nombre, resto in re.findall(r"^\| `([\w-]+)` \|(.*)$", seccion, re.MULTILINE):
-        modelo, effort, turnos, precarga = [c.strip() for c in resto.split("|")][:4]
+        celdas = [c.strip() for c in resto.split("|")]
+        if len(celdas) < 4:
+            errores.append(f"{nombre}: fila de {equipo.name} con menos de 5 columnas")
+            continue
+        modelo, effort, turnos, precarga = celdas[:4]
         esperados[nombre] = {
             "model": _norm(modelo),
             "effort": _norm(effort),
@@ -133,7 +146,7 @@ def validar_agentes(dir_agentes: Path, equipo: Path) -> list[str]:
             "skills": set(re.findall(r"`([^`]+)`", precarga)),
         }
     archivos = {p.stem: p for p in dir_agentes.glob("*.md")}
-    errores = [f"{n}: agente sin fila en {equipo.name}" for n in sorted(archivos.keys() - esperados.keys())]
+    errores += [f"{n}: agente sin fila en {equipo.name}" for n in sorted(archivos.keys() - esperados.keys())]
     errores += [f"{n}: fila de {equipo.name} sin archivo en {dir_agentes}" for n in sorted(esperados.keys() - archivos.keys())]
     for nombre in sorted(archivos.keys() & esperados.keys()):
         fm = leer_frontmatter(archivos[nombre].read_text(encoding="utf-8").replace("\r\n", "\n")) or {}
@@ -145,7 +158,8 @@ def validar_agentes(dir_agentes: Path, equipo: Path) -> list[str]:
         }
         for campo, valor in esperados[nombre].items():
             if real[campo] != valor:
-                errores.append(f"{nombre}: {campo} es {real[campo] or '∅'} y {equipo.name} dice {valor or '∅'}")
+                ver = lambda v: ", ".join(sorted(v)) if isinstance(v, set) else v  # noqa: E731
+                errores.append(f"{nombre}: {campo} es {ver(real[campo]) or '∅'} y {equipo.name} dice {ver(valor) or '∅'}")
     return errores
 
 

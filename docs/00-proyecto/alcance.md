@@ -11,7 +11,7 @@ depende_de: [vision]
 
 Usuarios, catálogo y cotizaciones, reservas de sala, pagos, personal técnico, proyectos musicales, entregables de audio, feedback, cierre y reportes.
 
-Cada capacidad tiene su requerimiento en [03-requerimientos](../README.md#requerimientos) (RF-01 a RF-14) y su módulo de backend en [backend-hexagonal](../01-arquitectura/backend-hexagonal.md#modulos-del-backend).
+Cada capacidad tiene su requerimiento en [03-requerimientos](../README.md#requerimientos) (RF-01 a RF-14) y su módulo de backend en [backend-hexagonal](../01-arquitectura/backend-hexagonal.md#módulos-del-backend).
 
 ## Pendiente de definir
 

@@ -4,7 +4,7 @@ description: Implementa tareas de frontend de Bugalú (componentes Astro reutili
 model: sonnet
 effort: medium
 maxTurns: 40
-tools: Read, Grep, Glob, Edit, Write, Bash, Skill, mcp__playwright__*, mcp__plugin_playwright_playwright__*, mcp__context7__*, mcp__plugin_context7_context7__*
+tools: Read, Grep, Glob, Edit, Write, Bash, Skill, mcp__plugin_playwright_playwright__*, mcp__plugin_context7_context7__*
 skills:
   - superpowers:verification-before-completion
 ---

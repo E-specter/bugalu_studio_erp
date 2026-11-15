@@ -63,9 +63,16 @@ class TestValidarDocs(unittest.TestCase):
         self.assertIn("RN-02", errores)
         self.assertNotIn("RN-01", errores)
 
+    def test_ancla_rota(self):
+        self.escribir("a.md", FM.format(id="x") + "## Fase 2 — Extracción\n[ok](#fase-2--extracción) [mal](b.md#no-existe)\n")
+        self.escribir("b.md", FM.format(id="y") + "## Módulos del backend\n")
+        errores = self.errores()
+        self.assertIn("b.md#no-existe", errores)
+        self.assertNotIn("extracción", errores)
+
     def test_arbol_valido(self):
         self.escribir("README.md", "# indice\n[a](sub/a.md)\n")
-        self.escribir("sub/a.md", FM.format(id="RF-01") + "[r](#ancla) [w](https://x.y)\n")
+        self.escribir("sub/a.md", FM.format(id="RF-01") + "## Ancla\n[r](#ancla) [w](https://x.y)\n")
         self.assertEqual(validar(self.raiz, None), [])
 
     def agentes(self, model="sonnet", turnos="40", skills=(TDD, VERIF), equipo=EQUIPO):

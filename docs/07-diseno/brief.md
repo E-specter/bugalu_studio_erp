@@ -38,5 +38,7 @@ Pendiente (fase 2). Dirección visual, atributos de marca y el porqué de cada d
 ## Transversales
 
 - **Audiencias:** Artista/Cliente (experiencia pública, móvil y escritorio); personal interno y Administrador (panel operativo, escritorio).
+- **Principios UX:** jerarquía clara, densidad según el perfil, retroalimentación de estados y prevención de errores. Detalle: pendiente (fase 2).
+- **Adaptabilidad:** puntos de quiebre por dispositivo; la cabina trabaja en escritorio y el cliente en móvil y escritorio. Detalle: pendiente (fase 2).
 - **Accesibilidad:** WCAG 2.2 AA: contraste, foco visible, navegación por teclado, textos alternativos.
 - **Movimiento:** respeto de `prefers-reduced-motion`.

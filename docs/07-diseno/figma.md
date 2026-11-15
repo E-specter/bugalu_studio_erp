@@ -37,4 +37,4 @@ No hay pantallas para: calendario de salas (RF-03/04), pago de anticipo y liquid
 
 ## Extracción
 
-La ejecuta `disenador-ui` siguiendo [su procedimiento](../04-agentes/disenador-ui.md#fase-2--extraccion). Saldo de llamadas: se anota en la lista de trabajo `fase-2-diseno` de claude-mem.
+La ejecuta `disenador-ui` siguiendo [su procedimiento](../04-agentes/disenador-ui.md#fase-2--extracción). Saldo de llamadas: se anota en la lista de trabajo `fase-2-diseno` de claude-mem.

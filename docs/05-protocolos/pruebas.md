@@ -16,6 +16,6 @@ depende_de: []
 
 Calidad estática: `ruff` y `mypy` (backend), `astro check` (frontend).
 
-Documentación: `python scripts/validar_docs.py docs` (ver [convenciones](../01-arquitectura/convenciones.md#documentacion)).
+Documentación: `python scripts/validar_docs.py docs` (ver [convenciones](../01-arquitectura/convenciones.md#documentación)).
 
 Toda entrega incluye el comando ejecutado y su salida resumida ([formato de entrega](implementacion.md#formato-de-entrega)).

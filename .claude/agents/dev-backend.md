@@ -4,7 +4,7 @@ description: Implementa tareas de backend de Bugalú (dominio, casos de uso, ada
 model: sonnet
 effort: medium
 maxTurns: 40
-tools: Read, Grep, Glob, Edit, Write, Bash, Skill, mcp__supabase__*, mcp__context7__*, mcp__plugin_context7_context7__*
+tools: Read, Grep, Glob, Edit, Write, Bash, Skill, mcp__supabase__*, mcp__plugin_context7_context7__*
 skills:
   - superpowers:test-driven-development
   - superpowers:verification-before-completion

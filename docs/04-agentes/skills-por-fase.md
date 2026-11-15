@@ -7,14 +7,14 @@ depende_de: [agentes-equipo]
 
 # Skills por fase y rol
 
-Lo **precargado** es fijo y está en [equipo](equipo.md). Esta tabla lista lo que se carga **bajo demanda** en cada fase. Una celda vacía (—) significa que el rol no participa en esa fase.
+Lo **precargado** es fijo y está en [equipo](equipo.md). Esta tabla lista lo que se carga **bajo demanda** en cada fase. Una celda vacía (—) significa que el rol no participa en esa fase. `documentador` no usa skills: su celda indica la tarea.
 
 | Fase | leader | disenador-ui | dev-backend | dev-frontend | dev-audit | documentador |
 |---|---|---|---|---|---|---|
 | 1 · Decisiones (D-01..D-04) | `superpowers:brainstorming`, `claude-mem:mem-search` | — | — | — | — | índice y estado de los ADR |
 | 2 · Extracción del diseño | `find-skills`, `superpowers:writing-plans` | `figma:figma-design-to-code`, `impeccable` (extract), `design:accessibility-review` | — | — | Opus: revisión del brief | índice de `07-diseno` |
 | 3 · Esqueleto backend | `find-skills`, `superpowers:writing-plans` | — | skills externas de FastAPI/Supabase si se aprueban; `superpowers:systematic-debugging` ante fallos | — | — | `montaje-local` |
-| 4 · Esqueleto frontend | `find-skills`, `superpowers:writing-plans` | `design:design-critique` (revisión visual) | — | `aplicar-brief`, `frontend-design`, skill externa de Astro si se aprueba | `design:accessibility-review` | índice |
+| 4 · Esqueleto frontend | `find-skills`, `superpowers:writing-plans` | `design:design-critique` (revisión visual) | — | `frontend-design`, skill externa de Astro si se aprueba (`aplicar-brief` ya va precargada desde la fase 2) | `design:accessibility-review` | índice |
 | 5 · Skills propias | `superpowers:writing-skills` | `aplicar-brief`, `disenar-pantalla` (las escribe) | — | — | — | registro en `herramientas-mcp` |
 | 6 · Auditoría del esqueleto | — | — | — | — | Opus: `security-review`, `design:accessibility-review` | changelog |
 | 7 · Implementación por RF | `superpowers:brainstorming` (solo si hay preguntas abiertas), `superpowers:writing-plans` | `disenar-pantalla` | `crear-slice-backend`, `crear-migracion` | `crear-componente`, `crear-isla` | `auditar-entrega`; Opus en las compuertas | estado de los RF, changelog |

@@ -2,7 +2,7 @@
 id: protocolo-implementacion
 titulo: Protocolo de implementación
 estado: borrador
-depende_de: [protocolo-pruebas]
+depende_de: [protocolo-pruebas, agentes-equipo]
 ---
 
 # Protocolo de implementación
@@ -14,7 +14,7 @@ Spec aprobada → tarea → rama → código + pruebas + docs → entrega → au
 2. dev_backend  → implementa + pruebas + actualiza docs del módulo
    dev_frontend → implementa sobre contrato aprobado + pruebas
 3. dev_audit    → revisa contra spec y criterios → APROBADO | RECHAZADO
-4. leader       → integra, actualiza changelog e índice documental
+4. leader       → integra; documentador actualiza changelog e índice documental
 ```
 
 Un rechazo en el paso 3 devuelve la tarea al paso 2 junto con el informe de auditoría.
@@ -32,7 +32,7 @@ Un rechazo en el paso 3 devuelve la tarea al paso 2 junto con el informe de audi
 
 ```markdown
 ## TAREA-<nnn>: <título>
-- Rol: dev_backend | dev_frontend
+- Rol: dev-backend | dev-frontend | disenador-ui | documentador
 - Requerimiento: RF-xx
 - Specs: docs/...md (lista explícita)
 - Objetivo: <una frase>
