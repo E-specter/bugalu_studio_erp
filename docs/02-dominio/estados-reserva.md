@@ -20,7 +20,7 @@ Pre-reservada ──(cuota al_reservar validada)──► Confirmada ──► E
 | Desde | Hacia | Condición |
 |---|---|---|
 | Pre-reservada | Confirmada | El Administrador valida la cuota `al_reservar` ([RN-03](reglas-negocio.md)) |
-| Pre-reservada | Cancelada | El cliente o el Administrador la cancela; en v1 no caduca sola (D-06) |
+| Pre-reservada | Cancelada | El Administrador la cancela; en v1 no caduca sola (D-06) |
 | Confirmada | En curso | Inicio de la sesión |
 | Confirmada | Cancelada | Cancelación; reembolso según D-11 |
 | En curso | Finalizada | Fin de la sesión; se habilita la cuota `al_terminar` ([RN-13](reglas-negocio.md)) |
@@ -36,7 +36,7 @@ Pendiente de pago ──(cuota validada)──► Confirmada ──► Realizada
 | Desde | Hacia | Condición |
 |---|---|---|
 | Pendiente de pago | Confirmada | El Administrador valida su cuota única ([RN-14](reglas-negocio.md)) |
-| Pendiente de pago | Cancelada | El cliente o el Administrador la cancela; en v1 no caduca sola (D-06) |
+| Pendiente de pago | Cancelada | El Administrador la cancela; en v1 no caduca sola (D-06) |
 | Confirmada | Realizada | El profesional la marca como dada |
 | Confirmada | Cancelada | Cancelación; reembolso según D-11 |
 
