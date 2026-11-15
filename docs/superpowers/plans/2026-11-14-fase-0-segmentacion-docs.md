@@ -40,7 +40,7 @@
 **Interfaces:**
 - Produces: `python scripts/validar_docs.py docs [--ids-desde <archivo>]` → exit 0 si no hay errores; si los hay, una línea `<ruta>: <error>` por cada uno y exit 1. Función `validar(raiz: Path, fuente_ids: Path | None) -> list[str]`.
 
-- [ ] **Step 1: Write the failing tests** (`unittest`, cada uno arma su árbol en `tempfile.TemporaryDirectory`)
+- [x] **Step 1: Write the failing tests** (`unittest`, cada uno arma su árbol en `tempfile.TemporaryDirectory`)
   - `test_frontmatter_faltante`: archivo sin `---` → error que contiene `"frontmatter"`.
   - `test_estado_invalido`: `estado: listo` → error que contiene `"estado"`.
   - `test_limite_lineas`: 151 líneas → error que contiene `"150"`.
@@ -48,10 +48,10 @@
   - `test_id_duplicado`: dos archivos con `id: RF-01` → error que contiene `"RF-01"`.
   - `test_ids_huerfanos`: fuente con `| RN-01 |` y `| RN-02 |`, docs que solo definen `RN-01` → error que contiene `"RN-02"`.
   - `test_arbol_valido`: árbol correcto → `[]`.
-- [ ] **Step 2: Run** `python -m unittest scripts/test_validar_docs.py -v`. Expected: FAIL (`ModuleNotFoundError`).
-- [ ] **Step 3: Implement `validar()`** solo con stdlib (`re`, `pathlib`). Frontmatter parseado a mano (`clave: valor` y listas `[a, b]`), sin PyYAML. Un ID se considera "definido" si aparece en el `id:` del frontmatter o como primera celda de una fila de tabla (`^\| (RN|RF|D)-\d+ \|`). `docs/README.md` y `docs/superpowers/**` quedan exentos del frontmatter y del recuento de IDs.
-- [ ] **Step 4: Run** tests → PASS.
-- [ ] **Step 5: Commit** `feat(docs): validador de documentación atómica`.
+- [x] **Step 2: Run** `python -m unittest scripts/test_validar_docs.py -v`. Expected: FAIL (`ModuleNotFoundError`).
+- [x] **Step 3: Implement `validar()`** solo con stdlib (`re`, `pathlib`). Frontmatter parseado a mano (`clave: valor` y listas `[a, b]`), sin PyYAML. Un ID se considera "definido" si aparece en el `id:` del frontmatter o como primera celda de una fila de tabla (`^\| (RN|RF|D)-\d+ \|`). `docs/README.md` y `docs/superpowers/**` quedan exentos del frontmatter y del recuento de IDs.
+- [x] **Step 4: Run** tests → PASS.
+- [x] **Step 5: Commit** `feat(docs): validador de documentación atómica`.
 
 ### Task 2: `00-proyecto` y `01-arquitectura`
 
@@ -59,9 +59,9 @@
 
 **Origen:** §1 → `vision`/`alcance` · §5.2 + §5.3 + términos de §5.1 → `glosario` · §12 → `decisiones/README.md` · §2 → `stack` · §3.1 + §3.3 + §3.4 → `backend-hexagonal` · §3.2 → `frontend-islas` · §11 → `modelo-datos` · §4 → `convenciones`.
 
-- [ ] **Step 1:** Crear los archivos con frontmatter (los que no son RF llevan `id` en kebab-case, p. ej. `id: arq-backend-hexagonal`), copiando el contenido literal y cambiando cada "ver §n" por un enlace relativo.
-- [ ] **Step 2: Run** `python scripts/validar_docs.py docs`. Expected: exit 0.
-- [ ] **Step 3: Commit** `docs(arquitectura): segmentar visión, stack, arquitectura y modelo de datos`.
+- [x] **Step 1:** Crear los archivos con frontmatter (los que no son RF llevan `id` en kebab-case, p. ej. `id: arq-backend-hexagonal`), copiando el contenido literal y cambiando cada "ver §n" por un enlace relativo.
+- [x] **Step 2: Run** `python scripts/validar_docs.py docs`. Expected: exit 0.
+- [x] **Step 3: Commit** `docs(arquitectura): segmentar visión, stack, arquitectura y modelo de datos`.
 
 ### Task 3: `02-dominio` y `03-requerimientos`
 
@@ -69,9 +69,9 @@
 
 **Origen:** §5.1 → `actores-roles` · §5.4 → `reglas-negocio` (única tabla RN) · §5.5 → `estados-reserva` (con la nota "transiciones inferidas, validar") · §5.6 + §10.1 → `flujos/` · §10 → un RF por archivo.
 
-- [ ] **Step 1:** Cada `RF-xx.md` lleva `id: RF-xx` y un `depende_de` con los RN que cita §10.1 (RF-04: `[RN-01, RN-02, RF-03]`, igual que en §7.1). Cuerpo: requerimiento, CUS, actores, módulo (§3.3) y enlaces a reglas y flujos, más `## Criterios de aceptación` con la línea `Pendiente (fase 7).`
-- [ ] **Step 2: Run** `python scripts/validar_docs.py docs --ids-desde docs/superpowers/specs/PROYECTO-v0.2.md`. Expected: exit 0, sin RN ni RF huérfanos (los D-xx ya quedaron en la Task 2).
-- [ ] **Step 3: Commit** `docs(dominio): segmentar reglas, estados, flujos y RF-01..RF-14`.
+- [x] **Step 1:** Cada `RF-xx.md` lleva `id: RF-xx` y un `depende_de` con los RN que cita §10.1 (RF-04: `[RN-01, RN-02, RF-03]`, igual que en §7.1). Cuerpo: requerimiento, CUS, actores, módulo (§3.3) y enlaces a reglas y flujos, más `## Criterios de aceptación` con la línea `Pendiente (fase 7).`
+- [x] **Step 2: Run** `python scripts/validar_docs.py docs --ids-desde docs/superpowers/specs/PROYECTO-v0.2.md`. Expected: exit 0, sin RN ni RF huérfanos (los D-xx ya quedaron en la Task 2).
+- [x] **Step 3: Commit** `docs(dominio): segmentar reglas, estados, flujos y RF-01..RF-14`.
 
 ### Task 4: `04-agentes`, `05-protocolos`, `06-operacion`, `07-diseno`
 
@@ -79,18 +79,18 @@
 
 **Origen:** fila del rol en §6.1 + §6.3 + §6.6 + fila de §14.2 → cada `04-agentes/<rol>.md` · §8 + §6.4/6.5 → `05-protocolos` (los formatos TAREA/ENTREGA viven **solo** en `implementacion.md`) · §9 → `entornos` · §14 → `herramientas-mcp` · §13.1–13.2 → `brief` (secciones de §13.2 como encabezados con `Pendiente (fase 2).`) · §13.3–13.4 → `figma` · §13.5 → `tokens` · tabla de nombres de §13.3 → `componentes`. `montaje-local` y `despliegue` quedan como esqueleto con `Pendiente (fases 3–4).` / `Pendiente (D-08).`
 
-- [ ] **Step 1:** Crear los archivos.
-- [ ] **Step 2: Run** `python scripts/validar_docs.py docs --ids-desde docs/superpowers/specs/PROYECTO-v0.2.md`. Expected: exit 0.
-- [ ] **Step 3: Commit** `docs(agentes): segmentar roles, protocolos, operación y diseño`.
+- [x] **Step 1:** Crear los archivos.
+- [x] **Step 2: Run** `python scripts/validar_docs.py docs --ids-desde docs/superpowers/specs/PROYECTO-v0.2.md`. Expected: exit 0.
+- [x] **Step 3: Commit** `docs(agentes): segmentar roles, protocolos, operación y diseño`.
 
 ### Task 5: Índice maestro, `CLAUDE.md` y `PROYECTO.md` como puntero
 
 **Files:** Create `docs/README.md`, `CLAUDE.md`. Modify `PROYECTO.md` (se reemplaza por ≤5 líneas que apuntan a `docs/README.md` y a la copia congelada).
 
-- [ ] **Step 1:** `docs/README.md`: tabla con todos los archivos de `docs/` y una ruta de lectura por rol (`leader` → índice completo; `dev_backend` → `backend-hexagonal`, `modelo-datos`, `convenciones` + RF de la tarea; `dev_frontend` → `frontend-islas`, `convenciones`, `07-diseno/*` + RF; `dev_audit` → `05-protocolos/*` + `04-agentes/dev-audit`).
-- [ ] **Step 2:** `CLAUDE.md` de ≤20 líneas: la sesión principal es `leader`; "lee `docs/README.md` primero"; restricciones de §6.1 en viñetas; comando del validador.
-- [ ] **Step 3: Run** `python scripts/validar_docs.py docs --ids-desde docs/superpowers/specs/PROYECTO-v0.2.md`. Expected: exit 0. Además, todo enlace de `CLAUDE.md` existe.
-- [ ] **Step 4: Commit** `docs: índice maestro y CLAUDE.md; PROYECTO.md pasa a puntero`.
+- [x] **Step 1:** `docs/README.md`: tabla con todos los archivos de `docs/` y una ruta de lectura por rol (`leader` → índice completo; `dev_backend` → `backend-hexagonal`, `modelo-datos`, `convenciones` + RF de la tarea; `dev_frontend` → `frontend-islas`, `convenciones`, `07-diseno/*` + RF; `dev_audit` → `05-protocolos/*` + `04-agentes/dev-audit`).
+- [x] **Step 2:** `CLAUDE.md` de ≤20 líneas: la sesión principal es `leader`; "lee `docs/README.md` primero"; restricciones de §6.1 en viñetas; comando del validador.
+- [x] **Step 3: Run** `python scripts/validar_docs.py docs --ids-desde docs/superpowers/specs/PROYECTO-v0.2.md`. Expected: exit 0. Además, todo enlace de `CLAUDE.md` existe.
+- [x] **Step 4: Commit** `docs: índice maestro y CLAUDE.md; PROYECTO.md pasa a puntero`.
 
 ### Task 6: Subagentes y `.mcp.json`
 
@@ -100,12 +100,12 @@
 - Consumes: `docs/04-agentes/<rol>.md` (Task 4); cada subagente lo enlaza en vez de copiarlo.
 - Produces: `validar_mcp(ruta: Path) -> list[str]`, que `main` invoca si existe `.mcp.json` en el directorio actual.
 
-- [ ] **Step 1: Write failing test** `test_mcp_sin_secretos`: un `.mcp.json` con `"Authorization": "Bearer abc"` → error; con `"${SUPABASE_TOKEN}"` → `[]`.
-- [ ] **Step 2: Implement `validar_mcp`**: rechaza cualquier valor de texto cuya clave coincida con `/token|key|secret|password|authorization/i` y no contenga `${`.
-- [ ] **Step 3:** Agentes (frontmatter `name`, `description`, `tools`): `dev-backend` y `dev-frontend` con lectura, edición y Bash más los MCP de su columna en §14.2; `dev-audit` con `tools: Read, Grep, Glob, Bash` más MCP de lectura, **sin** `Edit`/`Write`. El cuerpo enlaza `docs/04-agentes/<rol>.md` y repite solo el "alcance de escritura" de §6.1. `leader` no lleva archivo: es la sesión principal.
-- [ ] **Step 4:** `.mcp.json` con `figma` (http `https://mcp.figma.com/mcp`), `supabase` (http `https://mcp.supabase.com/mcp?project_ref=${SUPABASE_PROJECT_REF}&read_only=true`), `playwright` (`npx @playwright/mcp@latest`) y `context7` (http `https://mcp.context7.com/mcp`). GitHub se omite (opcional en §14.1; ya se usa `gh`).
-- [ ] **Step 5: Run** `python -m unittest scripts/test_validar_docs.py -v` y el validador. Expected: PASS / exit 0.
-- [ ] **Step 6: Commit** `chore(agentes): subagentes por rol y .mcp.json sin credenciales`.
+- [x] **Step 1: Write failing test** `test_mcp_sin_secretos`: un `.mcp.json` con `"Authorization": "Bearer abc"` → error; con `"${SUPABASE_TOKEN}"` → `[]`.
+- [x] **Step 2: Implement `validar_mcp`**: rechaza cualquier valor de texto cuya clave coincida con `/token|key|secret|password|authorization/i` y no contenga `${`.
+- [x] **Step 3:** Agentes (frontmatter `name`, `description`, `tools`): `dev-backend` y `dev-frontend` con lectura, edición y Bash más los MCP de su columna en §14.2; `dev-audit` con `tools: Read, Grep, Glob, Bash` más MCP de lectura, **sin** `Edit`/`Write`. El cuerpo enlaza `docs/04-agentes/<rol>.md` y repite solo el "alcance de escritura" de §6.1. `leader` no lleva archivo: es la sesión principal.
+- [x] **Step 4:** `.mcp.json` con `figma` (http `https://mcp.figma.com/mcp`), `supabase` (http `https://mcp.supabase.com/mcp?project_ref=${SUPABASE_PROJECT_REF}&read_only=true`), `playwright` (`npx @playwright/mcp@latest`) y `context7` (http `https://mcp.context7.com/mcp`). GitHub se omite (opcional en §14.1; ya se usa `gh`).
+- [x] **Step 5: Run** `python -m unittest scripts/test_validar_docs.py -v` y el validador. Expected: PASS / exit 0.
+- [x] **Step 6: Commit** `chore(agentes): subagentes por rol y .mcp.json sin credenciales`.
 
 ---
 
