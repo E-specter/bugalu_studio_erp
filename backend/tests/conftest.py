@@ -101,9 +101,26 @@ def crear_usuario(configuracion: Configuracion) -> Iterator[Callable[[], Usuario
 
     yield crear
     with psycopg.connect(configuracion.url_base_datos_admin) as conexion:
-        # Sin triggers: una prueba puede dejar al unico administrador y la limpieza no debe fallar.
-        conexion.execute("set session_replication_role = replica")
+        # Una prueba puede dejar al unico administrador. Solo ese trigger se apaga y se reactiva en
+        # esta transaccion: las cascadas de claves foraneas siguen activas y no quedan huerfanos.
+        trigger = "alter table public.usuario {} trigger usuario_conserva_administrador"
+        conexion.execute(trigger.format("disable"))
+        # id_revisor no tiene cascada: primero las solicitudes que tocan a estos usuarios.
+        conexion.execute(
+            "delete from public.solicitud_acceso "
+            "where id_usuario = any(%s) or id_revisor = any(%s)",
+            (creados, creados),
+        )
         conexion.execute("delete from auth.users where id = any(%s)", (creados,))
+        conexion.execute(trigger.format("enable"))
+        huerfanos = conexion.execute(
+            """select (select count(*) from public.usuario u
+                       where not exists (select 1 from auth.users a where a.id = u.id))
+                    + (select count(*) from public.solicitud_acceso s
+                       where not exists (select 1 from auth.users a where a.id = s.id_usuario))
+                    + (select count(*) from auth.users where email like '%%@prueba.bugalu.pe')"""
+        ).fetchone()
+    assert huerfanos == (0,), f"las pruebas dejaron basura en la base: {huerfanos}"
 
 
 @pytest.fixture

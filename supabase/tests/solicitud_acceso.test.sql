@@ -30,7 +30,7 @@ select throws_ok($$delete from public.solicitud_acceso$$, '42501', null, 'nadie 
 
 -- administrador
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ad","role":"authenticated"}', true);
-select is((select count(*)::int from public.solicitud_acceso), 2, 'el administrador lee todas');
+select is((select count(*)::int from public.solicitud_acceso where id_usuario in ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000b')), 2, 'el administrador lee las de A y B');
 select is((select estado from public.solicitud_acceso where id = '00000000-0000-0000-0000-0000000000b1'), 'pendiente', 'la solicitud de B sigue intacta');
 select lives_ok($$update public.solicitud_acceso set estado = 'rechazada', motivo = 'no hay cupo', id_revisor = '00000000-0000-0000-0000-0000000000ad', revisada_en = now() where id = '00000000-0000-0000-0000-0000000000b1'$$, 'el administrador rechaza con motivo');
 select is((select (estado, motivo, id_revisor)::text from public.solicitud_acceso where id = '00000000-0000-0000-0000-0000000000b1'), '(rechazada,"no hay cupo",00000000-0000-0000-0000-0000000000ad)', 'estado, motivo y revisor guardados');

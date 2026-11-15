@@ -8,6 +8,8 @@ values
   ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'b@t.pe'),
   ('00000000-0000-0000-0000-0000000000ad', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'ad@t.pe');
 update public.usuario set rol = 'administrador' where id = '00000000-0000-0000-0000-0000000000ad';
+-- el ultimo administrador es el de la prueba, haya lo que haya en la base
+update public.usuario set rol = 'cliente' where rol = 'administrador' and id <> '00000000-0000-0000-0000-0000000000ad';
 
 -- no administrador
 set local role authenticated;
