@@ -13,7 +13,7 @@ Regla: **una sola entrada por servidor**. Verificación: `claude mcp list` y `/m
 
 | MCP | Origen | Uso | Restricciones |
 |---|---|---|---|
-| Supabase **local** | `.mcp.json` del proyecto: `http://localhost:45621/mcp` | Inspeccionar el esquema y consultar la base de desarrollo | Requiere Docker Desktop en marcha y `supabase start`. Ofrece menos herramientas que el remoto y no usa OAuth. El modo de solo lectura no está verificado en local: **nunca DDL por MCP**, los cambios de esquema van como migraciones en `supabase/` |
+| Supabase **local** | `.mcp.json` del proyecto: `http://localhost:45621/mcp` | Inspeccionar el esquema y consultar la base de desarrollo | Requiere Docker Desktop en marcha y `supabase start`. Ofrece menos herramientas que el remoto y no usa OAuth. **Solo lectura:** los subagentes reciben solo las herramientas de consulta (`list_tables`, `list_migrations`, `list_extensions`, `get_advisors`, `get_project_url`, `get_publishable_keys`, `query_logs`, `search_docs`, `generate_typescript_types`) y `.claude/settings.json` deniega a todos `apply_migration`, `execute_sql`, `submit_feedback` y `delete_feedback`. Los cambios de esquema van como migraciones en `supabase/`; las consultas de datos, con el CLI |
 | Figma | Conector de claude.ai o plugin `figma@claude-plugins-official` | Solo la fase 2: extracción única al brief ([ADR-001](../00-proyecto/decisiones/ADR-001-figma-fuente-extraccion.md)) | Solo `disenador-ui`, solo lectura |
 | Playwright | Plugin de usuario | Capturas, E2E, verificación visual y de accesibilidad | Solo desarrollo y pruebas |
 | Context7 | Plugin de usuario | Documentación actualizada de Astro, FastAPI, Supabase y `uv` | Consulta; no reemplaza `docs/` |

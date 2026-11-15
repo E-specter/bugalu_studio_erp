@@ -4,7 +4,7 @@ description: Único revisor de Bugalú. Audita una ENTREGA de cualquier rol cont
 model: sonnet
 effort: high
 maxTurns: 25
-tools: Read, Grep, Glob, Bash, Skill, mcp__supabase__*, mcp__plugin_playwright_playwright__*, mcp__plugin_context7_context7__*
+tools: Read, Grep, Glob, Bash, Skill, mcp__supabase__list_tables, mcp__supabase__list_migrations, mcp__supabase__list_extensions, mcp__supabase__get_advisors, mcp__supabase__get_project_url, mcp__supabase__get_publishable_keys, mcp__supabase__query_logs, mcp__supabase__search_docs, mcp__supabase__generate_typescript_types, mcp__plugin_playwright_playwright__*, mcp__plugin_context7_context7__*
 skills:
   - ponytail:ponytail-review
   - superpowers:verification-before-completion
