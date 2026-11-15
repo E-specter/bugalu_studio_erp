@@ -22,6 +22,10 @@ def cliente() -> AsyncClient:
     def base_caida() -> None:
         raise psycopg.OperationalError("connection is bad")
 
+    @app.get("/dato-invalido")
+    def dato_invalido() -> None:
+        raise psycopg.DataError("invalid byte sequence: secreto-interno")
+
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://t")
 
 
@@ -77,3 +81,10 @@ async def test_pool_sin_base_responde_503_en_lugar_de_500(
         obtener_configuracion.cache_clear()
     assert r.status_code == 503
     assert r.json()["error"]["codigo"] == "base_de_datos_no_disponible"
+
+
+async def test_data_error_de_psycopg_es_422_sin_filtrar_detalles(cliente: AsyncClient) -> None:
+    r = await cliente.get("/dato-invalido")
+    assert r.status_code == 422
+    assert r.json() == {"error": {"codigo": "datos_invalidos", "mensaje": "Datos invalidos."}}
+    assert "secreto-interno" not in r.text

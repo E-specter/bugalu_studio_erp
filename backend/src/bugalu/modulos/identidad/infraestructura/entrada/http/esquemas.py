@@ -4,11 +4,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, StringConstraints, field_validator
 
+from bugalu.compartido.esquemas import TextoCorto, TextoLargo
 from bugalu.modulos.identidad.dominio import solicitud as dominio_solicitud
 from bugalu.modulos.identidad.dominio.solicitud import EstadoSolicitud
 from bugalu.modulos.identidad.dominio.usuario import Rol, Usuario
 
-Texto = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 Telefono = Annotated[str, StringConstraints(pattern=r"^\+?[0-9]{9,15}$")]
 
 
@@ -59,28 +59,28 @@ class _Cuerpo(BaseModel):
 
 
 class CambiosPerfil(_Cuerpo):
-    nombre: Texto | None = None
+    nombre: TextoCorto | None = None
     telefono: Telefono | None = None
-    nombre_artistico: Texto | None = None
+    nombre_artistico: TextoCorto | None = None
 
 
 class NuevaSolicitud(_Cuerpo):
-    especialidad: Texto
-    mensaje: Annotated[str, StringConstraints(max_length=500)] | None = None
+    especialidad: TextoCorto
+    mensaje: TextoLargo | None = None
 
 
 class Aprobacion(_Cuerpo):
     rol: Literal[Rol.PERSONAL, Rol.ADMINISTRADOR]
-    especialidad: Texto
+    especialidad: TextoCorto
 
 
 class Rechazo(_Cuerpo):
-    motivo: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
+    motivo: TextoLargo
 
 
 class CambiosUsuario(_Cuerpo):
     rol: Rol | None = None
-    especialidad: Texto | None = None
+    especialidad: TextoCorto | None = None
 
     @field_validator("rol")
     @classmethod
