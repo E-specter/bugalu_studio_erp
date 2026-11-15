@@ -1,6 +1,6 @@
 # Equipo multiagente de Bugalú ERP — Diseño
 
-> Estado: borrador para aprobación · 2026-11-15 · Trabajo 1 de 2. Este trabajo cierra D-13 y D-14; el trabajo 2 cierra D-01..D-04.
+> Estado: aprobado (2026-11-15) · Trabajo 1 de 2. Este trabajo cierra D-13 y D-14; el trabajo 2 cierra D-01..D-04.
 
 ## 1. Intención
 
