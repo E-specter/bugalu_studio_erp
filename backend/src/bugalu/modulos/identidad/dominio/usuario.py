@@ -15,3 +15,7 @@ class Usuario:
     nombre: str | None
     rol: Rol
     especialidad: str | None
+    telefono: str | None = None
+    nombre_artistico: str | None = None
+    correo: str | None = None
+    correo_confirmado: bool = False

@@ -23,3 +23,32 @@ class NoEncontrado(ErrorDeNegocio):
 class AutenticacionNoDisponible(ErrorDeNegocio):
     codigo = "autenticacion_no_disponible"
     estado_http = 503
+
+
+class SinPermiso(ErrorDeNegocio):
+    codigo = "sin_permiso"
+    estado_http = 403
+
+
+class Conflicto(ErrorDeNegocio):
+    codigo = "conflicto"
+    estado_http = 409
+
+
+class UltimoAdministrador(Conflicto):
+    codigo = "ultimo_administrador"
+
+    def __init__(self) -> None:
+        super().__init__("No puede quedar el sistema sin administradores.")
+
+
+class VerificacionNoValida(Conflicto):
+    codigo = "verificacion_no_valida"
+
+    def __init__(self) -> None:
+        super().__init__("La sesion no viene de un enlace de correo ni de Google.")
+
+
+class CampoNoPermitido(ErrorDeNegocio):
+    codigo = "campo_no_permitido"
+    estado_http = 422

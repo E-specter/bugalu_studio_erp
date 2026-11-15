@@ -1,7 +1,7 @@
 import base64
 import json
 import time
-from collections.abc import AsyncIterator, Callable
+from collections.abc import Callable
 from typing import Any
 
 import jwt
@@ -9,27 +9,13 @@ import psycopg
 import pytest
 from cryptography.hazmat.primitives.asymmetric import ec
 from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 
 from bugalu.compartido.autenticacion import obtener_resolutor_clave
 from bugalu.compartido.configuracion import Configuracion
-from bugalu.main import crear_app
 from tests.conftest import UsuarioDePrueba
 
 pytestmark = pytest.mark.integracion
-
-
-@pytest.fixture
-async def app() -> AsyncIterator[FastAPI]:
-    app = crear_app()
-    async with app.router.lifespan_context(app):
-        yield app
-
-
-@pytest.fixture
-async def cliente(app: FastAPI) -> AsyncIterator[AsyncClient]:
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
-        yield c
 
 
 def _con(token: str | None) -> dict[str, str]:
@@ -42,7 +28,16 @@ async def test_200_devuelve_el_perfil_del_usuario(
     a = crear_usuario()
     r = await cliente.get("/api/v1/perfil", headers=_con(a.token))
     assert r.status_code == 200
-    assert r.json() == {"id": str(a.id), "nombre": None, "rol": "cliente", "especialidad": None}
+    assert r.json() == {
+        "id": str(a.id),
+        "correo": a.correo,
+        "correo_confirmado": False,
+        "nombre": None,
+        "telefono": None,
+        "nombre_artistico": None,
+        "rol": "cliente",
+        "especialidad": None,
+    }
 
 
 async def test_401_sin_token(cliente: AsyncClient) -> None:

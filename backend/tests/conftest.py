@@ -1,7 +1,10 @@
 import os
+import re
+import time
 import uuid
 from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import dataclass
+from urllib.parse import parse_qs, urlparse
 
 import httpx
 import psycopg
@@ -16,6 +19,7 @@ from bugalu.compartido.configuracion import Configuracion, obtener_configuracion
 class UsuarioDePrueba:
     id: uuid.UUID
     token: str
+    correo: str = ""
 
 
 def _configuracion() -> Configuracion:
@@ -82,13 +86,16 @@ def crear_usuario(configuracion: Configuracion) -> Iterator[Callable[[], Usuario
     creados: list[uuid.UUID] = []
 
     def crear() -> UsuarioDePrueba:
+        correo = f"{uuid.uuid4().hex}@prueba.bugalu.pe"
         r = httpx.post(
             f"{configuracion.url_supabase}/auth/v1/signup",
             headers={"apikey": configuracion.clave_publicable_supabase},
-            json={"email": f"{uuid.uuid4().hex}@prueba.bugalu.pe", "password": "Clave-Segura-123"},
+            json={"email": correo, "password": "Clave-Segura-123"},
         )
         r.raise_for_status()
-        usuario = UsuarioDePrueba(uuid.UUID(r.json()["user"]["id"]), r.json()["access_token"])
+        usuario = UsuarioDePrueba(
+            uuid.UUID(r.json()["user"]["id"]), r.json()["access_token"], correo
+        )
         creados.append(usuario.id)
         return usuario
 
@@ -97,3 +104,45 @@ def crear_usuario(configuracion: Configuracion) -> Iterator[Callable[[], Usuario
         # Sin triggers: una prueba puede dejar al unico administrador y la limpieza no debe fallar.
         conexion.execute("set session_replication_role = replica")
         conexion.execute("delete from auth.users where id = any(%s)", (creados,))
+
+
+@pytest.fixture
+def poner_rol(configuracion: Configuracion) -> Callable[[UsuarioDePrueba, str, str | None], None]:
+    """Solo pruebas: sube o baja el rol por SQL con el rol administrador de la base."""
+
+    def poner(usuario: UsuarioDePrueba, rol: str, especialidad: str | None = None) -> None:
+        with psycopg.connect(configuracion.url_base_datos_admin) as conexion:
+            conexion.execute(
+                "update public.usuario set rol = %s, especialidad = %s where id = %s",
+                (rol, especialidad, usuario.id),
+            )
+
+    return poner
+
+
+@pytest.fixture(scope="session")
+def sesion_por_enlace(configuracion: Configuracion) -> Callable[[UsuarioDePrueba], str]:
+    """Token de una sesion abierta con el enlace de un solo uso de Mailpit (como signInWithOtp)."""
+    mailpit = os.environ.get("URL_MAILPIT", "http://127.0.0.1:45624")
+
+    def abrir(usuario: UsuarioDePrueba) -> str:
+        httpx.post(
+            f"{configuracion.url_supabase}/auth/v1/otp",
+            headers={"apikey": configuracion.clave_publicable_supabase},
+            json={"email": usuario.correo, "create_user": False},
+        ).raise_for_status()
+        mensajes: list[dict[str, str]] = []
+        for _ in range(50):
+            mensajes = httpx.get(
+                f"{mailpit}/api/v1/search", params={"query": f"to:{usuario.correo}"}
+            ).json()["messages"]
+            if mensajes:
+                break
+            time.sleep(0.1)
+        cuerpo = httpx.get(f"{mailpit}/api/v1/message/{mensajes[0]['ID']}").json()
+        enlace = re.search(r'https?://[^\s"<>]+/verify\?[^\s"<>]+', cuerpo["HTML"] + cuerpo["Text"])
+        assert enlace, "el correo no trae enlace"
+        r = httpx.get(enlace.group(0).replace("&amp;", "&"), follow_redirects=False)
+        return parse_qs(urlparse(r.headers["location"]).fragment)["access_token"][0]
+
+    return abrir
