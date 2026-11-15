@@ -24,7 +24,7 @@ El esquema solo cambia con migraciones versionadas en `supabase/migrations/`. Nu
    - `alter table … enable row level security` en toda tabla nueva;
    - `revoke all … from anon, authenticated` y luego `grant` mínimo (por columna si el usuario solo edita algunas);
    - políticas con `auth.uid()`; funciones `security definer` con `set search_path = ''`, `revoke execute` de `public, anon` y nombres totalmente calificados;
-   - **lectura pública, escritura de administrador** (catálogos, franjas): `grant select … to anon, authenticated` + política `for select using (true)`; `grant insert/delete … to authenticated` + políticas `with check (public.es_administrador())`;
+   - **lectura pública, escritura de administrador** (catálogos, franjas): `grant select … to anon, authenticated` + política `for select using (true)`; `grant insert, delete … to authenticated` + `for insert … with check (public.es_administrador())` y `for delete … using (public.es_administrador())` (`with check` no existe en `for delete`);
    - extensiones (p. ej. `btree_gist` para `exclude using gist` contra solapes): `create extension if not exists <ext> with schema extensions;` en la misma migración;
    - buckets privados y políticas de `storage.objects` por dueño cuando el RF suba archivos ([ADR-003](../../../docs/00-proyecto/decisiones/ADR-003-almacenamiento-supabase-storage.md)).
    Una migración ya aplicada en otro entorno no se edita: se añade otra.

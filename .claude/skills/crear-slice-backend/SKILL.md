@@ -13,6 +13,8 @@ TDD con la skill precargada. Estructura y reglas: [backend-hexagonal](../../../d
 - infraestructura: [repositorio_postgres.py](../../../backend/src/bugalu/modulos/identidad/infraestructura/salida/repositorio_postgres.py), [router.py](../../../backend/src/bugalu/modulos/identidad/infraestructura/entrada/http/router.py)
 - pruebas espejo en `backend/tests/modulos/identidad/`.
 
+**Contraejemplo en el propio ejemplo:** `router.py` convierte `claims["sub"]` a UUID sin validarlo (un `sub` no UUID da 500). Está pendiente de corregir en RF-01: no copies esa línea; valida y responde 401.
+
 ## Pasos
 
 0. **Lee el ejemplo canónico entero** antes de planificar.

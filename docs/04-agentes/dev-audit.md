@@ -26,11 +26,15 @@ Modelo y compuertas Opus: [equipo](equipo.md#compuertas-opus).
 
 ## Informe
 
+Procedimiento (qué ejecutar, cómo intentar romperlo, cómo clasificar): skill `auditar-entrega`, que se carga al empezar cada auditoría.
+
 ```markdown
-## AUDITORÍA TAREA-<nnn>
+## AUDITORÍA TAREA-<id>
 - Dictamen: APROBADO | RECHAZADO
 - Criterios incumplidos: <número + evidencia (archivo:línea, comando y salida)>
 - Observaciones no bloqueantes: <lista>
+- Verificado: <comandos ejecutados y su salida resumida>
+- No verificado: <lo que quedó fuera y por qué>
 ```
 
 Configuración: [equipo](equipo.md). MCP: [matriz](../06-operacion/herramientas-mcp.md#matriz-mcp-por-rol).

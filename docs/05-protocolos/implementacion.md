@@ -44,12 +44,12 @@ Un rechazo en el paso 3 devuelve la tarea al paso 2 junto con el informe de audi
 - Entrega: formato ENTREGA + RED→GREEN
 ```
 
-Cómo crearla (criterios y contrato en el RF, división por rol, numeración): skill `crear-tarea`.
+Numeración: `TAREA-RFxx-<n>` en la fase 7; `TAREA-<fase><nn>` (p. ej. `TAREA-302`) en las fases de esqueleto. Cómo crearla (criterios y contrato en el RF, división por rol): skill `crear-tarea`.
 
 ## Formato de entrega
 
 ```markdown
-## ENTREGA TAREA-<nnn>
+## ENTREGA TAREA-<id>
 - Archivos modificados: <lista>
 - Pruebas añadidas y resultado: <comando + salida resumida>
 - Documentación actualizada: <rutas>
