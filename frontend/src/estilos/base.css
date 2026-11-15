@@ -24,7 +24,7 @@ html {
 
 body {
   margin: 0;
-  min-block-size: 100vh;
+  min-block-size: 100vh; /* unidad de viewport, no un valor visual */
   background: var(--color-fondo-lienzo);
   color: var(--color-texto-cuerpo);
   font-family: var(--fuente-familia-texto);

@@ -6,9 +6,9 @@ export default defineConfig({
   reporter: 'list',
   use: { baseURL: 'http://localhost:4321' },
   webServer: {
-    command: 'npm run build && npm run preview -- --port 4321',
+    command: 'npm run build -- --outDir dist-pruebas && npm run preview -- --outDir dist-pruebas --port 4321',
     url: 'http://localhost:4321',
-    // El build de pruebas emite /catalogo (PUBLIC_CATALOGO); el de producción no.
+    // El build de pruebas emite /catalogo (PUBLIC_CATALOGO); el de producción no; por eso sale a dist-pruebas y dist/ nunca lo contiene.
     env: {
       PUBLIC_CATALOGO: '1',
       // Valores ficticios: las pruebas simulan la API con page.route y no usan red real.

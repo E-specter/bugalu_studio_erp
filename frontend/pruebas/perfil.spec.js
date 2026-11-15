@@ -96,3 +96,15 @@ test('api: Authorization Bearer solo con sesion', async ({ page }) => {
   await expect(page.getByText('Ana Pérez')).toBeVisible();
   expect(cabeceras[1].authorization).toBe('Bearer token-de-prueba');
 });
+
+test.describe('sin JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
+  test('perfil: avisa de que necesita JavaScript y no anuncia carga', async ({ page }) => {
+    await page.goto('/app/perfil');
+    // Playwright ignora el texto de <noscript>: se comprueba en el HTML y en lo que se ve.
+    expect(await page.content()).toContain('Esta página necesita JavaScript');
+    await expect(page.locator('bugalu-perfil [data-salida]')).toBeHidden();
+    await expect(page.locator('bugalu-perfil noscript .aviso-titulo')).toBeVisible();
+    await page.screenshot({ path: 'pruebas/capturas/perfil-sin-js.png', fullPage: true });
+  });
+});

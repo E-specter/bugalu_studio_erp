@@ -4,7 +4,7 @@ import Aviso from '../componentes/Aviso.astro';
 import Boton from '../componentes/Boton.astro';
 ---
 
-<!-- Un bloque por estado (estados-sistema): se pintan en servidor y la isla clona el que toca. Sin JS queda "Cargando…". -->
+<!-- Un bloque por estado (estados-sistema): se pintan en servidor y la isla clona el que toca. Sin JS, el noscript oculta la carga y muestra el error. -->
 <bugalu-perfil>
   <div data-salida>
     <Panel titulo="Tus datos" cargando />
@@ -44,6 +44,12 @@ import Boton from '../componentes/Boton.astro';
       </Aviso>
     </Panel>
   </template>
+  <noscript>
+    <style is:inline>bugalu-perfil [data-salida] { display: none; }</style>
+    <Panel titulo="Tus datos">
+      <Aviso variante="error" titulo="Esta página necesita JavaScript" texto="Actívalo en tu navegador y recarga la página para ver tu perfil." />
+    </Panel>
+  </noscript>
 </bugalu-perfil>
 
 <script>

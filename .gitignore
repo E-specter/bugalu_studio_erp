@@ -19,6 +19,7 @@ __pycache__/
 # Node / Astro
 node_modules/
 dist/
+dist-pruebas/
 .astro/
 
 # Supabase local
