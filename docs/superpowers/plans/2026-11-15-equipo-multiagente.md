@@ -97,10 +97,10 @@
   - La matriz MCP pasa a seis roles.
   - Skills propias: salen `implementar-pantalla-figma` y `sincronizar-tokens`; entran `aplicar-brief`, `disenar-pantalla` y `crear-componente` (spec §5.1).
   - Nota de servidores: una entrada por servidor.
-- [ ] **Step 3: `.mcp.json`.** Solo queda `supabase` (por el `project_ref` y el modo de solo lectura). Figma, Playwright y Context7 vienen de los plugins de usuario. Se documenta en `herramientas-mcp.md`.
+- [ ] **Step 3: `.mcp.json`.** Solo queda `supabase`, apuntando al **stack local** del CLI: `{"type": "http", "url": "http://localhost:54321/mcp"}`. Supabase no tiene suscripción y todo es local (decisión del usuario, 2026-11-15); el MCP local ofrece menos herramientas y no usa OAuth. Se elimina `SUPABASE_PROJECT_REF`. Figma, Playwright y Context7 vienen de los plugins de usuario. En `herramientas-mcp.md` y `06-operacion/entornos.md` se documenta: requiere Docker Desktop en marcha y `supabase start`; sigue vigente la regla de "solo migraciones, nunca DDL por MCP", porque el modo de solo lectura no está verificado en el MCP local.
 - [ ] **Step 4: Referencias a Figma.** Correr `grep -rln -i figma docs .claude CLAUDE.md`. Cada aparición fuera de las excepciones pasa a apuntar al brief o a la spec de pantalla.
 - [ ] **Step 5: `CLAUDE.md`** (≤25 líneas): los seis roles en una línea cada uno, con enlace a `equipo.md`; el ciclo de bajo consumo; "solo leader escribe en claude-mem"; ponytail `full` por hook. Crear `CHANGELOG.md` con una entrada `## 2026-11-15` (fase 0 + equipo).
-- [ ] **Step 6: Run** el validador. Expected: `docs OK`. Además, `claude mcp list` muestra un único `supabase` de proyecto.
+- [ ] **Step 6: Run** el validador. Expected: `docs OK`. Además, `claude mcp list` muestra un único `supabase` de proyecto, con URL `localhost:54321` (puede aparecer desconectado si el stack local no está arrancado).
 - [ ] **Step 7: Commit** `docs(protocolos): ciclo de bajo consumo, herramientas por rol y punto de entrada`.
 
 ### Task 4: Diseño basado en brief y decisiones D-13/D-14
@@ -114,7 +114,7 @@
   - Figma se usa como fuente de extracción única.
   - Archivo `GxpFTDX6L0uFwg6xlulhXF`.
   - Las páginas de §5.2.
-  - El plan y el asiento de spec §5.7, con la acción pendiente del usuario: mover el archivo al equipo Pro.
+  - Plan y asiento: el usuario reconectó Figma el 2026-11-15 con su cuenta Pro de asiento Full y es dueño del proyecto (límite ~200 llamadas/día). Se confirma con una llamada a `whoami` antes de escribir el ADR y se anota lo que devuelva.
 - [ ] **Step 1b: ADR-002** (`depende_de: [D-14]`): Code Connect se descarta porque Figma no se usa después de la extracción.
 - [ ] **Step 1c: Filas D-13 y D-14** de `decisiones/README.md`: columna ADR → enlace.
 - [ ] **Step 2: `git mv`** de `componentes.md`. Reescribir `figma.md` como registro de origen: archivo, mapa real de páginas, volcado en `.claude/cache/` y estado `borrador` hasta que termine la extracción. `brief.md` queda como índice cuyas secciones apuntan a `fundamentos/<tema>.md` "(fase 2)", en texto plano, porque esos archivos todavía no existen.

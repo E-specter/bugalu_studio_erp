@@ -24,11 +24,24 @@ def leer_frontmatter(texto: str) -> dict | None:
     fin = texto.find("\n---\n", 4)
     if fin == -1:
         return None
-    campos = {}
+    campos: dict = {}
+    clave = None
     for linea in texto[4:fin].splitlines():
+        item = re.match(r"^\s+-\s+(.*)$", linea)
+        if item and clave:  # elemento de lista YAML bajo la última clave
+            if not isinstance(campos[clave], list):
+                campos[clave] = []
+            campos[clave].append(item.group(1).strip())
+            continue
         clave, sep, valor = linea.partition(":")
-        if sep:
-            campos[clave.strip()] = valor.strip()
+        if not sep:
+            clave = None
+            continue
+        clave, valor = clave.strip(), valor.strip()
+        if valor.startswith("[") and valor.endswith("]"):
+            campos[clave] = [v.strip() for v in valor[1:-1].split(",") if v.strip()]
+        else:
+            campos[clave] = valor
     return campos
 
 
@@ -96,6 +109,46 @@ def validar_mcp(ruta: Path) -> list[str]:
     return errores
 
 
+def _norm(valor) -> str:
+    return str(valor).strip().strip("\"'").lower()
+
+
+def _skills(valor) -> set[str]:
+    if isinstance(valor, list):
+        return {s.strip().strip("\"'") for s in valor}
+    return {s.strip() for s in str(valor or "").split(",") if s.strip()}
+
+
+def validar_agentes(dir_agentes: Path, equipo: Path) -> list[str]:
+    """Compara el frontmatter de .claude/agents/*.md con la tabla '## Subagentes' de equipo.md."""
+    texto = equipo.read_text(encoding="utf-8")
+    seccion = texto.split("## Subagentes", 1)[1].split("\n## ", 1)[0] if "## Subagentes" in texto else ""
+    esperados = {}
+    for nombre, resto in re.findall(r"^\| `([\w-]+)` \|(.*)$", seccion, re.MULTILINE):
+        modelo, effort, turnos, precarga = [c.strip() for c in resto.split("|")][:4]
+        esperados[nombre] = {
+            "model": _norm(modelo),
+            "effort": _norm(effort),
+            "maxTurns": _norm(turnos),
+            "skills": set(re.findall(r"`([^`]+)`", precarga)),
+        }
+    archivos = {p.stem: p for p in dir_agentes.glob("*.md")}
+    errores = [f"{n}: agente sin fila en {equipo.name}" for n in sorted(archivos.keys() - esperados.keys())]
+    errores += [f"{n}: fila de {equipo.name} sin archivo en {dir_agentes}" for n in sorted(esperados.keys() - archivos.keys())]
+    for nombre in sorted(archivos.keys() & esperados.keys()):
+        fm = leer_frontmatter(archivos[nombre].read_text(encoding="utf-8").replace("\r\n", "\n")) or {}
+        real = {
+            "model": _norm(fm.get("model", "")),
+            "effort": _norm(fm.get("effort", "")),
+            "maxTurns": _norm(fm.get("maxTurns", "")),
+            "skills": _skills(fm.get("skills")),
+        }
+        for campo, valor in esperados[nombre].items():
+            if real[campo] != valor:
+                errores.append(f"{nombre}: {campo} es {real[campo] or '∅'} y {equipo.name} dice {valor or '∅'}")
+    return errores
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("raiz", type=Path)
@@ -104,6 +157,9 @@ def main() -> int:
     errores = validar(args.raiz, args.ids_desde)
     if Path(".mcp.json").exists():
         errores += validar_mcp(Path(".mcp.json"))
+    agentes, equipo = Path(".claude/agents"), args.raiz / "04-agentes" / "equipo.md"
+    if agentes.is_dir() and equipo.exists():
+        errores += validar_agentes(agentes, equipo)
     sys.stdout.reconfigure(encoding="utf-8")
     for e in errores:
         print(e)
