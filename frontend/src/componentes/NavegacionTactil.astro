@@ -1,0 +1,73 @@
+---
+import Icono from './internos/Icono.astro';
+import type { iconos } from './internos/lucide.js';
+
+interface Props {
+  destinos: { etiqueta: string; href: string; icono: keyof typeof iconos }[];
+  actual?: string;
+  etiqueta?: string;
+}
+const { destinos, actual, etiqueta = 'Principal', class: clase } = Astro.props as Props & { class?: string };
+---
+
+<nav aria-label={etiqueta} class:list={['tactil', clase]}>
+  <ul class="tactil-lista">
+    {destinos.slice(0, 5).map((destino) => (
+      <li>
+        <a href={destino.href} class:list={['tactil-destino', destino.href === actual && 'tactil-actual']} aria-current={destino.href === actual ? 'page' : undefined}>
+          <Icono nombre={destino.icono} tamano="md" />
+          <span class="tactil-etiqueta">{destino.etiqueta}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<style>
+  .tactil {
+    box-sizing: border-box;
+    block-size: var(--medida-nav-tactil);
+    background: var(--color-fondo-superficie);
+    border-block-end: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+  }
+  .tactil-lista {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    block-size: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .tactil-destino {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    block-size: 100%;
+    min-block-size: var(--medida-control-tactil);
+    border-block-end: var(--borde-grosor-grueso) solid transparent;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    line-height: var(--fuente-interlineado-interfaz);
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: background-color var(--movimiento-duracion-rapida) var(--movimiento-curva-estandar);
+  }
+  .tactil-etiqueta {
+    max-inline-size: 100%;
+    overflow-wrap: anywhere;
+  }
+  @media (hover: hover) {
+    .tactil-destino:not(.tactil-actual):hover {
+      background: var(--color-fondo-claro);
+    }
+  }
+  .tactil-actual {
+    background: var(--color-fondo-destacado);
+    border-block-end-color: var(--color-borde-fuerte);
+  }
+</style>

@@ -1,0 +1,108 @@
+---
+import Icono from './internos/Icono.astro';
+import type { iconos } from './internos/lucide.js';
+import EtiquetaTecnica from './EtiquetaTecnica.astro';
+
+interface Props {
+  variante?: 'estudio' | 'portal';
+  destinos: { etiqueta: string; href: string; icono: keyof typeof iconos; contador?: number }[];
+  actual?: string;
+  etiqueta?: string;
+}
+const { variante = 'estudio', destinos, actual, etiqueta = 'Principal', class: clase } = Astro.props as Props & { class?: string };
+const seccion = { estudio: 'Estudio', portal: 'Portal' }[variante];
+---
+
+<div class:list={['lateral', clase]}>
+  <nav aria-label={etiqueta}>
+    <p class="lateral-seccion">{seccion}</p>
+    <ul class="lateral-lista">
+      {destinos.map((destino) => (
+        <li>
+          <a href={destino.href} class:list={['lateral-destino', destino.href === actual && 'lateral-actual']} aria-current={destino.href === actual ? 'page' : undefined}>
+            <Icono nombre={destino.icono} tamano="md" />
+            <span class="lateral-etiqueta">{destino.etiqueta}</span>
+            {destino.contador !== undefined && (
+              <span class="lateral-contador">
+                <span class="visualmente-oculto">pendientes:</span>
+                <EtiquetaTecnica variante="alerta" texto={String(destino.contador)} />
+              </span>
+            )}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+  {Astro.slots.has('control') && <div class="lateral-control"><slot name="control" /></div>}
+</div>
+
+<style>
+  .lateral {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    box-sizing: border-box;
+    inline-size: var(--medida-nav-lateral);
+    max-inline-size: 100%;
+    block-size: 100%;
+    padding: var(--espacio-4);
+    background: var(--color-fondo-superficie);
+    border-inline-end: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+  }
+  .lateral-seccion {
+    margin: 0 0 var(--espacio-2);
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .lateral-lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lateral-destino {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-3);
+    box-sizing: border-box;
+    min-block-size: var(--medida-control-base);
+    padding: var(--espacio-1) var(--espacio-3);
+    border: var(--borde-grosor-base) solid transparent;
+    color: var(--color-texto-principal);
+    font-size: var(--fuente-tamano-pequeno);
+    line-height: var(--fuente-interlineado-interfaz);
+    text-decoration: none;
+    transition: background-color var(--movimiento-duracion-rapida) var(--movimiento-curva-estandar);
+  }
+  .lateral-etiqueta {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+  .lateral-contador {
+    margin-inline-start: auto;
+  }
+  @media (hover: hover) {
+    .lateral-destino:not(.lateral-actual):hover {
+      background: var(--color-fondo-claro);
+    }
+  }
+  .lateral-actual {
+    background: var(--color-fondo-destacado);
+    border-color: var(--color-borde-fuerte);
+  }
+  .lateral-actual .lateral-etiqueta {
+    font-weight: var(--fuente-peso-titulo);
+  }
+  .lateral-control {
+    margin-block-start: auto;
+    padding: var(--espacio-3);
+    background: var(--color-fondo-claro);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    font-size: var(--fuente-tamano-pequeno);
+    line-height: var(--fuente-interlineado-interfaz);
+  }
+</style>

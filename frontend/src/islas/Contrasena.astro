@@ -1,0 +1,67 @@
+---
+import Icono from '../componentes/internos/Icono.astro';
+---
+
+<!-- Sin JS el elemento no se registra: el botón sigue oculto y el campo funciona igual. -->
+<bugalu-contrasena class="contrasena">
+  <slot />
+  <button type="button" class="contrasena-boton" aria-pressed="false" aria-label="Mostrar contraseña" hidden>
+    <span data-icono-mostrar><Icono nombre="eye" /></span>
+    <span data-icono-ocultar hidden><Icono nombre="eye-off" /></span>
+  </button>
+</bugalu-contrasena>
+
+<script>
+  class BugaluContrasena extends HTMLElement {
+    connectedCallback() {
+      const entrada = this.querySelector<HTMLInputElement>('input');
+      const boton = this.querySelector<HTMLButtonElement>('.contrasena-boton');
+      const mostrar = this.querySelector<HTMLElement>('[data-icono-mostrar]');
+      const ocultar = this.querySelector<HTMLElement>('[data-icono-ocultar]');
+      if (!entrada || !boton || !mostrar || !ocultar) return;
+      boton.hidden = false;
+      boton.disabled = entrada.disabled;
+      boton.addEventListener('click', () => {
+        const visible = entrada.type === 'password';
+        entrada.type = visible ? 'text' : 'password';
+        boton.setAttribute('aria-pressed', String(visible));
+        boton.setAttribute('aria-label', visible ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        mostrar.hidden = visible;
+        ocultar.hidden = !visible;
+      });
+    }
+  }
+  if (!customElements.get('bugalu-contrasena')) customElements.define('bugalu-contrasena', BugaluContrasena);
+</script>
+
+<style>
+  .contrasena {
+    position: relative;
+    display: block;
+  }
+  .contrasena-boton {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    display: grid;
+    place-items: center;
+    inline-size: var(--medida-control-tactil);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-texto-principal);
+    cursor: pointer;
+  }
+  .contrasena-boton[hidden] {
+    display: none;
+  }
+  .contrasena-boton:disabled {
+    opacity: var(--efecto-opacidad-capa);
+    cursor: not-allowed;
+  }
+  @media (hover: hover) {
+    .contrasena-boton:not(:disabled):hover {
+      background: var(--color-fondo-destacado);
+    }
+  }
+</style>

@@ -1,0 +1,110 @@
+---
+interface Props {
+  ruta?: { etiqueta: string; href?: string }[];
+  fecha?: string;
+  indice?: string;
+  titulo: string;
+  descripcion?: string;
+  variante?: 'app' | 'flujo';
+}
+const { ruta = [], fecha, indice, titulo, descripcion, variante = 'app', class: clase } = Astro.props as Props & { class?: string };
+const conContexto = variante === 'app' && (ruta.length > 0 || fecha);
+---
+
+<header class:list={['encabezado', `encabezado-${variante}`, clase]}>
+  {conContexto && (
+    <div class="encabezado-contexto">
+      {ruta.length > 0 && (
+        <nav aria-label="Ruta">
+          <ol class="encabezado-ruta">
+            {ruta.map((paso, i) => (
+              <li>
+                {i === ruta.length - 1 ? <span aria-current="page">{paso.etiqueta}</span> : <a href={paso.href}>{paso.etiqueta}</a>}
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
+      {fecha && <span class="encabezado-fecha">{fecha}</span>}
+    </div>
+  )}
+  {indice && <p class="encabezado-indice">{indice}</p>}
+  {Astro.slots.has('acciones') && <div class="encabezado-acciones"><slot name="acciones" /></div>}
+  <h1 class="encabezado-titulo">{titulo}</h1>
+  {descripcion && <p class="encabezado-descripcion">{descripcion}</p>}
+</header>
+
+<style>
+  .encabezado {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'contexto' 'indice' 'titulo' 'descripcion' 'acciones';
+    row-gap: var(--espacio-3);
+    justify-items: start;
+    padding-block-end: var(--espacio-3);
+    border-block-end: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    margin-block-end: var(--espacio-6);
+  }
+  .encabezado-contexto {
+    grid-area: contexto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--espacio-1) var(--espacio-3);
+    inline-size: 100%;
+    margin-block-end: calc(var(--espacio-2) - var(--espacio-3)); /* espacio-2 hasta el índice */
+  }
+  .encabezado-ruta {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+  }
+  .encabezado-ruta li + li::before {
+    content: '/' / '';
+    padding-inline: var(--espacio-2);
+  }
+  .encabezado-ruta a {
+    color: var(--color-texto-secundario);
+  }
+  .encabezado-fecha {
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-pequeno);
+  }
+  .encabezado-indice {
+    grid-area: indice;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .encabezado-titulo {
+    grid-area: titulo;
+    overflow-wrap: anywhere;
+  }
+  .encabezado-descripcion {
+    grid-area: descripcion;
+    color: var(--color-texto-cuerpo);
+  }
+  .encabezado-acciones {
+    grid-area: acciones;
+  }
+
+  /* Tableta y escritorio: la acción sube a la fila del índice, a la derecha. */
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    .encabezado {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas: 'contexto contexto' 'indice acciones' 'titulo titulo' 'descripcion descripcion';
+      justify-items: stretch;
+    }
+    .encabezado-acciones {
+      justify-self: end;
+      align-self: center;
+    }
+  }
+</style>

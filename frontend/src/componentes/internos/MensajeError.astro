@@ -1,0 +1,24 @@
+---
+// Pieza interna (no es del catalogo): mensaje de error de campo o de grupo (campo.md, casilla.md).
+import Icono from './Icono.astro';
+
+interface Props {
+  id: string;
+  texto: string;
+}
+const { id, texto } = Astro.props;
+---
+
+<p {id} class="mensaje-error"><Icono nombre="alert-triangle" /><span>{texto}</span></p>
+
+<style>
+  .mensaje-error {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--espacio-2);
+    margin: 0;
+    color: var(--color-texto-alerta);
+    font-size: var(--fuente-tamano-base);
+    line-height: var(--fuente-interlineado-interfaz);
+  }
+</style>

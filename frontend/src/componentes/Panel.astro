@@ -1,0 +1,105 @@
+---
+interface Props {
+  codigo?: string;
+  titulo: string;
+  ayuda?: string;
+  variante?: 'base' | 'sin-borde' | 'destacado' | 'tecnico' | 'lateral';
+  nivel?: 2 | 3 | 4;
+  cargando?: boolean;
+  id?: string;
+}
+const { codigo, titulo, ayuda, variante = 'base', nivel = 2, cargando = false, id: idPropio, class: clase } = Astro.props as Props & {
+  class?: string;
+};
+const Titulo = `h${nivel}` as 'h2';
+const idTitulo = `${idPropio ?? `panel-${titulo.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-')}`}-titulo`;
+---
+
+<section class:list={['panel', `panel-${variante}`, clase]} aria-labelledby={idTitulo}>
+  <header class="panel-cabecera">
+    <div class="panel-titulos">
+      <Titulo id={idTitulo} class="panel-titulo">
+        {codigo && <span class="panel-codigo">{codigo}</span>}{codigo && ' '}{titulo}
+      </Titulo>
+      {ayuda && <p class="panel-ayuda">{ayuda}</p>}
+    </div>
+    {Astro.slots.has('acciones') && <div class="panel-acciones"><slot name="acciones" /></div>}
+  </header>
+  <div class="panel-cuerpo" aria-busy={cargando ? 'true' : undefined}>
+    {cargando ? <p class="panel-cargando">Cargando…</p> : <slot />}
+  </div>
+</section>
+
+<style>
+  .panel {
+    box-sizing: border-box;
+    padding: var(--espacio-5);
+    background: var(--color-fondo-superficie);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    border-radius: var(--borde-radio-ninguno);
+  }
+  .panel-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+    margin-block-end: var(--espacio-4);
+  }
+  .panel-titulos {
+    min-inline-size: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-1);
+  }
+  .panel-titulo {
+    font-size: var(--fuente-tamano-titulo-sm);
+    overflow-wrap: anywhere;
+  }
+  .panel-codigo {
+    font-family: var(--fuente-familia-tecnica);
+    font-weight: var(--fuente-peso-medio);
+    font-size: var(--fuente-tamano-micro);
+  }
+  .panel-ayuda {
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+    line-height: var(--fuente-interlineado-interfaz);
+  }
+  .panel-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+  }
+  .panel-cargando {
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-base);
+  }
+
+  .panel-sin-borde {
+    padding: 0;
+    background: transparent;
+    border: 0;
+  }
+  .panel-sin-borde .panel-cabecera {
+    padding-block-end: var(--espacio-3);
+    border-block-end: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+  }
+  .panel-destacado {
+    background: var(--color-fondo-destacado);
+  }
+  .panel-tecnico {
+    --color-foco-anillo: var(--color-foco-invertido); /* el foco sobre navy usa el anillo invertido */
+    background: var(--color-fondo-invertido);
+    border-inline-start: var(--borde-grosor-grueso) solid var(--color-borde-tecnico);
+    color: var(--color-texto-invertido);
+  }
+  .panel-tecnico .panel-titulo,
+  .panel-tecnico .panel-ayuda {
+    color: var(--color-texto-invertido);
+  }
+  .panel-lateral {
+    inline-size: var(--medida-columna-lateral);
+    max-inline-size: 100%;
+  }
+</style>

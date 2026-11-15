@@ -1,8 +1,12 @@
 ---
 import LayoutApp from '../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../componentes/EncabezadoPantalla.astro';
 ---
 
 <LayoutApp titulo="Panel">
-  <h1>Panel</h1>
-  <p>Página de prueba del layout de app.</p>
+  <EncabezadoPantalla
+    titulo="Panel"
+    ruta={[{ etiqueta: 'Inicio' }]}
+    descripcion="Página de prueba del layout de app."
+  />
 </LayoutApp>

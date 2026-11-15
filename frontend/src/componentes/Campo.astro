@@ -1,0 +1,162 @@
+---
+import Icono from './internos/Icono.astro';
+import MensajeError from './internos/MensajeError.astro';
+import Contrasena from '../islas/Contrasena.astro';
+
+interface Props {
+  tipo?: 'text' | 'email' | 'tel' | 'url' | 'number' | 'date' | 'password' | 'search' | 'area' | 'selector';
+  nombre: string;
+  etiqueta: string;
+  ayuda?: string;
+  error?: string;
+  obligatorio?: boolean;
+  soloLectura?: boolean;
+  valor?: string;
+  [atributo: string]: unknown;
+}
+const {
+  tipo = 'text',
+  nombre,
+  etiqueta,
+  ayuda,
+  error,
+  obligatorio = false,
+  soloLectura = false,
+  valor,
+  id: idPropio,
+  class: clase,
+  ...resto
+} = Astro.props as Props & { id?: string; class?: string };
+
+const id = idPropio ?? `campo-${nombre}`;
+const idAyuda = ayuda ? `${id}-ayuda` : undefined;
+const idError = error ? `${id}-error` : undefined;
+const atributos = {
+  id,
+  name: nombre,
+  required: obligatorio || undefined,
+  readonly: soloLectura || undefined,
+  'aria-invalid': error ? ('true' as const) : undefined,
+  'aria-describedby': [idAyuda, idError].filter(Boolean).join(' ') || undefined,
+  ...resto,
+};
+const clases = ['campo-control', tipo === 'password' && 'campo-control-boton', tipo === 'search' && 'campo-control-busqueda'];
+---
+
+<div class:list={['campo', clase]}>
+  <div class="campo-cabecera">
+    <label for={id} class="campo-etiqueta">
+      {etiqueta}{obligatorio && <span> (obligatorio)</span>}
+    </label>
+    {ayuda && <p id={idAyuda} class="campo-ayuda">{ayuda}</p>}
+  </div>
+
+  {tipo === 'area' && <textarea {...atributos} class:list={clases}>{valor}</textarea>}
+  {tipo === 'selector' && <select {...atributos} class:list={clases}><slot /></select>}
+  {tipo === 'password' && (
+    <Contrasena><input type="password" value={valor} {...atributos} class:list={clases} /></Contrasena>
+  )}
+  {tipo === 'search' && (
+    <div class="campo-busqueda">
+      <span class="campo-icono"><Icono nombre="search" /></span>
+      <input type="search" value={valor} {...atributos} class:list={clases} />
+    </div>
+  )}
+  {!['area', 'selector', 'password', 'search'].includes(tipo) && <input type={tipo as 'text'} value={valor} {...atributos} class:list={clases} />}
+
+  {error && <MensajeError id={idError!} texto={error} />}
+</div>
+
+<style>
+  .campo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+  }
+  .campo-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    column-gap: var(--espacio-3);
+  }
+  .campo-etiqueta {
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-weight: var(--fuente-peso-medio);
+    font-size: var(--fuente-tamano-micro);
+    line-height: var(--fuente-interlineado-interfaz);
+    text-transform: uppercase;
+  }
+  .campo-ayuda {
+    margin: 0;
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+    line-height: var(--fuente-interlineado-interfaz);
+  }
+
+  .campo-control {
+    display: block;
+    inline-size: 100%;
+    box-sizing: border-box;
+    min-block-size: var(--medida-control-tactil); /* móvil: medida-control-tactil */
+    padding: var(--espacio-2) var(--espacio-4);
+    background: var(--color-fondo-claro);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    border-radius: var(--borde-radio-ninguno);
+    box-shadow: var(--sombra-plana);
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-texto);
+    font-size: var(--fuente-tamano-base);
+    line-height: var(--fuente-interlineado-interfaz);
+    transition: background-color var(--movimiento-duracion-rapida) var(--movimiento-curva-estandar);
+  }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    .campo-control {
+      min-block-size: var(--medida-control-base);
+    }
+  }
+  textarea.campo-control {
+    min-block-size: calc(2 * var(--medida-control-base));
+    resize: vertical;
+  }
+  .campo-control-boton {
+    padding-inline-end: calc(var(--medida-control-tactil) + var(--espacio-2));
+  }
+  .campo-busqueda {
+    position: relative;
+  }
+  .campo-icono {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: var(--espacio-4);
+    display: grid;
+    place-items: center;
+    color: var(--color-texto-principal);
+    pointer-events: none;
+  }
+  .campo-control-busqueda {
+    padding-inline-start: calc(var(--espacio-4) + var(--medida-icono-sm) + var(--espacio-2));
+  }
+
+  @media (hover: hover) {
+    .campo-control:not(:disabled):not([readonly]):hover {
+      background: var(--color-fondo-lienzo);
+    }
+  }
+  .campo-control[aria-invalid='true'] {
+    border-color: var(--color-texto-alerta);
+  }
+  .campo-control[readonly] {
+    padding-inline: 0;
+    background: transparent;
+    border-width: 0;
+    border-block-end: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+    box-shadow: none;
+  }
+  .campo-control:disabled {
+    opacity: var(--efecto-opacidad-capa);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+</style>

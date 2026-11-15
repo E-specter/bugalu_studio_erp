@@ -1,0 +1,83 @@
+---
+import Icono from './internos/Icono.astro';
+
+interface Props {
+  variante?: 'neutra' | 'activa' | 'invertida' | 'exito' | 'aviso' | 'alerta' | 'filtro';
+  texto: string;
+  href?: string;
+  senal?: boolean;
+  aplicado?: boolean;
+}
+const { variante = 'neutra', texto, href, senal = false, aplicado = false, class: clase } = Astro.props as Props & { class?: string };
+const esFiltro = variante === 'filtro';
+// El filtro aplicado se ve como la variante Activa y lleva check; el atributo ARIA va solo en el enlace (aria-pressed es de botones).
+const clases = ['etiqueta', `etiqueta-${variante}`, esFiltro && aplicado && 'etiqueta-aplicada', clase];
+const Raiz = href ? 'a' : 'span';
+const atributos = href ? { href, 'aria-current': esFiltro && aplicado ? ('true' as const) : undefined } : {};
+---
+
+<Raiz {...atributos} class:list={clases}>
+  {senal && <span class="etiqueta-senal" aria-hidden="true" />}
+  {esFiltro && aplicado && <Icono nombre="check" />}
+  <span>{texto}</span>
+</Raiz>
+
+<style>
+  .etiqueta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--espacio-1);
+    box-sizing: border-box;
+    padding: var(--espacio-1-5) var(--espacio-3);
+    border: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+    border-radius: var(--borde-radio-etiqueta);
+    background: transparent;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-weight: var(--fuente-peso-medio);
+    font-size: var(--fuente-tamano-micro);
+    line-height: var(--fuente-interlineado-interfaz);
+    text-decoration: none;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+    transition:
+      background-color var(--movimiento-duracion-rapida) var(--movimiento-curva-estandar),
+      color var(--movimiento-duracion-rapida) var(--movimiento-curva-estandar);
+  }
+  .etiqueta-senal {
+    flex: none;
+    inline-size: var(--medida-senal);
+    block-size: var(--medida-senal);
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .etiqueta-activa,
+  .etiqueta-aplicada {
+    background: var(--color-fondo-destacado);
+    border-width: var(--borde-grosor-base);
+  }
+  .etiqueta-invertida {
+    background: var(--color-fondo-invertido);
+    color: var(--color-texto-invertido);
+  }
+  .etiqueta-exito {
+    border-color: var(--color-texto-exito);
+    color: var(--color-texto-exito);
+  }
+  .etiqueta-aviso {
+    border-color: var(--color-texto-aviso);
+    color: var(--color-texto-aviso);
+  }
+  .etiqueta-alerta {
+    border-width: var(--borde-grosor-base);
+    border-color: var(--color-texto-alerta);
+    color: var(--color-texto-alerta);
+  }
+
+  @media (hover: hover) {
+    a.etiqueta-filtro:not(.etiqueta-aplicada):hover {
+      background: var(--color-fondo-claro);
+    }
+  }
+</style>

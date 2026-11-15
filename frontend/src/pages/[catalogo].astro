@@ -1,0 +1,287 @@
+---
+// Catálogo de componentes: solo en desarrollo (astro dev) o con PUBLIC_CATALOGO=1 (build de pruebas e2e).
+// El build de producción no define la variable: getStaticPaths devuelve [] y no se emite /catalogo.
+export function getStaticPaths() {
+  const habilitado = import.meta.env.DEV || import.meta.env.PUBLIC_CATALOGO === '1';
+  return habilitado ? [{ params: { catalogo: 'catalogo' } }] : [];
+}
+
+import LayoutPublico from '../layouts/LayoutPublico.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Casilla from '../componentes/Casilla.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import Aviso from '../componentes/Aviso.astro';
+import IndicadorEstado from '../componentes/IndicadorEstado.astro';
+import MensajeError from '../componentes/internos/MensajeError.astro';
+import Panel from '../componentes/Panel.astro';
+import EncabezadoPantalla from '../componentes/EncabezadoPantalla.astro';
+import CabeceraApp from '../componentes/CabeceraApp.astro';
+import NavegacionLateral from '../componentes/NavegacionLateral.astro';
+import NavegacionTactil from '../componentes/NavegacionTactil.astro';
+
+const destinos = [
+  { etiqueta: 'Inicio', href: '/app/', icono: 'house' as const },
+  { etiqueta: 'Versiones', href: '/app/versiones/', icono: 'audio-waveform' as const },
+  { etiqueta: 'Agenda', href: '/app/agenda/', icono: 'calendar' as const },
+  { etiqueta: 'Revisiones', href: '/app/revisiones/', icono: 'message-square' as const, contador: 3 },
+  { etiqueta: 'Entregables', href: '/app/entregables/', icono: 'file' as const },
+];
+---
+
+<LayoutPublico titulo="Catálogo de componentes">
+  <h1>Catálogo de componentes</h1>
+  <p>Solo desarrollo. Cada componente con sus variantes y estados. Hover, foco y activo se comprueban con el puntero y el teclado.</p>
+
+  <section class="grupo" aria-labelledby="g-boton">
+    <h2 id="g-boton">Botón</h2>
+    <h3>Variantes y tamaños</h3>
+    <div class="fila">
+      <Boton variante="primario">Publicar versión</Boton>
+      <Boton variante="secundario">Escuchar máster</Boton>
+      <Boton variante="peligro">Cancelar reserva</Boton>
+    </div>
+    <div class="fila">
+      <Boton variante="primario" tamano="grande" icono="arrow-right">Continuar</Boton>
+      <Boton variante="secundario" icono="arrow-right">Ver todos</Boton>
+      <Boton variante="secundario" href="/app/">Enlace con aspecto de botón</Boton>
+      <Boton variante="secundario" icono="x" aria-label="Cerrar" />
+    </div>
+    <h3>Estados</h3>
+    <div class="fila">
+      <Boton variante="primario" disabled>Deshabilitado</Boton>
+      <Boton variante="peligro" disabled>Rechazar pago</Boton>
+      <Boton variante="primario" cargando>Publicando…</Boton>
+    </div>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-campo">
+    <h2 id="g-campo">Campo</h2>
+    <h3>Variantes</h3>
+    <div class="rejilla">
+      <Campo nombre="cat-texto" etiqueta="Nombre del proyecto" />
+      <Campo nombre="cat-correo" tipo="email" etiqueta="Correo" ayuda="Usa el correo registrado" autocomplete="email" />
+      <Campo nombre="cat-clave" tipo="password" etiqueta="Contraseña" autocomplete="current-password" />
+      <Campo nombre="cat-busqueda" tipo="search" etiqueta="Buscar cliente" />
+      <Campo nombre="cat-area" tipo="area" etiqueta="Comentario" ayuda="Máximo 500 caracteres" />
+      <Campo nombre="cat-selector" tipo="selector" etiqueta="Servicio">
+        <option>Grabación</option>
+        <option>Mezcla</option>
+        <option>Masterización</option>
+      </Campo>
+    </div>
+    <h3>Estados</h3>
+    <div class="rejilla">
+      <Campo nombre="cat-obligatorio" etiqueta="Teléfono" obligatorio tipo="tel" />
+      <Campo nombre="cat-error" tipo="email" etiqueta="Correo" valor="marta@" error="Escribe un correo completo, por ejemplo marta@estudio.pe." />
+      <Campo nombre="cat-lectura" etiqueta="Código de solicitud" valor="PRY-014" soloLectura />
+      <Campo nombre="cat-deshabilitado" etiqueta="Fecha de entrega" valor="18 nov 2026" disabled />
+    </div>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-casilla">
+    <h2 id="g-casilla">Casilla</h2>
+    <div class="rejilla">
+      <fieldset class="conjunto">
+        <legend>Casillas</legend>
+        <Casilla nombre="cat-a" valor="a" etiqueta="Sin marcar" />
+        <Casilla nombre="cat-b" valor="b" etiqueta="Marcada" detalle="Con detalle secundario" marcada />
+        <Casilla nombre="cat-c" valor="c" etiqueta="Indeterminada" data-indeterminada />
+        <Casilla nombre="cat-d" valor="d" etiqueta="Deshabilitada" disabled />
+        <Casilla nombre="cat-e" valor="e" etiqueta="Deshabilitada y marcada" marcada disabled />
+      </fieldset>
+      <fieldset class="conjunto" aria-describedby="cat-error-grupo">
+        <legend>Error de grupo</legend>
+        <Casilla nombre="cat-f" valor="f" etiqueta="Acepto las condiciones" aria-invalid="true" />
+        <MensajeError id="cat-error-grupo" texto="Marca la casilla para continuar." />
+      </fieldset>
+      <fieldset class="conjunto">
+        <legend>Radio</legend>
+        <Casilla tipo="radio" nombre="cat-radio" valor="1" etiqueta="Sala A" marcada />
+        <Casilla tipo="radio" nombre="cat-radio" valor="2" etiqueta="Sala B" detalle="Cabina de voces" />
+        <Casilla tipo="radio" nombre="cat-radio" valor="3" etiqueta="Sala C" disabled />
+      </fieldset>
+    </div>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-etiqueta">
+    <h2 id="g-etiqueta">Etiqueta técnica</h2>
+    <h3>Variantes</h3>
+    <div class="fila">
+      <EtiquetaTecnica variante="neutra" texto="La Molina" />
+      <EtiquetaTecnica variante="activa" texto="V3 master activo" />
+      <EtiquetaTecnica variante="invertida" texto="SOL-0042" />
+      <EtiquetaTecnica variante="exito" texto="Validado" />
+      <EtiquetaTecnica variante="aviso" texto="Pendiente" />
+      <EtiquetaTecnica variante="alerta" texto="Rechazado" />
+      <EtiquetaTecnica variante="activa" texto="Live" senal />
+    </div>
+    <h3>Filtro: sin aplicar y aplicado (check, aria-current)</h3>
+    <div class="fila">
+      <EtiquetaTecnica variante="filtro" texto="Pendientes" href="?estado=pendientes" />
+      <EtiquetaTecnica variante="filtro" texto="Confirmadas" href="?estado=confirmadas" aplicado />
+    </div>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-aviso">
+    <h2 id="g-aviso">Aviso</h2>
+    <div class="rejilla">
+      <Aviso variante="informacion" titulo="Cambios en la siguiente ronda" texto="Los cambios se publican en la siguiente ronda de revisión." />
+      <Aviso variante="exito" titulo="Pago registrado" texto="Queda pendiente de validación." />
+      <Aviso variante="aviso" titulo="Pre-reserva por vencer" texto="Confirma antes del jueves." accion={{ etiqueta: 'Ver pago', href: '/app/' }} />
+      <Aviso variante="error" titulo="No se pudo enviar" texto="Revisa tu conexión y vuelve a intentarlo." accion={{ etiqueta: 'Reintentar', href: '/app/' }} />
+      <Aviso variante="critico" titulo="Sala bloqueada" texto="No puedes continuar hasta resolver el pago." />
+      <Aviso variante="informacion" titulo="Aviso descartable" texto="Se cierra con el botón." descartable />
+    </div>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-indicador">
+    <h2 id="g-indicador">Indicador de estado</h2>
+    <h3>En línea</h3>
+    <div class="fila">
+      <IndicadorEstado tono="correcto" texto="Sincronizado" />
+      <IndicadorEstado tono="pendiente" texto="Guardando" activo role="status" />
+      <IndicadorEstado tono="problema" texto="Sin conexión" />
+      <IndicadorEstado tono="neutro" texto="Borrador" />
+    </div>
+    <h3>Barra</h3>
+    <div class="rejilla">
+      <IndicadorEstado variante="barra" tono="correcto" texto="Revisión aprobada" dato="18 nov, 14:30" />
+      <IndicadorEstado variante="barra" tono="problema" texto="Error al guardar" dato="hace 2 min" />
+    </div>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-panel">
+    <h2 id="g-panel">Panel</h2>
+    <div class="rejilla">
+      <Panel codigo="[01]" titulo="Panel base" ayuda="Agrupa contenido relacionado.">
+        <Boton slot="acciones" variante="secundario">Acción</Boton>
+        <p>Contenido del panel.</p>
+      </Panel>
+      <Panel titulo="Panel sin borde" variante="sin-borde"><p>Solo título y regla.</p></Panel>
+      <Panel codigo="A1" titulo="Próxima entrega" variante="destacado"><p>Debe leerse primero.</p></Panel>
+      <Panel codigo="[05]" titulo="Cadena de señal" variante="tecnico">
+        <p>Panel de control sobre navy.</p>
+        <Boton variante="secundario">Enfocable</Boton>
+      </Panel>
+      <Panel titulo="Panel lateral" variante="lateral"><p>Ancho de columna lateral.</p></Panel>
+      <Panel titulo="Panel cargando" cargando><p>No se muestra.</p></Panel>
+    </div>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-encabezado">
+    <h2 id="g-encabezado">Encabezado de pantalla</h2>
+    <h3>App</h3>
+    <EncabezadoPantalla
+      ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Proyectos', href: '/app/' }, { etiqueta: 'PRY-014' }]}
+      fecha="18 nov 2026"
+      indice="[03] Tablero / Producción"
+      titulo="Proyecto PRY-014"
+      descripcion="Estado de las versiones y revisiones del proyecto."
+    >
+      <Boton slot="acciones" variante="primario">Publicar versión</Boton>
+    </EncabezadoPantalla>
+    <h3>Flujo</h3>
+    <EncabezadoPantalla
+      variante="flujo"
+      indice="Paso 02 / 06"
+      titulo="Datos del proyecto"
+      descripcion="Cuéntanos qué quieres grabar."
+    >
+      <span slot="acciones">Guardado hace 1 min</span>
+    </EncabezadoPantalla>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-cabecera">
+    <h2 id="g-cabecera">Cabecera de app</h2>
+    <p>Por debajo de 64 em se ve la versión móvil (fila 1 fija, fila 2 de contexto, botón Menú); desde 64 em, una sola barra.</p>
+    <h3>Estudio</h3>
+    <div class="marco">
+      <CabeceraApp variante="estudio" producto="Bugalú Studio" area="Panel interno" usuario="Marta Quispe">
+        <EtiquetaTecnica slot="contexto" texto="Sala A" />
+        <IndicadorEstado slot="contexto" tono="correcto" texto="Sincronizado" role="status" />
+        <a slot="menu" href="/app/">Mi perfil</a>
+      </CabeceraApp>
+    </div>
+    <h3>Portal</h3>
+    <div class="marco">
+      <CabeceraApp variante="portal" producto="Bugalú Studio" area="Portal de artistas" usuario="Luis Rojas">
+        <EtiquetaTecnica slot="contexto" variante="activa" texto="PRY-014" />
+        <IndicadorEstado slot="contexto" tono="correcto" texto="Sincronizado" />
+      </CabeceraApp>
+    </div>
+    <h3>Flujo</h3>
+    <div class="marco">
+      <CabeceraApp variante="flujo" producto="Bugalú Studio" area="Contratación">
+        <IndicadorEstado slot="contexto" tono="pendiente" texto="Guardado hace 1 min" />
+        <EtiquetaTecnica slot="contexto" variante="invertida" texto="SOL-0042" />
+      </CabeceraApp>
+    </div>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-lateral">
+    <h2 id="g-lateral">Navegación lateral</h2>
+    <div class="rejilla">
+      <div>
+        <h3>Estudio, con pendientes y bloque de control</h3>
+        <NavegacionLateral variante="estudio" destinos={destinos} actual="/app/versiones/" etiqueta="Principal, ejemplo estudio">
+          <Fragment slot="control">
+            <p>Control de sala</p>
+            <p>Sesión en curso</p>
+          </Fragment>
+        </NavegacionLateral>
+      </div>
+      <div>
+        <h3>Portal</h3>
+        <NavegacionLateral variante="portal" destinos={destinos.slice(0, 3)} actual="/app/" etiqueta="Principal, ejemplo portal" />
+      </div>
+    </div>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-tactil">
+    <h2 id="g-tactil">Navegación táctil</h2>
+    <NavegacionTactil destinos={destinos} actual="/app/agenda/" etiqueta="Principal, ejemplo táctil" />
+  </section>
+
+  <script>
+    // La propiedad indeterminate solo existe en JS: es la forma de mostrar ese estado en el catálogo.
+    document.querySelectorAll<HTMLInputElement>('[data-indeterminada]').forEach((c) => (c.indeterminate = true));
+  </script>
+</LayoutPublico>
+
+<style>
+  .grupo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    margin-block-start: var(--espacio-12);
+  }
+  .fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-3);
+  }
+  .rejilla {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--medida-columna-lateral)), 1fr));
+    gap: var(--espacio-6);
+    align-items: start;
+  }
+  .marco {
+    border: var(--borde-grosor-fino) dashed var(--color-borde-fuerte);
+    position: relative;
+  }
+  .conjunto {
+    margin: 0;
+    padding: var(--espacio-3);
+    border: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+  }
+  .conjunto legend {
+    padding-inline: var(--espacio-2);
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+</style>

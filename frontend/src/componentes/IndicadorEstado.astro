@@ -1,0 +1,81 @@
+---
+interface Props {
+  variante?: 'linea' | 'barra';
+  tono?: 'correcto' | 'pendiente' | 'problema' | 'neutro';
+  texto: string;
+  dato?: string;
+  activo?: boolean;
+  [atributo: string]: unknown;
+}
+// role="status" si el estado cambia sin accion del usuario: el consumidor lo pasa como atributo.
+const { variante = 'linea', tono = 'neutro', texto, dato, activo = false, class: clase, ...resto } = Astro.props as Props & {
+  class?: string;
+};
+---
+
+<div {...resto} class:list={['indicador', `indicador-${variante}`, `indicador-${tono}`, clase]}>
+  <span class="indicador-estado">
+    <span class:list={['indicador-senal', activo && 'indicador-activo']} aria-hidden="true"></span>
+    <span class="indicador-texto">{texto}</span>
+  </span>
+  {dato && <span class="indicador-dato">{dato}</span>}
+</div>
+
+<style>
+  .indicador {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: var(--espacio-3);
+    row-gap: var(--espacio-1);
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    line-height: var(--fuente-interlineado-interfaz);
+    text-transform: uppercase;
+  }
+  .indicador-estado {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--espacio-2);
+  }
+  .indicador-senal {
+    flex: none;
+    inline-size: var(--medida-senal);
+    block-size: var(--medida-senal);
+    border-radius: 50%;
+    background: var(--color-texto-secundario);
+  }
+  .indicador-correcto .indicador-senal {
+    background: var(--color-texto-exito);
+  }
+  .indicador-pendiente .indicador-senal {
+    background: var(--color-texto-aviso);
+  }
+  .indicador-problema .indicador-senal {
+    background: var(--color-texto-alerta);
+  }
+  .indicador-problema .indicador-texto {
+    color: var(--color-texto-alerta);
+  }
+
+  .indicador-barra {
+    justify-content: space-between;
+    box-sizing: border-box;
+    inline-size: 100%;
+    padding: var(--espacio-3);
+    border: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+  }
+  .indicador-dato {
+    color: var(--color-texto-secundario);
+  }
+
+  .indicador-activo {
+    animation: indicador-parpadeo var(--movimiento-duracion-bucle) linear infinite;
+  }
+  @keyframes indicador-parpadeo {
+    50% {
+      opacity: var(--efecto-opacidad-capa);
+    }
+  }
+</style>

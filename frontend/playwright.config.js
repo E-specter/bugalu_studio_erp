@@ -8,7 +8,9 @@ export default defineConfig({
   webServer: {
     command: 'npm run build && npm run preview -- --port 4321',
     url: 'http://localhost:4321',
-    reuseExistingServer: true,
+    // El build de pruebas emite /catalogo (PUBLIC_CATALOGO); el de producción no.
+    env: { PUBLIC_CATALOGO: '1' },
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });

@@ -28,21 +28,21 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 
 | Componente | Ficha | Código | Estado |
 |---|---|---|---|
-| Botón | [boton](boton.md) | `componentes/Boton.astro` | Borrador |
-| Etiqueta técnica | [etiqueta-tecnica](etiqueta-tecnica.md) | `componentes/EtiquetaTecnica.astro` | Borrador |
-| Campo | [campo](campo.md) | `componentes/Campo.astro` + isla `<bugalu-contrasena>` | Borrador |
-| Casilla | [casilla](casilla.md) | `componentes/Casilla.astro` | Borrador |
+| Botón | [boton](boton.md) | `componentes/Boton.astro` | Implementado |
+| Etiqueta técnica | [etiqueta-tecnica](etiqueta-tecnica.md) | `componentes/EtiquetaTecnica.astro` | Implementado |
+| Campo | [campo](campo.md) | `componentes/Campo.astro` + isla `<bugalu-contrasena>` | Implementado |
+| Casilla | [casilla](casilla.md) | `componentes/Casilla.astro` | Implementado |
 | Tarjeta de opción | [tarjeta-opcion](tarjeta-opcion.md) | `componentes/TarjetaOpcion.astro` | Borrador |
-| Aviso | [aviso](aviso.md) | `componentes/Aviso.astro` | Borrador |
-| Indicador de estado | [indicador-estado](indicador-estado.md) | `componentes/IndicadorEstado.astro` | Borrador |
+| Aviso | [aviso](aviso.md) | `componentes/Aviso.astro` | Implementado |
+| Indicador de estado | [indicador-estado](indicador-estado.md) | `componentes/IndicadorEstado.astro` | Implementado |
 | Barra de progreso | [barra-progreso](barra-progreso.md) | `componentes/BarraProgreso.astro` | Borrador |
 | Avatar | [avatar](avatar.md) | `componentes/Avatar.astro` | Borrador |
 | Métrica | [metrica](metrica.md) | `componentes/Metrica.astro` | Borrador |
-| Panel | [panel](panel.md) | `componentes/Panel.astro` | Borrador |
-| Encabezado de pantalla | [encabezado-pantalla](encabezado-pantalla.md) | `componentes/EncabezadoPantalla.astro` | Borrador |
-| Cabecera de app | [cabecera-app](cabecera-app.md) | `componentes/CabeceraApp.astro` | Borrador |
-| Navegación lateral | [navegacion-lateral](navegacion-lateral.md) | `componentes/NavegacionLateral.astro` | Borrador |
-| Navegación táctil | [navegacion-tactil](navegacion-tactil.md) | `componentes/NavegacionTactil.astro` | Borrador |
+| Panel | [panel](panel.md) | `componentes/Panel.astro` | Implementado |
+| Encabezado de pantalla | [encabezado-pantalla](encabezado-pantalla.md) | `componentes/EncabezadoPantalla.astro` | Implementado |
+| Cabecera de app | [cabecera-app](cabecera-app.md) | `componentes/CabeceraApp.astro` | Implementado |
+| Navegación lateral | [navegacion-lateral](navegacion-lateral.md) | `componentes/NavegacionLateral.astro` | Implementado |
+| Navegación táctil | [navegacion-tactil](navegacion-tactil.md) | `componentes/NavegacionTactil.astro` | Implementado |
 | Pasos | [pasos](pasos.md) | `componentes/Pasos.astro` | Borrador |
 | Barra de acciones | [barra-acciones](barra-acciones.md) | `componentes/BarraAcciones.astro` | Borrador |
 | Resumen persistente | [resumen-persistente](resumen-persistente.md) | `componentes/ResumenPersistente.astro` | Borrador |

@@ -1,0 +1,90 @@
+---
+import Icono from './internos/Icono.astro';
+
+interface Props {
+  variante?: 'primario' | 'secundario' | 'peligro';
+  tamano?: 'base' | 'grande';
+  tipo?: 'button' | 'submit';
+  href?: string;
+  icono?: 'arrow-right' | 'x' | 'eye' | 'search' | 'menu';
+  cargando?: boolean;
+  [atributo: string]: unknown;
+}
+const { variante = 'primario', tamano = 'base', tipo = 'button', href, icono, cargando = false, class: clase, ...resto } = Astro.props as Props & {
+  class?: string;
+};
+const Raiz = href ? 'a' : 'button';
+// Carga: disabled evita el doble envio (boton.md); el enlace no tiene disabled.
+const atributos = href ? { href } : { type: tipo, disabled: cargando || Boolean(resto.disabled) };
+---
+
+<Raiz {...resto} {...atributos} aria-busy={cargando ? 'true' : undefined} class:list={['boton', `boton-${variante}`, `boton-${tamano}`, clase]}>
+  <slot />
+  {icono && <Icono nombre={icono} />}
+</Raiz>
+
+<style>
+  .boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--espacio-2);
+    box-sizing: border-box;
+    min-block-size: var(--medida-control-tactil); /* móvil: medida-control-tactil */
+    padding: var(--espacio-2) var(--espacio-5);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    border-radius: var(--borde-radio-ninguno);
+    font-family: var(--fuente-familia-titulo);
+    font-weight: var(--fuente-peso-titulo);
+    font-size: var(--fuente-tamano-base);
+    line-height: var(--fuente-interlineado-interfaz);
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      background-color var(--movimiento-duracion-rapida) var(--movimiento-curva-estandar),
+      color var(--movimiento-duracion-rapida) var(--movimiento-curva-estandar),
+      border-color var(--movimiento-duracion-rapida) var(--movimiento-curva-estandar);
+  }
+  .boton-grande {
+    min-block-size: var(--medida-control-grande);
+  }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    .boton-base {
+      min-block-size: var(--medida-control-base);
+    }
+  }
+
+  .boton-primario {
+    background: var(--color-fondo-destacado);
+    color: var(--color-texto-principal);
+  }
+  .boton-secundario {
+    background: var(--color-fondo-superficie);
+    color: var(--color-texto-principal);
+  }
+  .boton-peligro {
+    background: var(--color-fondo-superficie);
+    border-color: var(--color-texto-alerta);
+    color: var(--color-texto-alerta);
+  }
+
+  @media (hover: hover) {
+    .boton-primario:not(:disabled):hover,
+    .boton-secundario:not(:disabled):hover {
+      background: var(--color-fondo-alerta);
+      color: var(--color-texto-sobre-alerta);
+    }
+    .boton-peligro:not(:disabled):hover {
+      background: var(--color-fondo-peligro);
+      color: var(--color-texto-invertido);
+    }
+  }
+
+  .boton:disabled {
+    opacity: var(--efecto-opacidad-capa);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+</style>

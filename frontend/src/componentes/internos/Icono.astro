@@ -1,0 +1,37 @@
+---
+// Pieza interna (no es del catalogo): un solo SVG de Lucide, decorativo, a medida-icono-sm o -md.
+import { iconos } from './lucide.js';
+
+interface Props {
+  nombre: keyof typeof iconos;
+  tamano?: 'sm' | 'md';
+}
+const { nombre, tamano = 'sm', class: clase } = Astro.props as Props & { class?: string };
+---
+
+<svg
+  class:list={['icono', `icono-${tamano}`, clase]}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-linecap="square"
+  stroke-linejoin="miter"
+  aria-hidden="true"
+  focusable="false"
+  set:html={iconos[nombre]}
+/>
+
+<style>
+  .icono {
+    flex: none;
+    stroke-width: var(--borde-grosor-base);
+  }
+  .icono-sm {
+    inline-size: var(--medida-icono-sm);
+    block-size: var(--medida-icono-sm);
+  }
+  .icono-md {
+    inline-size: var(--medida-icono-md);
+    block-size: var(--medida-icono-md);
+  }
+</style>

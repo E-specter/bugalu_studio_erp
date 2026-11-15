@@ -1,0 +1,131 @@
+---
+import Icono from './internos/Icono.astro';
+
+interface Props {
+  tipo?: 'casilla' | 'radio';
+  nombre: string;
+  valor?: string;
+  etiqueta: string;
+  detalle?: string;
+  marcada?: boolean;
+  [atributo: string]: unknown;
+}
+const { tipo = 'casilla', nombre, valor, etiqueta, detalle, marcada = false, class: clase, ...resto } = Astro.props as Props & {
+  class?: string;
+};
+---
+
+<label class:list={['casilla', clase]}>
+  <span class="casilla-control">
+    <input {...resto} class="casilla-entrada" type={tipo === 'radio' ? 'radio' : 'checkbox'} name={nombre} value={valor} checked={marcada} />
+    {tipo === 'radio'
+      ? <span class="marca marca-punto" />
+      : (
+        <>
+          <span class="marca marca-check"><Icono nombre="check" /></span>
+          <span class="marca marca-indeterminada"><Icono nombre="minus" /></span>
+        </>
+      )}
+  </span>
+  <span class="casilla-texto">
+    <span class="casilla-etiqueta">{etiqueta}</span>
+    {detalle && <span class="casilla-detalle">{detalle}</span>}
+  </span>
+</label>
+
+<style>
+  .casilla {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-3);
+    min-block-size: var(--medida-control-tactil); /* móvil: medida-control-tactil */
+    cursor: pointer;
+  }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    .casilla {
+      min-block-size: var(--medida-control-base);
+    }
+  }
+  .casilla:has(:disabled) {
+    opacity: var(--efecto-opacidad-capa);
+    cursor: not-allowed;
+  }
+
+  .casilla-control {
+    position: relative;
+    display: grid;
+    flex: none;
+    inline-size: var(--medida-icono-md);
+    block-size: var(--medida-icono-md);
+  }
+  .casilla-entrada {
+    appearance: none;
+    box-sizing: border-box;
+    inline-size: 100%;
+    block-size: 100%;
+    margin: 0;
+    background: var(--color-fondo-claro);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    border-radius: var(--borde-radio-ninguno);
+    cursor: inherit;
+    transition: background-color var(--movimiento-duracion-rapida) var(--movimiento-curva-estandar);
+  }
+  .casilla-entrada[type='radio'] {
+    border-radius: 50%;
+  }
+  .casilla-entrada:checked {
+    background: var(--color-fondo-destacado);
+  }
+  .casilla-entrada[aria-invalid='true'] {
+    border-color: var(--color-texto-alerta);
+  }
+  @media (hover: hover) {
+    .casilla-entrada:not(:checked):not(:disabled):hover {
+      background: var(--color-fondo-lienzo);
+    }
+  }
+
+  /* Marcas: superpuestas al control, ocultas hasta que su estado aplica. */
+  .marca {
+    position: absolute;
+    inset: 0;
+    display: none;
+    place-items: center;
+    color: var(--color-texto-principal);
+    pointer-events: none;
+  }
+  .marca-punto {
+    inset: auto;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    inline-size: var(--medida-senal);
+    block-size: var(--medida-senal);
+    translate: -50% -50%;
+    background: var(--color-texto-principal);
+    border-radius: 50%;
+  }
+  .casilla-entrada:checked ~ .marca-check,
+  .casilla-entrada:checked ~ .marca-punto,
+  .casilla-entrada:indeterminate ~ .marca-indeterminada {
+    display: grid;
+  }
+  .casilla-entrada:indeterminate ~ .marca-check {
+    display: none;
+  }
+
+  .casilla-texto {
+    display: flex;
+    flex-direction: column;
+    min-inline-size: 0;
+  }
+  .casilla-etiqueta {
+    color: var(--color-texto-principal);
+    font-size: var(--fuente-tamano-base);
+    line-height: var(--fuente-interlineado-interfaz);
+  }
+  .casilla-detalle {
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+    line-height: var(--fuente-interlineado-interfaz);
+  }
+</style>

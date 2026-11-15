@@ -6,7 +6,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "node scripts/comprobar-tokens.mjs && astro check",
+    "check": "node scripts/comprobar-tokens.mjs && node scripts/comprobar-literales.mjs && astro check",
     "test:e2e": "playwright test"
   },
   "dependencies": {
