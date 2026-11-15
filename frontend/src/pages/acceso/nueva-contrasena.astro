@@ -1,0 +1,9 @@
+---
+import Acceso from '../../layouts/Acceso.astro';
+import AccesoIsla from '../../islas/Acceso.astro';
+import { recuperacion } from './_copy.js';
+---
+
+<Acceso titulo="Nueva contraseña" {...recuperacion}>
+  <AccesoIsla modo="restablecer" texto="Elige una contraseña nueva para tu cuenta." />
+</Acceso>

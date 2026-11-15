@@ -1,0 +1,19 @@
+---
+// Pieza interna (no es del catalogo): plantillas que clonan las islas de acceso para sus errores y avisos (servicios/formulario.js).
+import Aviso from '../Aviso.astro';
+import Boton from '../Boton.astro';
+import MensajeError from './MensajeError.astro';
+---
+
+<template data-plantilla="error"><MensajeError id="" texto="" /></template>
+<template data-plantilla="aviso-error"><Aviso variante="error" titulo=" " texto=" " /></template>
+<template data-plantilla="aviso-informacion"><Aviso variante="informacion" titulo=" " texto=" " /></template>
+<template data-plantilla="aviso-exito"><Aviso variante="exito" titulo=" " texto=" " /></template>
+<template data-plantilla="boton"><div class="plantilla-boton"><Boton variante="secundario" /></div></template>
+<template data-plantilla="enlace"><div class="plantilla-boton"><Boton href="#" variante="primario" /></div></template>
+
+<style>
+  .plantilla-boton {
+    margin-block-start: var(--espacio-2);
+  }
+</style>

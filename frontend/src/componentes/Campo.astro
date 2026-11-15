@@ -11,6 +11,7 @@ interface Props {
   error?: string;
   obligatorio?: boolean;
   soloLectura?: boolean;
+  medidor?: boolean;
   valor?: string;
   [atributo: string]: unknown;
 }
@@ -22,6 +23,7 @@ const {
   error,
   obligatorio = false,
   soloLectura = false,
+  medidor = false,
   valor,
   id: idPropio,
   class: clase,
@@ -54,7 +56,7 @@ const clases = ['campo-control', tipo === 'password' && 'campo-control-boton', t
   {tipo === 'area' && <textarea {...atributos} class:list={clases}>{valor}</textarea>}
   {tipo === 'selector' && <select {...atributos} class:list={clases}><slot /></select>}
   {tipo === 'password' && (
-    <Contrasena><input type="password" value={valor} {...atributos} class:list={clases} /></Contrasena>
+    <Contrasena medidor={medidor}><input type="password" value={valor} {...atributos} class:list={clases} /></Contrasena>
   )}
   {tipo === 'search' && (
     <div class="campo-busqueda">

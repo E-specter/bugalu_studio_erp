@@ -1,0 +1,9 @@
+---
+import Acceso from '../../../layouts/Acceso.astro';
+import AccesoIsla from '../../../islas/Acceso.astro';
+import { internoSolicitar } from '../_copy.js';
+---
+
+<Acceso titulo="Solicitar acceso" {...internoSolicitar}>
+  <AccesoIsla modo="solicitar" texto="Creamos tu cuenta y enviamos tu solicitud al Administrador. Podrás entrar al panel cuando la apruebe." />
+</Acceso>

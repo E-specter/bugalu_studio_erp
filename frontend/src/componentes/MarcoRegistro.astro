@@ -1,0 +1,93 @@
+---
+interface Props {
+  variante?: 'panel' | 'esquinas';
+}
+const { variante = 'panel', class: clase } = Astro.props as Props & { class?: string };
+---
+
+<!-- Decoración técnica: marcas, escuadras y patrón son aria-hidden; solo el contenido de la ranura se lee. -->
+<div class:list={['marco', `marco-${variante}`, clase]}>
+  <span class="marco-marca marco-m1" aria-hidden="true"></span>
+  <span class="marco-marca marco-m2" aria-hidden="true"></span>
+  <span class="marco-marca marco-m3" aria-hidden="true"></span>
+  <span class="marco-marca marco-m4" aria-hidden="true"></span>
+  <span class="marco-escuadra marco-e1" aria-hidden="true"></span>
+  <span class="marco-escuadra marco-e2" aria-hidden="true"></span>
+  {variante === 'panel' && <span class="marco-patron" aria-hidden="true"></span>}
+  <div class="marco-contenido"><slot /></div>
+</div>
+
+<style>
+  .marco {
+    position: relative;
+    box-sizing: border-box;
+    min-block-size: 100%;
+    padding: var(--espacio-12) var(--espacio-8);
+    background: var(--color-fondo-invertido);
+    color: var(--color-texto-invertido);
+    overflow: hidden;
+  }
+  .marco-esquinas {
+    background: transparent;
+    padding: var(--espacio-5);
+  }
+  .marco-contenido {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: var(--espacio-3);
+    min-block-size: 100%;
+  }
+
+  /* Marca de registro: cruz de líneas finas con un punto al centro. */
+  .marco-marca {
+    position: absolute;
+    inline-size: var(--espacio-6);
+    block-size: var(--espacio-6);
+    background:
+      linear-gradient(var(--color-borde-tecnico), var(--color-borde-tecnico)) center / 100% var(--borde-grosor-fino) no-repeat,
+      linear-gradient(var(--color-borde-tecnico), var(--color-borde-tecnico)) center / var(--borde-grosor-fino) 100% no-repeat;
+  }
+  .marco-marca::after {
+    content: '';
+    position: absolute;
+    inset: 50% auto auto 50%;
+    inline-size: var(--medida-senal);
+    block-size: var(--medida-senal);
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: var(--color-borde-tecnico);
+  }
+  .marco-m1 { inset-block-start: var(--espacio-5); inset-inline-start: var(--espacio-5); }
+  .marco-m2 { inset-block-start: var(--espacio-5); inset-inline-end: var(--espacio-5); }
+  .marco-m3 { inset-block-end: var(--espacio-5); inset-inline-start: var(--espacio-5); }
+  .marco-m4 { inset-block-end: var(--espacio-5); inset-inline-end: var(--espacio-5); }
+
+  /* Escuadras en dos esquinas opuestas. */
+  .marco-escuadra {
+    position: absolute;
+    inline-size: calc(var(--espacio-20) + var(--espacio-8));
+    block-size: var(--borde-grosor-grueso);
+    background: var(--color-borde-tecnico);
+  }
+  .marco-e1 { inset-block-start: 0; inset-inline-start: 0; }
+  .marco-e2 { inset-block-end: 0; inset-inline-end: 0; }
+
+  /* Scanlines solo en la banda inferior, donde no hay texto: no restan contraste a la ranura. */
+  .marco-patron {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 0;
+    block-size: var(--espacio-20);
+    opacity: var(--efecto-opacidad-capa);
+    background: repeating-linear-gradient(
+      180deg,
+      transparent 0,
+      transparent var(--efecto-patron-paso),
+      var(--color-borde-tecnico) var(--efecto-patron-paso),
+      var(--color-borde-tecnico) calc(var(--efecto-patron-paso) + var(--borde-grosor-fino))
+    );
+  }
+</style>

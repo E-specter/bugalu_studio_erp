@@ -1,0 +1,9 @@
+---
+import Acceso from '../../layouts/Acceso.astro';
+import AccesoIsla from '../../islas/Acceso.astro';
+import { artistasIniciar } from './_copy.js';
+---
+
+<Acceso titulo="Iniciar sesión" {...artistasIniciar}>
+  <AccesoIsla modo="iniciar" />
+</Acceso>

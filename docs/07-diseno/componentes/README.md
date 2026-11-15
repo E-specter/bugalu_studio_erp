@@ -52,7 +52,7 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Archivo | [archivo](archivo.md) | `componentes/Archivo.astro` | Borrador |
 | Tarjeta de versión | [tarjeta-version](tarjeta-version.md) | `componentes/TarjetaVersion.astro` | Borrador |
 | Comentario | [comentario](comentario.md) | `componentes/Comentario.astro` | Borrador |
-| Marco de registro | [marco-registro](marco-registro.md) | `componentes/MarcoRegistro.astro` | Borrador |
+| Marco de registro | [marco-registro](marco-registro.md) | `componentes/MarcoRegistro.astro` | Implementado |
 | Calendario | [calendario](calendario.md) | isla `<bugalu-calendario>` | Borrador |
 | Reproductor | [reproductor](reproductor.md) | isla `<bugalu-reproductor>` | Borrador |
 | Carga de archivos | [carga-archivos](carga-archivos.md) | isla `<bugalu-carga-archivos>` | Borrador |

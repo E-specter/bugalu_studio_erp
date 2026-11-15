@@ -166,7 +166,7 @@ test('foco visible en los componentes interactivos', async ({ page }) => {
 test('isla de contraseña: botón accesible con JS y campo funcional sin JS', async ({ page, browser }) => {
   await page.goto('/catalogo');
   const entrada = page.locator('#campo-cat-clave');
-  const boton = page.getByRole('button', { name: 'Mostrar contraseña' });
+  const boton = page.locator('bugalu-contrasena').first().getByRole('button', { name: 'Mostrar contraseña' });
   await expect(boton).toHaveAttribute('aria-pressed', 'false');
   await boton.click();
   await expect(entrada).toHaveAttribute('type', 'text');

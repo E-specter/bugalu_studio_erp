@@ -37,3 +37,6 @@ frontend/pruebas/capturas/
 frontend/pruebas/resultados/
 frontend/playwright-report/
 frontend/test-results/
+
+# Registros del MCP de Playwright
+.playwright-mcp/

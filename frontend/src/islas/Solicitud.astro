@@ -1,0 +1,281 @@
+---
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.astro';
+---
+
+<!-- Un bloque por estado (estados-sistema): se pintan en servidor y la isla clona el que toca. Sin JS, el noscript oculta la carga y avisa. -->
+<bugalu-solicitud class="solicitud">
+  <div data-avisos></div>
+  <!-- Región viva estable, presente antes de cualquier texto: anuncia el estado una sola vez. -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  <div data-salida>
+    <Panel titulo="Estado de la solicitud" cargando />
+  </div>
+
+  <template data-estado="cargando">
+    <Panel titulo="Estado de la solicitud" cargando />
+  </template>
+
+  <template data-estado="datos">
+    <Panel titulo="Estado de la solicitud">
+      <div class="solicitud-cuerpo">
+        <div data-etiqueta></div>
+        <dl class="datos">
+          <div><dt>Especialidad</dt><dd data-campo="especialidad"></dd></div>
+          <div data-fila="mensaje"><dt>Mensaje</dt><dd data-campo="mensaje"></dd></div>
+          <div><dt>Enviada</dt><dd data-campo="creada_en"></dd></div>
+          <div data-fila="revisada_en"><dt>Revisada</dt><dd data-campo="revisada_en"></dd></div>
+          <div data-fila="motivo"><dt>Motivo</dt><dd data-campo="motivo"></dd></div>
+        </dl>
+        <p data-siguiente></p>
+        <div class="acciones">
+          <Boton data-comprobar>Comprobar estado</Boton>
+          <Boton href="/acceso/interno/solicitud?nueva=1" data-nueva>Enviar otra solicitud</Boton>
+          <Boton variante="secundario" data-cerrar-sesion>Cerrar sesión</Boton>
+        </div>
+      </div>
+    </Panel>
+  </template>
+
+  <template data-estado="formulario">
+    <Panel titulo="Estado de la solicitud">
+      <div class="solicitud-cuerpo">
+        <p data-intro>Tu cuenta aún no tiene una solicitud de acceso al panel.</p>
+        <form novalidate method="post" class="solicitud-formulario" data-formulario>
+          <Campo nombre="especialidad" etiqueta="Especialidad" ayuda="Tu área en el estudio; el Administrador la confirma." placeholder="p. ej. Ingeniería de mezcla" required />
+          <Campo nombre="mensaje" tipo="area" etiqueta="Mensaje (opcional)" ayuda="Cuéntale quién eres o quién te invitó." />
+          <Boton tipo="submit" tamano="grande" data-principal>Enviar solicitud</Boton>
+        </form>
+        <div class="acciones"><Boton variante="secundario" data-cerrar-sesion>Cerrar sesión</Boton></div>
+      </div>
+    </Panel>
+  </template>
+
+  <template data-estado="no-autenticado">
+    <Panel titulo="Estado de la solicitud">
+      <Aviso variante="aviso" titulo="Tu sesión no es válida" texto="Inicia sesión para ver tu solicitud." accion={{ etiqueta: 'Ir al acceso interno', href: '/acceso/interno' }} />
+    </Panel>
+  </template>
+
+  <template data-estado="error">
+    <Panel titulo="Estado de la solicitud">
+      <Aviso variante="error" titulo=" " texto=" ">
+        <div class="reintentar"><Boton variante="secundario" data-reintentar>Reintentar</Boton></div>
+      </Aviso>
+    </Panel>
+  </template>
+
+  <template data-plantilla-etiqueta="pendiente"><EtiquetaTecnica variante="aviso" texto="Pendiente" senal /></template>
+  <template data-plantilla-etiqueta="rechazada"><EtiquetaTecnica variante="alerta" texto="Rechazada" senal /></template>
+
+  <PlantillasFormulario />
+
+  <noscript>
+    <style is:inline>bugalu-solicitud [data-salida] { display: none; }</style>
+    <Panel titulo="Estado de la solicitud">
+      <Aviso variante="informacion" titulo="El acceso necesita JavaScript" texto="Actívalo en tu navegador y recarga la página." />
+    </Panel>
+  </noscript>
+</bugalu-solicitud>
+
+<script>
+  import { obtenerMiSolicitud, enviarSolicitud } from '../servicios/solicitudes.js';
+  import { cerrarSesion } from '../servicios/sesion.js';
+  import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, llenarAviso, mostrarAvisoDeUrl, formatearFecha } from '../servicios/formulario.js';
+
+  const SOLICITUD = '/acceso/interno/solicitud';
+  const siguiente: Record<string, string> = {
+    pendiente: 'El Administrador aún no revisa tu solicitud. Cuando la apruebe, entrarás al panel con tu correo y contraseña.',
+    rechazada: 'Si algo cambió, puedes enviar otra solicitud.',
+  };
+
+  class BugaluSolicitud extends HTMLElement {
+    connectedCallback() {
+      mostrarAvisoDeUrl(this, ['solicitud-enviada']);
+      this.addEventListener('click', (e) => {
+        const destino = e.target as Element;
+        if (destino.closest('[data-reintentar]')) this.cargar(true);
+        if (destino.closest('[data-comprobar]')) this.cargar(true);
+        if (destino.closest('[data-cerrar-sesion]')) this.salir();
+      });
+      this.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.enviar(e.target as HTMLFormElement);
+      });
+      this.cargar();
+    }
+
+    mostrar(estado: string) {
+      const plantilla = this.querySelector<HTMLTemplateElement>(`template[data-estado="${estado}"]`)!;
+      this.querySelector('[data-salida]')!.replaceChildren(plantilla.content.cloneNode(true));
+    }
+
+    // Foco al <h1> de la pantalla (tabindex -1) para no caer en <body> al sustituirse el contenido.
+    enfocar() {
+      const titulo = document.querySelector<HTMLElement>('h1')!;
+      titulo.tabIndex = -1;
+      titulo.focus();
+    }
+
+    async salir() {
+      await cerrarSesion();
+      location.assign('/acceso/interno?aviso=sesion-cerrada');
+    }
+
+    // La región viva estable anuncia el estado una sola vez: el aviso clonado pierde su rol vivo.
+    async cargar(reintento = false) {
+      const anuncio = this.querySelector('[data-anuncio]')!;
+      anuncio.textContent = '';
+      limpiarAvisosDeEstado(this);
+      this.mostrar('cargando');
+      const texto = await this.resolver();
+      this.querySelectorAll('[data-salida] [role]').forEach((e) => e.removeAttribute('role'));
+      anuncio.textContent = texto ?? this.querySelector('[data-salida] .aviso')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+      if (reintento) this.enfocar();
+    }
+
+    // Devuelve el texto del anuncio (o null si lo da el aviso del estado).
+    async resolver(): Promise<string | null> {
+      // ?nueva=1: el formulario corto directamente, sin pedir la solicitud.
+      if (new URLSearchParams(location.search).has('nueva')) return this.formulario();
+      try {
+        const s = await obtenerMiSolicitud();
+        if (s.estado === 'aprobada') {
+          location.assign('/app/');
+          return 'Solicitud aprobada';
+        }
+        this.mostrar('datos');
+        const campos: Record<string, string | null> = { especialidad: s.especialidad, mensaje: s.mensaje, creada_en: s.creada_en && formatearFecha(s.creada_en), revisada_en: s.revisada_en && formatearFecha(s.revisada_en), motivo: s.motivo };
+        for (const [campo, valor] of Object.entries(campos)) {
+          const dd = this.querySelector(`[data-campo="${campo}"]`)!;
+          if (valor) dd.textContent = valor;
+          else dd.closest('[data-fila]')?.remove();
+        }
+        const rechazada = s.estado === 'rechazada';
+        this.querySelector('[data-etiqueta]')!.replaceChildren(this.querySelector<HTMLTemplateElement>(`[data-plantilla-etiqueta="${s.estado}"]`)!.content.cloneNode(true));
+        this.querySelector('[data-siguiente]')!.textContent = siguiente[s.estado];
+        this.querySelector(rechazada ? '[data-comprobar]' : '[data-nueva]')!.remove();
+        return `Solicitud ${rechazada ? 'rechazada' : 'pendiente'}`;
+      } catch (error: any) {
+        if (error.estado === 404) return this.formulario();
+        if (error.estado === 401) {
+          this.mostrar('no-autenticado');
+          llenarAviso(this.querySelector('[data-salida] .aviso')!, 'Tu sesión no es válida', 'Inicia sesión para ver tu solicitud.');
+          return null;
+        }
+        this.mostrar('error');
+        const [titulo, texto] =
+          error.estado === 403 ? ['Sin permiso', 'No tienes permiso para ver esta solicitud.']
+          : error.estado >= 500 ? ['El servicio de acceso no responde', 'Inténtalo de nuevo en unos minutos.']
+          : error.estado === 0 ? ['No hay conexión con el servidor', 'Revisa tu red e inténtalo de nuevo.']
+          : ['No pudimos cargar tu solicitud', 'Algo salió mal. Inténtalo de nuevo.'];
+        llenarAviso(this.querySelector('[data-salida] .aviso')!, titulo, texto);
+        return null;
+      }
+    }
+
+    formulario() {
+      this.mostrar('formulario');
+      if (new URLSearchParams(location.search).has('nueva')) this.querySelector('[data-intro]')!.remove();
+      return 'Puedes enviar tu solicitud';
+    }
+
+    // --- Formulario corto: especialidad y mensaje ---
+
+    async enviar(form: HTMLFormElement) {
+      const boton = form.querySelector<HTMLButtonElement>('[data-principal]')!;
+      if (boton.disabled) return;
+      limpiarAvisos(this);
+      const especialidad = form.querySelector<HTMLInputElement>('[name="especialidad"]')!;
+      quitarError(especialidad);
+      if (!especialidad.value.trim()) return this.errorEspecialidad(especialidad);
+      const accion = boton.textContent;
+      boton.disabled = true;
+      boton.setAttribute('aria-busy', 'true');
+      boton.textContent = 'Enviando solicitud…';
+      try {
+        await enviarSolicitud({ especialidad: especialidad.value.trim(), mensaje: form.querySelector<HTMLTextAreaElement>('[name="mensaje"]')!.value.trim() });
+        return location.assign(`${SOLICITUD}?aviso=solicitud-enviada`);
+      } catch (error: any) {
+        if (error.estado === 409) return location.assign(SOLICITUD);
+        if (error.estado === 401) {
+          this.mostrar('no-autenticado');
+          return;
+        }
+        boton.disabled = false;
+        boton.removeAttribute('aria-busy');
+        boton.textContent = accion;
+        if (error.estado === 422) return this.errorEspecialidad(especialidad);
+        const [titulo, texto] = error.estado >= 500 ? ['El servicio de acceso no responde', 'Inténtalo de nuevo en unos minutos.'] : error.estado === 0 ? ['Sin conexión', 'Revisa tu red y vuelve a intentarlo.'] : ['Algo salió mal', 'Inténtalo de nuevo.'];
+        enfocarAviso(mostrarAviso(this, 'error', titulo, texto));
+      }
+    }
+
+    errorEspecialidad(entrada: HTMLInputElement) {
+      ponerError(this, entrada, 'Escribe tu especialidad, por ejemplo Ingeniería de mezcla.');
+      entrada.focus();
+    }
+  }
+
+  // El aviso de ?aviso= y los de envío viven arriba; al recargar el estado se descartan los de envío.
+  function limpiarAvisosDeEstado(isla: HTMLElement) {
+    isla.querySelectorAll('[data-avisos] .aviso-error').forEach((a) => a.remove());
+  }
+
+  if (!customElements.get('bugalu-solicitud')) customElements.define('bugalu-solicitud', BugaluSolicitud);
+</script>
+
+<style>
+  .solicitud {
+    display: block;
+    max-inline-size: var(--medida-linea-lectura);
+  }
+  .solicitud-cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    align-items: flex-start;
+  }
+  .solicitud-formulario {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+    inline-size: 100%;
+  }
+  .solicitud-formulario :global(.boton-grande) {
+    inline-size: 100%;
+  }
+  .acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-3);
+  }
+  .datos {
+    display: grid;
+    gap: var(--espacio-4);
+    margin: 0;
+  }
+  .datos dt {
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .datos dd {
+    margin: 0;
+    color: var(--color-texto-principal);
+    font-size: var(--fuente-tamano-lectura);
+    overflow-wrap: anywhere;
+  }
+  .reintentar {
+    margin-block-start: var(--espacio-2);
+  }
+  /* Avisos que crean los formularios en el navegador. */
+  .solicitud :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+</style>

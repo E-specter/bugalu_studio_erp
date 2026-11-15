@@ -1,0 +1,186 @@
+---
+// Estructura Acceso (estructura-app.md): marca, visual y formulario; en móvil solo marca compacta + formulario.
+import LayoutBase from './LayoutBase.astro';
+import LogoApilado from '../assets/logo-apilado.svg';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import MarcoRegistro from '../componentes/MarcoRegistro.astro';
+
+interface Marca {
+  codigo: string;
+  texto: string;
+  etiquetas: string[];
+}
+interface Pie {
+  texto: string;
+  enlace?: { texto: string; href: string };
+}
+interface Props {
+  titulo: string; // <title> y <h1>
+  antetitulo: string;
+  marca: Marca;
+  pie: Pie;
+  visual: { titulo: string; nota: string };
+  // Marca y pie del acceso interno cuando la URL trae origen=interno (recuperar contraseña); la isla los alterna.
+  alterna?: { marca: Marca; pie: Pie };
+}
+const { titulo, antetitulo, marca, pie, visual, alterna } = Astro.props;
+const variantes = [{ id: 'artistas', marca, pie, oculta: false }, ...(alterna ? [{ id: 'interno', ...alterna, oculta: true }] : [])];
+---
+
+<LayoutBase {titulo}>
+  <div class="acceso">
+    <header class="acceso-marca">
+      <a href="/" class="acceso-logo" aria-label="Bugalú Studio, inicio"><LogoApilado aria-hidden="true" /></a>
+      {variantes.map((v) => (
+        <div class="acceso-marca-texto" data-marca={v.id} hidden={v.oculta}>
+          <p class="acceso-codigo">{v.marca.codigo}</p>
+          <p class="acceso-descripcion">{v.marca.texto}</p>
+          <div class="acceso-etiquetas">
+            {v.marca.etiquetas.map((e) => <EtiquetaTecnica texto={e} />)}
+          </div>
+        </div>
+      ))}
+    </header>
+
+    <aside class="acceso-visual">
+      <MarcoRegistro>
+        <p class="acceso-visual-titulo">{visual.titulo}</p>
+        <p class="acceso-visual-nota">{visual.nota}</p>
+      </MarcoRegistro>
+    </aside>
+
+    <div class="acceso-columna">
+      <main id="contenido" tabindex="-1" class="acceso-formulario">
+        <EtiquetaTecnica variante="invertida" texto={antetitulo} />
+        <h1>{titulo}</h1>
+        <slot />
+      </main>
+      <footer class="acceso-pie">
+        {variantes.map((v) => (
+          <p data-marca={v.id} hidden={v.oculta}>
+            <span>{v.pie.texto}</span>
+            {v.pie.enlace && <> · <a href={v.pie.enlace.href}>{v.pie.enlace.texto}</a></>}
+          </p>
+        ))}
+      </footer>
+    </div>
+  </div>
+</LayoutBase>
+
+<style>
+  .acceso {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-block-size: 100vh; /* unidad de viewport, no un valor visual */
+  }
+  .acceso-marca {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    padding: var(--espacio-4);
+  }
+  .acceso-logo {
+    align-self: flex-start;
+    padding: var(--espacio-1-5);
+    color: var(--color-texto-principal);
+  }
+  .acceso-logo :global(svg) {
+    block-size: var(--medida-logo-min);
+    inline-size: auto;
+  }
+  .acceso-marca-texto[hidden],
+  .acceso-pie p[hidden] {
+    display: none;
+  }
+  .acceso-codigo {
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-weight: var(--fuente-peso-medio);
+    font-size: var(--fuente-tamano-base);
+  }
+  /* Móvil: marca compacta (logotipo + título técnico). */
+  .acceso-descripcion,
+  .acceso-etiquetas,
+  .acceso-visual {
+    display: none;
+  }
+
+  .acceso-columna {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--espacio-8);
+    padding: var(--espacio-4);
+  }
+  .acceso-formulario {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--espacio-4);
+    inline-size: 100%;
+    max-inline-size: var(--medida-linea-lectura);
+    margin-inline: auto;
+  }
+  .acceso-formulario > :global(*) {
+    max-inline-size: 100%;
+  }
+  .acceso-pie p {
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .acceso-pie a {
+    display: inline-block;
+    padding-block: var(--espacio-1);
+    color: var(--color-texto-principal);
+  }
+
+  /* Prefijo "//" de la etiqueta de campo: adorno que no se lee (campo.md). */
+  .acceso-formulario :global(.campo-etiqueta)::before {
+    content: '// ' / '';
+  }
+
+  @media (min-width: 64em) { /* punto-quiebre-escritorio */
+    .acceso {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
+    }
+    .acceso-marca {
+      justify-content: space-between;
+      padding: var(--espacio-8);
+      background: var(--color-fondo-superficie);
+    }
+    .acceso-descripcion,
+    .acceso-etiquetas {
+      display: flex;
+    }
+    .acceso-marca-texto {
+      display: flex;
+      flex-direction: column;
+      gap: var(--espacio-4);
+    }
+    .acceso-visual {
+      display: block;
+    }
+    .acceso-columna {
+      padding: var(--espacio-12) var(--espacio-8);
+    }
+    .acceso-formulario {
+      margin-block: auto;
+    }
+  }
+  .acceso-etiquetas {
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+  }
+  .acceso-visual-titulo {
+    color: var(--color-texto-invertido);
+    font-family: var(--fuente-familia-titulo);
+    font-weight: var(--fuente-peso-titulo);
+    font-size: var(--fuente-tamano-titulo-sm);
+    text-transform: uppercase;
+  }
+  .acceso-visual-nota {
+    color: var(--color-texto-invertido);
+  }
+</style>

@@ -1,24 +1,76 @@
 ---
 import Icono from '../componentes/internos/Icono.astro';
+import IndicadorEstado from '../componentes/IndicadorEstado.astro';
+
+interface Props {
+  medidor?: boolean;
+}
+const { medidor = false } = Astro.props;
+const condiciones = [
+  ['longitud', 'Al menos 8 caracteres'],
+  ['minuscula', 'Una minúscula (a-z)'],
+  ['mayuscula', 'Una mayúscula (A-Z)'],
+  ['numero', 'Un número (0-9)'],
+  ['simbolo', 'Un símbolo, como ! ? # $ %'],
+];
 ---
 
-<!-- Sin JS el elemento no se registra: el botón sigue oculto y el campo funciona igual. -->
-<bugalu-contrasena class="contrasena">
-  <slot />
-  <button type="button" class="contrasena-boton" aria-pressed="false" aria-label="Mostrar contraseña" hidden>
-    <span data-icono-mostrar><Icono nombre="eye" /></span>
-    <span data-icono-ocultar hidden><Icono nombre="eye-off" /></span>
-  </button>
+<!-- Sin JS el elemento no se registra: el botón sigue oculto, el campo funciona igual y la lista se ve como requisitos. -->
+<bugalu-contrasena class="contrasena" medidor={medidor ? '' : undefined}>
+  <div class="contrasena-caja">
+    <slot />
+    <button type="button" class="contrasena-boton" aria-pressed="false" aria-label="Mostrar contraseña" hidden>
+      <span data-icono-mostrar><Icono nombre="eye" /></span>
+      <span data-icono-ocultar hidden><Icono nombre="eye-off" /></span>
+    </button>
+  </div>
+  {medidor && (
+    <div class="medidor">
+      <div data-nivel hidden><IndicadorEstado texto="Robustez: sin evaluar" /></div>
+      <ul class="medidor-lista">
+        {condiciones.map(([id, texto]) => (
+          <li data-condicion={id}>
+            <span class="medidor-icono" data-icono></span>
+            <span>{texto}<span class="visualmente-oculto" data-estado></span></span>
+          </li>
+        ))}
+      </ul>
+      <!-- Región viva propia, presente desde la carga: dice solo el nivel, y solo cuando cambia. -->
+      <p class="visualmente-oculto" role="status" data-anuncio></p>
+      <template data-icono-plantilla="pendiente"><Icono nombre="circle" /></template>
+      <template data-icono-plantilla="cumplida"><Icono nombre="check-circle" /></template>
+    </div>
+  )}
 </bugalu-contrasena>
 
 <script>
+  // Mismas reglas que Supabase Auth: la ñ y las vocales con tilde no cuentan como letra.
+  const reglas: [string, RegExp, string][] = [
+    ['longitud', /^[\s\S]{8,}$/, '8 caracteres como mínimo'],
+    ['minuscula', /[a-z]/, 'una minúscula'],
+    ['mayuscula', /[A-Z]/, 'una mayúscula'],
+    ['numero', /[0-9]/, 'un número'],
+    ['simbolo', /[!@#$%^&*()_+\-=[\]{};':"\\|<>?,./`~]/, 'un símbolo'],
+  ];
+  const niveles: Record<string, [string, string]> = {
+    'sin-evaluar': ['sin evaluar', 'neutro'],
+    debil: ['débil', 'problema'],
+    media: ['media', 'pendiente'],
+    fuerte: ['fuerte', 'correcto'],
+  };
+
   class BugaluContrasena extends HTMLElement {
+    entrada!: HTMLInputElement;
+    anunciado = 'sin-evaluar';
+    temporizador = 0;
+
     connectedCallback() {
       const entrada = this.querySelector<HTMLInputElement>('input');
       const boton = this.querySelector<HTMLButtonElement>('.contrasena-boton');
       const mostrar = this.querySelector<HTMLElement>('[data-icono-mostrar]');
       const ocultar = this.querySelector<HTMLElement>('[data-icono-ocultar]');
       if (!entrada || !boton || !mostrar || !ocultar) return;
+      this.entrada = entrada;
       boton.hidden = false;
       boton.disabled = entrada.disabled;
       boton.addEventListener('click', () => {
@@ -28,6 +80,51 @@ import Icono from '../componentes/internos/Icono.astro';
         mostrar.hidden = visible;
         ocultar.hidden = !visible;
       });
+      if (this.hasAttribute('medidor')) this.iniciarMedidor();
+    }
+
+    // Evaluación local: nada se envía. La usa también el formulario para decir qué falta al enviar.
+    evaluar(valor = this.entrada.value) {
+      const cumple = reglas.map(([, regla]) => regla.test(valor));
+      const faltan = reglas.filter((_, i) => !cumple[i]).map(([, , texto]) => texto);
+      const nivel = !valor ? 'sin-evaluar' : faltan.length ? 'debil' : valor.length >= 12 ? 'fuerte' : 'media';
+      return { cumple, faltan, nivel };
+    }
+
+    iniciarMedidor() {
+      this.querySelector<HTMLElement>('[data-nivel]')!.hidden = false;
+      this.actualizar();
+      this.entrada.addEventListener('input', () => {
+        this.actualizar();
+        clearTimeout(this.temporizador);
+        this.temporizador = window.setTimeout(() => this.anunciar(), 1000);
+      });
+      this.entrada.addEventListener('blur', () => {
+        clearTimeout(this.temporizador);
+        this.anunciar();
+      });
+    }
+
+    actualizar() {
+      const { cumple, nivel } = this.evaluar();
+      reglas.forEach(([id], i) => {
+        const fila = this.querySelector(`[data-condicion="${id}"]`)!;
+        const plantilla = this.querySelector<HTMLTemplateElement>(`[data-icono-plantilla="${cumple[i] ? 'cumplida' : 'pendiente'}"]`)!;
+        fila.classList.toggle('medidor-cumplida', cumple[i]);
+        fila.querySelector('[data-icono]')!.replaceChildren(plantilla.content.cloneNode(true));
+        fila.querySelector('[data-estado]')!.textContent = cumple[i] ? ': cumplida' : ': pendiente';
+      });
+      const [texto, tono] = niveles[nivel];
+      const indicador = this.querySelector<HTMLElement>('[data-nivel] .indicador')!;
+      indicador.className = indicador.className.replace(/indicador-(correcto|pendiente|problema|neutro)/, `indicador-${tono}`);
+      this.querySelector('[data-nivel] .indicador-texto')!.textContent = `Robustez: ${texto}`;
+    }
+
+    anunciar() {
+      const { nivel } = this.evaluar();
+      if (nivel === this.anunciado) return;
+      this.anunciado = nivel;
+      this.querySelector('[data-anuncio]')!.textContent = `Robustez ${niveles[nivel][0]}`;
     }
   }
   if (!customElements.get('bugalu-contrasena')) customElements.define('bugalu-contrasena', BugaluContrasena);
@@ -35,8 +132,10 @@ import Icono from '../componentes/internos/Icono.astro';
 
 <style>
   .contrasena {
-    position: relative;
     display: block;
+  }
+  .contrasena-caja {
+    position: relative;
   }
   .contrasena-boton {
     position: absolute;
@@ -62,5 +161,40 @@ import Icono from '../componentes/internos/Icono.astro';
     .contrasena-boton:not(:disabled):hover {
       background: var(--color-fondo-destacado);
     }
+  }
+
+  .medidor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+    margin-block-start: var(--espacio-2);
+  }
+  .medidor-lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .medidor-lista li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--espacio-2);
+    color: var(--color-texto-cuerpo);
+    font-size: var(--fuente-tamano-pequeno);
+    line-height: var(--fuente-interlineado-interfaz);
+  }
+  /* Sin JS no hay iconos: la lista se lee como requisitos. */
+  .medidor-icono:empty {
+    display: none;
+  }
+  .medidor-icono {
+    display: inline-flex;
+    margin-block-start: var(--espacio-1);
+    color: var(--color-texto-secundario);
+  }
+  .medidor-cumplida .medidor-icono {
+    color: var(--color-texto-exito);
   }
 </style>

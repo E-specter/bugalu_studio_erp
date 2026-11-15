@@ -1,0 +1,451 @@
+---
+import Campo from '../componentes/Campo.astro';
+import Boton from '../componentes/Boton.astro';
+import Aviso from '../componentes/Aviso.astro';
+import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.astro';
+
+interface Props {
+  modo: 'iniciar' | 'registrar' | 'interno' | 'solicitar' | 'recuperar' | 'restablecer';
+  texto?: string;
+}
+const { modo, texto } = Astro.props;
+
+// Texto del botón principal, su estado de carga y el enlace al otro modo (pantallas RF-01-acceso*, RF-01-restablecer).
+const modos = {
+  iniciar: { accion: 'Entrar al portal', carga: 'Entrando…', pregunta: '¿Aún no tienes cuenta?', enlace: 'Crear cuenta de artista', href: '/acceso/registro', conVolver: true },
+  registrar: { accion: 'Crear cuenta de artista', carga: 'Creando cuenta…', pregunta: '¿Ya tienes cuenta?', enlace: 'Inicia sesión', href: '/acceso', conVolver: true },
+  interno: { accion: 'Entrar a la sala', carga: 'Entrando…', pregunta: '¿Eres nuevo en el equipo?', enlace: 'Solicitar acceso', href: '/acceso/interno/registro', conVolver: true },
+  solicitar: { accion: 'Enviar solicitud', carga: 'Enviando solicitud…', pregunta: '¿Ya tienes cuenta?', enlace: 'Inicia sesión', href: '/acceso/interno', conVolver: true },
+  recuperar: { accion: 'Enviar enlace', carga: 'Enviando enlace…', enlace: 'Volver a iniciar sesión', href: '/acceso', inicio: true },
+  restablecer: { accion: 'Guardar contraseña', carga: 'Guardando contraseña…', enlace: 'Volver a iniciar sesión', href: '/acceso', inicio: true },
+}[modo];
+// Solo el acceso de artistas ofrece Google, y solo si se construyó con PUBLIC_ACCESO_GOOGLE (CA-04).
+const google = Boolean(import.meta.env.PUBLIC_ACCESO_GOOGLE) && (modo === 'iniciar' || modo === 'registrar');
+const contrasenaNueva = ['registrar', 'solicitar', 'restablecer'].includes(modo);
+const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar la contraseña necesita JavaScript' : 'El acceso necesita JavaScript';
+---
+
+<bugalu-acceso {modo} class="acceso-isla">
+  <div data-avisos></div>
+  {texto && <p class="acceso-texto">{texto}</p>}
+  {modo === 'restablecer' && <div class="comprobando" data-comprobando aria-busy="true"><p>Comprobando el enlace…</p></div>}
+
+  <form novalidate method="post" class="formulario" data-formulario hidden={modo === 'restablecer'}>
+    {(modo === 'registrar' || modo === 'solicitar') && (
+      <Campo nombre="nombre" etiqueta={modo === 'solicitar' ? 'Nombre completo' : 'Nombre'} autocomplete="name" required />
+    )}
+    {(modo === 'registrar' || modo === 'solicitar') && (
+      <Campo nombre="telefono" tipo="tel" etiqueta="Teléfono" ayuda="Solo números; con + y código de país si no es de Perú." autocomplete="tel" required />
+    )}
+    {modo === 'registrar' && (
+      <Campo nombre="nombre_artistico" etiqueta="Nombre artístico o proyecto" ayuda="Tu nombre de artista o el de tu banda." placeholder="p. ej. Los Sónicos" required />
+    )}
+    {modo !== 'restablecer' && <Campo nombre="correo" tipo="email" etiqueta="Correo" autocomplete="email" required />}
+    {modo === 'solicitar' && (
+      <Campo nombre="especialidad" etiqueta="Especialidad" ayuda="Tu área en el estudio; el Administrador la confirma." placeholder="p. ej. Ingeniería de mezcla" required />
+    )}
+    {modo === 'solicitar' && <Campo nombre="mensaje" tipo="area" etiqueta="Mensaje (opcional)" ayuda="Cuéntale quién eres o quién te invitó." />}
+    {modo !== 'recuperar' && (
+      <Campo
+        nombre="contrasena"
+        tipo="password"
+        etiqueta="Contraseña"
+        autocomplete={contrasenaNueva ? 'new-password' : 'current-password'}
+        medidor={contrasenaNueva}
+        ayuda={contrasenaNueva ? 'Mínimo 8 caracteres con minúscula, mayúscula, número y símbolo.' : undefined}
+        required
+      />
+    )}
+    {(modo === 'iniciar' || modo === 'interno') && (
+      <p class="formulario-olvido"><a href={modo === 'interno' ? '/acceso/recuperar?origen=interno' : '/acceso/recuperar'}>¿Olvidaste tu contraseña?</a></p>
+    )}
+
+    <Boton tipo="submit" tamano="grande" data-principal data-carga={modos.carga}>{modos.accion}</Boton>
+
+    {google && (
+      <>
+        <p class="formulario-separador">O</p>
+        <Boton variante="secundario" tamano="grande" data-google>Continuar con Google</Boton>
+      </>
+    )}
+
+    <p class="formulario-alterno">
+      {modos.pregunta && <span>{modos.pregunta} </span>}
+      <a href={modos.href} data-enlace-volver={modos.conVolver ? '' : undefined} data-enlace-inicio={modos.inicio ? '' : undefined}>{modos.enlace}</a>
+    </p>
+  </form>
+
+  <PlantillasFormulario />
+
+  <noscript>
+    <style is:inline>bugalu-acceso [data-formulario], bugalu-acceso [data-comprobando] { display: none !important; }</style>
+    <Aviso variante="informacion" titulo={textoSinJs} texto="Actívalo en tu navegador y recarga la página." />
+  </noscript>
+</bugalu-acceso>
+
+<script>
+  import { iniciarSesion, registrar, iniciarConGoogle, recuperarContrasena, fijarContrasena, esperarRecuperacion, rutaPropia, normalizarTelefono, ErrorAcceso } from '../servicios/sesion.js';
+  import { obtenerPerfil } from '../servicios/api.js';
+  import { enviarSolicitud } from '../servicios/solicitudes.js';
+  import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, mostrarAvisoDeUrl } from '../servicios/formulario.js';
+
+  const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const unir = (partes: string[]) => (partes.length > 1 ? `${partes.slice(0, -1).join(', ')} y ${partes.at(-1)}` : partes[0]);
+
+  // Validadores por nombre de campo: devuelven el mensaje de error o null.
+  const validadores: Record<string, (valor: string, entrada: HTMLInputElement) => string | null> = {
+    nombre: (v) => (v.trim() ? null : 'Escribe tu nombre.'),
+    telefono: (v) => (normalizarTelefono(v) ? null : 'Escribe entre 9 y 15 dígitos; puedes empezar con +.'),
+    nombre_artistico: (v) => (v.trim() ? null : 'Escribe tu nombre artístico o el de tu proyecto.'),
+    correo: (v) => (!v.trim() ? 'Escribe tu correo.' : CORREO.test(v.trim()) ? null : 'Escribe un correo válido, como nombre@dominio.com.'),
+    especialidad: (v) => (v.trim() ? null : 'Escribe tu especialidad, por ejemplo Ingeniería de mezcla.'),
+    contrasena: (v, entrada) => {
+      if (!v) return 'Escribe una contraseña.';
+      const medidor = entrada.closest<any>('bugalu-contrasena');
+      const { faltan } = medidor?.hasAttribute('medidor') ? medidor.evaluar() : { faltan: [] };
+      return faltan.length ? `Falta ${unir(faltan)}.` : null;
+    },
+  };
+
+  class BugaluAcceso extends HTMLElement {
+    modo = '';
+    volver: string | null = null;
+    origen: string | null = null;
+    cuentaCreada = false;
+    ocupado = false;
+    navegando = false;
+    form!: HTMLFormElement;
+
+    connectedCallback() {
+      this.modo = this.getAttribute('modo')!;
+      this.form = this.querySelector('form')!;
+      const principal = this.querySelector<HTMLButtonElement>('[data-principal]')!;
+      principal.dataset.accion = principal.textContent!.trim();
+      const params = new URLSearchParams(location.search);
+      this.volver = rutaPropia(params.get('volver'));
+      this.origen = params.get('origen') === 'interno' ? 'interno' : null;
+
+      // Antes que cualquier otro uso del cliente de Supabase: el evento de recuperación se emite al inicializarlo.
+      if (this.modo === 'restablecer') this.comprobarEnlace();
+      this.ajustarEnlaces();
+
+      if (params.get('error') === 'google') {
+        const url = new URL(location.href);
+        url.searchParams.delete('error');
+        history.replaceState(null, '', url);
+        mostrarAviso(this, 'error', 'No pudimos entrar con Google', 'Inténtalo de nuevo o usa tu correo.');
+      }
+      mostrarAvisoDeUrl(this, ['sesion-cerrada']);
+
+      this.form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.enviar();
+      });
+      this.form.addEventListener('focusout', (e) => this.alSalir(e.target as HTMLInputElement));
+      this.form.addEventListener('input', (e) => {
+        const entrada = e.target as HTMLInputElement;
+        if (entrada.getAttribute('aria-invalid') === 'true') this.validarCampo(entrada);
+      });
+      this.querySelector('[data-google]')?.addEventListener('click', () => this.conGoogle());
+      this.addEventListener('click', (e) => {
+        const destino = e.target as Element;
+        if (destino.closest('[data-reintentar-perfil]')) this.alPerfil();
+        if (destino.closest('[data-reintentar-envio]')) this.enviarLaSolicitud();
+        if (destino.closest('[data-otro-enlace]')) this.pedirOtroEnlace();
+      });
+    }
+
+    // Enlaces que dependen de la URL: volver se conserva al cambiar de modo; origen=interno cambia marca y destino de vuelta.
+    ajustarEnlaces() {
+      if (this.volver) {
+        const enlace = this.querySelector<HTMLAnchorElement>('[data-enlace-volver]');
+        if (enlace) enlace.setAttribute('href', `${enlace.getAttribute('href')}?${new URLSearchParams({ volver: this.volver })}`);
+      }
+      if (this.modo === 'recuperar' || this.modo === 'restablecer') {
+        const interno = this.origen === 'interno';
+        this.querySelector<HTMLAnchorElement>('[data-enlace-inicio]')!.href = interno ? '/acceso/interno' : '/acceso';
+        document.querySelectorAll<HTMLElement>('[data-marca]').forEach((e) => (e.hidden = e.dataset.marca !== (interno ? 'interno' : 'artistas')));
+      }
+    }
+
+    // --- Validación ---
+
+    etiqueta(entrada: HTMLInputElement) {
+      return this.querySelector(`label[for="${entrada.id}"]`)!.textContent!.replace('(obligatorio)', '').trim();
+    }
+
+    validarCampo(entrada: HTMLInputElement) {
+      const validar = validadores[entrada.name];
+      if (!validar || entrada.readOnly) return null;
+      const texto = validar(entrada.value, entrada);
+      if (texto) ponerError(this, entrada, texto);
+      else quitarError(entrada);
+      return texto;
+    }
+
+    // Al salir del campo se valida el formato; la contraseña la guía el medidor y se valida al enviar.
+    alSalir(entrada: HTMLInputElement) {
+      if (entrada.name && entrada.name !== 'contrasena' && !this.ocupado) this.validarCampo(entrada);
+    }
+
+    // Al enviar: todo a la vez, resumen con enlaces y foco al aviso (formularios.md).
+    validarTodo() {
+      const fallos = [...this.form.elements]
+        .filter((e) => (e as HTMLInputElement).name in validadores)
+        .map((e) => e as HTMLInputElement)
+        .filter((entrada) => this.validarCampo(entrada));
+      if (!fallos.length) return true;
+      const aviso = mostrarAviso(this, 'error', `Revisa ${fallos.length} ${fallos.length === 1 ? 'campo' : 'campos'}`, '', {
+        enlaces: fallos.map((f) => ({ texto: this.etiqueta(f), href: `#${f.id}` })),
+      });
+      enfocarAviso(aviso);
+      return false;
+    }
+
+    datos() {
+      return Object.fromEntries(new FormData(this.form).entries()) as Record<string, string>;
+    }
+
+    // --- Envío ---
+
+    cargando(activo: boolean) {
+      this.ocupado = activo;
+      const boton = this.querySelector<HTMLButtonElement>('[data-principal]')!;
+      boton.disabled = activo;
+      if (activo) boton.setAttribute('aria-busy', 'true');
+      else boton.removeAttribute('aria-busy');
+      boton.textContent = activo ? boton.dataset.carga! : boton.dataset.accion!;
+      const google = this.querySelector<HTMLButtonElement>('[data-google]');
+      if (google) google.disabled = activo;
+    }
+
+    ir(destino: string) {
+      this.navegando = true; // el botón sigue en carga hasta que cambie la página
+      location.assign(destino);
+    }
+
+    async enviar() {
+      if (this.ocupado) return;
+      limpiarAvisos(this);
+      if (!this.validarTodo()) return;
+      this.cargando(true);
+      try {
+        await this.accion();
+      } catch (error) {
+        this.fallo(error);
+      } finally {
+        if (!this.navegando) this.cargando(false);
+      }
+    }
+
+    async accion() {
+      const d = this.datos();
+      switch (this.modo) {
+        case 'iniciar':
+          await iniciarSesion({ correo: d.correo.trim(), contrasena: d.contrasena });
+          return this.ir(this.volver ?? '/app/');
+        case 'interno':
+          await iniciarSesion({ correo: d.correo.trim(), contrasena: d.contrasena });
+          return this.alPerfil();
+        case 'registrar': {
+          const { conSesion } = await registrar({ correo: d.correo.trim(), contrasena: d.contrasena, nombre: d.nombre.trim(), telefono: d.telefono, nombreArtistico: d.nombre_artistico.trim() });
+          if (!conSesion) return this.sinSesion();
+          const destino = new URL(this.volver ?? '/app/perfil', location.origin);
+          destino.searchParams.set('aviso', 'cuenta-creada');
+          return this.ir(destino.pathname + destino.search + destino.hash);
+        }
+        case 'solicitar': {
+          if (!this.cuentaCreada) {
+            const { conSesion } = await registrar({ correo: d.correo.trim(), contrasena: d.contrasena, nombre: d.nombre.trim(), telefono: d.telefono });
+            if (!conSesion) return this.sinSesion();
+            this.cuentaCreada = true;
+            // Los datos de la cuenta ya existen: quedan fijos y un reintento solo repite el envío de la solicitud.
+            this.form.querySelectorAll<HTMLInputElement>('[name="nombre"], [name="telefono"], [name="correo"], [name="contrasena"]').forEach((e) => (e.readOnly = true));
+          }
+          return this.enviarLaSolicitud();
+        }
+        case 'recuperar':
+          await recuperarContrasena(d.correo.trim(), this.origen);
+          return this.correoEnviado();
+        case 'restablecer':
+          await fijarContrasena(d.contrasena);
+          return this.ir('/app/perfil?aviso=contrasena-cambiada');
+      }
+    }
+
+    // --- Resultados y errores ---
+
+    sinSesion() {
+      this.form.hidden = true;
+      enfocarAviso(mostrarAviso(this, 'informacion', 'Cuenta creada', 'Confirma tu correo con el enlace que te enviamos y luego inicia sesión.'));
+    }
+
+    correoEnviado() {
+      this.form.hidden = true;
+      enfocarAviso(
+        mostrarAviso(this, 'exito', 'Si hay una cuenta con ese correo, te enviamos un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.', '', {
+          boton: { texto: '¿No llegó? Pedir otro enlace', atributo: 'data-otro-enlace' },
+        }),
+      );
+    }
+
+    pedirOtroEnlace() {
+      limpiarAvisos(this);
+      this.form.hidden = false;
+      this.querySelector<HTMLInputElement>('[name="correo"]')!.focus();
+    }
+
+    async comprobarEnlace() {
+      const valido = await esperarRecuperacion();
+      const bloque = this.querySelector<HTMLElement>('[data-comprobando]')!;
+      bloque.hidden = true;
+      bloque.removeAttribute('aria-busy');
+      if (valido) this.form.hidden = false;
+      else this.enlaceCaducado();
+    }
+
+    enlaceCaducado() {
+      this.form.hidden = true;
+      const aviso = mostrarAviso(this, 'error', 'El enlace caducó o ya se usó', 'Pide otro para crear una contraseña nueva.', {
+        enlace: { texto: 'Pedir otro enlace', href: this.origen ? '/acceso/recuperar?origen=interno' : '/acceso/recuperar' },
+      });
+      // Sin mover el foco al llegar (el aviso ocupa el lugar del formulario y se lee en orden); sí tras un guardado fallido.
+      if (this.ocupado) enfocarAviso(aviso);
+    }
+
+    campoConError(nombre: string, contenido: string | (string | Node)[]) {
+      const entrada = this.form.querySelector<HTMLInputElement>(`[name="${nombre}"]`)!;
+      ponerError(this, entrada, contenido);
+      entrada.focus();
+    }
+
+    fallo(error: unknown) {
+      const e = error instanceof ErrorAcceso ? error : new ErrorAcceso('desconocido');
+      // Conserva el correo y vacía la contraseña; no marca campos para no revelar cuál falló.
+      if (e.tipo === 'credenciales') this.form.querySelector<HTMLInputElement>('[name="contrasena"]')!.value = '';
+      switch (e.tipo) {
+        case 'correo_existente':
+          if (this.modo !== 'solicitar') return this.campoConError('correo', e.message);
+          {
+            const enlace = Object.assign(document.createElement('a'), { href: '/acceso/interno', textContent: 'Inicia sesión aquí' });
+            return this.campoConError('correo', [`${e.titulo}. `, enlace, ' para enviar tu solicitud.']);
+          }
+        case 'contrasena_debil':
+        case 'misma_contrasena':
+          return this.campoConError('contrasena', e.message);
+        case 'telefono':
+          return this.campoConError('telefono', 'Escribe entre 9 y 15 dígitos; puedes empezar con +.');
+        case 'enlace_caducado':
+          return this.enlaceCaducado();
+        default:
+          enfocarAviso(mostrarAviso(this, 'error', e.titulo, e.texto));
+      }
+    }
+
+    // --- Destinos de cada modo ---
+
+    // Acceso interno: el rol decide el destino. Reintentar repite solo GET /perfil.
+    async alPerfil() {
+      limpiarAvisos(this);
+      try {
+        const perfil = await obtenerPerfil();
+        this.ir(perfil.rol === 'cliente' ? '/acceso/interno/solicitud' : (this.volver ?? '/app/'));
+      } catch (error: any) {
+        const aviso =
+          error.estado === 404
+            ? mostrarAviso(this, 'error', 'No encontramos tu perfil', 'Pide al estudio que lo cree.')
+            : mostrarAviso(this, 'error', 'Entraste, pero no pudimos cargar tu perfil', 'Inténtalo de nuevo.', { boton: { texto: 'Reintentar', atributo: 'data-reintentar-perfil' } });
+        enfocarAviso(aviso);
+        this.navegando = false;
+      }
+    }
+
+    // Solicitar acceso: la cuenta ya existe; el envío se puede repetir sin crearla otra vez.
+    async enviarLaSolicitud() {
+      limpiarAvisos(this);
+      const d = this.datos();
+      try {
+        await enviarSolicitud({ especialidad: d.especialidad.trim(), mensaje: d.mensaje.trim() });
+        this.ir('/acceso/interno/solicitud?aviso=solicitud-enviada');
+      } catch (error: any) {
+        if (error.estado === 409) return this.ir('/acceso/interno/solicitud');
+        if (error.estado === 422) return this.campoConError('especialidad', 'Escribe tu especialidad, por ejemplo Ingeniería de mezcla.');
+        enfocarAviso(mostrarAviso(this, 'error', 'Tu cuenta se creó, pero la solicitud no se envió', 'Inténtalo de nuevo.', { boton: { texto: 'Reintentar envío', atributo: 'data-reintentar-envio' } }));
+      }
+    }
+
+    async conGoogle() {
+      limpiarAvisos(this);
+      this.cargando(true);
+      try {
+        await iniciarConGoogle(this.volver ?? '/app/');
+      } catch (error) {
+        this.fallo(error);
+        this.cargando(false);
+      }
+    }
+  }
+  if (!customElements.get('bugalu-acceso')) customElements.define('bugalu-acceso', BugaluAcceso);
+</script>
+
+<style>
+  .acceso-isla {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    inline-size: 100%;
+  }
+  .acceso-texto {
+    color: var(--color-texto-cuerpo);
+  }
+  .formulario {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+  }
+  .formulario[hidden],
+  .comprobando[hidden] {
+    display: none;
+  }
+  .formulario :global(.boton-grande) {
+    inline-size: 100%;
+  }
+  .formulario-olvido {
+    align-self: flex-end;
+    margin-block-start: calc(-1 * var(--espacio-2));
+  }
+  .formulario-olvido a,
+  .formulario-alterno a {
+    display: inline-block;
+    padding-block: var(--espacio-1);
+  }
+  .formulario-separador {
+    text-align: center;
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+  }
+  .formulario-alterno {
+    color: var(--color-texto-cuerpo);
+  }
+  .comprobando {
+    display: grid;
+    place-items: center;
+    min-block-size: calc(3 * var(--medida-control-grande));
+    background: var(--color-fondo-superficie);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    font-family: var(--fuente-familia-tecnica);
+  }
+  /* Enlaces del resumen de errores y de los errores de campo: se crean en el navegador. */
+  .acceso-isla :global(.aviso ul) {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding-inline-start: var(--espacio-5);
+  }
+  .acceso-isla :global(.aviso li a),
+  .acceso-isla :global(.mensaje-error a) {
+    display: inline-block;
+    padding-block: var(--espacio-1);
+  }
+</style>

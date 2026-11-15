@@ -1,0 +1,9 @@
+---
+import Acceso from '../../../layouts/Acceso.astro';
+import Solicitud from '../../../islas/Solicitud.astro';
+import { internoEstado } from '../_copy.js';
+---
+
+<Acceso titulo="Tu solicitud" {...internoEstado}>
+  <Solicitud />
+</Acceso>

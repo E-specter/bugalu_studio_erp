@@ -1,0 +1,9 @@
+---
+import Acceso from '../../layouts/Acceso.astro';
+import AccesoIsla from '../../islas/Acceso.astro';
+import { artistasRegistro } from './_copy.js';
+---
+
+<Acceso titulo="Registro artístico" {...artistasRegistro}>
+  <AccesoIsla modo="registrar" />
+</Acceso>
