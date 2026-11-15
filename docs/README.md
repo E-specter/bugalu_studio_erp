@@ -77,8 +77,8 @@ Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-15 →
 | 2 | Extracción única de Figma al brief técnico y skills `aplicar-brief` / `disenar-pantalla` | disenador-ui | Hecho |
 | 3 | Esqueleto backend (`uv`, FastAPI, `compartido/`, módulo de ejemplo) y Supabase local (CLI + Docker) con migraciones base | dev_backend | Hecho |
 | 4 | Esqueleto frontend (Astro, layouts, `tokens.css` desde el brief, componentes base, cliente API) | dev_frontend | Hecho |
-| 5 | Skills propias del proyecto ([herramientas-mcp](06-operacion/herramientas-mcp.md#skills-propias-del-proyecto)) | leader | Siguiente |
-| 6 | Auditoría del esqueleto contra arquitectura, convenciones y brief | dev_audit (Opus) | — |
+| 5 | Skills propias del proyecto ([herramientas-mcp](06-operacion/herramientas-mcp.md#skills-propias-del-proyecto)) | leader | Hecho |
+| 6 | Auditoría del esqueleto contra arquitectura, convenciones y brief | dev_audit (Opus) | Siguiente |
 | 7 | Implementación por RF en el orden indicado arriba | todos | — |
 
 Planes de implementación: `superpowers/plans/`. Spec original congelada: `superpowers/specs/PROYECTO-v0.2.md`.
