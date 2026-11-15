@@ -1,6 +1,7 @@
 # Claude Code: worktrees y ajustes locales por persona
 .claude/worktrees/
 .claude/settings.local.json
+.claude/cache/
 
 # Secretos
 .env
