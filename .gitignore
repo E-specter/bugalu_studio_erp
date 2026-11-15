@@ -23,6 +23,7 @@ dist/
 
 # Supabase local
 supabase/.temp/
+supabase/.branches/
 
 # SO / editores
 .DS_Store

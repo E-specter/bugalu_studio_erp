@@ -13,7 +13,7 @@ Todas las claves primarias son `uuid` ([ADR-006](../00-proyecto/decisiones/ADR-0
 
 | Tabla | Campos clave | Relaciones |
 |---|---|---|
-| `usuario` | `id` (= `auth.users.id`), `rol` (`cliente`/`personal`/`administrador`), `especialidad` | `id` → `auth.users` ([ADR-005](../00-proyecto/decisiones/ADR-005-supabase-auth.md)); el correo vive en `auth.users` |
+| `usuario` | `id` (uuid, = `auth.users.id`), `nombre`, `rol` (`cliente`/`personal`/`administrador`, por defecto `cliente`), `especialidad`, `creado_en` | `id` → `auth.users` con borrado en cascada ([ADR-005](../00-proyecto/decisiones/ADR-005-supabase-auth.md)); el correo vive en `auth.users`. RLS: cada usuario lee y edita (`nombre`, `especialidad`) solo su perfil, nunca `rol`; el administrador lee todos (`public.es_administrador()`); sin insert ni delete por la API. Un trigger en `auth.users` crea el perfil `cliente` |
 | `sala_tecnica` | `id`, `nombre`, `tarifa_hora_grabacion`, `tarifa_hora_ensayo`, `estado_operativo` | — |
 | `servicio` | `id`, `nombre`, `tipo`, `tarifa` | — (catálogo usado por la simulación, [RN-15](../02-dominio/reglas-negocio.md)) |
 
