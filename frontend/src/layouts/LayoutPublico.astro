@@ -1,0 +1,46 @@
+---
+import LayoutBase from './LayoutBase.astro';
+import LogoApilado from '../assets/logo-apilado.svg';
+
+interface Props {
+  titulo: string;
+}
+const { titulo } = Astro.props;
+---
+
+<LayoutBase titulo={titulo}>
+  <header class="publico-cabecera">
+    <!-- Logo sobre lienzo: navy (currentColor) según logotipo.md regla 3 -->
+    <a href="/" class="publico-logo" aria-label="Bugalú Studio, inicio">
+      <LogoApilado aria-hidden="true" />
+    </a>
+  </header>
+  <main id="contenido" tabindex="-1" class="publico-principal">
+    <slot />
+  </main>
+</LayoutBase>
+
+<style>
+  .publico-cabecera {
+    padding: var(--espacio-4);
+  }
+  .publico-logo {
+    display: inline-block;
+    color: var(--color-marca-navy);
+    padding: var(--espacio-1-5);
+  }
+  .publico-logo :global(svg) {
+    block-size: var(--medida-logo-min);
+    inline-size: auto;
+  }
+  .publico-principal {
+    max-inline-size: var(--medida-contenedor-max);
+    margin-inline: auto;
+    padding: var(--espacio-8) var(--espacio-4);
+  }
+  @media (min-width: 90em) { /* punto-quiebre-amplio */
+    .publico-principal {
+      padding-inline: var(--espacio-12);
+    }
+  }
+</style>

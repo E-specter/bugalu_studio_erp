@@ -1,0 +1,119 @@
+---
+import LayoutBase from './LayoutBase.astro';
+import LogoApilado from '../assets/logo-apilado.svg';
+
+interface Props {
+  titulo: string;
+}
+const { titulo } = Astro.props;
+---
+
+<LayoutBase titulo={titulo}>
+  <div class="app">
+    <!-- Hueco de CabeceraApp (TAREA-402). Logo decorativo junto al nombre del sistema (logotipo.md regla 5). -->
+    <header class="app-cabecera">
+      <a href="/app/" class="app-marca">
+        <span class="app-placa"><LogoApilado aria-hidden="true" /></span>
+        <span class="app-producto">Bugalú Studio</span>
+      </a>
+    </header>
+
+    <!-- Hueco de NavegacionTactil (TAREA-402): < punto-quiebre-escritorio -->
+    <nav class="app-nav-tactil" aria-label="Principal">
+      <a href="/app/" aria-current="page">Inicio</a>
+    </nav>
+
+    <!-- Hueco de NavegacionLateral (TAREA-402): >= punto-quiebre-escritorio -->
+    <nav class="app-nav-lateral" aria-label="Principal">
+      <a href="/app/" aria-current="page">Inicio</a>
+    </nav>
+
+    <main id="contenido" tabindex="-1" class="app-principal">
+      <slot />
+    </main>
+  </div>
+</LayoutBase>
+
+<style>
+  /* Móvil y tableta: cabecera y navegación táctil fijas arriba (sticky). */
+  .app {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+  }
+  .app-cabecera {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    block-size: var(--medida-cabecera-movil);
+    padding-inline: var(--espacio-4);
+    background: var(--color-fondo-superficie);
+    border-block-end: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+  }
+  .app-marca {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-2);
+    color: var(--color-texto-principal);
+    text-decoration: none;
+  }
+  .app-placa {
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    padding: var(--espacio-1-5);
+    color: var(--color-marca-navy);
+  }
+  .app-placa :global(svg) {
+    block-size: var(--medida-logo-min);
+    inline-size: auto;
+  }
+  .app-producto {
+    font-family: var(--fuente-familia-titulo);
+    font-weight: var(--fuente-peso-titulo);
+  }
+  .app-nav-tactil {
+    position: sticky;
+    inset-block-start: var(--medida-cabecera-movil);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    block-size: var(--medida-nav-tactil);
+    padding-inline: var(--espacio-4);
+    background: var(--color-fondo-superficie);
+    border-block-end: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+  }
+  .app-nav-lateral {
+    display: none;
+  }
+  .app-principal {
+    padding: var(--espacio-4);
+  }
+
+  /* Escritorio: cabecera + navegación lateral; la cabecera no es fija. */
+  @media (min-width: 64em) { /* punto-quiebre-escritorio */
+    .app {
+      grid-template-columns: var(--medida-nav-lateral) minmax(0, 1fr);
+      grid-template-rows: auto 1fr;
+    }
+    .app-cabecera {
+      position: static;
+      grid-column: 1 / -1;
+      block-size: var(--medida-cabecera-escritorio);
+      padding-inline: var(--espacio-8);
+    }
+    .app-nav-tactil {
+      display: none;
+    }
+    .app-nav-lateral {
+      display: block;
+      padding: var(--espacio-4);
+      background: var(--color-fondo-superficie);
+      border-inline-end: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    }
+    .app-principal {
+      padding: var(--espacio-8);
+      max-inline-size: var(--medida-contenedor-max);
+    }
+  }
+</style>

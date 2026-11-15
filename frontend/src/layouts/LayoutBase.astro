@@ -1,0 +1,49 @@
+---
+import '@fontsource/unbounded/900.css';
+import '@fontsource/mona-sans/700.css';
+import '@fontsource/geist/400.css';
+import '@fontsource/geist/600.css';
+import '@fontsource/geist-mono/400.css';
+import '@fontsource/geist-mono/600.css';
+import '../estilos/tokens.css';
+import '../estilos/base.css';
+
+interface Props {
+  titulo: string;
+}
+const { titulo } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{titulo} · Bugalú Studio</title>
+  </head>
+  <body>
+    <a class="saltar" href="#contenido">Saltar al contenido</a>
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  /* Visible solo al recibir foco (estructura-app: enlace en toda estructura). */
+  .saltar {
+    position: fixed;
+    inset-block-start: var(--espacio-2);
+    inset-inline-start: var(--espacio-2);
+    z-index: 100;
+    padding: var(--espacio-2) var(--espacio-4);
+    background: var(--color-fondo-destacado);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-titulo);
+    font-weight: var(--fuente-peso-titulo);
+    text-transform: uppercase;
+    transform: translateY(-200%);
+  }
+  .saltar:focus {
+    transform: none;
+  }
+</style>

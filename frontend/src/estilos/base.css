@@ -1,0 +1,92 @@
+/* Reinicio mínimo y tipografía base. Todo valor sale de tokens.css. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* Raíz sin fijar: respeta el tamaño de letra del usuario (WCAG 1.4.4). */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* WCAG 2.4.11: la zona fija de móvil y tableta no tapa el elemento enfocado. */
+html {
+  scroll-padding-top: var(--medida-zona-fija-movil);
+}
+
+@media (min-width: 64em) { /* punto-quiebre-escritorio: sin zona fija */
+  html {
+    scroll-padding-top: 0;
+  }
+}
+
+body {
+  margin: 0;
+  min-block-size: 100vh;
+  background: var(--color-fondo-lienzo);
+  color: var(--color-texto-cuerpo);
+  font-family: var(--fuente-familia-texto);
+  font-weight: var(--fuente-peso-regular);
+  font-size: var(--fuente-tamano-base);
+  line-height: var(--fuente-interlineado-interfaz);
+}
+
+h1, h2, h3 {
+  margin: 0;
+  color: var(--color-texto-principal);
+  text-transform: uppercase;
+}
+
+h1 {
+  font-family: var(--fuente-familia-display);
+  font-weight: var(--fuente-peso-display);
+  font-size: var(--fuente-tamano-titulo-lg);
+  line-height: var(--fuente-interlineado-titulo);
+}
+
+h2, h3 {
+  font-family: var(--fuente-familia-titulo);
+  font-weight: var(--fuente-peso-titulo);
+  line-height: var(--fuente-interlineado-titulo);
+}
+
+h2 { font-size: var(--fuente-tamano-titulo-md); }
+h3 { font-size: var(--fuente-tamano-titulo-sm); }
+
+p {
+  margin: 0;
+  max-inline-size: var(--medida-linea-lectura);
+  font-size: var(--fuente-tamano-lectura);
+  line-height: var(--fuente-interlineado-lectura);
+}
+
+a {
+  color: var(--color-texto-principal);
+}
+
+code, kbd, samp {
+  font-family: var(--fuente-familia-tecnica);
+}
+
+img, svg {
+  display: block;
+  max-inline-size: 100%;
+}
+
+/* Anillo de foco de las fichas: solo con teclado, nunca se elimina sin sustituto. */
+:focus-visible {
+  outline: var(--borde-grosor-base) solid var(--color-foco-anillo);
+  outline-offset: var(--borde-grosor-base);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -41,7 +41,7 @@ Jerarquía de la guía brutalista (`86:100`, "Jerarquía tipográfica y escala")
 5. **Tamaño mínimo:** `fuente-tamano-micro` (11 px) y solo en mayúsculas técnicas cortas; nunca para frases. Todo texto de lectura ≥ `fuente-tamano-base`.
 6. **Escalado:** tamaños en `rem`; la interfaz debe soportar zoom al 200 % sin pérdida de contenido (WCAG 1.4.4) y espaciado de texto aumentado (1.4.12): sin alturas fijas en contenedores de texto.
 7. **Longitud de línea:** párrafos de lectura con `max-inline-size: var(--medida-linea-lectura)`.
-8. **Carga de fuentes:** autoalojadas en `frontend/public/`, `font-display: swap`, con el respaldo `system-ui` del token para que el cambio no mueva la retícula.
+8. **Carga de fuentes:** autoalojadas con los paquetes `@fontsource` (`unbounded`, `mona-sans`, `geist`, `geist-mono`; empaquetadas en la compilación, sin CDN, decisión del **usuario** 2026-11-15) e importando solo los pesos de [tokens](../tokens.md), `font-display: swap`, con el respaldo `system-ui` del token para que el cambio no mueva la retícula.
 
 ## Por qué
 

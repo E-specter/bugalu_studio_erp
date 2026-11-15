@@ -30,3 +30,9 @@ supabase/.branches/
 Thumbs.db
 .vscode/
 .idea/
+
+# Frontend: pruebas (las capturas se regeneran en cada ejecución de test:e2e)
+frontend/pruebas/capturas/
+frontend/pruebas/resultados/
+frontend/playwright-report/
+frontend/test-results/
