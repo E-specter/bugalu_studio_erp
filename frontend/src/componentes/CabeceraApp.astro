@@ -1,5 +1,6 @@
 ---
 import LogoApilado from '../assets/logo-apilado.svg';
+import LogoIcono from '../assets/logo-icono.svg';
 import Icono from './internos/Icono.astro';
 
 interface Props {
@@ -16,8 +17,9 @@ const conMenu = Boolean(usuario) || Astro.slots.has('menu');
 <header class:list={['cabecera', `cabecera-${variante}`, clase]}>
   <!-- Fila 1: en móvil y tableta es la parte fija (sticky) de la cabecera. -->
   <div class="cabecera-fija">
-    <a class="cabecera-marca" href="/app/">
-      <span class="cabecera-placa"><LogoApilado aria-hidden="true" /></span>
+    <a class="cabecera-marca" href={variante === 'flujo' ? '/' : '/app/'}>
+      <!-- logotipo.md: el icono en móvil (el apilado quedaría bajo medida-logo-min); el apilado desde escritorio. -->
+      <span class="cabecera-placa"><LogoIcono class="logo-movil" aria-hidden="true" /><LogoApilado class="logo-escritorio" aria-hidden="true" /></span>
       <span class="cabecera-nombre">
         <span class="cabecera-producto">{producto}</span>
         {area && <span class="cabecera-area">{area}</span>}
@@ -25,19 +27,22 @@ const conMenu = Boolean(usuario) || Astro.slots.has('menu');
     </a>
     {conMenu && (
       <details class="cabecera-menu">
-        <summary class="cabecera-menu-boton"><Icono nombre="menu" /><span>Menú</span></summary>
+        <summary class="cabecera-menu-boton">
+          <Icono nombre="menu" class:list={[usuario && 'menu-solo-movil']} />
+          <span class:list={[usuario && 'menu-solo-movil']}>Menú</span>
+          {usuario && <span class="menu-solo-escritorio">{usuario}</span>}
+        </summary>
         <div class="cabecera-menu-panel">
-          {usuario && <p class="cabecera-usuario">{usuario}</p>}
+          {usuario && <p class="cabecera-usuario menu-solo-movil">{usuario}</p>}
           <slot name="menu" />
         </div>
       </details>
     )}
   </div>
   <!-- Fila 2 en móvil (se desplaza); a la derecha en escritorio. -->
-  {(conContexto || usuario) && (
-    <div class:list={['cabecera-contexto', !conContexto && 'cabecera-contexto-solo-escritorio']}>
+  {conContexto && (
+    <div class="cabecera-contexto">
       <slot name="contexto" />
-      {usuario && <span class="cabecera-usuario cabecera-usuario-escritorio">{usuario}</span>}
     </div>
   )}
 </header>
@@ -70,8 +75,7 @@ const conMenu = Boolean(usuario) || Astro.slots.has('menu');
     background: var(--color-fondo-superficie);
     border-block-end: var(--borde-grosor-base) solid var(--color-borde-fuerte);
   }
-  .cabecera-contexto-solo-escritorio,
-  .cabecera-usuario-escritorio {
+  :global(.menu-solo-escritorio) {
     display: none;
   }
 
@@ -95,6 +99,9 @@ const conMenu = Boolean(usuario) || Astro.slots.has('menu');
   .cabecera-placa :global(svg) {
     inline-size: 100%;
     block-size: 100%;
+  }
+  .cabecera-placa :global(.logo-escritorio) {
+    display: none;
   }
   .cabecera-nombre {
     min-inline-size: 0;
@@ -155,6 +162,7 @@ const conMenu = Boolean(usuario) || Astro.slots.has('menu');
   }
   .cabecera-menu-panel {
     position: absolute;
+    z-index: 20;
     inset-inline: 0;
     inset-block-start: 100%;
     display: flex;
@@ -187,30 +195,42 @@ const conMenu = Boolean(usuario) || Astro.slots.has('menu');
     .cabecera-flujo {
       padding-inline: var(--espacio-12);
     }
+    /* La marca y el menú pasan a ser elementos de la barra; el menú (perfil) queda a la derecha. */
     .cabecera-fija {
-      position: static;
-      block-size: auto;
-      padding: 0;
-      border: 0;
+      display: contents;
     }
     .cabecera-placa {
       inline-size: var(--medida-placa-marca);
       block-size: var(--medida-placa-marca);
     }
-    .cabecera-menu {
+    .cabecera-placa :global(.logo-movil),
+    :global(.menu-solo-movil) {
       display: none;
     }
-    .cabecera-contexto,
-    .cabecera-contexto-solo-escritorio {
+    .cabecera-placa :global(.logo-escritorio) {
+      display: block;
+    }
+    :global(.menu-solo-escritorio) {
+      display: inline;
+    }
+    .cabecera-contexto {
       display: flex;
       justify-content: flex-end;
+      margin-inline-start: auto;
       gap: var(--espacio-2) var(--espacio-4);
       padding: 0;
       border: 0;
       background: transparent;
     }
-    .cabecera-usuario-escritorio {
-      display: inline;
+    .cabecera-menu {
+      position: relative;
+      order: 1;
+    }
+    .cabecera-menu-panel {
+      inset-inline: auto 0;
+      min-inline-size: max-content;
+      border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+      box-shadow: var(--sombra-plana);
     }
   }
 </style>

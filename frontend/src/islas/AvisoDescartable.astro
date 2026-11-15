@@ -1,0 +1,27 @@
+---
+---
+
+<!-- Sin JS el elemento no se registra: el botón de cerrar sigue `hidden` y el aviso se lee entero (aviso.md). -->
+<bugalu-aviso class="aviso-isla"><slot /></bugalu-aviso>
+
+<script>
+  class BugaluAviso extends HTMLElement {
+    connectedCallback() {
+      const cerrar = this.querySelector<HTMLButtonElement>('[data-cerrar-aviso]');
+      if (!cerrar) return;
+      cerrar.hidden = false;
+      // El aviso no desaparece solo: solo lo cierra el usuario. El foco pasa a main para no perderse en body.
+      cerrar.addEventListener('click', () => {
+        this.remove();
+        document.getElementById('contenido')?.focus();
+      });
+    }
+  }
+  if (!customElements.get('bugalu-aviso')) customElements.define('bugalu-aviso', BugaluAviso);
+</script>
+
+<style>
+  .aviso-isla {
+    display: block;
+  }
+</style>

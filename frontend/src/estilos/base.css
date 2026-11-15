@@ -82,6 +82,11 @@ img, svg {
   outline-offset: var(--borde-grosor-base);
 }
 
+/* Destino de "Saltar al contenido": recibe el foco sin anillo; el anillo vuelve en el primer control (estructura-app). */
+main:focus {
+  outline: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

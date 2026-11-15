@@ -25,7 +25,6 @@ import Icono from '../componentes/internos/Icono.astro';
         const visible = entrada.type === 'password';
         entrada.type = visible ? 'text' : 'password';
         boton.setAttribute('aria-pressed', String(visible));
-        boton.setAttribute('aria-label', visible ? 'Ocultar contraseña' : 'Mostrar contraseña');
         mostrar.hidden = visible;
         ocultar.hidden = !visible;
       });

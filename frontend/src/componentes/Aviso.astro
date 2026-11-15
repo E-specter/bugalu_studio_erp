@@ -1,5 +1,6 @@
 ---
 import Icono from './internos/Icono.astro';
+import AvisoDescartable from '../islas/AvisoDescartable.astro';
 
 interface Props {
   variante?: 'informacion' | 'exito' | 'aviso' | 'error' | 'critico';
@@ -11,9 +12,11 @@ interface Props {
 const { variante = 'informacion', titulo, texto, accion, descartable = false, class: clase } = Astro.props as Props & { class?: string };
 const icono = { informacion: 'info', exito: 'check-circle', aviso: 'clock', error: 'alert-triangle', critico: 'alert-triangle' } as const;
 // Resultado de una accion: status (informacion, exito, aviso) o alert (error, critico), presente en el DOM antes del texto.
+const Envoltorio = descartable ? AvisoDescartable : Fragment;
 const rol = variante === 'error' || variante === 'critico' ? 'alert' : 'status';
 ---
 
+<Envoltorio>
 <div class:list={['aviso', `aviso-${variante}`, clase]} role={rol}>
   <Icono nombre={icono[variante]} />
   <div class="aviso-cuerpo">
@@ -23,19 +26,12 @@ const rol = variante === 'error' || variante === 'critico' ? 'alert' : 'status';
     {accion && <a class="aviso-accion" href={accion.href}>{accion.etiqueta}</a>}
   </div>
   {descartable && (
-    <button type="button" class="aviso-cerrar" aria-label="Cerrar aviso" data-cerrar-aviso>
+    <button type="button" class="aviso-cerrar" aria-label="Cerrar aviso" data-cerrar-aviso hidden>
       <Icono nombre="x" />
     </button>
   )}
 </div>
-
-<script>
-  // El aviso no desaparece solo: solo lo cierra el usuario (aviso.md).
-  document.addEventListener('click', (evento) => {
-    const cerrar = (evento.target as Element).closest('[data-cerrar-aviso]');
-    cerrar?.closest('.aviso')?.remove();
-  });
-</script>
+</Envoltorio>
 
 <style>
   .aviso {
@@ -78,6 +74,9 @@ const rol = variante === 'error' || variante === 'critico' ? 'alert' : 'status';
     margin-block-start: var(--espacio-2);
     color: var(--color-texto-principal);
     font-weight: var(--fuente-peso-medio);
+  }
+  .aviso-cerrar[hidden] {
+    display: none;
   }
   .aviso-cerrar {
     flex: none;

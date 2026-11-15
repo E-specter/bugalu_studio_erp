@@ -24,8 +24,8 @@ const destinos = [
   { etiqueta: 'Inicio', href: '/app/', icono: 'house' as const },
   { etiqueta: 'Versiones', href: '/app/versiones/', icono: 'audio-waveform' as const },
   { etiqueta: 'Agenda', href: '/app/agenda/', icono: 'calendar' as const },
-  { etiqueta: 'Revisiones', href: '/app/revisiones/', icono: 'message-square' as const, contador: 3 },
-  { etiqueta: 'Entregables', href: '/app/entregables/', icono: 'file' as const },
+  { etiqueta: 'Revisión', href: '/app/revisiones/', icono: 'message-square' as const, contador: 3 },
+  { etiqueta: 'Entregas', href: '/app/entregas/', icono: 'file' as const },
 ];
 ---
 
@@ -200,7 +200,7 @@ const destinos = [
       <CabeceraApp variante="estudio" producto="Bugalú Studio" area="Panel interno" usuario="Marta Quispe">
         <EtiquetaTecnica slot="contexto" texto="Sala A" />
         <IndicadorEstado slot="contexto" tono="correcto" texto="Sincronizado" role="status" />
-        <a slot="menu" href="/app/">Mi perfil</a>
+        <a slot="menu" href="/app/perfil">Mi perfil</a>
       </CabeceraApp>
     </div>
     <h3>Portal</h3>

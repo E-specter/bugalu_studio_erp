@@ -1,4 +1,5 @@
 // Falla si un componente, isla, layout o página escribe a mano colores, tamaños o duraciones (aplicar-brief: todo sale de tokens.css).
+// También prohíbe los tokens color-marca-* (solo se definen en tokens.css).
 // Permitido: 0 sin unidad y las consultas de medios en em con comentario al token (tokens.md: los punto-quiebre-* no entran en @media).
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, extname, relative } from 'node:path';
@@ -39,6 +40,9 @@ export function revisar(texto, esAstro) {
   const errores = [];
   for (const [n, linea] of lineasDeEstilo(texto, esAstro)) {
     if (/@media/.test(linea) && /punto-quiebre-/.test(linea)) continue;
+    if (/min-block-size:\s*100vh;\s*\/\*.*viewport/.test(linea)) continue; // el alto de la ventana no es un valor visual
+    // Tokens de rol, nunca color-marca-* (aplicar-brief). Excepción: logotipo.md pide lavanda para el logo sobre navy; la línea lo declara con "logotipo".
+    if (/--color-marca-/.test(linea) && !(/--color-marca-lavanda/.test(linea) && /logotipo/.test(linea))) errores.push(`línea ${n}: token de marca "${/--color-marca-\w+/.exec(linea)[0]}" (usa un token de rol)`);
     for (const [re, tipo] of patrones) {
       const m = re.exec(linea);
       if (m) errores.push(`línea ${n}: ${tipo} "${m[0]}"`);

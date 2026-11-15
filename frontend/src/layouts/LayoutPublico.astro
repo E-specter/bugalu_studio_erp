@@ -10,7 +10,7 @@ const { titulo } = Astro.props;
 
 <LayoutBase titulo={titulo}>
   <header class="publico-cabecera">
-    <!-- Logo sobre lienzo: navy (currentColor) según logotipo.md regla 3 -->
+    <!-- Logo sobre lienzo: navy (currentColor) según logotipo.md regla 3 (token de rol) -->
     <a href="/" class="publico-logo" aria-label="Bugalú Studio, inicio">
       <LogoApilado aria-hidden="true" />
     </a>
@@ -26,7 +26,7 @@ const { titulo } = Astro.props;
   }
   .publico-logo {
     display: inline-block;
-    color: var(--color-marca-navy);
+    color: var(--color-texto-principal);
     padding: var(--espacio-1-5);
   }
   .publico-logo :global(svg) {

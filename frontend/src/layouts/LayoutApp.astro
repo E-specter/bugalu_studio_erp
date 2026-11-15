@@ -15,7 +15,9 @@ const actual = Astro.url.pathname;
 
 <LayoutBase titulo={titulo}>
   <div class="app">
-    <CabeceraApp variante="estudio" producto="Bugalú Studio" area="Panel interno" />
+    <CabeceraApp variante="estudio" producto="Bugalú Studio" area="Panel interno">
+      <a slot="menu" href="/app/perfil">Mi perfil</a>
+    </CabeceraApp>
 
     <!-- < punto-quiebre-escritorio: fija bajo la fila 1 de la cabecera (estructura-app, "Lo fijo") -->
     <div class="app-nav-tactil"><NavegacionTactil {destinos} {actual} /></div>
@@ -50,6 +52,8 @@ const actual = Astro.url.pathname;
   @media (min-width: 64em) { /* punto-quiebre-escritorio */
     .app {
       grid-template-columns: var(--medida-nav-lateral) minmax(0, 1fr);
+      grid-template-rows: auto 1fr;
+      min-block-size: 100vh; /* unidad de viewport, no un valor visual: la regla de la navegación lateral llega al pie */
     }
     .app-nav-tactil {
       display: none;

@@ -170,9 +170,11 @@ test('isla de contraseña: botón accesible con JS y campo funcional sin JS', as
   await expect(boton).toHaveAttribute('aria-pressed', 'false');
   await boton.click();
   await expect(entrada).toHaveAttribute('type', 'text');
-  const ocultar = page.getByRole('button', { name: 'Ocultar contraseña' });
-  await expect(ocultar).toHaveAttribute('aria-pressed', 'true');
-  await ocultar.click();
+  // Nombre fijo: solo cambian aria-pressed y el icono.
+  await expect(boton).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Ocultar contraseña' })).toHaveCount(0);
+  await boton.click();
+  await expect(boton).toHaveAttribute('aria-pressed', 'false');
   await expect(entrada).toHaveAttribute('type', 'password');
 
   const sinJs = await browser.newContext({ javaScriptEnabled: false });
