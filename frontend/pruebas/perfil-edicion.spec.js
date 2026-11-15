@@ -33,7 +33,7 @@ test.describe('edicion (punto 1)', () => {
     await expect(page.locator('[name="nombre_artistico"]')).toHaveValue('Ana Beats');
     const lista = page.locator('dl');
     await expect(lista).toContainText('ana@correo.com');
-    await expect(lista).toContainText('CONFIRMADO');
+    await expect(lista).toContainText('VERIFICADO');
     await expect(lista).toContainText('Cliente');
     await expect(ver(page, 'El rol y la especialidad los asigna el Administrador.')).toBeVisible();
     await expect(page.getByRole('heading', { level: 2 })).toHaveText([/TUS DATOS|Tus datos/, /CUENTA|Cuenta/]);
@@ -151,13 +151,30 @@ test.describe('edicion (punto 1)', () => {
   });
 });
 
+test('encabezado con indice [00] CUENTA y etiqueta separada del correo por espacio-2', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await montar(page);
+  await page.goto('/app/perfil');
+  await expect(page.locator('.encabezado')).toContainText('[00] CUENTA');
+  const medidas = await page.evaluate(() => {
+    const correo = document.querySelector('[data-campo="correo"]').getBoundingClientRect();
+    const etiqueta = document.querySelector('[data-etiqueta] > *').getBoundingClientRect();
+    const sonda = Object.assign(document.createElement('div'), { style: 'position:absolute;inline-size:var(--espacio-2)' });
+    document.body.append(sonda);
+    return { hueco: etiqueta.left - correo.right, espacio: sonda.getBoundingClientRect().width, mismaLinea: Math.abs(etiqueta.top - correo.top) < etiqueta.height };
+  });
+  expect(medidas.hueco).toBeCloseTo(medidas.espacio, 0);
+  expect(medidas.mismaLinea).toBe(true);
+});
+
 test.describe('verificacion del correo (punto 2)', () => {
-  test('sin confirmar: aviso con accion, etiqueta SIN CONFIRMAR y axe', async ({ page }) => {
+  test('sin verificar: aviso con accion, etiqueta SIN VERIFICAR y axe', async ({ page }) => {
     await montar(page, { correo_confirmado: false });
     await page.goto('/app/perfil');
-    await expect(ver(page, 'Confirma tu correo')).toBeVisible();
+    await expect(ver(page, 'Verifica tu correo')).toBeVisible();
+    await expect(ver(page, 'Lo necesitarás antes de registrar tu primer pago. Te enviaremos un enlace de un solo uso.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Verificar mi correo' })).toBeVisible();
-    await expect(page.locator('dl')).toContainText('SIN CONFIRMAR');
+    await expect(page.locator('dl')).toContainText('SIN VERIFICAR');
     await sinViolaciones(page);
   });
 
@@ -165,7 +182,7 @@ test.describe('verificacion del correo (punto 2)', () => {
     await montar(page);
     await page.goto('/app/perfil');
     await expect(page.locator('[name="nombre"]')).toBeVisible();
-    await expect(ver(page, 'Confirma tu correo')).toHaveCount(0);
+    await expect(ver(page, 'Verifica tu correo')).toHaveCount(0);
   });
 
   test('Verificar mi correo pide el enlace con signInWithOtp y redireccion a ?verificar=1', async ({ page }) => {
@@ -174,7 +191,7 @@ test.describe('verificacion del correo (punto 2)', () => {
     const auth = await simularAuth(page, { '/otp': (r) => { redireccion = new URL(r.request().url()).searchParams.get('redirect_to'); return r.fulfill(json(200, {})); } });
     await page.goto('/app/perfil');
     await page.getByRole('button', { name: 'Verificar mi correo' }).click();
-    await expect(ver(page, 'Te enviamos otro correo a ana@correo.com. Abre el enlace para confirmarlo.')).toBeVisible();
+    await expect(ver(page, 'Te enviamos un enlace a ana@correo.com. Ábrelo para verificar tu correo.')).toBeVisible();
     const otp = auth.find((l) => l.ruta === '/otp');
     expect(otp.cuerpo.email).toBe('ana@correo.com');
     expect(otp.cuerpo.create_user).toBe(false);
@@ -201,9 +218,9 @@ test.describe('verificacion del correo (punto 2)', () => {
     const llamadas = await montar(page, { correo_confirmado: false }, { 'POST /perfil/verificar-correo': devolver({ correo_confirmado: true }) });
     await page.goto('/app/perfil?verificar=1');
     await expect(ver(page, 'Correo verificado.').first()).toBeVisible();
-    await expect(page.locator('dl')).toContainText('CONFIRMADO');
-    await expect(page.locator('dl')).not.toContainText('SIN CONFIRMAR');
-    await expect(ver(page, 'Confirma tu correo')).toHaveCount(0);
+    await expect(page.locator('dl')).toContainText('VERIFICADO');
+    await expect(page.locator('dl')).not.toContainText('SIN VERIFICAR');
+    await expect(ver(page, 'Verifica tu correo')).toHaveCount(0);
     expect(llamadas.filter((l) => l.metodo === 'POST')).toHaveLength(1);
     expect(page.url()).not.toContain('verificar');
     await sinViolaciones(page);
@@ -268,10 +285,10 @@ test.describe('navegacion por rol (punto 4)', () => {
     test.describe(nombre, () => {
       test.use({ viewport: { width: ancho, height: alto } });
 
-      test('administrador ve Solicitud y Usuarios con enlaces; el resto, no', async ({ page }) => {
+      test('administrador ve Accesos y Usuarios con enlaces; el resto, no', async ({ page }) => {
         await montar(page, { rol: 'administrador', nombre_artistico: null });
         await page.goto('/app/');
-        const solicitudes = page.getByRole('navigation', { name: 'Principal' }).locator('a:visible', { hasText: 'Solicitud' });
+        const solicitudes = page.getByRole('navigation', { name: 'Principal' }).locator('a:visible', { hasText: 'Accesos' });
         await expect(solicitudes).toHaveAttribute('href', '/app/solicitudes/');
         await expect(page.getByRole('navigation', { name: 'Principal' }).locator('a:visible', { hasText: 'Usuarios' })).toHaveAttribute('href', '/app/usuarios/');
         for (const e of await page.locator('.tactil-etiqueta, .lateral-etiqueta').allTextContents()) expect(e.trim().length, e).toBeLessThanOrEqual(9);
@@ -286,7 +303,7 @@ test.describe('navegacion por rol (punto 4)', () => {
           await expect(page.locator('[name="nombre"]')).toBeVisible();
           const visibles = (await destinosVisibles(page)).join(' ');
           expect(visibles).toContain('Inicio');
-          expect(visibles).not.toContain('Solicitud');
+          expect(visibles).not.toContain('Accesos');
           expect(visibles).not.toContain('Usuarios');
         });
       }
@@ -320,7 +337,7 @@ test.describe('capturas y sin JS (punto 5)', () => {
       await page.setViewportSize({ width: ancho, height: alto });
       await montar(page, { correo_confirmado: false });
       await page.goto('/app/perfil?aviso=cuenta-creada');
-      await expect(ver(page, 'Confirma tu correo')).toBeVisible();
+      await expect(ver(page, 'Verifica tu correo')).toBeVisible();
       await sinViolaciones(page);
       await page.screenshot({ path: `pruebas/capturas/perfil-edicion-${nombre}.png`, fullPage: true });
       await page.locator('[name="nombre"]').fill('');

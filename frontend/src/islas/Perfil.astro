@@ -33,7 +33,7 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
       </Panel>
       <Panel codigo="A2" titulo="Cuenta" variante="lateral">
         <dl class="datos">
-          <div><dt>Correo</dt><dd><span data-campo="correo"></span> <span data-etiqueta></span></dd></div>
+          <div><dt>Correo</dt><dd class="perfil-correo"><span data-campo="correo"></span><span data-etiqueta></span></dd></div>
           <div><dt>Rol</dt><dd data-campo="rol"></dd></div>
           <div data-fila="especialidad"><dt>Especialidad</dt><dd data-campo="especialidad"></dd></div>
         </dl>
@@ -43,12 +43,12 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
   </template>
 
   <template data-estado="confirmacion">
-    <Aviso variante="aviso" titulo="Confirma tu correo" texto="Lo necesitarás antes de registrar tu primer pago. Revisa tu bandeja o pide otro correo.">
+    <Aviso variante="aviso" titulo="Verifica tu correo" texto="Lo necesitarás antes de registrar tu primer pago. Te enviaremos un enlace de un solo uso.">
       <div class="reintentar"><Boton variante="secundario" data-verificar>Verificar mi correo</Boton></div>
     </Aviso>
   </template>
-  <template data-plantilla-etiqueta="confirmado"><EtiquetaTecnica variante="exito" texto="CONFIRMADO" senal /></template>
-  <template data-plantilla-etiqueta="sin-confirmar"><EtiquetaTecnica variante="aviso" texto="SIN CONFIRMAR" senal /></template>
+  <template data-plantilla-etiqueta="confirmado"><EtiquetaTecnica variante="exito" texto="VERIFICADO" senal /></template>
+  <template data-plantilla-etiqueta="sin-confirmar"><EtiquetaTecnica variante="aviso" texto="SIN VERIFICAR" senal /></template>
   <!-- Sesión caducada al guardar: lo clona mostrarAviso (servicios/formulario.js) con la clave "sesion". -->
   <template data-plantilla="aviso-sesion"><Aviso variante="aviso" titulo=" " texto=" " accion={{ etiqueta: 'Ir al acceso', href: '/acceso?volver=%2Fapp%2Fperfil' }} /></template>
   <PlantillasFormulario />
@@ -211,7 +211,7 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
       let texto: string;
       try {
         await pedirEnlaceVerificacion(this.perfil.correo);
-        texto = `Te enviamos otro correo a ${this.perfil.correo}. Abre el enlace para confirmarlo.`;
+        texto = `Te enviamos un enlace a ${this.perfil.correo}. Ábrelo para verificar tu correo.`;
       } catch (error: any) {
         texto = error.tipo === 'limite' ? 'Ya te enviamos uno hace poco. Espera unos minutos antes de pedir otro.' : 'No pudimos enviar el correo. Inténtalo de nuevo en unos minutos.';
       }
@@ -312,6 +312,13 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
   }
   .reintentar {
     margin-block-start: var(--espacio-2);
+  }
+  /* Correo y su etiqueta: espacio-2 entre ambos; si no caben, la etiqueta pasa a la línea siguiente. */
+  .perfil-correo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-2);
   }
   .perfil [data-avisos]:not(:empty),
   .perfil :global([data-confirmacion]:not(:empty)) {

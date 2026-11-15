@@ -8,14 +8,15 @@ interface Props {
   destinos: { etiqueta: string; href: string; icono: keyof typeof iconos; contador?: number; solo?: string }[];
   actual?: string;
   etiqueta?: string;
+  neutro?: boolean; // rol aún sin cargar: título de sección vacío y oculto (el layout lo muestra al conocer el rol)
 }
-const { variante = 'estudio', destinos, actual, etiqueta = 'Principal', class: clase } = Astro.props as Props & { class?: string };
+const { variante = 'estudio', destinos, actual, etiqueta = 'Principal', neutro = false, class: clase } = Astro.props as Props & { class?: string };
 const seccion = { estudio: 'Estudio', portal: 'Portal' }[variante];
 ---
 
 <div class:list={['lateral', clase]}>
   <nav aria-label={etiqueta}>
-    <p class="lateral-seccion" data-seccion>{seccion}</p>
+    <p class="lateral-seccion" data-seccion data-neutro={neutro ? '' : undefined}>{neutro ? '' : seccion}</p>
     <ul class="lateral-lista">
       {destinos.map((destino) => (
         <li hidden={destino.solo ? true : undefined} data-solo={destino.solo}>
@@ -55,6 +56,11 @@ const seccion = { estudio: 'Estudio', portal: 'Portal' }[variante];
     font-family: var(--fuente-familia-tecnica);
     font-size: var(--fuente-tamano-micro);
     text-transform: uppercase;
+  }
+  /* Estado neutro: la línea queda reservada (sin salto de maquetación) pero vacía y oculta. */
+  .lateral-seccion[data-neutro] {
+    visibility: hidden;
+    min-block-size: 1lh;
   }
   .lateral-lista {
     display: flex;

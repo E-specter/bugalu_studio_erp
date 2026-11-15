@@ -71,6 +71,7 @@ const variantes = [{ id: 'artistas', marca, pie, oculta: false }, ...(alterna ? 
   .acceso {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr; /* móvil: el alto sobrante va a la columna del formulario, no entre marca y formulario */
     min-block-size: 100vh; /* unidad de viewport, no un valor visual */
   }
   .acceso-marca {
@@ -144,20 +145,31 @@ const variantes = [{ id: 'artistas', marca, pie, oculta: false }, ...(alterna ? 
   @media (min-width: 64em) { /* punto-quiebre-escritorio */
     .acceso {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
+      grid-template-rows: auto;
     }
     .acceso-marca {
-      justify-content: space-between;
+      gap: var(--espacio-6);
       padding: var(--espacio-8);
       background: var(--color-fondo-superficie);
+    }
+    .acceso-logo :global(svg) {
+      block-size: var(--medida-logo-acceso);
     }
     .acceso-descripcion,
     .acceso-etiquetas {
       display: flex;
     }
+    /* Logotipo, título y texto juntos arriba; las etiquetas, al pie sobre una regla. */
     .acceso-marca-texto {
       display: flex;
+      flex: 1;
       flex-direction: column;
       gap: var(--espacio-4);
+    }
+    .acceso-etiquetas {
+      margin-block-start: auto;
+      padding-block-start: var(--espacio-4);
+      border-block-start: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
     }
     .acceso-visual {
       display: block;

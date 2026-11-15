@@ -83,7 +83,7 @@ test('a. registro de cliente: entra y el perfil muestra sus datos sin verificar'
   await artista.waitForURL('**/app/perfil?aviso=cuenta-creada');
   await expect(artista.locator('[name="nombre"]')).toHaveValue(cliente.nombre);
   await expect(artista.locator('dl')).toContainText(cliente.correo);
-  await expect(artista.locator('dl')).toContainText('SIN CONFIRMAR');
+  await expect(artista.locator('dl')).toContainText('SIN VERIFICAR');
   await captura(artista, 'a-perfil-sin-verificar');
 });
 
@@ -91,8 +91,8 @@ test('b. verificar el correo con el enlace de Mailpit', async () => {
   await artista.getByRole('button', { name: 'Verificar mi correo' }).click();
   const enlace = await enlaceDelCorreo(cliente.correo);
   await artista.goto(enlace);
-  await expect(artista.locator('dl')).toContainText('CONFIRMADO');
-  await expect(artista.locator('dl')).not.toContainText('SIN CONFIRMAR');
+  await expect(artista.locator('dl')).toContainText('VERIFICADO');
+  await expect(artista.locator('dl')).not.toContainText('SIN VERIFICAR');
   await captura(artista, 'b-perfil-verificado');
 });
 
@@ -137,7 +137,7 @@ test('e. el Administrador aprueba la solicitud como personal con especialidad', 
   await p.evaluate(() => localStorage.clear());
   await entrar(p, '/acceso/interno', admin, 'Entrar a la sala');
   await p.waitForURL('**/app/');
-  await expect(nav(p).filter({ hasText: 'Solicitud' })).toBeVisible();
+  await expect(nav(p).filter({ hasText: 'Accesos' })).toBeVisible();
   await expect(nav(p).filter({ hasText: 'Usuarios' })).toBeVisible();
   await captura(p, 'e-panel-administrador');
   await p.goto('/app/solicitudes/');
@@ -157,7 +157,7 @@ test('f. la persona aprobada entra y ve Estudio sin destinos del Administrador',
   await expect(interna.locator('[data-seccion]:visible').first()).toHaveText('Estudio');
   await expect(nav(interna).filter({ hasText: 'Inicio' })).toBeVisible();
   await expect(nav(interna).filter({ hasText: 'Usuarios' })).toHaveCount(0);
-  await expect(nav(interna).filter({ hasText: 'Solicitud' })).toHaveCount(0);
+  await expect(nav(interna).filter({ hasText: 'Accesos' })).toHaveCount(0);
   await captura(interna, 'f-estudio-personal');
 });
 

@@ -8,8 +8,9 @@ interface Props {
   producto: string;
   area?: string;
   usuario?: string;
+  neutro?: boolean; // rol aún sin cargar: área vacía y oculta (el layout la muestra al conocer el rol)
 }
-const { variante = 'estudio', producto, area, usuario, class: clase } = Astro.props as Props & { class?: string };
+const { variante = 'estudio', producto, area, usuario, neutro = false, class: clase } = Astro.props as Props & { class?: string };
 const conContexto = Astro.slots.has('contexto');
 const conMenu = Boolean(usuario) || Astro.slots.has('menu');
 ---
@@ -22,7 +23,7 @@ const conMenu = Boolean(usuario) || Astro.slots.has('menu');
       <span class="cabecera-placa"><LogoIcono class="logo-movil" aria-hidden="true" /><LogoApilado class="logo-escritorio" aria-hidden="true" /></span>
       <span class="cabecera-nombre">
         <span class="cabecera-producto">{producto}</span>
-        {area && <span class="cabecera-area" data-area>{area}</span>}
+        {area && <span class="cabecera-area" data-area data-neutro={neutro ? '' : undefined}>{neutro ? '' : area}</span>}
       </span>
     </a>
     {conMenu && (
@@ -122,6 +123,11 @@ const conMenu = Boolean(usuario) || Astro.slots.has('menu');
     line-height: var(--fuente-interlineado-interfaz);
     text-transform: uppercase;
     overflow-wrap: anywhere;
+  }
+  /* Estado neutro: la línea queda reservada pero vacía y oculta. */
+  .cabecera-area[data-neutro] {
+    visibility: hidden;
+    min-block-size: 1lh;
   }
 
   .cabecera-menu {

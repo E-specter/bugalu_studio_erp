@@ -27,7 +27,7 @@ const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar l
 
 <bugalu-acceso {modo} class="acceso-isla">
   <div data-avisos></div>
-  {texto && <p class="acceso-texto">{texto}</p>}
+  {texto && <p class="acceso-texto" data-texto>{texto}</p>}
   {modo === 'restablecer' && <div class="comprobando" data-comprobando aria-busy="true"><p>Comprobando el enlace…</p></div>}
 
   <form novalidate method="post" class="formulario" data-formulario hidden={modo === 'restablecer'}>
@@ -306,6 +306,8 @@ const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar l
 
     enlaceCaducado() {
       this.form.hidden = true;
+      // El aviso sustituye también al texto de introducción.
+      this.querySelector<HTMLElement>('[data-texto]')!.hidden = true;
       const aviso = mostrarAviso(this, 'error', 'El enlace caducó o ya se usó', 'Pide otro para crear una contraseña nueva.', {
         enlace: { texto: 'Pedir otro enlace', href: this.origen ? '/acceso/recuperar?origen=interno' : '/acceso/recuperar' },
       });

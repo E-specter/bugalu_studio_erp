@@ -48,9 +48,11 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
         <form novalidate method="post" class="solicitud-formulario" data-formulario>
           <Campo nombre="especialidad" etiqueta="Especialidad" ayuda="Tu área en el estudio; el Administrador la confirma." placeholder="p. ej. Ingeniería de mezcla" required />
           <Campo nombre="mensaje" tipo="area" etiqueta="Mensaje (opcional)" ayuda="Cuéntale quién eres o quién te invitó." />
-          <Boton tipo="submit" tamano="grande" data-principal>Enviar solicitud</Boton>
+          <div class="acciones">
+            <Boton tipo="submit" tamano="grande" data-principal>Enviar solicitud</Boton>
+            <Boton tipo="button" variante="secundario" tamano="grande" data-cerrar-sesion>Cerrar sesión</Boton>
+          </div>
         </form>
-        <div class="acciones"><Boton variante="secundario" data-cerrar-sesion>Cerrar sesión</Boton></div>
       </div>
     </Panel>
   </template>
@@ -232,6 +234,7 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
 <style>
   .solicitud {
     display: block;
+    inline-size: 100%; /* el panel ocupa toda la columna en todos los estados */
     max-inline-size: var(--medida-linea-lectura);
   }
   .solicitud-cuerpo {
@@ -244,9 +247,6 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
     display: flex;
     flex-direction: column;
     gap: var(--espacio-5);
-    inline-size: 100%;
-  }
-  .solicitud-formulario :global(.boton-grande) {
     inline-size: 100%;
   }
   .acciones {

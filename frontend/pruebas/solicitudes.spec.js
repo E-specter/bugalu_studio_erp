@@ -1,6 +1,6 @@
 // RF-01 (CA-08, CA-10, CA-13): bandeja de solicitudes y usuarios del Administrador. La API se simula con page.route.
 import { test, expect } from '@playwright/test';
-import { json, errorApi, perfil, conSesion, silenciarApi, sinViolaciones, vigilarConsola, tamanos } from './ayudas-acceso.js';
+import { API, json, errorApi, perfil, conSesion, silenciarApi, sinViolaciones, vigilarConsola, tamanos } from './ayudas-acceso.js';
 
 const U1 = '11111111-1111-4111-8111-111111111111';
 const U2 = '22222222-2222-4222-8222-222222222222';
@@ -26,6 +26,8 @@ async function simular(page, metodo, camino, resp) {
 test.beforeEach(async ({ page }) => {
   await conSesion(page);
   await silenciarApi(page);
+  // El Administrador: la navegacion de las capturas es la real (Accesos, Usuarios).
+  await page.route(`${API}/perfil`, (r) => r.fulfill(perfil({ rol: 'administrador' })));
 });
 
 const vistas = {
@@ -42,6 +44,9 @@ for (const t of tamanos) {
     await page.goto('/app/solicitudes');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/solicitudes de acceso/i);
     await expect(page.getByText('2 pendientes')).toBeVisible();
+    await expect(page.locator('.encabezado-ruta li')).toHaveText(['Inicio', 'Accesos']);
+    await expect(page.locator('.encabezado')).toContainText('[A1] EQUIPO / ACCESOS');
+    await expect(page.getByRole('navigation', { name: 'Principal' }).locator('a:visible', { hasText: 'Accesos' })).toHaveAttribute('href', '/app/solicitudes/');
     const filas = page.getByRole('row');
     await expect(filas).toHaveCount(3);
     await expect(filas.nth(1)).toContainText('Ana Pérez');

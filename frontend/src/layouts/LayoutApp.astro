@@ -13,7 +13,7 @@ const { titulo } = Astro.props;
 // Etiquetas de 9 caracteres como máximo (navegación táctil).
 const destinos = [
   { etiqueta: 'Inicio', href: '/app/', icono: 'house' as const },
-  { etiqueta: 'Solicitud', href: '/app/solicitudes/', icono: 'user-plus' as const, solo: 'administrador' },
+  { etiqueta: 'Accesos', href: '/app/solicitudes/', icono: 'user-plus' as const, solo: 'administrador' },
   { etiqueta: 'Usuarios', href: '/app/usuarios/', icono: 'users' as const, solo: 'administrador' },
 ];
 // Un destino queda actual también en sus subrutas (Revisar solicitud); gana la coincidencia más larga.
@@ -22,7 +22,7 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
 
 <LayoutBase titulo={titulo}>
   <div class="app">
-    <CabeceraApp variante="estudio" producto="Bugalú Studio" area="Panel interno">
+    <CabeceraApp variante="estudio" producto="Bugalú Studio" area="Panel interno" neutro>
       <a slot="menu" href="/app/perfil">Mi perfil</a>
       <!-- Sin JS no sirve: nace oculto y lo muestra el script. -->
       <div slot="menu"><Boton variante="secundario" data-cerrar-sesion hidden>Cerrar sesión</Boton></div>
@@ -32,7 +32,7 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
     <div class="app-nav-tactil"><NavegacionTactil {destinos} {actual} /></div>
 
     <!-- >= punto-quiebre-escritorio -->
-    <div class="app-nav-lateral"><NavegacionLateral {destinos} {actual} /></div>
+    <div class="app-nav-lateral"><NavegacionLateral {destinos} {actual} neutro /></div>
 
     <main id="contenido" tabindex="-1" class="app-principal">
       <slot />
@@ -50,8 +50,9 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
     rol = perfil.rol;
     document.querySelectorAll<HTMLElement>('[data-solo]').forEach((e) => (e.hidden = e.dataset.solo !== rol));
     const portal = rol === 'cliente';
-    document.querySelectorAll('[data-seccion]').forEach((e) => (e.textContent = portal ? 'Portal' : 'Estudio'));
-    document.querySelectorAll('[data-area]').forEach((e) => (e.textContent = portal ? 'Portal del artista' : 'Panel interno'));
+    // El título de sección y el área nacen neutros (vacíos y ocultos): aparecen solo al conocer el rol.
+    document.querySelectorAll<HTMLElement>('[data-seccion]').forEach((e) => { e.textContent = portal ? 'Portal' : 'Estudio'; e.removeAttribute('data-neutro'); });
+    document.querySelectorAll<HTMLElement>('[data-area]').forEach((e) => { e.textContent = portal ? 'Portal del artista' : 'Panel interno'; e.removeAttribute('data-neutro'); });
   }
 
   document.addEventListener('bugalu:perfil', (e) => aplicar((e as CustomEvent).detail));
