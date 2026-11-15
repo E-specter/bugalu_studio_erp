@@ -108,6 +108,7 @@ Columna **origen**: nodo de Figma del que sale el valor (verificado en TAREA-201
 | `medida-columna-lateral` | `21.5rem` (344 px) | Columna lateral (resumen, panel de acción) | `161:688`, `141:28788` |
 | `medida-placa-marca` | `3.375rem` (54 px) | Placa del logo en la cabecera de escritorio | `161:611` |
 | `medida-logo-min` | `2rem` (32 px) | Alto mínimo del logo apilado | `169:5454` |
+| `medida-logo-acceso` | `5.375rem` (86 px) | Logo apilado de la columna de marca del acceso, en escritorio | `112:289`, `112:388` |
 | `medida-linea-lectura` | `72ch` | Longitud máxima de párrafo | brief: Figma no limita párrafos; 72ch mantiene la línea legible |
 | `medida-control-base` | `2.625rem` (42 px) | Alto de botón y campo en escritorio | `86:161`, `112:365` |
 | `medida-control-tactil` | `2.75rem` (44 px) | Alto mínimo de control en móvil | `169:4267` |

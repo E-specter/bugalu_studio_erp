@@ -51,7 +51,7 @@ En el registro los cinco datos son obligatorios (CA-01).
 
 | Región | Componente (variante) | Contenido |
 |---|---|---|
-| Marca (`<header>`) | Logotipo (enlace a `/`), título técnico, texto y dos [etiquetas](../componentes/etiqueta-tecnica.md) Neutra (decorativas: no son un [indicador](../componentes/indicador-estado.md) de estado del sistema) | Textos de la tabla Copy |
+| Marca (`<header>`) | Logotipo apilado (enlace a `/`, `medida-logo-acceso` en escritorio), título técnico, texto y dos [etiquetas](../componentes/etiqueta-tecnica.md) Neutra (decorativas: no son un [indicador](../componentes/indicador-estado.md) de estado del sistema) | Textos de la tabla Copy. Como en Figma (`112:288`, `112:316`): logotipo, título técnico y texto juntos arriba (`espacio-6` del logo al título); las etiquetas, al pie de la columna sobre una regla `borde-grosor-fino` |
 | Visual (`<aside>`) | [Marco de registro](../componentes/marco-registro.md) Panel | Título y nota de la tabla Copy |
 | Formulario (`<main>`) | [Etiqueta](../componentes/etiqueta-tecnica.md) Invertida (antetítulo), `<h1>`, [aviso](../componentes/aviso.md) de resultado, [campos](../componentes/campo.md), [botón](../componentes/boton.md) Primario grande a ancho completo | Ver orden abajo |
 | Pie | Texto técnico (`fuente-familia-tecnica`, `fuente-tamano-micro`) y enlace | "SALA VIRTUAL BUGALÚ STUDIO © 2026" · "¿Eres del equipo? Acceso interno" ([acceso interno](RF-01-acceso-interno.md)) |
@@ -59,7 +59,7 @@ En el registro los cinco datos son obligatorios (CA-01).
 - **Iniciar:** correo → contraseña (con mostrar) → enlace "¿Olvidaste tu contraseña?" a la derecha → "Entrar al portal" → si hay Google: separador "O" y [botón](../componentes/boton.md) Secundario a ancho completo "Continuar con Google" → enlace a registro.
 - **Registrar:** nombre → teléfono → nombre artístico → correo → contraseña con medidor → "Crear cuenta de artista" → Google (igual) → enlace a iniciar sesión. Una columna ([formularios](../patrones/formularios.md#accesos)).
 
-Adaptabilidad: < `punto-quiebre-escritorio`, marca compacta (logotipo + título técnico) y formulario; la columna visual y el texto de marca no se muestran. Controles ≥ `medida-control-tactil`.
+Adaptabilidad: < `punto-quiebre-escritorio`, marca compacta (logotipo a `medida-logo-min` + título técnico) y formulario; la columna visual y el texto de marca no se muestran. El formulario sigue a la marca compacta sin hueco añadido: el alto sobrante de la ventana va a la columna del formulario, para que el pie quede abajo, nunca entre marca y formulario. Controles ≥ `medida-control-tactil`.
 
 **Decisiones del brief frente a Figma:** sin "Confirmar contraseña" (`112:466`): mostrar + medidor bastan y no se pide dos veces un dato. Sin "Género / disciplina" (`112:457`): el RF no lo pide. Sin casilla de condiciones (`112:472`, ver Pendientes). Sin "Recordar sesión" (`112:373`). Google como botón solo de texto: los iconos son Lucide y no trae logotipos de marcas. Voz en tú: "Recuperar clave" pasa a "¿Olvidaste tu contraseña?".
 

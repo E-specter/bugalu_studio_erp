@@ -42,7 +42,9 @@ Mismas regiones que el [acceso de artistas](RF-01-acceso.md#composición): marca
 
 - **Iniciar:** correo → contraseña → "¿Olvidaste tu contraseña?" (a `/acceso/recuperar?origen=interno`) → "Entrar a la sala" ([botón](../componentes/boton.md) Primario grande) → "¿Eres nuevo en el equipo? Solicitar acceso".
 - **Solicitar acceso:** texto bajo el `<h1>` → nombre → teléfono → correo → especialidad → mensaje → contraseña con medidor → "Enviar solicitud" → "¿Ya tienes cuenta? Inicia sesión".
-- **Estado de la solicitud:** `<h1>`, etiqueta de estado, `<dl>` (especialidad, mensaje, enviada; si rechazada, revisada y motivo), texto de qué sigue, acción principal y "Cerrar sesión" ([botón](../componentes/boton.md) Secundario). Sin solicitud o con `?nueva=1`: formulario corto (especialidad, mensaje) en lugar de la `<dl>`.
+- **Estado de la solicitud:** `<h1>` y, debajo, un [panel](../componentes/panel.md) Base "ESTADO DE LA SOLICITUD" con etiqueta de estado, `<dl>` (especialidad, mensaje, enviada; si rechazada, revisada y motivo), texto de qué sigue, acción principal y "Cerrar sesión" ([botón](../componentes/boton.md) Secundario). Sin solicitud o con `?nueva=1`: formulario corto (especialidad, mensaje) en lugar de la `<dl>`.
+  - El panel ocupa **todo el ancho** de la columna del formulario en todos sus estados (carga, pendiente, rechazada, sin solicitud, error): cambiar de estado no cambia su ancho.
+  - Las dos acciones van siempre igual: en fila, a su ancho natural, la principal primero y "Cerrar sesión" detrás; si no caben, pasan a la línea siguiente. Nunca una a ancho completo y la otra no.
 
 **Decisiones del brief frente a Figma:** "Código de invitación" (`112:274`) se sustituye por la solicitud con aprobación ([ADR-008](../../00-proyecto/decisiones/ADR-008-acceso-y-roles-v1.md)). "Equipo / rol técnico" (`112:265`) es la especialidad; el rol lo asigna el Administrador. Se quitan las afirmaciones que el sistema no cumple: "Bugalú Shield" (`112:191`), "hash criptográfico" (`124:150`) y "registro auditado" (`112:284`). Teléfono obligatorio, como en el registro de artistas.
 

@@ -18,7 +18,7 @@ depende_de: [RF-01, ADR-008, diseno-brief, patron-estructura-app, patron-tablas-
 
 ## Recorrido
 
-1. El Administrador entra por "Solicitudes" (`user-plus`) o "Usuarios" (`users`) de la [navegación](../componentes/navegacion-lateral.md). Esos destinos solo se pintan cuando el perfil cargado es `administrador`; la API es la barrera real (403).
+1. El Administrador entra por "Accesos" (`user-plus`) o "Usuarios" (`users`) de la [navegación](../componentes/navegacion-lateral.md). Esos destinos solo se pintan cuando el perfil cargado es `administrador`; la API es la barrera real (403).
 2. **Bandeja:** ve las pendientes, la más antigua arriba, y abre una con "Revisar".
 3. **Revisar:** aprueba con rol (`personal` o `administrador`) y especialidad, o rechaza con motivo → vuelve a la bandeja con `?aviso=solicitud-aprobada` o `solicitud-rechazada`.
 4. **Usuarios:** filtra por rol, abre una persona con "Cambiar rol", guarda rol y especialidad → vuelve con `?aviso=usuario-actualizado`. Si se quitó a sí mismo el rol de Administrador, va a `/app/`.
@@ -51,7 +51,7 @@ depende_de: [RF-01, ADR-008, diseno-brief, patron-estructura-app, patron-tablas-
 | Usuarios | Controles | [etiquetas](../componentes/etiqueta-tecnica.md) Filtro | Todos · Clientes · Personal · Administradores (enlaces `?rol=`) |
 | Usuarios | Principal | panel `CUENTAS` + tabla Directorio | Persona · Rol · Especialidad · "Cambiar rol" |
 | Usuario | Principal | panel `U1 PERSONA` | `<dl>` de la persona |
-| Usuario | Lateral | panel Lateral `U2 ROL Y ESPECIALIDAD` | Rol (Cliente, Personal del estudio, Administrador) → especialidad → [barra de acciones](../componentes/barra-acciones.md) Formulario "Guardar rol y especialidad" |
+| Usuario | Lateral | panel Lateral `U2 ROL Y ESPECIALIDAD` | Rol (Cliente, Personal del estudio, Administrador) → especialidad → [botón](../componentes/boton.md) Primario "Guardar rol y especialidad" (una sola acción: sin [barra de acciones](../componentes/barra-acciones.md#cuándo-se-usa)) |
 
 Detalle de cada radio (`detalle` de la casilla): Cliente "Solo ve su portal de artista." · Personal "Entra al panel interno." · Administrador "Además, aprueba solicitudes, valida pagos y cambia roles."
 
@@ -89,10 +89,12 @@ Permisos: solo `administrador`. Personal y clientes no ven los destinos; si abre
 
 | Vista | Ruta e índice | Título | Descripción |
 |---|---|---|---|
-| Bandeja | Inicio / Solicitudes · `[A1] EQUIPO / SOLICITUDES` | SOLICITUDES DE ACCESO | Personas que piden entrar al panel del estudio. Revisa cada una y asígnale rol y especialidad. |
-| Revisar | Inicio / Solicitudes / {nombre} | REVISAR SOLICITUD | Decide si {nombre} entra al panel y con qué rol. |
+| Bandeja | Inicio / Accesos · `[A1] EQUIPO / ACCESOS` | SOLICITUDES DE ACCESO | Personas que piden entrar al panel del estudio. Revisa cada una y asígnale rol y especialidad. |
+| Revisar | Inicio / Accesos / {nombre} | REVISAR SOLICITUD | Decide si {nombre} entra al panel y con qué rol. |
 | Usuarios | Inicio / Usuarios · `[A2] EQUIPO / USUARIOS` | USUARIOS | Todas las cuentas del estudio. Cambia el rol o la especialidad de cualquiera. |
 | Usuario | Inicio / Usuarios / {nombre} | CAMBIAR ROL | El rol decide qué ve {nombre} en el sistema. |
+
+Destino de navegación: **ACCESOS** (`user-plus`), no "Solicitudes" (11 caracteres, más que el tope de la [navegación táctil](../componentes/navegacion-tactil.md#anatomía)) ni "Solicitud" (en singular parece una solicitud propia, no la bandeja). La ruta del encabezado usa la misma palabra; el título dice qué se solicita. Decisión de la revisión visual de RF-01.
 
 Etiquetas: ROL · ESPECIALIDAD · MOTIVO DEL RECHAZO. Ayudas: especialidad "Puedes corregirla. Para quien da asesorías, escribe asesoria." (provisional hasta RF-07); motivo "La persona lo verá al entrar. Di qué falta o por qué."; especialidad en U2 "Déjala vacía si es cliente." Acciones de fila con objeto: "Revisar solicitud de {nombre}", "Cambiar rol de {nombre}" (el nombre en texto oculto si no cabe). Columnas: PERSONA · ESPECIALIDAD · ENVIADA · ROL.
 

@@ -35,6 +35,7 @@ Comunes: [catálogo](README.md#estados-comunes). Propios:
 | Hover | Fondo `color-fondo-claro` |
 | Actual | Fondo `color-fondo-destacado`, `borde-grosor-base` `color-borde-fuerte`, etiqueta en `fuente-peso-titulo` |
 | Con pendientes | Contador en [etiqueta](etiqueta-tecnica.md) Alerta |
+| Rol sin cargar | Estado neutro mientras llega el perfil: el título de sección ("ESTUDIO" / "PORTAL") nace vacío con su línea reservada (`visibility: hidden`, sin salto de maquetación) y aparece al conocer el rol; si el perfil no carga, sigue oculto. Los destinos comunes se pintan ya; los que dependen del rol entran **al final** de la lista, sin desplazar los existentes. Nunca se pinta una variante por defecto que luego cambia (un artista no debe leer "ESTUDIO" ni "PANEL INTERNO"). Igual en la [navegación táctil](navegacion-tactil.md) y en el área de la [cabecera](cabecera-app.md) |
 
 ## Tokens
 

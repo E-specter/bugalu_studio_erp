@@ -26,7 +26,7 @@ En las cabeceras de la app el logo apilado va dentro de una **placa** (`161:611`
 
 ## Reglas
 
-1. **Tamaño mínimo:** icono + texto a `medida-logo-min` de alto (el menor observado, placa móvil `169:5454`); por debajo se usa solo el icono, mínimo `medida-icono-md`.
+1. **Tamaño mínimo:** icono + texto a `medida-logo-min` de alto (el menor observado, placa móvil `169:5454`); por debajo se usa solo el icono, mínimo `medida-icono-md`. En la columna de marca del acceso (escritorio) el apilado va a su tamaño de Figma, `medida-logo-acceso` (`112:289`); en móvil, a `medida-logo-min`.
 2. **Área de respeto:** como mínimo `espacio-1-5` a cada lado dentro de la placa, y `espacio-4` fuera de ella respecto de cualquier otro elemento.
 3. **Color y contraste:** un solo archivo por forma; el color lo da `currentColor`, nunca un SVG por color. Contraste mínimo **7:1** (AAA, decisión del **usuario**, 2026-11-15):
 

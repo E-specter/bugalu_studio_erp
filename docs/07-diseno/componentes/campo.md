@@ -36,7 +36,7 @@ Solo en contraseñas **nuevas** (`autocomplete="new-password"`: registro, solici
 Anatomía, entre la entrada y el mensaje de error, a `espacio-2` de la entrada:
 
 1. Nivel: [indicador de estado](indicador-estado.md) En línea, "ROBUSTEZ: MEDIA".
-2. Lista `<ul>` de las cinco condiciones, una por línea con hueco `espacio-1`: icono `medida-icono-sm` + texto `fuente-tamano-pequeno` en `color-texto-cuerpo`, separados `espacio-2`.
+2. Lista `<ul>` de las cinco condiciones, una por línea con hueco `espacio-1`: icono `medida-icono-sm` + texto `fuente-tamano-pequeno` en `color-texto-cuerpo`, separados `espacio-2`; el icono, centrado en la altura de la primera línea del texto (no más bajo).
 
 | Condición | Texto | Qué cuenta (igual que Supabase Auth) |
 |---|---|---|

@@ -54,7 +54,7 @@ Errores comunes de Supabase Auth (429, 5xx, red caída, respuesta desconocida): 
 | Pedir enlace | Formato de correo inválido (en el navegador) | Error bajo el campo: "Escribe un correo válido, como nombre@dominio.com." |
 | Pedir enlace | 429, 5xx, red caída | Aviso Error de la tabla común; el correo se conserva (no dependen del correo, no revelan nada) |
 | Nueva contraseña | Comprobando el enlace | Bloque con "Comprobando el enlace…" y `aria-busy="true"`, mismo tamaño que el formulario |
-| Nueva contraseña | Enlace caducado, usado o sin sesión de recuperación (`otp_expired`, llegada directa) | Aviso Error "El enlace caducó o ya se usó." + principal "Pedir otro enlace" (a `/acceso/recuperar`, con `origen`) |
+| Nueva contraseña | Enlace caducado, usado o sin sesión de recuperación (`otp_expired`, llegada directa) | Aviso Error "El enlace caducó o ya se usó." + principal "Pedir otro enlace" (a `/acceso/recuperar`, con `origen`). El aviso sustituye al texto "Elige una contraseña nueva…" y al formulario: bajo el `<h1>` solo quedan el aviso y el enlace "Volver a iniciar sesión" |
 | Nueva contraseña | Guardando | Botón en Carga "Guardando contraseña…" |
 | Nueva contraseña | `same_password` | Error bajo el campo: "Elige una contraseña distinta de la anterior." |
 | Nueva contraseña | `weak_password` o nivel Débil | Error del [medidor](../componentes/campo.md#medidor-de-robustez): qué condición falta |

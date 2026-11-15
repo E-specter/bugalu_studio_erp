@@ -9,6 +9,10 @@ depende_de: [diseno-tokens, comp-boton]
 
 "Barra de acciones" del flujo de contratación (`141:28788`, `141:29060`): acción anterior + nota a la izquierda, acción principal a la derecha. Cierra un formulario o paso.
 
+## Cuándo se usa
+
+Solo cuando el formulario o el paso cierra con **dos o más** acciones (anterior + continuar, cancelar + guardar, rechazar + aprobar). Con una sola acción no hay barra: el [botón](boton.md) Primario va al final del formulario, a su ancho natural y alineado al inicio (perfil, cambiar rol). Decisión de la revisión visual de RF-01: una regla y un contenedor para un solo botón no ordenan nada.
+
 ## Anatomía
 
 1. Regla superior `borde-grosor-base` `color-borde-fuerte`, separación `espacio-4`.

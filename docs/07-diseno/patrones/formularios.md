@@ -15,7 +15,7 @@ Origen: brief del proyecto (`141:28788`), accesos (`112:286`, `112:385`), panel 
 2. Dentro del panel, [campos](../componentes/campo.md) en filas de 2 o 3 columnas solo cuando los datos son hermanos (nombre + correo; fecha + formato + duración); el resto a ancho completo. En móvil, una columna.
 3. Opciones: [casilla](../componentes/casilla.md) para múltiple, [tarjeta de opción](../componentes/tarjeta-opcion.md) para única con explicación, `<select>` para listas largas cerradas, [etiquetas](../componentes/etiqueta-tecnica.md) Filtro para etiquetado rápido (dirección sonora), como casillas nativas: marcada = Activa + `check`.
 4. Adjuntos con [carga de archivos](../componentes/carga-archivos.md).
-5. Cierra con [barra de acciones](../componentes/barra-acciones.md).
+5. Cierra con [barra de acciones](../componentes/barra-acciones.md) si hay dos o más acciones; con una sola, con el [botón](../componentes/boton.md) Primario ([cuándo se usa la barra](../componentes/barra-acciones.md#cuándo-se-usa)).
 
 ## Validación
 

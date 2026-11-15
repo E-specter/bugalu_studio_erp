@@ -57,4 +57,8 @@ Dentro de un [panel](panel.md); controles encima según [tablas y tableros](../p
 
 ## Código
 
-`frontend/src/componentes/Tabla.astro`, props `titulo`, `columnas`, `filas`, `variante`; ranura por celda para componentes.
+`frontend/src/componentes/Tabla.astro`, props `titulo` (`<caption>` oculto), `columnas` (`string[]`; `""` es la columna de acciones, con nombre oculto "Acciones") y `variante` (`directorio|compacta`). Las filas entran por la **ranura por defecto** como `<tr>` completos: la celda principal es `<th scope="row">` y cada `<td>` lleva `data-etiqueta` con el rótulo de su columna, que la tarjeta móvil muestra delante del valor (`data-etiqueta=""` en la de acciones). Cada `<td>` ya es la "ranura por celda": dentro va cualquier componente ([etiqueta](etiqueta-tecnica.md), [botón](boton.md)).
+
+Sin prop `filas`: las tablas de datos del servidor las pinta una isla clonando un `<template>` de fila en el navegador, así que una prop que solo sirve al pintar en el servidor no la usaría nadie. Decisión de la revisión visual de RF-01.
+
+Se implementan con la primera pantalla que los pida (antes, sin código): variante Partidas (cifras a la derecha con `tabular-nums` y fila de total), cabecera ordenable, fila seleccionada y pie.
