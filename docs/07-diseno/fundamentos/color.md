@@ -16,15 +16,15 @@ Paleta de cinco colores de marca (guía brutalista `86:70` y ficha de marca `35:
 | Lienzo `#EBEBFF` | Base fría y limpia; deja que los elementos brutales tomen protagonismo | `color-fondo-lienzo`, `color-texto-invertido` |
 | Navy `#262757` | Títulos y tipografía pesada, bordes de alto contraste, botones brutalistas | `color-texto-principal`, `color-borde-fuerte`, `color-fondo-invertido` |
 | Lavanda `#E1C9E3` | Superficies de alta jerarquía, estado activo, áreas de interacción | `color-fondo-destacado`, `color-borde-tecnico` |
-| Naranja reactivo `#FF5A1F` | Máxima atención: hover de acción, alertas críticas, acción urgente | `color-fondo-alerta` |
+| Naranja reactivo `#FF5A1F` | Máxima atención: hover de acción y el aviso Crítico | `color-fondo-alerta` |
 | Tinta `#231F20` | Texto de párrafos; texto sobre naranja | `color-texto-cuerpo`, `color-texto-sobre-alerta` |
 
 ## Reglas
 
-1. **Proporción:** lienzo y superficie dominan (~70 %), navy y tinta estructuran (~20 %: texto, bordes), lavanda marca jerarquía (~8 %), naranja es un acento puntual (≤2 % por pantalla). Si una pantalla tiene más de un foco naranja, sobra uno.
+1. **Proporción:** lienzo y superficie dominan (~70 %), navy y tinta estructuran (~20 %: texto, bordes), lavanda marca jerarquía (~8 %), naranja es un acento puntual (≤2 % por pantalla). **Un solo foco naranja en reposo por pantalla:** el [aviso](../componentes/aviso.md) Crítico; el hover de las acciones es transitorio y no cuenta. Los estados de alerta que pueden repetirse (etiqueta Alerta, prioridad alta, métrica Atención, indicador Problema, límite superado) usan el naranja oscuro: `color-texto-alerta` como texto o borde y `color-fondo-peligro` como relleno.
 2. **El naranja nunca es texto ni borde informativo sobre fondos claros** (2,65:1). Como relleno lleva texto `color-texto-sobre-alerta`, ni blanco (3,12:1) ni lienzo (2,65:1), aunque Figma lo dibuje así (`86:179`, `161:695`). Para error o alerta en texto se usa `color-texto-alerta`.
 3. **Lavanda sobre lienzo no transmite información** (1,31:1): las líneas técnicas y marcas de registro lavanda son decorativas. Un borde que delimita un control usa `color-borde-fuerte`.
-4. **El estado nunca se comunica solo con color:** cada etiqueta de estado lleva texto, y la señal de color va junto a una palabra ([indicador-estado](../componentes/indicador-estado.md)).
+4. **El estado nunca se comunica solo con color:** cada etiqueta de estado lleva texto, y la señal de color va junto a una palabra ([indicador-estado](../componentes/indicador-estado.md)). Seleccionado, actual y activo suman al fondo una señal no cromática (`borde-grosor-base` o más grueso en `color-borde-fuerte`, icono `check` o texto) y su atributo ARIA (`aria-current`, `aria-pressed`, `aria-selected` o el control nativo marcado).
 5. **Superficies invertidas (navy):** texto `color-texto-invertido`, acentos lavanda, foco `color-foco-invertido`. Se usan en paneles de acceso, cabeceras de tabla y la etiqueta invertida.
 6. **Éxito y aviso** son los únicos colores fuera de la marca; existen solo como texto o borde, nunca como relleno de superficie, para no romper la paleta.
 7. **Texto: prosa en tinta, el resto en navy.** Párrafos, descripciones y texto de avisos y comentarios usan `color-texto-cuerpo`; títulos, etiquetas, botones, celdas, valores y navegación usan `color-texto-principal`. La tinta solo va sobre fondos claros (lienzo, blanco, lavanda): sobre navy la prosa usa `color-texto-invertido`.
@@ -54,6 +54,9 @@ WCAG 2.2 AA: 4,5:1 texto normal, 3:1 texto grande (≥24 px o ≥18,66 px en neg
 | Secundario de Figma `#5D5F89` | Lienzo / blanco / lavanda | 5,16 / 6,06 / 3,95 | **No usar**: falla sobre lavanda |
 | Secundario `#4A4B7D` | Lienzo / blanco / lavanda | 6,89 / 8,10 / 5,27 | AA texto |
 | Alerta `#9A3009` | Lienzo / blanco / lavanda | 6,38 / 7,50 / 4,88 | AA texto |
+| Lienzo | Fondo peligro `#9A3009` | 6,38 | AA texto (hover de Peligro) |
+| Fondo peligro `#9A3009` | Lienzo (pista de progreso) | 6,38 | AA no textual (límite superado) |
+| Navy | Lienzo (nivel de progreso) | 11,83 | AA no textual |
 | Éxito `#14633A` | Lienzo / blanco / lavanda | 6,21 / 7,30 / 4,75 | AA texto |
 | Aviso `#6E4700` | Lienzo / blanco / lavanda | 6,96 / 8,19 / 5,33 | AA texto |
 | Anillo de foco navy | Lienzo / blanco | 11,83 / 13,91 | AA no textual |

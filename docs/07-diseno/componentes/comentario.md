@@ -27,7 +27,7 @@ depende_de: [diseno-tokens, comp-avatar]
 
 ## Estados
 
-La marca temporal y "Marcar resuelto" cumplen los [estados comunes](README.md#estados-comunes). Comentario activo (el reproductor está en su marca): borde izquierdo `borde-grosor-grueso` `color-borde-fuerte`.
+La marca temporal y "Marcar resuelto" cumplen los [estados comunes](README.md#estados-comunes). Comentario activo (el reproductor está en su marca): borde izquierdo `borde-grosor-grueso` `color-borde-fuerte` y `aria-current="true"` en el `<article>`.
 
 ## Tokens
 

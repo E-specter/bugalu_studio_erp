@@ -20,22 +20,22 @@ depende_de: [diseno-tokens, fund-forma-elevacion]
 | Variante | Fondo | Texto / borde | Uso |
 |---|---|---|---|
 | Neutra | transparente | `color-texto-principal` | Categoría, metadato (sala, género, formato) |
-| Activa | `color-fondo-destacado` | `color-texto-principal` | Estado vigente ("V3 MASTER ACTIVO"), filtro seleccionado |
+| Activa | `color-fondo-destacado`, borde `borde-grosor-base` | `color-texto-principal` | Estado vigente ("V3 MASTER ACTIVO"), filtro seleccionado |
 | Invertida | `color-fondo-invertido` | `color-texto-invertido` | Sobre superficies claras muy cargadas; código de solicitud |
 | Éxito | transparente | `color-texto-exito` | Validado, aprobado, confirmada |
 | Aviso | transparente | `color-texto-aviso` | Pendiente, pre-reservada, en revisión |
-| Alerta | `color-fondo-alerta` | `color-texto-sobre-alerta` | Crítico: rechazado, vencido, cancelada |
-| Filtro | como Neutra / Activa | — | Enlace de filtro en tableros y tablas |
+| Alerta | transparente, borde `borde-grosor-base` | `color-texto-alerta` | Rechazado, vencido, cancelada, prioridad alta. Naranja oscuro y no de marca: puede repetirse en una tabla ([color](../fundamentos/color.md#reglas), regla 1) |
+| Filtro | Neutra (sin aplicar) / Activa + icono `check` (aplicado) | — | Enlace de filtro en tableros y tablas |
 
 Correspondencia de estados del dominio: [estados de reserva](../../02-dominio/estados-reserva.md) → Aviso (Pre-reservada), Éxito (Confirmada, Finalizada), Activa (En curso), Alerta (Cancelada).
 
 ## Estados
 
-Estática: no tiene estados interactivos. La variante **Filtro** es un enlace y cumple los [estados comunes](README.md#estados-comunes); el filtro aplicado lleva la variante Activa y `aria-current="true"`.
+Estática: no tiene estados interactivos. La variante **Filtro** es un enlace y cumple los [estados comunes](README.md#estados-comunes); el filtro aplicado lleva la variante Activa, el icono `check` (`medida-icono-sm`) antes del texto y `aria-current="true"` (es un enlace: `aria-pressed` es solo para botones). Así se distingue del inactivo por borde, icono y atributo, no solo por el relleno lavanda (1,31:1). En un formulario (etiquetado rápido de [formularios](../patrones/formularios.md)) el Filtro es una casilla nativa con este aspecto: marcada = Activa + `check`, sin ARIA extra.
 
 ## Tokens
 
-`borde-grosor-fino`, `borde-radio-etiqueta`, `color-borde-fuerte`, `color-fondo-destacado`, `color-fondo-invertido`, `color-fondo-alerta`, `color-texto-*`, `espacio-1-5`, `espacio-3`, `fuente-familia-tecnica`, `fuente-tamano-micro`, `medida-senal`.
+`borde-grosor-fino`, `borde-grosor-base`, `borde-radio-etiqueta`, `color-borde-fuerte`, `color-fondo-destacado`, `color-fondo-invertido`, `color-texto-*`, `medida-icono-sm`, `espacio-1-5`, `espacio-3`, `fuente-familia-tecnica`, `fuente-tamano-micro`, `medida-senal`.
 
 ## Relaciones
 

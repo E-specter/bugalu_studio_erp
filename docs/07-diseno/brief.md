@@ -50,6 +50,13 @@ Verificado en Figma el 2026-11-15 ([registro](figma.md#verificación-cerrada-tar
 | Navegación táctil móvil arriba, bajo la cabecera (`169:5490`; conservada por el **usuario**) | Movimiento, foco y puntos de quiebre: Figma no los dibuja |
 | Logotipo en tres variantes, exportado en SVG (`58:2`, `40:150`, `58:77`; **usuario**) | Solo iconos Lucide; ilustraciones de Streamline descartadas (**usuario**) |
 
+Decisiones `brief:` de la auditoría de cierre (TAREA-203):
+
+- **Un foco naranja en reposo por pantalla:** el aviso Crítico. Los estados de alerta repetibles usan el naranja oscuro (`color-texto-alerta`, `color-fondo-peligro`); [color](fundamentos/color.md#reglas), regla 1.
+- **Seleccionado, actual y activo** suman al lavanda un borde, un icono `check` o texto y su atributo ARIA ([color](fundamentos/color.md#reglas), regla 4).
+- **Listado vacío:** la acción del vacío es la primaria y la fila de controles no se muestra ([estados del sistema](patrones/estados-sistema.md#vacío)).
+- **Foco no tapado en móvil:** `scroll-padding-top` con `medida-zona-fija-movil` ([estructura de app](patrones/estructura-app.md#app)).
+
 ## Índice
 
 | Tema | Archivo | Estado |
@@ -84,9 +91,9 @@ Verificado en Figma el 2026-11-15 ([registro](figma.md#verificación-cerrada-tar
 
 | Punto de quiebre | Ancho | Diseño |
 |---|---|---|
-| Móvil (base) | < 600 px (diseñado a 390) | Una columna, cabecera móvil + navegación táctil, controles ≥ 44 px |
-| Tableta | 600–1023 px | Navegación móvil, retícula de 2 columnas |
-| Escritorio | ≥ 1024 px | Navegación lateral, principal + lateral |
-| Amplio | ≥ 1440 px (lienzo de Figma) | Contenido limitado a 1344 px, centrado |
+| Móvil (base) | < `punto-quiebre-tableta` (lienzo móvil de Figma) | Una columna, cabecera móvil + navegación táctil, controles ≥ `medida-control-tactil` |
+| Tableta | `punto-quiebre-tableta` hasta < `punto-quiebre-escritorio` | Navegación móvil, retícula de 2 columnas |
+| Escritorio | ≥ `punto-quiebre-escritorio` | Navegación lateral, principal + lateral |
+| Amplio | ≥ `punto-quiebre-amplio` (lienzo de Figma) | Contenido limitado a `medida-contenedor-max`, centrado |
 
 Tokens `punto-quiebre-*` en [tokens](tokens.md#medidas-quiebres-y-forma); reglas en [espaciado y retícula](fundamentos/espaciado-reticula.md#adaptabilidad). La cabina y el Administrador trabajan en escritorio, pero el panel interno sigue siendo usable en tableta; el portal y el flujo son completos en móvil.

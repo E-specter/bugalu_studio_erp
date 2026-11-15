@@ -26,7 +26,7 @@ Señal + texto. Capas "Sincronización" (`161:640`), "Estado de guardado" (`141:
 |---|---|---|
 | Correcto | `color-texto-exito` | Sincronizado, guardado, validado |
 | Pendiente | `color-texto-aviso` | Guardando, en revisión |
-| Problema | `color-fondo-alerta` sobre fondo claro con texto `color-texto-alerta` | Sin conexión, error al guardar |
+| Problema | `color-texto-alerta`, también en el texto (naranja oscuro, no de marca: puede repetirse, [color](../fundamentos/color.md#reglas)) | Sin conexión, error al guardar |
 | Neutro | `color-texto-secundario` | Borrador, sin cambios |
 
 ## Estados
@@ -35,7 +35,7 @@ Estático. La señal "activa" (sincronizando) parpadea con `movimiento-duracion-
 
 ## Tokens
 
-`medida-senal`, `color-texto-exito`, `color-texto-aviso`, `color-texto-alerta`, `color-fondo-alerta`, `color-texto-secundario`, `borde-grosor-fino`, `espacio-3`, `fuente-familia-tecnica`, `fuente-tamano-micro`, `movimiento-duracion-bucle`.
+`medida-senal`, `color-texto-exito`, `color-texto-aviso`, `color-texto-alerta`, `color-texto-secundario`, `borde-grosor-fino`, `espacio-3`, `fuente-familia-tecnica`, `fuente-tamano-micro`, `movimiento-duracion-bucle`.
 
 ## Relaciones
 

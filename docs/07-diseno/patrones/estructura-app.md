@@ -33,6 +33,7 @@ Cuatro estructuras (layouts) cubren todas las pantallas de Figma. Toda pantalla 
 3. Vistas de resumen (dashboard): [métricas](../componentes/metrica.md) → panel operativo (listado principal + columna lateral de próximas entregas y alertas) → actividad reciente ([lista-eventos](../componentes/lista-eventos.md)).
 4. Vistas de detalle: principal (contenido del objeto) + lateral (acción o [resumen](../componentes/resumen-persistente.md) Ficha).
 5. Opcional al pie: [indicador de estado](../componentes/indicador-estado.md) Barra.
+6. **Lo fijo:** < `punto-quiebre-escritorio`, la fila 1 de la cabecera móvil y la navegación táctil son `sticky` y el documento lleva `scroll-padding-top: var(--medida-zona-fija-movil)` (WCAG 2.4.11, [navegación táctil](../componentes/navegacion-tactil.md)). En escritorio la cabecera no es fija; solo el [resumen persistente](../componentes/resumen-persistente.md) es `sticky`, en su columna.
 
 **Portal vs. panel interno:** misma estructura. El portal muestra el proyecto del artista y su avance; el panel interno, la operación del estudio. Cambian destinos, bloque de control y densidad (el panel interno admite tablas compactas; el portal no).
 

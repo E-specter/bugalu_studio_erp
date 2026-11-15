@@ -21,17 +21,19 @@ Capas "Progreso" / "Avance" (control de sala y de proyecto, `161:651`), "Límite
 | Variante | Nivel | Uso |
 |---|---|---|
 | Avance | `color-fondo-invertido` | Fase del proyecto, etapas |
-| Carga | `color-fondo-invertido`; al terminar, texto en `color-texto-exito` | Subida de archivos |
-| Límite | `color-fondo-destacado`; al superar el límite, `color-fondo-alerta` | Límite de trabajo por etapa del tablero |
+| Carga | `color-fondo-invertido`; al terminar, texto "Subido" con `check-circle` en `color-texto-exito` | Subida de archivos |
+| Límite | `color-fondo-invertido`; al superar el límite, pista llena en `color-fondo-peligro` (6,38:1 sobre lienzo) y texto visible "Supera el límite: 7 de 5" en `color-texto-alerta` con `alert-triangle` | Límite de trabajo por etapa del tablero |
 | Indeterminada | Segmento que recorre la pista | Procesos sin porcentaje conocido (validación técnica) |
 
 ## Estados
 
-Estático (no interactivo). Error de carga: el nivel se detiene, el texto pasa a `color-texto-alerta` con la causa.
+Estático (no interactivo). Error de carga: el nivel se detiene, el texto pasa a `color-texto-alerta` con `alert-triangle` y la causa.
+
+Decisión del brief (TAREA-203): el nivel nunca es lavanda ni naranja de marca sobre la pista lienzo (1,31:1 y 2,65:1 no pasan 3:1 como gráfico); el exceso se dice en texto, no solo con el color.
 
 ## Tokens
 
-`medida-progreso`, `borde-grosor-fino`, `color-borde-fuerte`, `color-fondo-superficie`, `color-fondo-invertido`, `color-fondo-destacado`, `color-fondo-alerta`, `color-texto-exito`, `color-texto-alerta`, `fuente-familia-tecnica`, `fuente-tamano-micro`.
+`medida-progreso`, `borde-grosor-fino`, `color-borde-fuerte`, `color-fondo-superficie`, `color-fondo-invertido`, `color-fondo-peligro`, `color-texto-exito`, `color-texto-alerta`, `medida-icono-sm`, `fuente-familia-tecnica`, `fuente-tamano-micro`.
 
 ## Relaciones
 

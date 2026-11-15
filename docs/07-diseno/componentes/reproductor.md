@@ -14,8 +14,8 @@ depende_de: [diseno-tokens, comp-comentario, arq-frontend-islas]
 1. [Panel](panel.md) Técnico o Base.
 2. Cabecera: archivo de la versión (`fuente-familia-tecnica`) + metadato; a la derecha, tiempo actual en `fuente-tamano-titulo-md` y duración en `fuente-tamano-micro`, `tabular-nums`.
 3. Botón reproducir/pausar: cuadrado de `medida-reproducir`, [botón](boton.md) secundario de solo icono.
-4. Forma de onda: barras verticales en `color-fondo-invertido` (parte reproducida) y `color-borde-tecnico` (pendiente) con cabezal de `borde-grosor-base`. Los picos los calcula el backend al cargar el archivo.
-5. Marcadores: fila bajo la onda con una marca por comentario en su tiempo; la marca es un botón.
+4. Forma de onda: barras verticales en `color-fondo-invertido` (parte reproducida) y `color-borde-tecnico` (pendiente) con cabezal de `borde-grosor-base` en `color-borde-fuerte`. En el panel Técnico (navy): reproducida `color-texto-invertido`, pendiente `color-borde-tecnico`, cabezal `color-foco-invertido`. La posición la dan el cabezal y la lectura de tiempo; el color de las barras solo refuerza (lavanda sobre lienzo es decorativo). Los picos los calcula el backend al cargar el archivo.
+5. Marcadores: fila bajo la onda con una marca por comentario en su tiempo; la marca es un botón con contorno `borde-grosor-base` `color-borde-fuerte`.
 
 ## Variantes
 
@@ -33,12 +33,12 @@ Comunes: [catálogo](README.md#estados-comunes). Propios:
 |---|---|
 | Cargando audio | Onda en `color-borde-tecnico` con `aria-busy="true"`; botón deshabilitado |
 | Reproduciendo | Icono `pause`; cabezal avanza (lineal) |
-| Marcador activo | Marca en `color-fondo-alerta` y [comentario](comentario.md) activo resaltado |
+| Marcador activo | Marca rellena `color-fondo-invertido` (en reposo solo contorno), `aria-current="true"`, y [comentario](comentario.md) activo resaltado. Sin naranja: hay un marcador por comentario |
 | Error de audio | [Aviso](aviso.md) Error: "No se pudo cargar la versión. Reintentar" |
 
 ## Tokens
 
-`medida-reproducir`, `color-fondo-invertido`, `color-borde-tecnico`, `color-fondo-alerta`, `borde-grosor-base`, `fuente-familia-tecnica`, `fuente-tamano-titulo-md`, `fuente-tamano-micro`.
+`medida-reproducir`, `color-fondo-invertido`, `color-borde-tecnico`, `color-borde-fuerte`, `color-texto-invertido`, `color-foco-invertido`, `borde-grosor-base`, `fuente-familia-tecnica`, `fuente-tamano-titulo-md`, `fuente-tamano-micro`.
 
 ## Relaciones
 

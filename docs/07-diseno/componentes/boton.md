@@ -21,7 +21,7 @@ Relleno horizontal `espacio-5`; alto `medida-control-base`.
 
 | Variante | Fondo | Texto | Uso |
 |---|---|---|---|
-| Primario | `color-fondo-destacado` | `color-texto-principal` | La acción principal de la vista. **Una por vista** |
+| Primario | `color-fondo-destacado` | `color-texto-principal` | La acción principal de la vista. **Una por vista**; en un listado vacío manda la del vacío ([estados del sistema](../patrones/estados-sistema.md#vacío)) |
 | Secundario | `color-fondo-superficie` | `color-texto-principal` | Acciones de apoyo: escuchar máster, "anterior", "ver todos" (`86:168`) |
 | Peligro | `color-fondo-superficie`, borde `color-texto-alerta` | `color-texto-alerta` | Cancelar reserva, rechazar pago (brief: Figma no dibuja acciones destructivas) |
 
@@ -39,14 +39,14 @@ Comunes: [catálogo](README.md#estados-comunes). Propios:
 | Estado | Visual |
 |---|---|
 | Hover (primario, secundario) | Fondo `color-fondo-alerta`, texto `color-texto-sobre-alerta` (la guía reserva el naranja para el hover interactivo, `86:99`) |
-| Hover (peligro) | Fondo `color-texto-alerta`, texto `color-texto-invertido` |
+| Hover (peligro) | Fondo `color-fondo-peligro`, texto `color-texto-invertido` (6,38:1) |
 | Carga | Etiqueta cambia a verbo en gerundio ("Publicando…"), `aria-busy="true"`, `disabled` para evitar doble envío; mismo ancho |
 
 Las pantallas `erp` rellenan la acción de naranja con texto lienzo (`161:695`, 2,65:1): no se adopta; el naranja queda para el hover, como en la guía (decisión del usuario, 2026-11-15).
 
 ## Tokens
 
-`color-fondo-destacado`, `color-fondo-superficie`, `color-fondo-alerta`, `color-texto-*`, `color-borde-fuerte`, `borde-grosor-base`, `borde-radio-ninguno`, `fuente-*`, `espacio-2`, `espacio-5`, `medida-control-*`, `movimiento-duracion-rapida`.
+`color-fondo-destacado`, `color-fondo-superficie`, `color-fondo-alerta`, `color-fondo-peligro`, `color-texto-*`, `color-borde-fuerte`, `borde-grosor-base`, `borde-radio-ninguno`, `fuente-*`, `espacio-2`, `espacio-5`, `medida-control-*`, `movimiento-duracion-rapida`.
 
 ## Relaciones
 

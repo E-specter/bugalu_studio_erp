@@ -15,9 +15,9 @@ Figma solo dibuja el estado "con datos". Este patrón es **decisión del brief**
 
 1. Título corto en `fuente-familia-titulo`: qué no hay ("Aún no hay versiones").
 2. Una frase en `color-texto-cuerpo`: por qué y qué pasará ("El ingeniero publicará la primera versión al terminar la mezcla").
-3. Acción solo si el usuario puede resolverlo ([botón](../componentes/boton.md) primario: "Registrar cliente").
+3. Acción solo si el usuario puede resolverlo ("Registrar cliente"). **Qué primaria manda:** en un listado vacío, la acción del vacío es la primaria de la vista y la fila de controles (búsqueda, filtros y botón de crear) no se muestra, porque no hay nada que buscar. En un bloque vacío dentro de una vista con otra primaria, la acción del vacío es [botón](../componentes/boton.md) secundario.
 
-Sin ilustraciones ([iconografía e imagen](../fundamentos/iconografia-imagen.md#ilustración)); como mucho, un icono `medida-icono-md`. Distinguir **vacío** de **sin resultados** de un filtro: este último ofrece "Quitar filtros".
+Sin ilustraciones ([iconografía e imagen](../fundamentos/iconografia-imagen.md#ilustración)); como mucho, un icono `medida-icono-md`. Distinguir **vacío** de **sin resultados** de un filtro: este último conserva los controles y ofrece "Quitar filtros" como secundario.
 
 ## Carga
 

@@ -43,6 +43,7 @@ En [cabecera-app](cabecera-app.md), [tabla](tabla.md), [comentario](comentario.m
 ## Accesibilidad
 
 - Decorativo cuando el nombre está al lado (`aria-hidden="true"`); si va solo, `role="img"` con `aria-label` del nombre completo.
+- El rol no se deduce solo del fondo: donde importa (comentario, tabla), va en texto junto al nombre.
 
 ## Código
 

@@ -20,9 +20,9 @@ panel: título + ayuda
 panel de seguimiento (≈70) │ calidad de datos (≈30)
 ```
 
-1. **Controles** en una fila encima de la tabla: [campo](../componentes/campo.md) Búsqueda (flexible), [etiquetas](../componentes/etiqueta-tecnica.md) Filtro y la acción de crear ([botón](../componentes/boton.md) primario) a la derecha.
+1. **Controles** en una fila encima de la tabla: [campo](../componentes/campo.md) Búsqueda (flexible), [etiquetas](../componentes/etiqueta-tecnica.md) Filtro y la acción de crear ([botón](../componentes/boton.md) primario) a la derecha. Con el listado vacío la fila no se muestra y la primaria es la del vacío ([estados del sistema](estados-sistema.md#vacío)).
 2. Búsqueda y filtros son un formulario `GET`: la URL refleja el estado, se puede compartir y funciona sin JS.
-3. Filtros aplicados visibles como etiquetas Activa, cada una con su "quitar".
+3. Filtros aplicados visibles como etiquetas Activa (borde, icono `check` y `aria-current`), cada una con su "quitar".
 4. [Tabla](../componentes/tabla.md) en un [panel](../componentes/panel.md) con el total ("38 clientes").
 5. Paginación al pie: "Anterior / Siguiente" + "1–20 de 38"; sin desplazamiento infinito.
 

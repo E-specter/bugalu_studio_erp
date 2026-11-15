@@ -35,7 +35,7 @@ Estado del archivo: hay unas 32 pantallas y no hay biblioteca de componentes (3 
 
 Conciliación (fase 1, [spec 2026-11-15](../superpowers/specs/2026-11-15-contratacion-y-decisiones-design.md)): el flujo de contratación diseñado (servicio → brief → agenda de asesoría → cotización → revisión → proyecto activado) es la **rama de asesoría** del flujo real y se conserva ([agendar-asesoria](../02-dominio/flujos/agendar-asesoria.md)).
 
-No hay pantallas para estas partes, que se especifican desde el brief en la fase 2:
+No hay pantallas para estas partes, que se especifican desde el brief en la fase 7 (por RF, con `disenar-pantalla`):
 
 | Pantalla faltante | Requerimiento |
 |---|---|
@@ -81,3 +81,5 @@ Ningún token queda `inferido`: cada uno tiene nodo de Figma o es `brief:` con s
 5. Geist Mono, Unbounded 900 y radio 0 confirmados; texto mínimo de la guía 11 px (`86:164`), las pantallas usan 8 px y no se adopta.
 
 Este archivo queda **congelado**: el diseño se extiende desde el [brief](brief.md), no desde Figma.
+
+*Corrección de hecho (TAREA-203): la especificación de las pantallas faltantes es de la fase 7, no de la fase 2; el archivo sigue congelado.*

@@ -13,7 +13,7 @@ Origen: brief del proyecto (`141:28788`), accesos (`112:286`, `112:385`), panel 
 
 1. Un formulario largo se divide en [paneles](../componentes/panel.md) temáticos con código (`A1 DATOS DEL ARTISTA`, `A2 DIRECCIÓN SONORA`…), en el orden en que el usuario tiene los datos.
 2. Dentro del panel, [campos](../componentes/campo.md) en filas de 2 o 3 columnas solo cuando los datos son hermanos (nombre + correo; fecha + formato + duración); el resto a ancho completo. En móvil, una columna.
-3. Opciones: [casilla](../componentes/casilla.md) para múltiple, [tarjeta de opción](../componentes/tarjeta-opcion.md) para única con explicación, `<select>` para listas largas cerradas, [etiquetas](../componentes/etiqueta-tecnica.md) Filtro para etiquetado rápido (dirección sonora).
+3. Opciones: [casilla](../componentes/casilla.md) para múltiple, [tarjeta de opción](../componentes/tarjeta-opcion.md) para única con explicación, `<select>` para listas largas cerradas, [etiquetas](../componentes/etiqueta-tecnica.md) Filtro para etiquetado rápido (dirección sonora), como casillas nativas: marcada = Activa + `check`.
 4. Adjuntos con [carga de archivos](../componentes/carga-archivos.md).
 5. Cierra con [barra de acciones](../componentes/barra-acciones.md).
 

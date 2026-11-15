@@ -26,7 +26,7 @@ Paneles apilados con hueco `espacio-6`.
 |---|---|---|
 | Base | — | Agrupaciones de formulario, listados |
 | Sin borde | Sin contenedor, solo título + regla `borde-grosor-fino` | Secciones del contenido principal (actividad reciente) |
-| Destacado | Fondo `color-fondo-destacado` | Un bloque que debe leerse primero (entrega destacada, próximo hito) |
+| Destacado | Fondo `color-fondo-destacado` | Un bloque que debe leerse primero (entrega destacada, próximo hito). El lavanda no es la única señal: va primero en el orden y su título lo nombra ("PRÓXIMA ENTREGA") |
 | Técnico | Borde parcial lavanda (efecto 10) sobre `color-fondo-invertido`, texto invertido | Paneles de control: cadena de señal, monitor (solo decorativo, `88:344`) |
 | Lateral | Ancho `medida-columna-lateral` | Panel de acción a la derecha (transformación, comentario) |
 

@@ -32,7 +32,7 @@ Cifras alineadas a la derecha con `tabular-nums`; texto a la izquierda.
 | Estado | Visual |
 |---|---|
 | Fila hover (si toda la fila enlaza) | Fondo `color-fondo-claro` |
-| Fila seleccionada | Fondo `color-fondo-destacado` |
+| Fila seleccionada | Fondo `color-fondo-destacado` + borde izquierdo `borde-grosor-grueso` `color-borde-fuerte` en la primera celda + [casilla](casilla.md) marcada si la selección es múltiple. El fondo lavanda solo no basta (1,31:1) |
 | Cabecera ordenable | Botón en la celda con icono `arrow-up-down`; la columna ordenada muestra `arrow-up` o `arrow-down` |
 | Vacía, carga, error | [Estados del sistema](../patrones/estados-sistema.md): una fila con el mensaje a todo el ancho |
 
@@ -42,7 +42,7 @@ Cifras alineadas a la derecha con `tabular-nums`; texto a la izquierda.
 
 ## Tokens
 
-`color-fondo-superficie`, `color-fondo-invertido`, `color-fondo-claro`, `color-fondo-destacado`, `color-texto-invertido`, `color-texto-secundario`, `color-borde-fuerte`, `borde-grosor-base`, `borde-grosor-fino`, `espacio-3`, `espacio-4`, `fuente-*`, `punto-quiebre-escritorio`.
+`color-fondo-superficie`, `color-fondo-invertido`, `color-fondo-claro`, `color-fondo-destacado`, `color-texto-invertido`, `color-texto-secundario`, `color-borde-fuerte`, `borde-grosor-base`, `borde-grosor-fino`, `borde-grosor-grueso`, `espacio-3`, `espacio-4`, `fuente-*`, `punto-quiebre-escritorio`.
 
 ## Relaciones
 
@@ -52,6 +52,7 @@ Dentro de un [panel](panel.md); controles encima según [tablas y tableros](../p
 
 - `<table>` real con `<caption>` (puede ser visualmente oculto), `<th scope="col">` y, en la celda principal, `<th scope="row">`.
 - Ordenación: `aria-sort` en el `<th>` ordenado.
+- Fila seleccionada: `aria-selected="true"` en el `<tr>`. En una `<table>` sin `role="grid"` el lector no lo anuncia, así que la selección se hace con la casilla nativa de la primera celda, que da el estado; `role="grid"` solo si una isla aporta la navegación con flechas. La fila del registro abierto en el lateral usa `aria-current="true"` en su enlace.
 - Acciones por fila con texto que incluye el objeto ("Validar pago PAG-031").
 
 ## Código

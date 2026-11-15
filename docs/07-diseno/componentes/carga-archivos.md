@@ -33,8 +33,8 @@ Comunes: [catálogo](README.md#estados-comunes). Propios:
 | Arrastrando encima | Zona con fondo `color-fondo-destacado` y borde continuo |
 | Subiendo | Barra con porcentaje y tamaño; botón "Cancelar" |
 | Validando | Barra indeterminada; pruebas "EN CURSO" |
-| Válido | Pruebas en `color-texto-exito`; archivo listo |
-| Rechazado | Borde `color-texto-alerta`; mensaje con la causa y la regla ("Formato MP3 no admitido: sube el WAV de la sesión"); los límites técnicos los fija el RF |
+| Válido | Cada prueba con [indicador](indicador-estado.md) Correcto y texto ("FORMATO WAV · OK"); archivo listo |
+| Rechazado | Borde `color-texto-alerta`; prueba fallida con indicador Problema y texto "FALLA"; mensaje con la causa y la regla ("Formato MP3 no admitido: sube el WAV de la sesión"); los límites técnicos los fija el RF |
 | Error de red | [Aviso](aviso.md) Error con "Reintentar"; lo ya subido se conserva |
 
 ## Tokens

@@ -39,7 +39,8 @@ Columna **origen**: nodo de Figma del que sale el valor (verificado en TAREA-201
 | `color-fondo-claro` | `#FFFFFF` | Campos y casillas; hover de filas, tarjetas y navegación sobre superficie | `112:365` |
 | `color-fondo-destacado` | `color-marca-lavanda` | Botón primario, etiqueta activa, sección destacada, fila seleccionada | `86:81` |
 | `color-fondo-invertido` | `color-marca-navy` | Paneles de acceso, cabecera de tabla, etiqueta invertida | `86:87` |
-| `color-fondo-alerta` | `color-marca-naranja` | Hover de acción, alerta crítica | `86:99` |
+| `color-fondo-alerta` | `color-marca-naranja` | Hover de acción y aviso Crítico (uno por pantalla, [color](fundamentos/color.md#reglas)) | `86:99` |
+| `color-fondo-peligro` | `color-texto-alerta` | Relleno de alerta repetible: hover del botón Peligro, nivel que supera el límite; texto encima `color-texto-invertido` (6,38:1) | brief: el naranja de marca se reserva para un foco por pantalla; los estados de alerta usan el naranja oscuro (TAREA-203) |
 | `color-texto-principal` | `color-marca-navy` | Títulos, etiquetas, botones, celdas, valores y navegación | `86:87`, variable `color/text/secondary` (`86:20`) |
 | `color-texto-cuerpo` | `color-marca-tinta` | Prosa sobre fondos claros: párrafos, descripciones, texto de avisos y comentarios | variable `color/text/primary` (`86:20`); confirmado por el usuario (2026-11-15) |
 | `color-texto-secundario` | `#4A4B7D` | Ayudas, metadatos, etiquetas de columna | brief: `#5D5F89` de Figma (`161:702`) oscurecido; aquel da 3,95:1 sobre lavanda |
@@ -102,6 +103,7 @@ Columna **origen**: nodo de Figma del que sale el valor (verificado en TAREA-201
 | `medida-cabecera-escritorio` | `82px` | Alto de la cabecera de app | `161:610` |
 | `medida-cabecera-movil` | `68px` | Alto de la cabecera móvil | `169:5451` |
 | `medida-nav-tactil` | `56px` | Alto de la navegación táctil | `169:5490` |
+| `medida-zona-fija-movil` | `calc(var(--medida-cabecera-movil) + var(--medida-nav-tactil))` | Alto de lo fijo arriba en móvil; valor de `scroll-padding-top` para que el foco no quede tapado (WCAG 2.4.11) | brief: Figma no dibuja el desplazamiento (TAREA-203) |
 | `medida-contenedor-max` | `1344px` | Ancho máximo de contenido | `44:4` |
 | `medida-columna-lateral` | `344px` | Columna lateral (resumen, panel de acción) | `161:688`, `141:28788` |
 | `medida-placa-marca` | `54px` | Placa del logo en la cabecera de escritorio | `161:611` |

@@ -31,19 +31,20 @@ Comunes: [catálogo](README.md#estados-comunes). Propios del día y de la franja
 
 | Estado | Visual |
 |---|---|
-| Disponible | `color-fondo-superficie`, `borde-grosor-fino` |
-| Seleccionado | `color-fondo-invertido`, número `color-texto-invertido` |
-| En tramo (franjas) | `color-fondo-destacado` |
+| Disponible | `color-fondo-superficie`, `borde-grosor-fino` `color-borde-fuerte` |
+| Seleccionado | `color-fondo-invertido`, número `color-texto-invertido`, icono `check` (`medida-icono-sm`) junto al número |
+| En tramo (franjas) | `color-fondo-destacado` + `borde-grosor-base` `color-borde-fuerte`; el lavanda solo no basta (1,31:1, [color](../fundamentos/color.md#reglas)) |
 | Hoy | Número subrayado `borde-grosor-base` |
 | Sin disponibilidad / ocupada | `color-texto-secundario`, patrón de rayas (`efecto-patron-paso`), no seleccionable |
 | Pre-reservada (franja retenida) | Etiqueta Aviso "RETENIDA" |
-| Pasado o fuera de mes | `color-texto-secundario`, no seleccionable |
+| Hora elegida (panel de horarios) | Como Seleccionado: radio marcado + `check` |
+| Pasado o fuera de mes | `color-texto-secundario`, sin caja (sin borde), no seleccionable |
 | Carga de mes | Cuadrícula con `aria-busy="true"`, mismo tamaño |
 | Error | [Aviso](aviso.md) Error sobre la cuadrícula con "Reintentar" |
 
 ## Tokens
 
-`color-fondo-superficie`, `color-fondo-invertido`, `color-fondo-destacado`, `color-texto-invertido`, `color-texto-secundario`, `borde-grosor-fino`, `borde-grosor-base`, `espacio-1`, `medida-control-grande`, `efecto-patron-paso`, `fuente-familia-tecnica`, `fuente-tamano-micro`.
+`color-fondo-superficie`, `color-fondo-invertido`, `color-fondo-destacado`, `color-borde-fuerte`, `color-texto-invertido`, `color-texto-secundario`, `borde-grosor-fino`, `borde-grosor-base`, `espacio-1`, `medida-control-grande`, `medida-icono-sm`, `efecto-patron-paso`, `fuente-familia-tecnica`, `fuente-tamano-micro`.
 
 ## Relaciones
 
@@ -52,7 +53,7 @@ Dentro del [flujo por pasos](../patrones/flujo-por-pasos.md); alimenta al [resum
 ## Accesibilidad
 
 - **Sin JS:** el servidor entrega la lista de días y horarios disponibles como grupos de radios por día (`<fieldset>`), con navegación de mes por enlaces `?mes=`. La isla mejora esa lista a cuadrícula.
-- Con JS: `<table>` con botones de día; foco itinerante (flechas mueven el día, Inicio/Fin la semana, RePág/AvPág el mes); el día seleccionado con `aria-pressed="true"`.
+- Con JS: `<table>` con botones de día; foco itinerante (flechas mueven el día, Inicio/Fin la semana, RePág/AvPág el mes); el día seleccionado y cada día del tramo con `aria-pressed="true"`; el nombre accesible del día dice "seleccionado" o "en el tramo".
 - Cada día tiene nombre completo: "martes 18 de noviembre, 3 horarios disponibles".
 - Cambio de mes anunciado en una región `aria-live="polite"` con el nombre del mes.
 

@@ -13,7 +13,7 @@ Fuentes: guía brutalista secciones [05] "Tratamiento imagen" (`86:198`) y [06] 
 
 Figma usa dos sistemas: glifos de texto como marcadores en las pantallas del `erp` (capas "Icono") e iconos de trazo con nombres de Lucide en landing y accesos (`arrow-right`, `check-circle`, `eye`, `audio-waveform`). **Se unifica en Lucide** (decisión del usuario, 2026-11-15: los glifos son marcadores de posición y Lucide ya es el sistema nombrado).
 
-1. Estilo: trazo, sin relleno, extremos rectos; grosor de trazo 2 px, igual que `borde-grosor-base`.
+1. Estilo: trazo, sin relleno, extremos rectos; grosor de trazo `borde-grosor-base`.
 2. Tamaños: `medida-icono-sm` en línea con texto y dentro de campos; `medida-icono-md` en navegación. No hay otros tamaños.
 3. Color: hereda `currentColor` del texto que acompaña.
 4. Un icono siempre va con texto visible, salvo en botones de solo icono (reproducir, mostrar contraseña, navegación del mes), que llevan `aria-label`. El icono decorativo lleva `aria-hidden="true"`.

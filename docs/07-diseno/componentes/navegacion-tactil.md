@@ -16,6 +16,8 @@ depende_de: [diseno-tokens, comp-navegacion-lateral]
 
 Máximo cinco destinos; el resto va al menú de la [cabecera](cabecera-app.md).
 
+**Foco no tapado (WCAG 2.4.11):** la fila 1 de la cabecera móvil y esta barra quedan fijas (`position: sticky`) y la fila de contexto se desplaza. El documento lleva `scroll-padding-top: var(--medida-zona-fija-movil)` para que el elemento enfocado o el ancla nunca quede debajo; ≥ `punto-quiebre-escritorio` no hay barra y vuelve a `0`. Decisión del brief (TAREA-203).
+
 ## Variantes
 
 Una. Los destinos son los mismos que en la [navegación lateral](navegacion-lateral.md) del perfil, en el mismo orden.
@@ -26,7 +28,7 @@ Comunes: [catálogo](README.md#estados-comunes). Actual: fondo `color-fondo-dest
 
 ## Tokens
 
-`medida-nav-tactil`, `medida-icono-md`, `color-fondo-superficie`, `color-fondo-destacado`, `color-borde-fuerte`, `borde-grosor-base`, `borde-grosor-grueso`, `fuente-familia-tecnica`, `fuente-tamano-micro`.
+`medida-nav-tactil`, `medida-zona-fija-movil`, `medida-icono-md`, `color-fondo-superficie`, `color-fondo-destacado`, `color-borde-fuerte`, `borde-grosor-base`, `borde-grosor-grueso`, `fuente-familia-tecnica`, `fuente-tamano-micro`.
 
 ## Relaciones
 

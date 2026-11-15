@@ -24,7 +24,7 @@ depende_de: [diseno-tokens, comp-etiqueta-tecnica]
 
 ## Estados
 
-Toda la tarjeta enlaza a la ficha del proyecto: [estados comunes](README.md#estados-comunes). Hover: fondo `color-fondo-claro`. Prioridad alta: código en [etiqueta](etiqueta-tecnica.md) Alerta. Atrasado: fecha del hito en `color-texto-alerta` con texto "Atrasado".
+Toda la tarjeta enlaza a la ficha del proyecto: [estados comunes](README.md#estados-comunes). Hover: fondo `color-fondo-claro`. Prioridad alta: lectura "PRIORIDAD ALTA" en [etiqueta](etiqueta-tecnica.md) Alerta (naranja oscuro, no de marca: varias tarjetas pueden tenerla sin romper la regla de un foco naranja, [color](../fundamentos/color.md#reglas)). Atrasado: fecha del hito en `color-texto-alerta` con texto "Atrasado".
 
 ## Tokens
 
