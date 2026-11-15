@@ -14,7 +14,7 @@ depende_de: [diseno-brief]
 
 ## Convención de nombres
 
-`<categoria>-<rol>-<variante>` en `kebab-case` ASCII, con prefijo `--` en CSS (`color-fondo-lienzo` → `--color-fondo-lienzo`). Escalas numéricas: `espacio-N` = N × 4 px (`espacio-1-5` = 6 px).
+`<categoria>-<rol>-<variante>` en `kebab-case` ASCII, con prefijo `--` en CSS (`color-fondo-lienzo` → `--color-fondo-lienzo`). Escalas numéricas: `espacio-N` = N × `0.25rem` (4 px con la raíz de 16 px; `espacio-1-5` = `0.375rem`). Unidades por tipo de token: [espaciado-reticula](fundamentos/espaciado-reticula.md#unidades).
 
 Un valor que es otro token (`color-marca-navy`) se escribe en CSS como `var(--color-marca-navy)`.
 
@@ -84,44 +84,44 @@ Columna **origen**: nodo de Figma del que sale el valor (verificado en TAREA-201
 
 | Token | Valor | Uso | Origen |
 |---|---|---|---|
-| `espacio-1` | `4px` | Separación mínima icono–texto | `88:293` |
-| `espacio-1-5` | `6px` | Relleno vertical de etiqueta | `86:184` |
-| `espacio-2` | `8px` | Separación dentro de grupos | pantallas `erp` |
-| `espacio-3` | `12px` | Relleno de etiqueta y columna de tablero; hueco entre métricas | `86:184`, `161:1083` |
-| `espacio-4` | `16px` | Relleno de métrica, celda y control | pantallas `erp`, `112:365` |
-| `espacio-5` | `20px` | Relleno de panel | `141:28788` |
-| `espacio-6` | `24px` | Hueco entre paneles y columnas | `131:150` |
-| `espacio-8` | `32px` | Margen de contenido y hueco de la landing | `48:100`, `161:688` |
-| `espacio-12` | `48px` | Margen lateral de página ancha | `44:4`, `86:20` |
-| `espacio-20` | `80px` | Separación entre secciones de la landing | `48:88` |
+| `espacio-1` | `0.25rem` (4 px) | Separación mínima icono–texto | `88:293` |
+| `espacio-1-5` | `0.375rem` (6 px) | Relleno vertical de etiqueta | `86:184` |
+| `espacio-2` | `0.5rem` (8 px) | Separación dentro de grupos | pantallas `erp` |
+| `espacio-3` | `0.75rem` (12 px) | Relleno de etiqueta y columna de tablero; hueco entre métricas | `86:184`, `161:1083` |
+| `espacio-4` | `1rem` (16 px) | Relleno de métrica, celda y control | pantallas `erp`, `112:365` |
+| `espacio-5` | `1.25rem` (20 px) | Relleno de panel | `141:28788` |
+| `espacio-6` | `1.5rem` (24 px) | Hueco entre paneles y columnas | `131:150` |
+| `espacio-8` | `2rem` (32 px) | Margen de contenido y hueco de la landing | `48:100`, `161:688` |
+| `espacio-12` | `3rem` (48 px) | Margen lateral de página ancha | `44:4`, `86:20` |
+| `espacio-20` | `5rem` (80 px) | Separación entre secciones de la landing | `48:88` |
 
 ## Medidas, quiebres y forma
 
 | Token | Valor | Uso | Origen |
 |---|---|---|---|
-| `medida-nav-lateral` | `220px` | Ancho de la navegación lateral | `161:651` |
-| `medida-cabecera-escritorio` | `82px` | Alto de la cabecera de app | `161:610` |
-| `medida-cabecera-movil` | `68px` | Alto de la cabecera móvil | `169:5451` |
-| `medida-nav-tactil` | `56px` | Alto de la navegación táctil | `169:5490` |
+| `medida-nav-lateral` | `13.75rem` (220 px) | Ancho de la navegación lateral | `161:651` |
+| `medida-cabecera-escritorio` | `5.125rem` (82 px) | Alto de la cabecera de app | `161:610` |
+| `medida-cabecera-movil` | `4.25rem` (68 px) | Alto de la cabecera móvil | `169:5451` |
+| `medida-nav-tactil` | `3.5rem` (56 px) | Alto de la navegación táctil | `169:5490` |
 | `medida-zona-fija-movil` | `calc(var(--medida-cabecera-movil) + var(--medida-nav-tactil))` | Alto de lo fijo arriba en móvil; valor de `scroll-padding-top` para que el foco no quede tapado (WCAG 2.4.11) | brief: Figma no dibuja el desplazamiento (TAREA-203) |
-| `medida-contenedor-max` | `1344px` | Ancho máximo de contenido | `44:4` |
-| `medida-columna-lateral` | `344px` | Columna lateral (resumen, panel de acción) | `161:688`, `141:28788` |
-| `medida-placa-marca` | `54px` | Placa del logo en la cabecera de escritorio | `161:611` |
-| `medida-logo-min` | `32px` | Alto mínimo del logo apilado | `169:5454` |
+| `medida-contenedor-max` | `84rem` (1344 px) | Ancho máximo de contenido | `44:4` |
+| `medida-columna-lateral` | `21.5rem` (344 px) | Columna lateral (resumen, panel de acción) | `161:688`, `141:28788` |
+| `medida-placa-marca` | `3.375rem` (54 px) | Placa del logo en la cabecera de escritorio | `161:611` |
+| `medida-logo-min` | `2rem` (32 px) | Alto mínimo del logo apilado | `169:5454` |
 | `medida-linea-lectura` | `72ch` | Longitud máxima de párrafo | brief: Figma no limita párrafos; 72ch mantiene la línea legible |
-| `medida-control-base` | `42px` | Alto de botón y campo en escritorio | `86:161`, `112:365` |
-| `medida-control-tactil` | `44px` | Alto mínimo de control en móvil | `169:4267` |
-| `medida-control-grande` | `48px` | Acción principal de flujo | `141:28788` |
-| `medida-icono-sm` | `16px` | Icono en línea | `112:488` |
-| `medida-icono-md` | `20px` | Icono de navegación | `161:651` |
-| `medida-avatar-sm` | `26px` | Avatar en cabecera | `161:640` |
-| `medida-avatar-md` | `38px` | Avatar en tabla y comentario | `161:842` |
-| `medida-senal` | `8px` | Punto de estado | `86:191` |
-| `medida-progreso` | `8px` | Alto de barra de progreso | `161:651` |
-| `medida-reproducir` | `52px` | Botón de reproducción | `145:3617` |
-| `punto-quiebre-tableta` | `600px` | Inicio de tableta | brief: Figma solo tiene lienzos de 390 y 1440 px |
-| `punto-quiebre-escritorio` | `1024px` | Inicio de escritorio | brief: ídem; 1024 px admite la navegación lateral |
-| `punto-quiebre-amplio` | `1440px` | Lienzo de diseño de escritorio | frames `erp` |
+| `medida-control-base` | `2.625rem` (42 px) | Alto de botón y campo en escritorio | `86:161`, `112:365` |
+| `medida-control-tactil` | `2.75rem` (44 px) | Alto mínimo de control en móvil | `169:4267` |
+| `medida-control-grande` | `3rem` (48 px) | Acción principal de flujo | `141:28788` |
+| `medida-icono-sm` | `1rem` (16 px) | Icono en línea | `112:488` |
+| `medida-icono-md` | `1.25rem` (20 px) | Icono de navegación | `161:651` |
+| `medida-avatar-sm` | `1.625rem` (26 px) | Avatar en cabecera | `161:640` |
+| `medida-avatar-md` | `2.375rem` (38 px) | Avatar en tabla y comentario | `161:842` |
+| `medida-senal` | `0.5rem` (8 px) | Punto de estado | `86:191` |
+| `medida-progreso` | `0.5rem` (8 px) | Alto de barra de progreso | `161:651` |
+| `medida-reproducir` | `3.25rem` (52 px) | Botón de reproducción | `145:3617` |
+| `punto-quiebre-tableta` | `37.5em` (600 px) | Inicio de tableta | brief: Figma solo tiene lienzos de 390 y 1440 px |
+| `punto-quiebre-escritorio` | `64em` (1024 px) | Inicio de escritorio | brief: ídem; 1024 px admite la navegación lateral |
+| `punto-quiebre-amplio` | `90em` (1440 px) | Lienzo de diseño de escritorio | frames `erp` |
 | `borde-grosor-fino` | `1px` | Reglas, divisores, líneas técnicas | `88:380` |
 | `borde-grosor-base` | `2px` | Borde de componente | `86:167` |
 | `borde-grosor-grueso` | `3px` | Escuadras de registro | `117:149` |
@@ -142,4 +142,4 @@ Columna **origen**: nodo de Figma del que sale el valor (verificado en TAREA-201
 | `efecto-desenfoque-fondo` | `6px` | Desenfoque de fondo | `88:465` |
 | `efecto-degradado-suave` | `linear-gradient(180deg, var(--color-marca-lavanda), var(--color-marca-lienzo))` | Fondos de contexto | `88:403` |
 
-Los `punto-quiebre-*` no se pueden usar dentro de `@media`: `tokens.css` los deja como referencia y las consultas usan el valor literal con un comentario al token.
+Los `punto-quiebre-*` no se pueden usar dentro de `@media`: `tokens.css` los deja como referencia y las consultas usan el valor literal en `em` con un comentario al token.

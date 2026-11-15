@@ -28,7 +28,14 @@ En las cabeceras de la app el logo apilado va dentro de una **placa** (`161:611`
 
 1. **Tamaño mínimo:** icono + texto a `medida-logo-min` de alto (el menor observado, placa móvil `169:5454`); por debajo se usa solo el icono, mínimo `medida-icono-md`.
 2. **Área de respeto:** como mínimo `espacio-1-5` a cada lado dentro de la placa, y `espacio-4` fuera de ella respecto de cualquier otro elemento.
-3. **Color:** navy (`color-texto-principal`) sobre fondos claros; lienzo (`color-texto-invertido`) sobre navy. Nunca naranja, nunca sobre fotografía sin superficie.
+3. **Color y contraste:** un solo archivo por forma; el color lo da `currentColor`, nunca un SVG por color. Contraste mínimo **7:1** (AAA, decisión del **usuario**, 2026-11-15):
+
+   | Fondo | Color del logo | Contraste |
+   |---|---|---|
+   | Claros: `color-fondo-lienzo`, `color-fondo-claro`, `color-fondo-destacado` | `color-marca-navy` | 11,83 / 13,91 / 9,05 : 1 |
+   | `color-fondo-invertido` (navy) | `color-marca-lavanda`, el primario de marca | 9,05 : 1 |
+
+   Prohibido: lavanda sobre fondos claros (1,31:1), naranja, y sobre fotografía sin superficie.
 4. **No se deforma, rota, recorta ni se le aplican efectos** del catálogo (glitch, RGB): el logo es la única pieza que no se "brutaliza".
 5. **Accesibilidad:** el logo que enlaza a inicio lleva `aria-label="Bugalú Studio, inicio"`; dentro de la placa junto al nombre del sistema es decorativo (`alt=""`).
 6. **Eslogan:** "Converge y crea." en `fuente-familia-tecnica`, mayúsculas, junto al pie o al panel de acceso (`86:218`, `112:321`), nunca pegado al logo.

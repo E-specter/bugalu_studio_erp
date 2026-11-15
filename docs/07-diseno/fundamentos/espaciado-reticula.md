@@ -9,9 +9,23 @@ depende_de: [diseno-tokens, diseno-brief]
 
 Valores en [tokens](../tokens.md#espacio). Medidas tomadas de las pantallas de `landing-page` y `erp` (1440 × 1080 en escritorio, 390 de ancho en móvil).
 
+## Unidades
+
+Las medidas son relativas para que la interfaz crezca con el tamaño de letra del usuario y con el zoom (WCAG 1.4.4 y 1.4.10). Decisión del **usuario**, 2026-11-15.
+
+| Tokens | Unidad | Por qué |
+|---|---|---|
+| `fuente-tamano-*` | `rem` (y `clamp()` con `rem` + `vw` en el titular) | Respetan el tamaño de letra del usuario |
+| `espacio-*`, `medida-*` | `rem` | Crecen con el texto que contienen |
+| `punto-quiebre-*` | `em` | Las consultas de medios en `em` reaccionan al tamaño de letra y al zoom |
+| `fuente-interlineado-*` | sin unidad | Proporcional al tamaño de la fuente |
+| `borde-*`, `sombra-plana`, `efecto-*` | `px` | Líneas técnicas: si crecen pierden su carácter |
+
+Ningún componente escribe px fuera de estas excepciones; el px que acompaña a cada token en [tokens](../tokens.md) es solo referencia.
+
 ## Escala
 
-Base de 4 px (`espacio-N` = N × 4). Las pantallas de Figma usan valores intermedios (14, 18, 22, 30, 34 px); se **normalizan** al paso más cercano de la escala: 14 → `espacio-4`, 18 → `espacio-4`, 22 → `espacio-6`, 30/34 → `espacio-8`. Ningún componente usa un valor fuera de la escala.
+Base de `0.25rem` (4 px con la raíz de 16 px; `espacio-N` = N × `0.25rem`). Las pantallas de Figma usan valores intermedios (14, 18, 22, 30, 34 px); se **normalizan** al paso más cercano de la escala: 14 → `espacio-4`, 18 → `espacio-4`, 22 → `espacio-6`, 30/34 → `espacio-8`. Ningún componente usa un valor fuera de la escala.
 
 | Relación | Token |
 |---|---|

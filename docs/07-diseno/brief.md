@@ -50,6 +50,11 @@ Verificado en Figma el 2026-11-15 ([registro](figma.md#verificación-cerrada-tar
 | Navegación táctil móvil arriba, bajo la cabecera (`169:5490`; conservada por el **usuario**) | Movimiento, foco y puntos de quiebre: Figma no los dibuja |
 | Logotipo en tres variantes, exportado en SVG (`58:2`, `40:150`, `58:77`; **usuario**) | Solo iconos Lucide; ilustraciones de Streamline descartadas (**usuario**) |
 
+Decisiones del **usuario** posteriores al cierre (2026-11-15):
+
+- **Medidas relativas:** fuentes, espacios y medidas en `rem`, puntos de quiebre en `em`; solo bordes, sombra y efectos en px ([espaciado-reticula](fundamentos/espaciado-reticula.md#unidades)).
+- **Logotipo:** un archivo por forma con el color por `currentColor`; navy sobre claros y lavanda (primario) sobre navy, mínimo 7:1 ([logotipo](fundamentos/logotipo.md#reglas)).
+
 Decisiones `brief:` de la auditoría de cierre (TAREA-203):
 
 - **Un foco naranja en reposo por pantalla:** el aviso Crítico. Los estados de alerta repetibles usan el naranja oscuro (`color-texto-alerta`, `color-fondo-peligro`); [color](fundamentos/color.md#reglas), regla 1.
