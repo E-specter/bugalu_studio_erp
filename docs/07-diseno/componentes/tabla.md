@@ -1,0 +1,59 @@
+---
+id: comp-tabla
+titulo: Componente — Tabla
+estado: borrador
+depende_de: [diseno-tokens, comp-panel]
+---
+
+# Tabla
+
+"Tabla de clientes" (`161:842`: cabecera de 32 px + filas con identidad, datos, estado y acción), "Tabla de entregables" y partidas de la cotización (`141:29356`: descripción, cantidad, precio unitario, importe). Datos tabulares del panel interno.
+
+## Anatomía
+
+1. Contenedor: `color-fondo-superficie`, `borde-grosor-base` `color-borde-fuerte`.
+2. Cabecera: fondo `color-fondo-invertido`, texto `color-texto-invertido`, `fuente-familia-tecnica` `fuente-tamano-micro` mayúsculas, relleno `espacio-3` / `espacio-4`.
+3. Fila: relleno `espacio-4`, divisor inferior `borde-grosor-fino`. Celda principal con [avatar](avatar.md) o código + nombre y dato secundario debajo (`color-texto-secundario`).
+4. Celdas de estado con [etiqueta técnica](etiqueta-tecnica.md); celda de acción con [botón](boton.md) contorno o enlace.
+5. Pie opcional: totales (cotización) o paginación.
+
+Cifras alineadas a la derecha con `tabular-nums`; texto a la izquierda.
+
+## Variantes
+
+| Variante | Uso |
+|---|---|
+| Directorio | Clientes, personal, pagos por validar |
+| Partidas | Cotización y cobro: columnas numéricas + fila de total en `fuente-peso-titulo` |
+| Compacta | Relleno `espacio-3`; listados largos (historial, reportes) |
+
+## Estados
+
+| Estado | Visual |
+|---|---|
+| Fila hover (si toda la fila enlaza) | Fondo `color-fondo-lienzo` |
+| Fila seleccionada | Fondo `color-fondo-destacado` |
+| Cabecera ordenable | Botón en la celda con icono `arrow-up-down`; la columna ordenada muestra `arrow-up` o `arrow-down` |
+| Vacía, carga, error | [Estados del sistema](../patrones/estados-sistema.md): una fila con el mensaje a todo el ancho |
+
+## Adaptabilidad
+
+< `punto-quiebre-escritorio`: cada fila pasa a tarjeta con pares etiqueta/valor (`<dl>`) en una columna. Si se necesita la tabla completa, contenedor con `overflow-x: auto` y `tabindex="0"` + `aria-label`.
+
+## Tokens
+
+`color-fondo-superficie`, `color-fondo-invertido`, `color-fondo-lienzo`, `color-fondo-destacado`, `color-texto-invertido`, `color-texto-secundario`, `color-borde-fuerte`, `borde-grosor-base`, `borde-grosor-fino`, `espacio-3`, `espacio-4`, `fuente-*`, `punto-quiebre-escritorio`.
+
+## Relaciones
+
+Dentro de un [panel](panel.md); controles encima según [tablas y tableros](../patrones/tablas-y-tableros.md).
+
+## Accesibilidad
+
+- `<table>` real con `<caption>` (puede ser visualmente oculto), `<th scope="col">` y, en la celda principal, `<th scope="row">`.
+- Ordenación: `aria-sort` en el `<th>` ordenado.
+- Acciones por fila con texto que incluye el objeto ("Validar pago PAG-031").
+
+## Código
+
+`frontend/src/componentes/Tabla.astro`, props `titulo`, `columnas`, `filas`, `variante`; ranura por celda para componentes.

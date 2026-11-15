@@ -1,0 +1,43 @@
+---
+id: comp-navegacion-tactil
+titulo: Componente — Navegación táctil
+estado: borrador
+depende_de: [diseno-tokens, comp-navegacion-lateral]
+---
+
+# Navegación táctil
+
+"Navegación táctil" de las pantallas móviles del portal (`169:5490`): cinco destinos de 78 × 56 (icono + etiqueta) en una barra fija **bajo la cabecera**.
+
+## Anatomía
+
+1. Barra de ancho completo, alto `medida-nav-tactil`, fondo `color-fondo-superficie`, regla inferior `borde-grosor-base` `color-borde-fuerte`.
+2. Destinos en partes iguales: icono `medida-icono-md` sobre etiqueta (`fuente-familia-tecnica`, `fuente-tamano-micro`, mayúsculas).
+
+Máximo cinco destinos; el resto va al menú de la [cabecera](cabecera-app.md).
+
+## Variantes
+
+Una. Los destinos son los mismos que en la [navegación lateral](navegacion-lateral.md) del perfil, en el mismo orden.
+
+## Estados
+
+Comunes: [catálogo](README.md#estados-comunes). Actual: fondo `color-fondo-destacado` y regla inferior `borde-grosor-grueso` `color-borde-fuerte`.
+
+## Tokens
+
+`medida-nav-tactil`, `medida-icono-md`, `color-fondo-superficie`, `color-fondo-destacado`, `color-borde-fuerte`, `borde-grosor-base`, `borde-grosor-grueso`, `fuente-familia-tecnica`, `fuente-tamano-micro`.
+
+## Relaciones
+
+Solo < `punto-quiebre-escritorio`. Parte de [estructura de app](../patrones/estructura-app.md).
+
+## Accesibilidad
+
+- `<nav aria-label="Principal">` con enlaces y `aria-current="page"`.
+- Cada destino mide al menos `medida-control-tactil` de alto (la barra mide `medida-nav-tactil`).
+- Etiqueta siempre visible: no hay destinos de solo icono.
+
+## Código
+
+`frontend/src/componentes/NavegacionTactil.astro`, props `destinos`, `actual`.

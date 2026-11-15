@@ -7,7 +7,7 @@ depende_de: [ADR-001]
 
 # Brief técnico de diseño
 
-Fuente de verdad visual del proyecto. Se extrae una vez de Figma ([origen](figma.md)) y desde entonces se **extiende de forma coherente** desde aquí. Las skills `aplicar-brief` y `disenar-pantalla` lo resumen y enlazan, nunca lo copian.
+Fuente de verdad visual del proyecto. Se extrajo una vez de Figma ([origen](figma.md)) y desde entonces se **extiende de forma coherente** desde aquí. Las skills `aplicar-brief` y `disenar-pantalla` lo resumen y enlazan, nunca lo copian.
 
 ## Principios
 
@@ -18,28 +18,61 @@ Fuente de verdad visual del proyecto. Se extrae una vez de Figma ([origen](figma
 
 ## Decisiones artísticas
 
-Pendiente (fase 2). Dirección visual, atributos de marca y el porqué de cada decisión.
+**Dirección visual: brutalismo técnico de estudio.** La guía (`bugalu-brutalist-design-guide`, "Manual de sistema v1.0") y la ficha de marca definen el estilo como *Photographic Brutalist Techno Digital FX*: la interfaz se lee como el panel de un rack analógico o una consola — estructura expuesta, bordes de alta definición, sombras planas, etiquetas técnicas — y la fotografía con tratamiento oscuro aporta la atmósfera. Lema: **"Converge y crea."**
+
+| Principio (guía [01]) | Qué significa en la interfaz | Dónde se concreta |
+|---|---|---|
+| Brutalismo técnico | Estructura explícita: cada bloque tiene borde, título con código y regla. Sin ambigüedad visual | [forma y elevación](fundamentos/forma-elevacion.md), [panel](componentes/panel.md) |
+| Rigor sonoro | Medición en lugar de ornamento: vúmetros, ondas, versiones numeradas, tiempos exactos | [barra de progreso](componentes/barra-progreso.md), [reproductor](componentes/reproductor.md), [tipografía técnica](fundamentos/tipografia.md) |
+| Contraste puro | Lavanda + navy como tensión base; el naranja reactivo solo donde hay que actuar | [color](fundamentos/color.md) |
+
+**Atributos de marca** (ficha `14:2` y pilares de la landing): *creativa, versátil, humana, profesional, sofisticada*. El sistema los traduce así:
+
+- **Profesional y sofisticada** → precisión: retícula estricta, datos alineados, registro técnico (`[01]`, `PRY-014`, `V3_MASTER.wav`), nada decorativo en el panel interno.
+- **Creativa y versátil** → la expresión vive en la landing, los accesos y las portadas: display Unbounded, fotografía tratada, marcas de registro, patrones.
+- **Humana** → el lenguaje: mensajes que explican qué pasa y qué sigue, comentarios en primer plano, el artista ve su avance sin jerga interna.
+
+**Por qué este reparto:** el ERP sirve a dos públicos. El artista compra una experiencia de estudio de alto nivel (la identidad debe sentirse); el personal opera todo el día (la identidad no debe estorbar). Por eso la intensidad de marca **baja** de la landing al portal y del portal al panel interno, pero la estructura (bordes, etiquetas, retícula) es la misma en las tres.
+
+**Voz:** español, segunda persona ("tu proyecto"), frases cortas. Títulos y etiquetas en mayúsculas técnicas; contenido en minúsculas. Los anglicismos de Figma ("READY", "CREATORS WELCOME") se traducen; se conservan los términos de oficio del audio (WAV, máster, mezcla).
 
 ## Índice
 
 | Tema | Archivo | Estado |
 |---|---|---|
-| Logotipo y variantes | `fundamentos/logotipo.md` | Pendiente (fase 2) |
-| Color | `fundamentos/color.md` | Pendiente (fase 2) |
-| Tipografía | `fundamentos/tipografia.md` | Pendiente (fase 2) |
-| Espaciado y retícula | `fundamentos/espaciado-reticula.md` | Pendiente (fase 2) |
-| Forma y elevación | `fundamentos/forma-elevacion.md` | Pendiente (fase 2) |
-| Movimiento | `fundamentos/movimiento.md` | Pendiente (fase 2) |
-| Iconografía e imagen | `fundamentos/iconografia-imagen.md` | Pendiente (fase 2) |
-| Tokens | [tokens](tokens.md) | Convención definida |
-| Componentes | [catálogo](componentes/README.md) | Pendiente (fase 2) |
-| Patrones | `patrones/` | Pendiente (fase 2) |
-| Pantallas | `pantallas/` | Pendiente (fase 2) |
+| Logotipo y variantes | [logotipo](fundamentos/logotipo.md) | Borrador (SVG pendientes) |
+| Color | [color](fundamentos/color.md) | Borrador |
+| Tipografía | [tipografía](fundamentos/tipografia.md) | Borrador |
+| Espaciado y retícula | [espaciado y retícula](fundamentos/espaciado-reticula.md) | Borrador |
+| Forma y elevación | [forma y elevación](fundamentos/forma-elevacion.md) | Borrador |
+| Movimiento | [movimiento](fundamentos/movimiento.md) | Borrador (inferido) |
+| Iconografía e imagen | [iconografía e imagen](fundamentos/iconografia-imagen.md) | Borrador |
+| Tokens | [tokens](tokens.md) | Borrador |
+| Componentes | [catálogo](componentes/README.md) (28 fichas) | Borrador |
+| Patrones | [patrones](patrones/README.md) (6) | Borrador |
+| Pantallas | `pantallas/` | Pendiente: se especifican por RF desde el brief |
 
 ## Transversales
 
-- **Audiencias:** Artista/Cliente (experiencia pública, móvil y escritorio); personal interno y Administrador (panel operativo, escritorio).
-- **Principios UX:** jerarquía clara, densidad según el perfil, retroalimentación de estados y prevención de errores. Detalle: pendiente (fase 2).
-- **Adaptabilidad:** puntos de quiebre por dispositivo; la cabina trabaja en escritorio y el cliente en móvil y escritorio. Detalle: pendiente (fase 2).
-- **Accesibilidad:** WCAG 2.2 AA: contraste, foco visible, navegación por teclado, textos alternativos.
-- **Movimiento:** respeto de `prefers-reduced-motion`.
+- **Audiencias:** Artista/Cliente (experiencia pública y portal, móvil y escritorio); personal interno y Administrador (panel operativo, escritorio).
+- **Accesibilidad:** WCAG 2.2 AA: contraste verificado en [color](fundamentos/color.md#contraste-verificado), foco visible ([estados comunes](componentes/README.md#estados-comunes)), navegación por teclado, textos alternativos, objetivos ≥ 24 px.
+- **Movimiento:** respeto de `prefers-reduced-motion` ([movimiento](fundamentos/movimiento.md)).
+
+### Principios UX
+
+1. **Jerarquía clara:** cada vista responde primero "dónde estoy" (ruta + título) y "qué hago aquí" (una acción principal, botón primario único).
+2. **Densidad según el perfil:** el panel interno admite tablas compactas y más datos por pantalla; el portal muestra menos, con más aire y lenguaje del artista ([tablas y tableros](patrones/tablas-y-tableros.md#densidad)).
+3. **Retroalimentación de estados:** todo lo que cambia (guardado, sincronización, validación de pago, nueva versión) tiene un estado visible en texto ([estados del sistema](patrones/estados-sistema.md)).
+4. **Prevención de errores:** precio visible antes de comprometer, confirmación en acciones irreversibles, validación nativa primero ([formularios](patrones/formularios.md)).
+5. **El estado vive en la URL:** filtros, pasos y vistas son enlaces; el sistema funciona sin JS salvo en las islas.
+
+### Adaptabilidad
+
+| Punto de quiebre | Ancho | Diseño |
+|---|---|---|
+| Móvil (base) | < 600 px (diseñado a 390) | Una columna, cabecera móvil + navegación táctil, controles ≥ 44 px |
+| Tableta | 600–1023 px | Navegación móvil, retícula de 2 columnas |
+| Escritorio | ≥ 1024 px | Navegación lateral, principal + lateral |
+| Amplio | ≥ 1440 px (lienzo de Figma) | Contenido limitado a 1344 px, centrado |
+
+Tokens `punto-quiebre-*` en [tokens](tokens.md#medidas-quiebres-y-forma); reglas en [espaciado y retícula](fundamentos/espaciado-reticula.md#adaptabilidad). La cabina y el Administrador trabajan en escritorio, pero el panel interno sigue siendo usable en tableta; el portal y el flujo son completos en móvil.
