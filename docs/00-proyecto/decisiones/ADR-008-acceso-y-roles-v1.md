@@ -36,6 +36,7 @@ Usuario, 2026-11-15:
 
 - Tres roles de sistema; las reglas de acceso siguen siendo por dueño y por rol.
 - Nueva tabla de solicitudes de acceso interno y columnas `telefono` y `nombre_artistico` en `usuario` ([modelo-datos](../../01-arquitectura/modelo-datos.md)).
-- El perfil expone si el correo está confirmado; RF-05 lo exige antes de registrar el primer pago. Quien entra con Google ya tiene el correo verificado.
+- El perfil expone si el correo está verificado; RF-05 lo exige antes de registrar el primer pago. Quien entra con Google ya tiene el correo verificado.
+- **Ajuste técnico (leader, 2026-11-15):** el CLI de Supabase local no permite iniciar sesión con el correo sin confirmar (o lo exige, o lo confirma al registrar). Para mantener la decisión igual en local y en producción, Supabase confirma al registrar y la verificación se lleva en `usuario.correo_verificado_en`, que solo escribe una función de la base cuando la sesión viene de un enlace de correo de un solo uso o de Google. Para el usuario es una confirmación por enlace como cualquier otra.
 - Google necesita un cliente OAuth en Google Cloud Console (paso del usuario); mientras no exista, el botón no se muestra y nada más cambia.
 - Ampliar roles más adelante es una migración (la restricción `rol in (…)`) más las reglas de acceso del RF afectado.

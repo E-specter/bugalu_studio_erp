@@ -42,7 +42,7 @@ Variables de `backend/.env` (`.env` está ignorado por git):
 
 **Auth (RF-01, `supabase/config.toml`):** contraseña de 8+ caracteres con minúscula, mayúscula, número y símbolo. Tras cambiar `config.toml`: `npx supabase stop` y `npx supabase start`. Las pruebas de integración y cualquier alta usan contraseñas que lo cumplan (p. ej. `Clave-Segura-123`).
 
-**Pendiente de decisión (CA-06):** el CLI 3.1.0 no puede dar "iniciar sesión sin confirmar el correo pero con `email_confirmed_at` nulo": con `enable_confirmations = true` el inicio de sesión falla con `email_not_confirmed`, y con `false` Auth confirma el correo en el alta. Se mantiene `false` (en local el correo siempre queda confirmado).
+**Verificación del correo (CA-06):** el CLI local no permite iniciar sesión con el correo sin confirmar, así que `enable_confirmations = false` (Supabase confirma al registrar) y la verificación se lleva en `usuario.correo_verificado_en`: el perfil pide un enlace de un solo uso (llega a Mailpit, `http://127.0.0.1:45624`) y el backend la registra. Ver [ADR-008](../00-proyecto/decisiones/ADR-008-acceso-y-roles-v1.md).
 
 **Google (desactivado por defecto):** crea un cliente OAuth en Google Cloud Console con `http://127.0.0.1:45621/auth/v1/callback` como URI de redirección, copia `supabase/.env.example` a `supabase/.env` (ignorado por git; el CLI lo lee al arrancar) con `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` y `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`, pon `enabled = true` en `[auth.external.google]` y reinicia el stack.
 

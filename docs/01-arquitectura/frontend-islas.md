@@ -37,8 +37,11 @@ frontend/
 | Agenda de asesoría | [RF-15](../03-requerimientos/RF-15.md) |
 | Registro de pago con captura | [RF-05](../03-requerimientos/RF-05.md), [RF-11](../03-requerimientos/RF-11.md) |
 | Validación de pagos (Administrador) | [RF-05](../03-requerimientos/RF-05.md) |
-| Mostrar u ocultar contraseña (`<bugalu-contrasena>`) | [RF-01](../03-requerimientos/RF-01.md) |
-| Perfil propio (`<bugalu-perfil>`) | [RF-01](../03-requerimientos/RF-01.md) |
+| Contraseña: mostrar u ocultar y medidor de robustez (`<bugalu-contrasena>`) | [RF-01](../03-requerimientos/RF-01.md) |
+| Acceso: iniciar sesión, registrarse, solicitar acceso interno, recuperar y restablecer (`<bugalu-acceso>`) | [RF-01](../03-requerimientos/RF-01.md) |
+| Estado de la solicitud de acceso interno (`<bugalu-solicitud>`) | [RF-01](../03-requerimientos/RF-01.md) |
+| Bandeja de solicitudes y usuarios del Administrador (`<bugalu-solicitudes>`) | [RF-01](../03-requerimientos/RF-01.md) |
+| Perfil propio, editable (`<bugalu-perfil>`) | [RF-01](../03-requerimientos/RF-01.md) |
 | Aviso descartable (`<bugalu-aviso>`) | Transversal ([aviso](../07-diseno/componentes/aviso.md)) |
 | Carga de entregables y capturas (`<bugalu-carga-archivos>`) | [RF-09](../03-requerimientos/RF-09.md) |
 | Reproductor con forma de onda y comentarios por timestamp (`<bugalu-reproductor>`) | [RF-10](../03-requerimientos/RF-10.md) |

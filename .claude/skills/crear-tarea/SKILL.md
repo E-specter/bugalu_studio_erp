@@ -39,7 +39,7 @@ Numeración: `TAREA-RFxx-<n>` en la fase 7; `TAREA-<fase><nn>` en las fases de e
 - Objetivo: <una frase>
 - Criterios de aceptación: <verificables, con comando y salida esperada, incluidos los casos de rotura>
 - Archivos permitidos · Fuera de alcance (incluido "commits")
-- Entorno: stack bugalu 456xx; no tocar 543xx; MCP de Supabase solo lectura
+- Entorno: stack bugalu 456xx; no tocar 543xx; MCP de Supabase solo lectura; nunca `git stash`, `checkout`, `reset` ni `clean` (puede haber otro agente trabajando en el repositorio)
 - Entrega: formato ENTREGA + RED→GREEN por punto
 ```
 
