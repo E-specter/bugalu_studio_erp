@@ -34,7 +34,7 @@ Comunes: [catálogo](README.md#estados-comunes). Propios del día y de la franja
 | Disponible | `color-fondo-superficie`, `borde-grosor-fino` `color-borde-fuerte` |
 | Seleccionado | `color-fondo-invertido`, número `color-texto-invertido`, icono `check` (`medida-icono-sm`) junto al número |
 | En tramo (franjas) | `color-fondo-destacado` + `borde-grosor-base` `color-borde-fuerte`; el lavanda solo no basta (1,31:1, [color](../fundamentos/color.md#reglas)) |
-| Hoy | Número subrayado `borde-grosor-base` |
+| Hoy | Número subrayado `borde-grosor-base` y `aria-current="date"` |
 | Sin disponibilidad / ocupada | `color-texto-secundario`, patrón de rayas (`efecto-patron-paso`), no seleccionable |
 | Pre-reservada (franja retenida) | Etiqueta Aviso "RETENIDA" |
 | Hora elegida (panel de horarios) | Como Seleccionado: radio marcado + `check` |

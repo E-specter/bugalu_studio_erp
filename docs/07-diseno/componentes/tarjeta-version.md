@@ -21,7 +21,7 @@ depende_de: [diseno-tokens, comp-indicador-estado]
 
 | Variante | Uso |
 |---|---|
-| Actual | Versión vigente: etiqueta Activa ("V3 · EN REVISIÓN"), fondo `color-fondo-destacado` en el identificador |
+| Actual | Versión vigente: etiqueta Activa ("V3 · EN REVISIÓN") más el texto "ACTUAL", fondo `color-fondo-destacado` en el identificador y `aria-current="true"` |
 | Historial | Fila de la lista de versiones, con casilla de comparación |
 | Aprobada | Etiqueta Éxito "APROBADA"; enlaza a la descarga |
 

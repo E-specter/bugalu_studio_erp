@@ -52,7 +52,7 @@ Dentro de un [panel](panel.md); controles encima según [tablas y tableros](../p
 
 - `<table>` real con `<caption>` (puede ser visualmente oculto), `<th scope="col">` y, en la celda principal, `<th scope="row">`.
 - Ordenación: `aria-sort` en el `<th>` ordenado.
-- Fila seleccionada: `aria-selected="true"` en el `<tr>`. En una `<table>` sin `role="grid"` el lector no lo anuncia, así que la selección se hace con la casilla nativa de la primera celda, que da el estado; `role="grid"` solo si una isla aporta la navegación con flechas. La fila del registro abierto en el lateral usa `aria-current="true"` en su enlace.
+- Fila seleccionada: la selección se hace con la casilla nativa de la primera celda, que da el estado; `role="grid"` solo si una isla aporta la navegación con flechas. La fila del registro abierto en el lateral usa `aria-current="true"` en su enlace.
 - Acciones por fila con texto que incluye el objeto ("Validar pago PAG-031").
 
 ## Código

@@ -24,7 +24,7 @@ Alto `medida-cabecera-escritorio`; márgenes laterales `espacio-8` (app) o `espa
 | Estudio | Sala + sincronización + perfil | Panel interno |
 | Portal | Proyecto seleccionado + sincronización + perfil | Portal del artista |
 | Flujo | Estado de guardado + código de solicitud (etiqueta invertida) | Flujo de contratación |
-| Móvil | Fila 1: identidad + señal + botón "Menú"; fila 2: proyecto actual + selector | < `punto-quiebre-tableta`; alto `medida-cabecera-movil` + fila de contexto |
+| Móvil | Fila 1: identidad + señal + botón "Menú"; fila 2: proyecto actual + selector | < `punto-quiebre-escritorio` (móvil y tableta, como en el brief); alto `medida-cabecera-movil` + fila de contexto |
 
 ## Estados
 
