@@ -33,7 +33,7 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Campo | [campo](campo.md) | `componentes/Campo.astro` + isla `<bugalu-contrasena>` | Implementado |
 | Casilla | [casilla](casilla.md) | `componentes/Casilla.astro` | Implementado |
 | Tarjeta de opción | [tarjeta-opcion](tarjeta-opcion.md) | `componentes/TarjetaOpcion.astro` | Borrador |
-| Aviso | [aviso](aviso.md) | `componentes/Aviso.astro` | Implementado |
+| Aviso | [aviso](aviso.md) | `componentes/Aviso.astro` + isla `<bugalu-aviso>` (descartable) | Implementado |
 | Indicador de estado | [indicador-estado](indicador-estado.md) | `componentes/IndicadorEstado.astro` | Implementado |
 | Barra de progreso | [barra-progreso](barra-progreso.md) | `componentes/BarraProgreso.astro` | Borrador |
 | Avatar | [avatar](avatar.md) | `componentes/Avatar.astro` | Borrador |

@@ -70,7 +70,7 @@ npm run build               # salida estática en dist/
 npm run test:e2e            # Playwright + axe; construye el sitio y simula la API con page.route
 ```
 
-`test:e2e` no necesita backend ni Supabase (usa valores ficticios) y deja capturas en `frontend/pruebas/capturas/`. La primera vez, instala el navegador con `npx playwright install chromium`. `/catalogo` solo existe con `PUBLIC_CATALOGO=1` (lo activa `test:e2e`).
+`test:e2e` no necesita backend ni Supabase (usa valores ficticios) y deja capturas en `frontend/pruebas/capturas/`. La primera vez, instala el navegador con `npx playwright install chromium`. `/catalogo` existe en `npm run dev` y en el build de pruebas (`PUBLIC_CATALOGO=1`, en `dist-pruebas/`, lo activa `test:e2e`); nunca en `npm run build`.
 
 ## Calidad (desde `backend/`)
 

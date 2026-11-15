@@ -16,15 +16,17 @@ depende_de: [arq-stack, convenciones]
 
 ```
 frontend/
-├── astro.config.mjs
-├── public/
+├── astro.config.mjs · playwright.config.js · package.json
+├── scripts/              # comprobar-tokens.mjs, comprobar-literales.mjs (npm run check)
+├── pruebas/              # Playwright + axe; capturas/ y resultados/ ignorados por git
 └── src/
-    ├── pages/            # rutas (nombre reservado por Astro)
-    ├── layouts/          # nombre reservado por convención Astro
-    ├── componentes/      # .astro estáticos, sin JS
-    ├── islas/            # interactivos: franjas, agenda, pagos, reproductor, carga de archivos
-    ├── servicios/        # cliente HTTP hacia la API
-    └── estilos/          # tokens.css, base.css
+    ├── pages/            # rutas (nombre reservado por Astro); [catalogo].astro solo en desarrollo
+    ├── layouts/          # LayoutBase, LayoutPublico, LayoutApp
+    ├── componentes/      # .astro estáticos, sin JS; internos/ (Icono, MensajeError) fuera del catálogo
+    ├── islas/            # .astro que registran <bugalu-*>
+    ├── servicios/        # api.js (cliente HTTP), sesion.js (Supabase Auth)
+    ├── estilos/          # tokens.css, base.css
+    └── assets/           # logotipo en SVG
 ```
 
 ## Islas identificadas
@@ -36,5 +38,7 @@ frontend/
 | Registro de pago con captura | [RF-05](../03-requerimientos/RF-05.md), [RF-11](../03-requerimientos/RF-11.md) |
 | Validación de pagos (Administrador) | [RF-05](../03-requerimientos/RF-05.md) |
 | Mostrar u ocultar contraseña (`<bugalu-contrasena>`) | [RF-01](../03-requerimientos/RF-01.md) |
+| Perfil propio (`<bugalu-perfil>`) | [RF-01](../03-requerimientos/RF-01.md) |
+| Aviso descartable (`<bugalu-aviso>`) | Transversal ([aviso](../07-diseno/componentes/aviso.md)) |
 | Carga de entregables y capturas (`<bugalu-carga-archivos>`) | [RF-09](../03-requerimientos/RF-09.md) |
 | Reproductor con forma de onda y comentarios por timestamp (`<bugalu-reproductor>`) | [RF-10](../03-requerimientos/RF-10.md) |
