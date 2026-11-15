@@ -6,6 +6,7 @@ effort: high
 maxTurns: 80
 skills:
   - design:design-system
+  - aplicar-brief
 tools: Read, Grep, Glob, Write, Edit, Bash, Skill, mcp__plugin_figma_figma__create_session, mcp__plugin_figma_figma__get_metadata, mcp__plugin_figma_figma__get_design_context, mcp__plugin_figma_figma__get_screenshot, mcp__plugin_figma_figma__get_variable_defs, mcp__plugin_figma_figma__search_design_system, mcp__plugin_figma_figma__get_libraries, mcp__plugin_figma_figma__download_assets, mcp__plugin_figma_figma__whoami, mcp__claude_ai_Figma__create_session, mcp__claude_ai_Figma__get_metadata, mcp__claude_ai_Figma__get_design_context, mcp__claude_ai_Figma__get_screenshot, mcp__claude_ai_Figma__get_variable_defs, mcp__claude_ai_Figma__search_design_system, mcp__claude_ai_Figma__get_libraries, mcp__claude_ai_Figma__download_assets, mcp__claude_ai_Figma__whoami
 ---
 

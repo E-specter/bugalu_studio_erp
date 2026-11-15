@@ -15,7 +15,7 @@ Lo **precargado** es fijo y está en [equipo](equipo.md). Esta tabla lista lo qu
 | 2 · Extracción del diseño | `find-skills`, `superpowers:writing-plans` | `figma:figma-design-to-code`, `impeccable` (extract), `design:accessibility-review` | — | — | Opus: revisión del brief | índice de `07-diseno` |
 | 3 · Esqueleto backend | `find-skills`, `superpowers:writing-plans` | — | skills externas de FastAPI/Supabase si se aprueban; `superpowers:systematic-debugging` ante fallos | — | — | `montaje-local` |
 | 4 · Esqueleto frontend | `find-skills`, `superpowers:writing-plans` | `design:design-critique` (revisión visual) | — | `frontend-design`, skill externa de Astro si se aprueba (`aplicar-brief` ya va precargada desde la fase 2) | `design:accessibility-review` | índice |
-| 5 · Skills propias | `superpowers:writing-skills` | `aplicar-brief`, `disenar-pantalla` (las mantiene) | — | — | — | registro en `herramientas-mcp` |
+| 5 · Skills propias | `superpowers:writing-skills` | mantiene `aplicar-brief` y `disenar-pantalla` (creadas en la fase 2) | — | — | — | registro en `herramientas-mcp` |
 | 6 · Auditoría del esqueleto | — | — | — | — | Opus: `security-review`, `design:accessibility-review` | changelog |
 | 7 · Implementación por RF | `superpowers:brainstorming` (solo si hay preguntas abiertas), `superpowers:writing-plans` | `disenar-pantalla` | `crear-slice-backend`, `crear-migracion` | `crear-componente`, `crear-isla` | `auditar-entrega`; Opus en las compuertas | estado de los RF, changelog |
 

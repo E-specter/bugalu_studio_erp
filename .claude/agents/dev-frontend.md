@@ -6,6 +6,7 @@ effort: medium
 maxTurns: 40
 tools: Read, Grep, Glob, Edit, Write, Bash, Skill, mcp__plugin_playwright_playwright__*, mcp__plugin_context7_context7__*
 skills:
+  - aplicar-brief
   - superpowers:verification-before-completion
 ---
 
