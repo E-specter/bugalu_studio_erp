@@ -2,6 +2,7 @@
 
 ## 2026-11-15
 
+- **Frontend (fase 4):** Astro estático con `tokens.css` generado y comprobado contra `tokens.md`, fuentes propias (@fontsource), layouts público y de app, 11 componentes base con la isla `<bugalu-contrasena>` y `<bugalu-aviso>`, catálogo de desarrollo y página de perfil con cliente de la API y sesión de Supabase. 48 pruebas Playwright con axe (WCAG 2.2 AA); CORS del backend por lista de orígenes.
 - **Backend (fase 3):** Supabase local propio (`project_id` bugalu, puertos 456xx) con tabla `usuario` (RLS, rol no editable por el usuario) y buckets privados; esqueleto FastAPI hexagonal con `uv`, acceso a PostgreSQL con psycopg y RLS por transacción (ADR-007), JWT de Supabase Auth y `GET /api/v1/perfil`. 23 pruebas de backend y 14 pgTAP.
 - **Diseño (fase 2):** brief técnico extraído de Figma y verificado (12 llamadas; figma.md congelado): fundamentos, 90+ tokens con contraste WCAG 2.2 AA, 28 fichas de componentes, patrones y logotipo en SVG. Skills `aplicar-brief` (precargada en disenador-ui y dev-frontend) y `disenar-pantalla`.
 - **Contratación y D-01..D-04 (fase 1):** ADR-003..006 (Supabase Storage, pagos sin pasarela con validación manual, Supabase Auth, claves UUID). Flujo real del estudio: franjas semanales por sala, reserva de grabación o ensayo en múltiplos de 30 min, asesoría con profesional (presencial o virtual), cuotas 50/50 o plan a medida, posproducción 50/50. Reglas RN-12..RN-16, RF-02..05 y RF-11 reescritos, RF-15 nuevo. Spec: docs/superpowers/specs/2026-11-15-contratacion-y-decisiones-design.md.
