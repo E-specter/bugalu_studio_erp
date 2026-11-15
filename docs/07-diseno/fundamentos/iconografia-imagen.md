@@ -32,6 +32,8 @@ Figma usa dos sistemas: glifos de texto como marcadores en las pantallas del `er
 | Comentario | `message-square` |
 | Calendario, franja | `calendar` |
 | Información / pendiente / error | `info` / `clock` / `alert-triangle` |
+| Condición de contraseña pendiente / cumplida ([medidor](../componentes/campo.md#medidor-de-robustez)) | `circle` / `check-circle` |
+| Solicitudes de acceso / usuarios (destinos del Administrador) | `user-plus` / `users` |
 | Cerrar, quitar | `x` |
 | Buscar | `search` |
 | Inicio (destino de navegación) | `house` |

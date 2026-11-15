@@ -38,7 +38,7 @@ Origen: brief del proyecto (`141:28788`), accesos (`112:286`, `112:385`), panel 
 
 ## Accesos
 
-Formulario de una columna: título técnico, campos con prefijo `//`, "Recordar sesión" + "Recuperar clave" en una fila, botón primario a ancho completo y enlace a registro debajo. Mensaje de error de credenciales genérico ("Correo o contraseña incorrectos"), sin revelar cuál falla.
+Formulario de una columna: título técnico, campos con prefijo `//`, "¿Olvidaste tu contraseña?" bajo la contraseña, botón primario a ancho completo y enlace a registro debajo. "Recordar sesión" (`112:373`) no entra en la v1: la sesión dura hasta cerrarla ([acceso de RF-01](../pantallas/RF-01-acceso.md)). Mensaje de error de credenciales genérico ("Correo o contraseña incorrectos"), sin revelar cuál falla.
 
 ## Accesibilidad
 

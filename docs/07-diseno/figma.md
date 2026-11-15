@@ -50,6 +50,8 @@ No hay pantallas para estas partes, que se especifican desde el brief en la fase
 | Estado de reserva y su historial; las notificaciones son correo | [RF-06](../03-requerimientos/RF-06.md) |
 | Evaluación de satisfacción (la versión aprobada solo trae los pasos de cierre) | [RF-13](../03-requerimientos/RF-13.md) |
 
+*Nota (2026-11-15, TAREA-RF01-3): RF-01 ya tiene spec de pantalla, sin abrir Figma (solo el volcado local de la página `login`): [acceso](pantallas/RF-01-acceso.md), [acceso interno](pantallas/RF-01-acceso-interno.md), [restablecer](pantallas/RF-01-restablecer.md), [perfil](pantallas/RF-01-perfil.md) y [solicitudes](pantallas/RF-01-solicitudes.md). Este registro sigue congelado.*
+
 Brechas transversales (sin RF propio): estados vacío, carga y error; diálogo de confirmación; notificación emergente. Se cubren con el patrón [estados del sistema](patrones/estados-sistema.md) y la sección "Fuera del catálogo" del [catálogo](componentes/README.md).
 
 ## Extracción

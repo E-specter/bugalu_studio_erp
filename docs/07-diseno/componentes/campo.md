@@ -24,10 +24,47 @@ Separación etiqueta → entrada: `espacio-2`. Campos en fila: hueco `espacio-3`
 |---|---|---|
 | Texto | `<input type="text|email|tel|url|number|date">` | La base |
 | Área | `<textarea>` | Alto mínimo 2 × `medida-control-base`. Si hay límite: `maxlength` + la ayuda lo dice ("Máximo 500 caracteres"). El contador en vivo (`145:3617` "Contador") necesita JS: se hace isla con la primera pantalla que lo pida |
-| Contraseña | `<input type="password">` + botón `eye` | El botón de mostrar es la isla `<bugalu-contrasena>`; sin JS el campo funciona igual |
+| Contraseña | `<input type="password">` + botón `eye` | El botón de mostrar es la isla `<bugalu-contrasena>`; sin JS el campo funciona igual. En una contraseña nueva suma el [medidor](#medidor-de-robustez) |
 | Búsqueda | `<input type="search">` con icono `search` a la izquierda | Sin atajo de teclado: el "Atajo" de `161:842` no se adopta (un atajo de una tecla choca con WCAG 2.1.4 y pide JS) |
 | Selector | `<select>` nativo con la misma caja | Para listas cerradas (servicio, profesional) |
 | Archivo | — | Usar [carga-archivos](carga-archivos.md) |
+
+## Medidor de robustez
+
+Solo en contraseñas **nuevas** (`autocomplete="new-password"`: registro, solicitud de acceso, nueva contraseña); nunca al iniciar sesión. Cumple el CA-02 de [RF-01](../../03-requerimientos/RF-01.md). Decisión del brief: Figma solo rotula "(MIN 8 CARACT.)" (`112:270`).
+
+Anatomía, entre la entrada y el mensaje de error, a `espacio-2` de la entrada:
+
+1. Nivel: [indicador de estado](indicador-estado.md) En línea, "ROBUSTEZ: MEDIA".
+2. Lista `<ul>` de las cinco condiciones, una por línea con hueco `espacio-1`: icono `medida-icono-sm` + texto `fuente-tamano-pequeno` en `color-texto-cuerpo`, separados `espacio-2`.
+
+| Condición | Texto | Qué cuenta (igual que Supabase Auth) |
+|---|---|---|
+| Longitud | Al menos 8 caracteres | 8 o más caracteres |
+| Minúscula | Una minúscula (a-z) | `a-z`; la ñ y las vocales con tilde no cuentan |
+| Mayúscula | Una mayúscula (A-Z) | `A-Z`; ídem |
+| Número | Un número (0-9) | `0-9` |
+| Símbolo | Un símbolo, como ! ? # $ % | ``!@#$%^&*()_+-=[]{};'\:"\|<>?,./`~`` |
+
+| Condición | Icono | Color del icono | Texto oculto tras el texto |
+|---|---|---|---|
+| Pendiente | `circle` | `color-texto-secundario` | ": pendiente" |
+| Cumplida | `check-circle` | `color-texto-exito` | ": cumplida" |
+
+| Nivel | Cuándo | Tono del indicador |
+|---|---|---|
+| Sin evaluar | Campo vacío | Neutro, "ROBUSTEZ: SIN EVALUAR" |
+| Débil | Falta alguna condición: Supabase Auth la rechazaría | Problema |
+| Media | Las cinco, con 8 a 11 caracteres | Pendiente |
+| Fuerte | Las cinco, con 12 o más | Correcto |
+
+Comportamiento: la isla `<bugalu-contrasena medidor>` evalúa en el navegador en cada entrada, sin enviar nada. Al enviar con nivel Débil, error del campo que nombra lo que falta ("Falta una mayúscula y un símbolo.") y no se llama al servicio. Sin JS: la lista se ve como requisitos (sin iconos de estado ni nivel) y quedan `required` y `minlength="8"` nativos.
+
+Accesibilidad del medidor:
+
+- La entrada lleva `aria-describedby` a la ayuda ("Mínimo 8 caracteres con minúscula, mayúscula, número y símbolo.") y al error; la lista no, para no leer cinco líneas en cada foco. Se recorre con el cursor de lectura.
+- Cada condición dice su estado en texto ("Un número: cumplida"); el icono es `aria-hidden`. Color, icono y texto, nunca solo color.
+- Anuncio: una región `role="status"` oculta y propia del campo, presente desde la carga, dice **solo el nivel** ("Robustez media") cuando cambia, tras 1 s sin escribir o al salir del campo. Nunca en cada pulsación ni la lista entera; el indicador visible no lleva rol.
 
 ## Estados
 
@@ -43,7 +80,7 @@ Comunes: [catálogo](README.md#estados-comunes). Propios:
 
 ## Tokens
 
-`color-fondo-claro`, `color-fondo-lienzo`, `sombra-plana`, `color-borde-fuerte`, `color-texto-principal`, `color-texto-secundario`, `color-texto-alerta`, `borde-grosor-base`, `borde-grosor-fino`, `borde-radio-ninguno`, `medida-control-base`, `medida-icono-sm`, `espacio-2`, `espacio-3`, `espacio-4`, `fuente-*`.
+`color-fondo-claro`, `color-fondo-lienzo`, `sombra-plana`, `color-borde-fuerte`, `color-texto-principal`, `color-texto-secundario`, `color-texto-alerta`, `borde-grosor-base`, `borde-grosor-fino`, `borde-radio-ninguno`, `medida-control-base`, `medida-icono-sm`, `espacio-1`, `espacio-2`, `espacio-3`, `espacio-4`, `fuente-*`. Medidor: `color-texto-cuerpo`, `color-texto-exito` y los del [indicador de estado](indicador-estado.md).
 
 ## Relaciones
 
@@ -58,4 +95,4 @@ Compone los [formularios](../patrones/formularios.md). Para opciones múltiples:
 
 ## Código
 
-`frontend/src/componentes/Campo.astro`, props `tipo` (`text|email|tel|url|number|date|password|search|area|selector`), `nombre`, `etiqueta`, `ayuda`, `error`, `obligatorio`, `soloLectura`, `valor`, `id`; el resto de atributos va al control (`autocomplete`, `placeholder`…). `selector` recibe los `<option>` en la ranura. Isla `frontend/src/islas/Contrasena.astro` registra `<bugalu-contrasena>`.
+`frontend/src/componentes/Campo.astro`, props `tipo` (`text|email|tel|url|number|date|password|search|area|selector`), `nombre`, `etiqueta`, `ayuda`, `error`, `obligatorio`, `soloLectura`, `valor`, `id`; el resto de atributos va al control (`autocomplete`, `placeholder`…). `selector` recibe los `<option>` en la ranura; `medidor` (solo con `password`) añade el [medidor de robustez](#medidor-de-robustez). Isla `frontend/src/islas/Contrasena.astro` registra `<bugalu-contrasena>` (atributo `medidor`).

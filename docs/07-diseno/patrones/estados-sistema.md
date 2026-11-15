@@ -40,6 +40,7 @@ Los mensajes dicen qué pasó, si se perdió algo y qué hacer. No muestran traz
 ## Éxito
 
 - Resultado de una acción: [aviso](../componentes/aviso.md) Éxito arriba de la vista de destino (patrón enviar → redirigir → mostrar), con `role="status"`.
+- Tras redirigir, el destino recibe `?aviso=<clave>` de una **lista cerrada** que define la spec de pantalla; la isla del destino muestra el texto que corresponde a esa clave, nunca texto tomado de la URL, y quita el parámetro con `history.replaceState` para que recargar no lo repita. Clave desconocida: no se muestra nada (decisión del brief, RF-01: la salida es estática y la sesión vive en el navegador).
 - Cambios de estado de objeto: la [etiqueta](../componentes/etiqueta-tecnica.md) cambia y la [lista de eventos](../componentes/lista-eventos.md) registra el hecho.
 - Sin notificaciones emergentes que desaparecen solas.
 
