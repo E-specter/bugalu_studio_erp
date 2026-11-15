@@ -4,14 +4,14 @@
 
 **Goal:** Backend FastAPI hexagonal con `uv` sobre un Supabase local propio de Bugalú, con el corte `identidad` → `GET /api/v1/perfil` probado de punta a punta.
 
-**Diseño aprobado por el usuario (2026-11-15):** stack propio `project_id = "bugalu"` en puertos 553xx; acceso a datos por [ADR-007](../../00-proyecto/decisiones/ADR-007-acceso-postgres-directo.md); módulo de ejemplo `identidad`; migraciones base solo `usuario` + buckets; `pytest`, `ruff`, `mypy`.
+**Diseño aprobado por el usuario (2026-11-15):** stack propio `project_id = "bugalu"` en puertos 456xx; acceso a datos por [ADR-007](../../00-proyecto/decisiones/ADR-007-acceso-postgres-directo.md); módulo de ejemplo `identidad`; migraciones base solo `usuario` + buckets; `pytest`, `ruff`, `mypy`.
 
 ## Global Constraints
 
 - Identificadores en español ASCII ([convenciones](../../01-arquitectura/convenciones.md)); estructura de [backend-hexagonal](../../01-arquitectura/backend-hexagonal.md); `dominio/` sin FastAPI, psycopg ni Supabase.
 - Ningún secreto versionado: `.env` ignorado, `backend/.env.example` con los nombres de variable. Las claves del stack local se leen de `npx supabase status`.
 - Esquema solo por migraciones en `supabase/migrations/`; nunca DDL por MCP ni por SQL suelto.
-- Puertos del stack: API 55321, DB 55322, shadow 55320, Studio 55323, Mailpit 55324, analytics 55327, pooler 55329 (ninguno en 543xx).
+- Puertos del stack: API 45621, DB 45622, shadow 45620, Studio 45623, Mailpit 45624, analytics 45627, pooler 45629 (ninguno en 543xx).
 - TDD (`superpowers:test-driven-development`, precargada). Cada tarea entrega `uv run pytest`, `uv run ruff check .` y `uv run mypy src` en verde.
 
 ## Review Focus
