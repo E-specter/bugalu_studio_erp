@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(14);
 
 -- Usuarios: A y B clientes; ADM administrador (el rol se fija como superusuario)
 insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data)
@@ -26,6 +26,7 @@ select is((select count(*)::int from public.usuario where id = '00000000-0000-00
 
 -- (c) A no cambia su rol, pero si su nombre
 select throws_ok($$update public.usuario set rol = 'administrador' where id = '00000000-0000-0000-0000-00000000000a'$$, '42501', null, 'A no puede cambiarse el rol');
+select throws_ok($$update public.usuario set especialidad = 'asesoria' where id = '00000000-0000-0000-0000-00000000000a'$$, '42501', null, 'A no puede cambiarse la especialidad');
 select lives_ok($$update public.usuario set nombre = 'Ana M' where id = '00000000-0000-0000-0000-00000000000a'$$, 'A actualiza su nombre');
 select is((select nombre from public.usuario where id = '00000000-0000-0000-0000-00000000000a'), 'Ana M', 'el nombre cambió');
 
@@ -36,6 +37,11 @@ select throws_ok($$delete from public.usuario where id = '00000000-0000-0000-000
 -- (b) el administrador lee ambos
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ad","role":"authenticated"}', true);
 select is((select count(*)::int from public.usuario where id in ('00000000-0000-0000-0000-00000000000a','00000000-0000-0000-0000-00000000000b')), 2, 'el administrador lee A y B');
+
+-- el borrado en auth.users arrastra el perfil (cascada)
+reset role;
+delete from auth.users where id = '00000000-0000-0000-0000-00000000000b';
+select is((select count(*)::int from public.usuario where id = '00000000-0000-0000-0000-00000000000b'), 0, 'borrar en auth.users borra el perfil');
 
 select * from finish();
 rollback;

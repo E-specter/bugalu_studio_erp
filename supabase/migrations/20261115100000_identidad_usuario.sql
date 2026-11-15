@@ -9,11 +9,11 @@ create table public.usuario (
 
 alter table public.usuario enable row level security;
 
--- Privilegios: solo lectura y edicion de nombre/especialidad. Sin insert ni delete por la API,
--- y sin update sobre rol ni id (impide la escalada de rol por privilegio de columna).
+-- Privilegios: solo lectura y edicion del nombre (rol y especialidad los asigna el administrador). Sin insert ni delete por la API,
+-- y sin update sobre rol, especialidad ni id (impide la escalada por privilegio de columna).
 revoke all on public.usuario from anon, authenticated;
 grant select on public.usuario to authenticated;
-grant update (nombre, especialidad) on public.usuario to authenticated;
+grant update (nombre) on public.usuario to authenticated;
 
 create function public.es_administrador()
 returns boolean

@@ -9,7 +9,7 @@ depende_de: [D-08]
 
 | Entorno | Base de datos | Ejecución |
 |---|---|---|
-| Desarrollo | Supabase **local** (CLI + Docker) | `supabase start` · `uv run fastapi dev` · `npm run dev` |
+| Desarrollo | Supabase **local** (CLI + Docker) | `npx supabase start` · `uv run python -m bugalu` (en `backend/`, ver [montaje-local](montaje-local.md)) · `npm run dev` |
 | Pruebas | Pendiente (D-08) | — |
 | Producción | Pendiente (D-08) | Despliegue controlado tras aprobación |
 

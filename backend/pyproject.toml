@@ -1,0 +1,48 @@
+[project]
+name = "bugalu"
+version = "0.1.0"
+description = "Backend del ERP de Bugalu Studio"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.163.1",
+    "psycopg[binary,pool]>=3.3.9",
+    "pydantic-settings>=2.16.3",
+    "pyjwt[crypto]>=2.15.1",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.1,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
+    "ruff>=0.17.5",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+pythonpath = ["src"]
+markers = ["integracion: requiere el Supabase local de Bugalu (npx supabase start)"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "N"]
+ignore = ["N818"]  # excepciones en espanol, sin sufijo Error
+
+[tool.mypy]
+files = ["src"]
+strict = true
+mypy_path = "src"
+explicit_package_bases = true
+plugins = ["pydantic.mypy"]
