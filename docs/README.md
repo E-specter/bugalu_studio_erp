@@ -8,10 +8,12 @@ Validación: `python scripts/validar_docs.py docs --ids-desde docs/superpowers/s
 
 | Rol | Leer primero |
 |---|---|
-| `leader` | Este índice completo · [leader](04-agentes/leader.md) · [decisiones](00-proyecto/decisiones/README.md) |
+| `leader` | Este índice completo · [leader](04-agentes/leader.md) · [equipo](04-agentes/equipo.md) · [decisiones](00-proyecto/decisiones/README.md) |
+| `disenador-ui` | [disenador-ui](04-agentes/disenador-ui.md) → [brief](07-diseno/brief.md) → [figma](07-diseno/figma.md) (solo fase 2) → RF de la tarea |
 | `dev_backend` | [dev-backend](04-agentes/dev-backend.md) → [backend-hexagonal](01-arquitectura/backend-hexagonal.md) → [modelo-datos](01-arquitectura/modelo-datos.md) → [convenciones](01-arquitectura/convenciones.md) → RF de la tarea |
-| `dev_frontend` | [dev-frontend](04-agentes/dev-frontend.md) → [frontend-islas](01-arquitectura/frontend-islas.md) → [convenciones](01-arquitectura/convenciones.md) → [07-diseno](07-diseno/figma.md) → RF y pantalla de la tarea |
+| `dev_frontend` | [dev-frontend](04-agentes/dev-frontend.md) → [frontend-islas](01-arquitectura/frontend-islas.md) → [convenciones](01-arquitectura/convenciones.md) → [brief](07-diseno/brief.md) → RF y spec de pantalla de la tarea |
 | `dev_audit` | [dev-audit](04-agentes/dev-audit.md) → [implementacion](05-protocolos/implementacion.md) → [pruebas](05-protocolos/pruebas.md) → tarea y entrega |
+| `documentador` | [documentador](04-agentes/documentador.md) → este índice |
 
 ## 00 · Proyecto
 
@@ -50,7 +52,7 @@ Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-07/08 
 
 ## 04 · Agentes
 
-[leader](04-agentes/leader.md) · [dev-backend](04-agentes/dev-backend.md) · [dev-frontend](04-agentes/dev-frontend.md) · [dev-audit](04-agentes/dev-audit.md)
+[equipo](04-agentes/equipo.md) · [skills-por-fase](04-agentes/skills-por-fase.md) · [leader](04-agentes/leader.md) · [disenador-ui](04-agentes/disenador-ui.md) · [dev-backend](04-agentes/dev-backend.md) · [dev-frontend](04-agentes/dev-frontend.md) · [dev-audit](04-agentes/dev-audit.md) · [documentador](04-agentes/documentador.md)
 
 ## 05 · Protocolos
 
@@ -62,19 +64,20 @@ Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-07/08 
 
 ## 07 · Diseño
 
-[brief](07-diseno/brief.md) · [figma](07-diseno/figma.md) · [tokens](07-diseno/tokens.md) · [componentes](07-diseno/componentes.md) · `pantallas/` (vacío hasta la fase 2)
+[brief](07-diseno/brief.md) · [figma](07-diseno/figma.md) · [tokens](07-diseno/tokens.md) · [componentes](07-diseno/componentes/README.md) · `fundamentos/`, `patrones/`, `pantallas/` (fase 2)
 
 ## Hoja de ruta
 
 | Fase | Entregable | Rol | Estado |
 |---|---|---|---|
 | 0 | Segmentar `docs/`, `CLAUDE.md`, `.claude/agents/`, `.mcp.json` | leader | Hecho |
-| 1 | Cerrar D-01 a D-04 y D-13 (ADR); conectar Figma, Supabase y Playwright MCP | leader + usuario | Siguiente |
-| 2 | Brief de diseño, fundamentos y componentes base en Figma | usuario + leader | — |
-| 3 | Esqueleto backend (`uv`, FastAPI, `compartido/`, módulo de ejemplo) y Supabase local con migraciones base | dev_backend | — |
-| 4 | Esqueleto frontend (Astro, layouts, tokens sincronizados desde Figma, cliente API) | dev_frontend | — |
-| 5 | Skills propias del proyecto ([herramientas-mcp](06-operacion/herramientas-mcp.md#skills-propias-del-proyecto-fase-5)) | leader | — |
-| 6 | Auditoría del esqueleto contra arquitectura, convenciones y diseño | dev_audit | — |
+| 0b | Equipo multiagente y ciclo de bajo consumo ([equipo](04-agentes/equipo.md)); ADR-001 y ADR-002 cierran D-13 y D-14 | leader | Hecho |
+| 1 | Cerrar D-01 a D-04 (ADR) y conciliar el flujo de contratación de Figma con los RF | leader + usuario | Siguiente |
+| 2 | Extracción única de Figma al brief técnico y skills `aplicar-brief` / `disenar-pantalla` | disenador-ui | — |
+| 3 | Esqueleto backend (`uv`, FastAPI, `compartido/`, módulo de ejemplo) y Supabase local (CLI + Docker) con migraciones base | dev_backend | — |
+| 4 | Esqueleto frontend (Astro, layouts, `tokens.css` desde el brief, componentes base, cliente API) | dev_frontend | — |
+| 5 | Skills propias del proyecto ([herramientas-mcp](06-operacion/herramientas-mcp.md#skills-propias-del-proyecto)) | leader | — |
+| 6 | Auditoría del esqueleto contra arquitectura, convenciones y brief | dev_audit (Opus) | — |
 | 7 | Implementación por RF en el orden indicado arriba | todos | — |
 
 Planes de implementación: `superpowers/plans/`. Spec original congelada: `superpowers/specs/PROYECTO-v0.2.md`.

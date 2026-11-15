@@ -1,48 +1,42 @@
 ---
 id: diseno-brief
-titulo: Brief de diseño visual
+titulo: Brief técnico de diseño — índice
 estado: borrador
-depende_de: [diseno-figma]
+depende_de: [ADR-001]
 ---
 
-# Brief de diseño visual
+# Brief técnico de diseño
 
-Documento rector del diseño. Figma es la fuente de verdad visual y `docs/07-diseno/` la escrita; ambos se referencian mutuamente.
+Fuente de verdad visual del proyecto. Se extrae una vez de Figma ([origen](figma.md)) y desde entonces se **extiende de forma coherente** desde aquí. Las skills `aplicar-brief` y `disenar-pantalla` lo resumen y enlazan, nunca lo copian.
 
 ## Principios
 
-- Ningún valor visual (color, tamaño, espaciado, radio, sombra) se escribe a mano en el código: todo proviene de [tokens](tokens.md).
-- Cada pantalla implementada referencia el enlace de su frame en Figma y el RF que cubre.
-- Insumo de identidad existente: *Taller de marca Bugalú* (Alesin Branding Studio, 2026).
+- Ningún valor visual (color, tamaño, espaciado, radio, sombra) se escribe a mano en el código: todo sale de [tokens](tokens.md).
+- Toda pantalla se compone con componentes del [catálogo](componentes/README.md); si falta uno, primero se agrega al catálogo.
+- Cada pantalla tiene su spec en `pantallas/RF-xx-<pantalla>.md`, con el RF que cubre.
+- Insumo de identidad: *Taller de marca Bugalú* (Alesin Branding Studio, 2026) y la guía brutalista del archivo de Figma.
 
-## Identidad
+## Decisiones artísticas
 
-Pendiente (fase 2). Logotipo y variantes, paleta, tipografías, iconografía, uso de fotografía.
+Pendiente (fase 2). Dirección visual, atributos de marca y el porqué de cada decisión.
 
-## Tono visual
+## Índice
 
-Pendiente (fase 2). Atributos de marca y referencias de estilo.
+| Tema | Archivo | Estado |
+|---|---|---|
+| Color | `fundamentos/color.md` | Pendiente (fase 2) |
+| Tipografía | `fundamentos/tipografia.md` | Pendiente (fase 2) |
+| Espaciado y retícula | `fundamentos/espaciado-reticula.md` | Pendiente (fase 2) |
+| Forma y elevación | `fundamentos/forma-elevacion.md` | Pendiente (fase 2) |
+| Movimiento | `fundamentos/movimiento.md` | Pendiente (fase 2) |
+| Iconografía e imagen | `fundamentos/iconografia-imagen.md` | Pendiente (fase 2) |
+| Tokens | [tokens](tokens.md) | Convención definida |
+| Componentes | [catálogo](componentes/README.md) | Pendiente (fase 2) |
+| Patrones | `patrones/` | Pendiente (fase 2) |
+| Pantallas | `pantallas/` | Pendiente (fase 2) |
 
-## Audiencias
+## Transversales
 
-Pendiente (fase 2). Artista/Cliente (experiencia pública); personal interno y Administrador (panel operativo).
-
-## Principios UX
-
-Pendiente (fase 2). Jerarquía, densidad por perfil, retroalimentación de estados, prevención de errores.
-
-## Accesibilidad
-
-WCAG 2.2 AA: contraste, foco visible, navegación por teclado, textos alternativos. Detalle pendiente (fase 2).
-
-## Adaptabilidad
-
-Pendiente (fase 2). Puntos de quiebre y comportamiento por dispositivo (cabina: escritorio; cliente: móvil y escritorio).
-
-## Movimiento
-
-Pendiente (fase 2). Duraciones y curvas; respeto de `prefers-reduced-motion`.
-
-## Inventario de pantallas
-
-Pendiente (fase 2). Lista por RF con prioridad y estado de diseño; una spec por pantalla en `pantallas/`.
+- **Audiencias:** Artista/Cliente (experiencia pública, móvil y escritorio); personal interno y Administrador (panel operativo, escritorio).
+- **Accesibilidad:** WCAG 2.2 AA: contraste, foco visible, navegación por teclado, textos alternativos.
+- **Movimiento:** respeto de `prefers-reduced-motion`.

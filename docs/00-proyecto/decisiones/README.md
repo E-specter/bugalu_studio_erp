@@ -18,10 +18,10 @@ Registro de decisiones abiertas. Cuando una se cierra, se crea `ADR-<nnn>-<tema>
 | D-10 | Sello/Mánager y Músico de sesión | ¿Roles del sistema o fuera de alcance v1? | — |
 | D-11 | Políticas de cancelación y reembolso del anticipo | Sin definir | — |
 | D-12 | Asignación de personal | El informe usa `idIngeniero` único en `reserva`; RF-07 exige varios roles por sesión | — |
-| D-13 | Archivo y plan de Figma | URL del archivo maestro, plan y asiento (determinan límites de uso del MCP) | — |
-| D-14 | Code Connect de Figma | Vincular componentes de Figma con el código; aporta precisión pero exige mantenimiento | — |
+| D-13 | Archivo y plan de Figma | URL del archivo maestro, plan y asiento (determinan límites de uso del MCP) | **Cerrada:** [ADR-001](ADR-001-figma-fuente-extraccion.md) |
+| D-14 | Code Connect de Figma | Vincular componentes de Figma con el código; aporta precisión pero exige mantenimiento | **Cerrada:** [ADR-002](ADR-002-code-connect-descartado.md) |
 
-Prioridad (hoja de ruta, fase 1): D-01 a D-04 y D-13.
+Prioridad (hoja de ruta, fase 1): D-01 a D-04.
 
 ## Plantilla de ADR
 

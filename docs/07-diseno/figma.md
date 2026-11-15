@@ -1,38 +1,40 @@
 ---
 id: diseno-figma
-titulo: Archivo Figma y flujo diseño → código
+titulo: Figma — registro de origen de la extracción
 estado: borrador
-depende_de: [D-13, D-14]
+depende_de: [ADR-001]
 ---
 
-# Figma
+# Figma — registro de origen
 
-Archivo maestro, plan y asiento: pendiente (D-13). Code Connect: pendiente (D-14). Ver [decisiones](../00-proyecto/decisiones/README.md).
+Figma es la **fuente de extracción única** del diseño ([ADR-001](../00-proyecto/decisiones/ADR-001-figma-fuente-extraccion.md)). Este archivo registra de dónde salió el brief; queda en `implementado` y congelado al terminar la extracción (fase 2). Después, el diseño se extiende desde el [brief](brief.md), no desde Figma.
 
-## Organización del archivo
+## Archivo
 
-| Página | Contenido |
+| Campo | Valor |
 |---|---|
-| `00 Portada` | Brief resumido, estado y enlaces a `docs/07-diseno/` |
-| `01 Fundamentos` | Variables: color, tipografía, espaciado, radios, sombras, puntos de quiebre |
-| `02 Componentes` | Botones, campos, tarjetas, modales, tablas, estados de reserva |
-| `03 Patrones` | Calendario de salas, reproductor con forma de onda, carga de archivos, resumen de pago |
-| `04 Pantallas` | Un grupo por módulo ([módulos](../01-arquitectura/backend-hexagonal.md#modulos-del-backend)); frames nombrados `RF-xx / <pantalla> / <estado>` |
-| `05 Prototipos` | Flujos navegables de CUS-04 y CUS-09/10 |
+| Nombre | `bugalu_studio_erp` |
+| File key | `GxpFTDX6L0uFwg6xlulhXF` |
+| Equipo requerido | «Integrador I» (plan Pro, asiento Full) |
+| Volcado local de estructura | `.claude/cache/figma-metadata-2026-11-15.xml` (ignorado por git; tomado antes del reordenamiento de páginas) |
 
-Convenciones de nombres Figma ↔ código: [componentes](componentes.md) y [tokens](tokens.md).
+## Mapa de páginas (2026-11-15)
 
-## Flujo diseño → código
+| Página | Contenido observado |
+|---|---|
+| `references` | Referencias visuales |
+| `brief` | Guía de estilo brutalista (`bugalu-brutalist-design-guide`) y material de marca |
+| `landing-page` | `bugalu-studio-landing` |
+| `blueprint-funcional` | Blueprint funcional del portal |
+| `login` | Acceso y registro, interno y de artista |
+| `erp` | Portal del artista (escritorio y móvil: dashboard, proyecto, versión, revisión, historial, versión aprobada); flujo de contratación (servicio → brief → agenda de asesoría → cotización → revisión → proyecto activado); panel interno (dashboard operativo, clientes, tablero de proyectos, detalle interno, carga de WAV, publicar versión, centro de revisiones) |
 
-```
-1. usuario/leader → diseña o aprueba el frame en Figma y registra la spec en docs/07-diseno/pantallas/
-2. leader         → crea la tarea con enlace al frame y RF asociado
-3. dev_frontend   → obtiene contexto del frame vía Figma MCP (estructura, variables, captura)
-                  → traduce a Astro + HTML/CSS/JS nativo usando tokens y componentes existentes
-4. dev_audit      → compara captura de Playwright con la captura del frame; valida tokens y accesibilidad
-5. leader         → integra y marca la pantalla como implementada en el inventario
-```
+Estado del archivo: hay unas 32 pantallas, pero no hay biblioteca de componentes (3 símbolos, casi todos del logo) ni variables confirmadas.
 
-**Regla de traducción:** el Figma MCP entrega por defecto código de referencia en React + Tailwind. Ese código es solo referencia estructural; nunca se copia. La implementación se hace en Astro, CSS con variables y Web Components según [frontend-islas](../01-arquitectura/frontend-islas.md).
+## Brecha detectada
 
-Ningún agente escribe en el lienzo de Figma sin aprobación explícita del usuario.
+No hay pantallas para: calendario de salas (RF-03/04), pago de anticipo y liquidación (RF-05/11), asignación de personal (RF-07) ni reportes (RF-14). El flujo de contratación diseñado (con agenda de asesoría) difiere del flujo de [registrar-reserva](../02-dominio/flujos/registrar-reserva.md); se concilia en el trabajo de decisiones.
+
+## Extracción
+
+La ejecuta `disenador-ui` siguiendo [su procedimiento](../04-agentes/disenador-ui.md#fase-2--extraccion). Saldo de llamadas: se anota en la lista de trabajo `fase-2-diseno` de claude-mem.

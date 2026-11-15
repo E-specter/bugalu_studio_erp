@@ -13,7 +13,7 @@ depende_de: [arq-frontend-islas, convenciones, diseno-brief, protocolo-implement
 
 ## Lectura obligatoria
 
-[frontend-islas](../01-arquitectura/frontend-islas.md) · [convenciones](../01-arquitectura/convenciones.md) · [brief](../07-diseno/brief.md) · [tokens](../07-diseno/tokens.md) · [catálogo de componentes](../07-diseno/componentes.md) · la spec de pantalla y el RF de la tarea.
+[frontend-islas](../01-arquitectura/frontend-islas.md) · [convenciones](../01-arquitectura/convenciones.md) · [brief](../07-diseno/brief.md) · [tokens](../07-diseno/tokens.md) · [catálogo de componentes](../07-diseno/componentes/README.md) · la spec de pantalla y el RF de la tarea.
 
 ## Reglas
 

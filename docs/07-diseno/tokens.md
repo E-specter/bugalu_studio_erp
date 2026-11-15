@@ -1,25 +1,27 @@
 ---
 id: diseno-tokens
-titulo: Tokens de diseño (Figma ↔ CSS)
+titulo: Tokens de diseño
 estado: borrador
-depende_de: [diseno-figma]
+depende_de: [diseno-brief]
 ---
 
 # Tokens de diseño
 
-- Las variables de Figma son el origen; `frontend/src/estilos/tokens.css` es su reflejo.
-- Todo cambio de variable en Figma genera una tarea de actualización de tokens antes de cualquier cambio de pantalla.
-- Este archivo mantiene la tabla de correspondencia.
+- Este archivo es el **origen** de los tokens; `frontend/src/estilos/tokens.css` es su reflejo exacto.
+- Se extraen una vez de Figma (fase 2) y desde entonces se cambian **aquí**: primero el token, después las pantallas.
+- Un token nuevo solo se agrega si ningún token existente cubre el uso.
 
-## Convención
+## Convención de nombres
 
-Ruta de variable en Figma con `/` → propiedad CSS con prefijo `--` y `-`.
+`<categoria>-<rol>-<variante>` en `kebab-case`, con prefijo `--` en CSS.
 
-| Variable Figma | Propiedad CSS |
+| Token | Propiedad CSS |
 |---|---|
-| `color/fondo/primario` | `--color-fondo-primario` |
-| `espacio/4` | `--espacio-4` |
+| `color-fondo-primario` | `--color-fondo-primario` |
+| `espacio-4` | `--espacio-4` |
 
-## Correspondencia
+## Tabla de tokens
 
-Pendiente (fases 2 y 4): se llena con la skill `sincronizar-tokens` al definir los fundamentos en Figma.
+Columnas: token · valor · uso · origen en Figma (solo durante la extracción).
+
+Pendiente (fase 2).
