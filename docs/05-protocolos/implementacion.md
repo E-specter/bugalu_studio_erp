@@ -19,6 +19,15 @@ Spec aprobada → tarea → rama → código + pruebas + docs → entrega → au
 
 Un rechazo en el paso 3 devuelve la tarea al paso 2 junto con el informe de auditoría.
 
+## Ciclo de bajo consumo
+
+- `leader` usa `superpowers:brainstorming` solo cuando hay preguntas abiertas, y `superpowers:writing-plans` para un plan por fase o por RF.
+- La ejecución **no** carga `superpowers:subagent-driven-development` ni `superpowers:executing-plans`: el ciclo es este documento. La cabecera de cada plan enlaza aquí en lugar de citar esas skills.
+- Por tarea: un implementador (`dev-backend`, `dev-frontend`, `disenador-ui` o `documentador`) y **un solo revisor**, `dev-audit`, en Sonnet.
+- Compuertas Opus (`dev-audit` con `model: "opus"`): ver [equipo](../04-agentes/equipo.md#compuertas-opus).
+- Tareas que caen en el alcance de `leader` (docs semánticos, `.claude/`, `scripts/`): las ejecuta `leader`, y solo la compuerta de cierre las revisa.
+- Seguimiento: `leader` registra cada TAREA en la lista de trabajo de claude-mem de la fase o del RF.
+
 ## Formato de tarea
 
 ```markdown
