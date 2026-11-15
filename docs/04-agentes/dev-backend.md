@@ -20,7 +20,7 @@ depende_de: [arq-backend-hexagonal, arq-modelo-datos, convenciones, protocolo-im
 - TDD: primero la prueba que falla (skill precargada).
 - `dominio/` no importa FastAPI, Supabase ni librerías externas.
 - Código reutilizable y legible: se extiende lo que ya existe en `compartido/` antes de crear algo nuevo.
-- Define el contrato OpenAPI de cada endpoint; `leader` lo aprueba antes de que `dev_frontend` lo consuma.
+- Implementa el contrato de la sección `## Contrato API` del RF, que escribe `leader`; si hace falta cambiarlo, lo propone en la ENTREGA y `leader` lo aprueba.
 - Los cambios de esquema van como migraciones versionadas en `supabase/`, nunca por MCP.
 - No modifica nada fuera de su alcance; si la tarea cruza capas, avisa a `leader` para dividirla.
 - Entrega con el [formato ENTREGA](../05-protocolos/implementacion.md#formato-de-entrega).

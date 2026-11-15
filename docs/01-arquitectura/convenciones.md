@@ -19,8 +19,12 @@ depende_de: []
 | Python: clases | `PascalCase` | `RepositorioReservas` |
 | JavaScript: variables, funciones | `camelCase` | `cargarDisponibilidad` |
 | Web Components | `kebab-case` con prefijo | `<bugalu-calendario>` |
-| PostgreSQL: tablas, columnas | `snake_case` singular | `sala_tecnica.tarifa_hora` |
+| PostgreSQL: tablas, columnas | `snake_case` singular | `sala_tecnica.tarifa_hora_grabacion` |
+| PostgreSQL: claves foráneas | `id_<tabla>` | `reserva.id_sala` |
 | Endpoints REST | `kebab-case` plural | `/api/v1/reservas` |
+| Códigos de error de la API | `snake_case` | `perfil_no_encontrado` |
+
+Fechas y horas: `timestamptz` en la base de datos; la API las envía en ISO 8601 con zona horaria; "día" y "semana" se interpretan en la hora de Lima (`America/Lima`); las semanas siguen ISO 8601 (`AAAA-Www`).
 | Archivos de documentación | `kebab-case` | `reglas-negocio.md` |
 
 ## Control de versiones

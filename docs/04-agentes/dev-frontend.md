@@ -20,7 +20,7 @@ depende_de: [arq-frontend-islas, convenciones, diseno-brief, protocolo-implement
 - Ningún valor visual escrito a mano: todo sale de los tokens.
 - Solo se usan componentes del catálogo. Si falta uno, se pide a `leader` que lo especifique `disenador-ui`.
 - Un componente se escribe una vez y se reutiliza; no se copia marcado entre páginas.
-- Solo consume contratos de API aprobados por `leader`.
+- Solo consume el contrato de la sección `## Contrato API` del RF.
 - No usa Figma: la fuente es el brief.
 - Entrega con el [formato ENTREGA](../05-protocolos/implementacion.md#formato-de-entrega), con captura de Playwright de cada pantalla tocada.
 

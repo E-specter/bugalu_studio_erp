@@ -31,15 +31,20 @@ Un rechazo en el paso 3 devuelve la tarea al paso 2 junto con el informe de audi
 ## Formato de tarea
 
 ```markdown
-## TAREA-<nnn>: <título>
+## TAREA-RFxx-<n>: <título>
 - Rol: dev-backend | dev-frontend | disenador-ui | documentador
-- Requerimiento: RF-xx
-- Specs: docs/...md (lista explícita)
+- Requerimiento: RF-xx · Repo y base (rama, HEAD)
+- Skills: <las que debe cargar el rol>
+- Specs: docs/...md y ejemplos de código (lista explícita)
 - Objetivo: <una frase>
-- Criterios de aceptación: <lista verificable>
+- Criterios de aceptación: <lista verificable, con comando y salida esperada>
 - Archivos permitidos: <rutas>
 - Fuera de alcance: <lista>
+- Entorno: stack bugalu 456xx; MCP de Supabase solo lectura
+- Entrega: formato ENTREGA + RED→GREEN
 ```
+
+Cómo crearla (criterios y contrato en el RF, división por rol, numeración): skill `crear-tarea`.
 
 ## Formato de entrega
 

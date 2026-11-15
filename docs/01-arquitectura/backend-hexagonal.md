@@ -48,7 +48,7 @@ backend/
 │           │   └── cambiar_estado_reserva/
 │           └── infraestructura/
 │               ├── entrada/http/   # router.py, esquemas.py
-│               └── salida/         # repositorio_supabase.py
+│               └── salida/         # repositorio_postgres.py
 └── tests/                          # espejo de src/: unitarios, integración, api
 ```
 

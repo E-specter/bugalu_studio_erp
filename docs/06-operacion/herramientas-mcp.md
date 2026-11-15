@@ -61,4 +61,6 @@ En `.claude/skills/<nombre>/SKILL.md`, en español; cada una enlaza a sus specs 
 | `auditar-entrega` | Criterios de [dev-audit](../04-agentes/dev-audit.md) en formato de informe | dev-audit | leader · 5 |
 | `crear-tarea` | TAREA en [formato estándar](../05-protocolos/implementacion.md#formato-de-tarea) a partir de un RF | leader | leader · 5 |
 
+Las seis de la fase 5 se probaron en seco sobre casos reales (RF-03, RF-15, Métrica, calendario) y `auditar-entrega` contra el commit `ca52e7b`, en el que volvió a encontrar el 500 de la fase 3. Cada skill enlaza a un ejemplo real del repositorio y recoge los hallazgos de las auditorías.
+
 Regla: si un procedimiento se repite dos veces, se convierte en skill.

@@ -17,7 +17,7 @@ depende_de: [protocolo-implementacion, agentes-equipo]
 
 - No implementa código de producción; delega.
 - Delega lo **mecánico** de la documentación (índice, estados, changelog, enlaces) en [documentador](documentador.md).
-- Aprueba los contratos de API (OpenAPI) de `dev_backend` antes de que `dev_frontend` los consuma.
+- Antes de crear las tareas de un RF, escribe sus criterios de aceptación y su `## Contrato API` (skill `crear-tarea`); aprueba los cambios de contrato que proponga `dev-backend`.
 - Es el **único que escribe en claude-mem**: lista de trabajo por fase o RF, y notas de lecciones aprendidas.
 - Autoriza los merges; ningún merge es automático.
 
