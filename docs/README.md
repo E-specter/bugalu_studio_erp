@@ -65,7 +65,7 @@ Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-15 →
 
 ## 07 · Diseño
 
-[brief](07-diseno/brief.md) · [figma](07-diseno/figma.md) · [tokens](07-diseno/tokens.md) · [componentes](07-diseno/componentes/README.md) · `fundamentos/`, `patrones/`, `pantallas/` (fase 2)
+[brief](07-diseno/brief.md) · [figma](07-diseno/figma.md) · [tokens](07-diseno/tokens.md) · [componentes](07-diseno/componentes/README.md) · `fundamentos/`, [patrones](07-diseno/patrones/README.md), `pantallas/` (pantallas en la fase 7)
 
 ## Hoja de ruta
 
@@ -74,8 +74,8 @@ Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-15 →
 | 0 | Segmentar `docs/`, `CLAUDE.md`, `.claude/agents/`, `.mcp.json` | leader | Hecho |
 | 0b | Equipo multiagente y ciclo de bajo consumo ([equipo](04-agentes/equipo.md)); ADR-001 y ADR-002 cierran D-13 y D-14 | leader | Hecho |
 | 1 | Cerrar D-01 a D-04 (ADR) y conciliar el flujo de contratación de Figma con los RF | leader + usuario | Hecho |
-| 2 | Extracción única de Figma al brief técnico y skills `aplicar-brief` / `disenar-pantalla` | disenador-ui | Siguiente |
-| 3 | Esqueleto backend (`uv`, FastAPI, `compartido/`, módulo de ejemplo) y Supabase local (CLI + Docker) con migraciones base | dev_backend | — |
+| 2 | Extracción única de Figma al brief técnico y skills `aplicar-brief` / `disenar-pantalla` | disenador-ui | Hecho |
+| 3 | Esqueleto backend (`uv`, FastAPI, `compartido/`, módulo de ejemplo) y Supabase local (CLI + Docker) con migraciones base | dev_backend | Siguiente |
 | 4 | Esqueleto frontend (Astro, layouts, `tokens.css` desde el brief, componentes base, cliente API) | dev_frontend | — |
 | 5 | Skills propias del proyecto ([herramientas-mcp](06-operacion/herramientas-mcp.md#skills-propias-del-proyecto)) | leader | — |
 | 6 | Auditoría del esqueleto contra arquitectura, convenciones y brief | dev_audit (Opus) | — |
