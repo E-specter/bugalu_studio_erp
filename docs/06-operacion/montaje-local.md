@@ -40,6 +40,14 @@ Variables de `backend/.env` (`.env` está ignorado por git):
 | `EXIGIR_INTEGRACION` | Solo pruebas, opcional. `EXIGIR_INTEGRACION=1` (CI) convierte el salto de las pruebas de integración, cuando no hay stack o `.env`, en fallo. Sin ella se saltan con el motivo. Las pruebas unitarias no dependen de `backend/.env` |
 | `ORIGENES_PERMITIDOS` | Orígenes del frontend, separados por comas (`http://localhost:4321`). Vacío = sin CORS: el navegador bloquea las llamadas del frontend |
 
+**Auth (RF-01, `supabase/config.toml`):** contraseña de 8+ caracteres con minúscula, mayúscula, número y símbolo. Tras cambiar `config.toml`: `npx supabase stop` y `npx supabase start`. Las pruebas de integración y cualquier alta usan contraseñas que lo cumplan (p. ej. `Clave-Segura-123`).
+
+**Pendiente de decisión (CA-06):** el CLI 3.1.0 no puede dar "iniciar sesión sin confirmar el correo pero con `email_confirmed_at` nulo": con `enable_confirmations = true` el inicio de sesión falla con `email_not_confirmed`, y con `false` Auth confirma el correo en el alta. Se mantiene `false` (en local el correo siempre queda confirmado).
+
+**Google (desactivado por defecto):** crea un cliente OAuth en Google Cloud Console con `http://127.0.0.1:45621/auth/v1/callback` como URI de redirección, copia `supabase/.env.example` a `supabase/.env` (ignorado por git; el CLI lo lee al arrancar) con `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` y `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`, pon `enabled = true` en `[auth.external.google]` y reinicia el stack.
+
+**Primer administrador (CA-11):** con el usuario ya registrado y `URL_BASE_DATOS_ADMIN` en `backend/.env`, desde `backend/`: `uv run python -m bugalu.herramientas.crear_administrador <correo>`. Es idempotente; si el correo no existe, falla con un mensaje claro.
+
 PostgREST (`/rest/v1`) no expone `public` (`[api] schemas = ["graphql_public"]` en `supabase/config.toml`; la lista vacía vuelve al valor por defecto, que incluye `public`): `GET /rest/v1/usuario` da 404 `PGRST205` y `POST /rest/v1/rpc/es_administrador` da 404 `PGRST202`. Los datos solo se leen por el backend (ADR-007). Tras cambiar `config.toml`: `npx supabase stop` y `npx supabase start`. Auth redirige al frontend (`site_url` `http://localhost:4321`, más `http://127.0.0.1:4321`).
 
 Comprueba que responde con `curl -i http://127.0.0.1:8000/api/v1/perfil`: sin token devuelve 401.

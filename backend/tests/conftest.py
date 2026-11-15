@@ -85,7 +85,7 @@ def crear_usuario(configuracion: Configuracion) -> Iterator[Callable[[], Usuario
         r = httpx.post(
             f"{configuracion.url_supabase}/auth/v1/signup",
             headers={"apikey": configuracion.clave_publicable_supabase},
-            json={"email": f"{uuid.uuid4().hex}@prueba.bugalu.pe", "password": "clave-segura-123"},
+            json={"email": f"{uuid.uuid4().hex}@prueba.bugalu.pe", "password": "Clave-Segura-123"},
         )
         r.raise_for_status()
         usuario = UsuarioDePrueba(uuid.UUID(r.json()["user"]["id"]), r.json()["access_token"])
@@ -94,4 +94,6 @@ def crear_usuario(configuracion: Configuracion) -> Iterator[Callable[[], Usuario
 
     yield crear
     with psycopg.connect(configuracion.url_base_datos_admin) as conexion:
+        # Sin triggers: una prueba puede dejar al unico administrador y la limpieza no debe fallar.
+        conexion.execute("set session_replication_role = replica")
         conexion.execute("delete from auth.users where id = any(%s)", (creados,))
