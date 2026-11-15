@@ -3,20 +3,29 @@ import LayoutBase from './LayoutBase.astro';
 import CabeceraApp from '../componentes/CabeceraApp.astro';
 import NavegacionLateral from '../componentes/NavegacionLateral.astro';
 import NavegacionTactil from '../componentes/NavegacionTactil.astro';
+import Boton from '../componentes/Boton.astro';
 
 interface Props {
   titulo: string;
 }
 const { titulo } = Astro.props;
-// Destinos de la app: por ahora solo el inicio; el resto depende del rol (RF-01).
-const destinos = [{ etiqueta: 'Inicio', href: '/app/', icono: 'house' as const }];
-const actual = Astro.url.pathname;
+// Los destinos con `solo` nacen ocultos y el script los muestra según el rol del perfil (la API es la barrera real: 403).
+// Etiquetas de 9 caracteres como máximo (navegación táctil).
+const destinos = [
+  { etiqueta: 'Inicio', href: '/app/', icono: 'house' as const },
+  { etiqueta: 'Solicitud', href: '/app/solicitudes/', icono: 'user-plus' as const, solo: 'administrador' },
+  { etiqueta: 'Usuarios', href: '/app/usuarios/', icono: 'users' as const, solo: 'administrador' },
+];
+// Un destino queda actual también en sus subrutas (Revisar solicitud); gana la coincidencia más larga.
+const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.pathname || (href !== '/app/' && Astro.url.pathname.startsWith(href))).sort((a, b) => b.length - a.length)[0] ?? Astro.url.pathname;
 ---
 
 <LayoutBase titulo={titulo}>
   <div class="app">
     <CabeceraApp variante="estudio" producto="Bugalú Studio" area="Panel interno">
       <a slot="menu" href="/app/perfil">Mi perfil</a>
+      <!-- Sin JS no sirve: nace oculto y lo muestra el script. -->
+      <div slot="menu"><Boton variante="secundario" data-cerrar-sesion hidden>Cerrar sesión</Boton></div>
     </CabeceraApp>
 
     <!-- < punto-quiebre-escritorio: fija bajo la fila 1 de la cabecera (estructura-app, "Lo fijo") -->
@@ -31,7 +40,39 @@ const actual = Astro.url.pathname;
   </div>
 </LayoutBase>
 
+<script>
+  import { obtenerPerfil } from '../servicios/api.js';
+  import { obtenerToken, cerrarSesion } from '../servicios/sesion.js';
+
+  // Rol del perfil cargado: muestra los destinos del Administrador y fija la variante (Estudio o Portal).
+  let rol: string | null = null;
+  function aplicar(perfil: { rol: string }) {
+    rol = perfil.rol;
+    document.querySelectorAll<HTMLElement>('[data-solo]').forEach((e) => (e.hidden = e.dataset.solo !== rol));
+    const portal = rol === 'cliente';
+    document.querySelectorAll('[data-seccion]').forEach((e) => (e.textContent = portal ? 'Portal' : 'Estudio'));
+    document.querySelectorAll('[data-area]').forEach((e) => (e.textContent = portal ? 'Portal del artista' : 'Panel interno'));
+  }
+
+  document.addEventListener('bugalu:perfil', (e) => aplicar((e as CustomEvent).detail));
+  // La pantalla de perfil ya pide los datos y avisa con el evento; las demás los piden aquí (solo con sesión).
+  if (!document.querySelector('bugalu-perfil') && (await obtenerToken())) obtenerPerfil().then(aplicar, () => {});
+
+  // CA-12: personal y Administrador vuelven al acceso interno.
+  document.querySelectorAll<HTMLElement>('[data-cerrar-sesion]').forEach((boton) => {
+    boton.hidden = false;
+    boton.addEventListener('click', async () => {
+      await cerrarSesion();
+      location.assign(`${rol === 'personal' || rol === 'administrador' ? '/acceso/interno' : '/acceso'}?aviso=sesion-cerrada`);
+    });
+  });
+</script>
+
 <style>
+  /* El display del botón vence al atributo hidden. */
+  :global(.boton[hidden]) {
+    display: none;
+  }
   .app {
     display: grid;
     grid-template-columns: minmax(0, 1fr);

@@ -40,3 +40,6 @@ export async function pedir(ruta, { cuerpo, headers, ...opciones } = {}) {
 }
 
 export const obtenerPerfil = () => pedir('/api/v1/perfil');
+// Contrato de RF-01: PATCH /perfil {nombre?, telefono?, nombre_artistico?} y POST /perfil/verificar-correo; ambos devuelven el Perfil.
+export const actualizarPerfil = (cambios) => pedir('/api/v1/perfil', { method: 'PATCH', cuerpo: cambios });
+export const verificarCorreo = () => pedir('/api/v1/perfil/verificar-correo', { method: 'POST' });

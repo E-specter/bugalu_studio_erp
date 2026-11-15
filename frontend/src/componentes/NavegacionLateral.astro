@@ -5,7 +5,7 @@ import EtiquetaTecnica from './EtiquetaTecnica.astro';
 
 interface Props {
   variante?: 'estudio' | 'portal';
-  destinos: { etiqueta: string; href: string; icono: keyof typeof iconos; contador?: number }[];
+  destinos: { etiqueta: string; href: string; icono: keyof typeof iconos; contador?: number; solo?: string }[];
   actual?: string;
   etiqueta?: string;
 }
@@ -15,10 +15,10 @@ const seccion = { estudio: 'Estudio', portal: 'Portal' }[variante];
 
 <div class:list={['lateral', clase]}>
   <nav aria-label={etiqueta}>
-    <p class="lateral-seccion">{seccion}</p>
+    <p class="lateral-seccion" data-seccion>{seccion}</p>
     <ul class="lateral-lista">
       {destinos.map((destino) => (
-        <li>
+        <li hidden={destino.solo ? true : undefined} data-solo={destino.solo}>
           <a href={destino.href} class:list={['lateral-destino', destino.href === actual && 'lateral-actual']} aria-current={destino.href === actual ? 'page' : undefined}>
             <Icono nombre={destino.icono} tamano="md" />
             <span class="lateral-etiqueta">{destino.etiqueta}</span>

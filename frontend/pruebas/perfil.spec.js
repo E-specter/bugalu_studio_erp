@@ -24,8 +24,8 @@ const conSesion = (page) =>
   );
 
 const estados = [
-  { nombre: 'datos', ruta: (r) => r.fulfill(perfil()), texto: 'Ana Pérez' },
-  { nombre: 'no-autenticado', ruta: (r) => r.fulfill(error(401, 'no_autenticado', 'Falta el token.')), texto: 'Tu sesión no es válida', enlace: '/acceso' },
+  { nombre: 'datos', ruta: (r) => r.fulfill(perfil()), texto: 'Tus datos' },
+  { nombre: 'no-autenticado', ruta: (r) => r.fulfill(error(401, 'no_autenticado', 'Falta el token.')), texto: 'Tu sesión no es válida', enlace: '/acceso?volver=%2Fapp%2Fperfil' },
   { nombre: 'sin-perfil', ruta: (r) => r.fulfill(error(404, 'perfil_no_encontrado', 'Sin perfil.')), texto: 'No encontramos tu perfil' },
   { nombre: 'servicio-no-disponible', ruta: (r) => r.fulfill(error(503, 'autenticacion_no_disponible', 'No disponible.')), texto: 'Servicio no disponible', reintentar: true },
   { nombre: 'sin-conexion', ruta: (r) => r.abort('connectionrefused'), texto: 'Sin conexión', reintentar: true },
@@ -76,7 +76,7 @@ test('perfil: Reintentar vuelve a pedir y muestra los datos', async ({ page }) =
   await page.route(API, (r) => (++llamadas === 1 ? r.fulfill(error(503, 'autenticacion_no_disponible', 'x')) : r.fulfill(perfil())));
   await page.goto('/app/perfil');
   await page.getByRole('button', { name: 'Reintentar' }).click();
-  await expect(page.getByText('Ana Pérez')).toBeVisible();
+  await expect(page.locator('[name="nombre"]')).toHaveValue('Ana Pérez');
   expect(llamadas).toBe(2);
 });
 
@@ -108,13 +108,13 @@ test('api: Authorization Bearer solo con sesion', async ({ page }) => {
     return r.fulfill(perfil());
   });
   await page.goto('/app/perfil');
-  await expect(page.getByText('Ana Pérez')).toBeVisible();
+  await expect(page.locator('[name="nombre"]')).toHaveValue('Ana Pérez');
   expect(cabeceras[0].authorization).toBeUndefined();
   expect(cabeceras[0].accept).toBe('application/json');
 
   await conSesion(page);
   await page.reload();
-  await expect(page.getByText('Ana Pérez')).toBeVisible();
+  await expect(page.locator('[name="nombre"]')).toHaveValue('Ana Pérez');
   expect(cabeceras[1].authorization).toBe('Bearer token-de-prueba');
 });
 

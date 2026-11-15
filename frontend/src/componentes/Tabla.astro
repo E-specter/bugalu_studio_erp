@@ -1,0 +1,103 @@
+---
+interface Props {
+  titulo: string;
+  columnas: string[];
+  variante?: 'directorio' | 'compacta';
+}
+const { titulo, columnas, variante = 'directorio', class: clase } = Astro.props as Props & { class?: string };
+---
+
+<!-- Las filas (<tr>) entran por la ranura; en cada celda, data-etiqueta da el rotulo de la tarjeta en movil. Columna "" = acciones. -->
+<div class:list={['tabla', `tabla-${variante}`, clase]}>
+  <table>
+    <caption class="visualmente-oculto">{titulo}</caption>
+    <thead class="tabla-cabecera visualmente-oculto">
+      <tr>{columnas.map((c) => <th scope="col">{c || <span class="visualmente-oculto">Acciones</span>}</th>)}</tr>
+    </thead>
+    <tbody><slot /></tbody>
+  </table>
+</div>
+
+<style>
+  .tabla {
+    background: var(--color-fondo-superficie);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+  }
+  table {
+    inline-size: 100%;
+    border-collapse: collapse;
+    text-align: start;
+  }
+  /* Movil: cabecera solo para lectores (clase global); cada celda lleva su rotulo. */
+  .tabla :global(tr) {
+    display: block;
+    padding: var(--espacio-4);
+    border-block-end: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+  }
+  .tabla :global(tbody tr:last-child) {
+    border-block-end: 0;
+  }
+  .tabla :global(th[scope='row']),
+  .tabla :global(td) {
+    display: grid;
+    gap: var(--espacio-1);
+    justify-items: start;
+    padding: var(--espacio-1) 0;
+    font-weight: var(--fuente-peso-regular);
+    color: var(--color-texto-principal);
+    text-align: start;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+  .tabla :global(td[data-etiqueta]:not([data-etiqueta=''])::before) {
+    content: attr(data-etiqueta);
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .tabla-compacta :global(tr) {
+    padding: var(--espacio-3);
+  }
+
+  @media (min-width: 64em) { /* punto-quiebre-escritorio */
+    .tabla-cabecera {
+      position: static;
+      margin: 0;
+      clip-path: none;
+      overflow: visible;
+      white-space: normal;
+      inline-size: auto;
+      block-size: auto;
+    }
+    thead :global(th) {
+      padding: var(--espacio-3) var(--espacio-4);
+      background: var(--color-fondo-invertido);
+      color: var(--color-texto-invertido);
+      font-family: var(--fuente-familia-tecnica);
+      font-size: var(--fuente-tamano-micro);
+      font-weight: var(--fuente-peso-medio);
+      text-transform: uppercase;
+      text-align: start;
+    }
+    .tabla :global(tr) {
+      display: table-row;
+      padding: 0;
+    }
+    .tabla :global(th[scope='row']),
+    .tabla :global(td) {
+      display: table-cell;
+      padding: var(--espacio-4);
+    }
+    .tabla-compacta :global(th[scope='row']),
+    .tabla-compacta :global(td) {
+      padding: var(--espacio-3);
+    }
+    .tabla :global(td[data-etiqueta]:not([data-etiqueta=''])::before) {
+      content: none;
+    }
+    .tabla :global(tbody tr) {
+      border-block-end: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+    }
+  }
+</style>

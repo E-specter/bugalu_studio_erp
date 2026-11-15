@@ -2,10 +2,14 @@
 import Panel from '../componentes/Panel.astro';
 import Aviso from '../componentes/Aviso.astro';
 import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.astro';
 ---
 
 <!-- Un bloque por estado (estados-sistema): se pintan en servidor y la isla clona el que toca. Sin JS, el noscript oculta la carga y muestra el error. -->
-<bugalu-perfil>
+<bugalu-perfil class="perfil">
+  <div data-avisos></div>
   <!-- Región viva estable, presente antes de cualquier texto (ficha de Aviso). -->
   <p class="visualmente-oculto" role="status" data-anuncio></p>
   <div data-salida>
@@ -17,19 +21,41 @@ import Boton from '../componentes/Boton.astro';
   </template>
 
   <template data-estado="datos">
-    <Panel titulo="Tus datos">
-      <dl class="datos">
-        <div><dt>Nombre</dt><dd data-campo="nombre"></dd></div>
-        <div><dt>Rol</dt><dd data-campo="rol"></dd></div>
-        <div><dt>Especialidad</dt><dd data-campo="especialidad"></dd></div>
-      </dl>
-    </Panel>
+    <div data-confirmacion></div>
+    <div class="perfil-rejilla">
+      <Panel codigo="A1" titulo="Tus datos" ayuda="Así te verá el estudio.">
+        <form novalidate method="post" class="perfil-formulario" data-formulario>
+          <Campo nombre="nombre" etiqueta="Nombre" autocomplete="name" obligatorio />
+          <Campo tipo="tel" nombre="telefono" etiqueta="Teléfono (opcional)" ayuda="Solo números; con + y código de país si no es de Perú." autocomplete="tel" />
+          <div data-solo-cliente><Campo nombre="nombre_artistico" etiqueta="Nombre artístico o proyecto" /></div>
+          <div><Boton tipo="submit" data-principal>Guardar cambios</Boton></div>
+        </form>
+      </Panel>
+      <Panel codigo="A2" titulo="Cuenta" variante="lateral">
+        <dl class="datos">
+          <div><dt>Correo</dt><dd><span data-campo="correo"></span> <span data-etiqueta></span></dd></div>
+          <div><dt>Rol</dt><dd data-campo="rol"></dd></div>
+          <div data-fila="especialidad"><dt>Especialidad</dt><dd data-campo="especialidad"></dd></div>
+        </dl>
+        <p class="perfil-ayuda">El rol y la especialidad los asigna el Administrador.</p>
+      </Panel>
+    </div>
   </template>
+
+  <template data-estado="confirmacion">
+    <Aviso variante="aviso" titulo="Confirma tu correo" texto="Lo necesitarás antes de registrar tu primer pago. Revisa tu bandeja o pide otro correo.">
+      <div class="reintentar"><Boton variante="secundario" data-verificar>Verificar mi correo</Boton></div>
+    </Aviso>
+  </template>
+  <template data-plantilla-etiqueta="confirmado"><EtiquetaTecnica variante="exito" texto="CONFIRMADO" senal /></template>
+  <template data-plantilla-etiqueta="sin-confirmar"><EtiquetaTecnica variante="aviso" texto="SIN CONFIRMAR" senal /></template>
+  <!-- Sesión caducada al guardar: lo clona mostrarAviso (servicios/formulario.js) con la clave "sesion". -->
+  <template data-plantilla="aviso-sesion"><Aviso variante="aviso" titulo=" " texto=" " accion={{ etiqueta: 'Ir al acceso', href: '/acceso?volver=%2Fapp%2Fperfil' }} /></template>
+  <PlantillasFormulario />
 
   <template data-estado="no-autenticado">
     <Panel titulo="Tus datos">
-      <!-- /acceso aún no existe: lo crea RF-01 (fase 7). -->
-      <Aviso variante="aviso" titulo="Tu sesión no es válida" texto="Inicia sesión para ver tu perfil." accion={{ etiqueta: 'Ir al acceso', href: '/acceso' }} />
+      <Aviso variante="aviso" titulo="Tu sesión no es válida" texto="Inicia sesión para ver tu perfil." accion={{ etiqueta: 'Ir al acceso', href: '/acceso?volver=%2Fapp%2Fperfil' }} />
     </Panel>
   </template>
 
@@ -55,12 +81,44 @@ import Boton from '../componentes/Boton.astro';
 </bugalu-perfil>
 
 <script>
-  import { obtenerPerfil } from '../servicios/api.js';
+  import { obtenerPerfil, actualizarPerfil, verificarCorreo } from '../servicios/api.js';
+  import { pedirEnlaceVerificacion } from '../servicios/verificacion.js';
+  import { normalizarTelefono } from '../servicios/sesion.js';
+  import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, mostrarAvisoDeUrl } from '../servicios/formulario.js';
+
+  const roles: Record<string, string> = { cliente: 'Cliente', personal: 'Personal del estudio', administrador: 'Administrador' };
+
+  // Titulo y texto de un fallo de la API (carga y guardado comparten los textos).
+  function textoDeError(error: any): [string, string] {
+    const textos: Record<string, [string, string]> = {
+      sin_conexion: ['Sin conexión', 'No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo.'],
+      autenticacion_no_disponible: ['Servicio no disponible', 'El servicio de acceso no responde. Inténtalo de nuevo en unos minutos.'],
+    };
+    return textos[error.codigo] ?? ['No pudimos cargar tu perfil', 'Algo salió mal. Inténtalo de nuevo.'];
+  }
 
   class BugaluPerfil extends HTMLElement {
+    perfil: any = null;
+    verificar = false;
+
     connectedCallback() {
+      // ?verificar=1 lo trae el enlace del correo: se lee una vez y se quita para que recargar no lo repita.
+      const url = new URL(location.href);
+      this.verificar = url.searchParams.has('verificar');
+      if (this.verificar) {
+        url.searchParams.delete('verificar');
+        history.replaceState(null, '', url);
+      }
+      mostrarAvisoDeUrl(this, ['cuenta-creada', 'contrasena-cambiada']);
       this.addEventListener('click', (e) => {
-        if ((e.target as Element).closest('[data-reintentar]')) this.cargar(true);
+        const destino = e.target as Element;
+        if (destino.closest('[data-reintentar]')) this.cargar(true);
+        const verificarBoton = destino.closest<HTMLButtonElement>('[data-verificar]');
+        if (verificarBoton) this.pedirEnlace(verificarBoton);
+      });
+      this.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.guardar(e.target as HTMLFormElement);
       });
       this.cargar();
     }
@@ -77,36 +135,158 @@ import Boton from '../componentes/Boton.astro';
       titulo.focus();
     }
 
-    // La región viva estable anuncia el estado una sola vez: el aviso clonado pierde su rol vivo.
-    async cargar(reintento = false) {
+    anunciar(texto: string) {
       const anuncio = this.querySelector('[data-anuncio]')!;
       anuncio.textContent = '';
+      anuncio.textContent = texto;
+    }
+
+    // Aviso de resultado arriba: la región viva estable lo anuncia, así que el clon pierde su rol (aviso.md).
+    avisar(variante: string, titulo: string, texto = '') {
+      const aviso = mostrarAviso(this, variante, titulo, texto);
+      aviso.removeAttribute('role');
+      this.anunciar(texto ? `${titulo}. ${texto}` : titulo);
+      return aviso;
+    }
+
+    async cargar(reintento = false) {
+      this.anunciar('');
       this.mostrar('cargando');
-      await this.resolver();
+      const texto = await this.resolver();
       this.querySelectorAll('[data-salida] [role]').forEach((e) => e.removeAttribute('role'));
       const aviso = this.querySelector('[data-salida] .aviso');
-      anuncio.textContent = aviso ? `${aviso.querySelector('.aviso-titulo')!.textContent}. ${aviso.querySelector('.aviso-texto')?.textContent ?? ''}` : 'Perfil cargado.';
+      this.anunciar(texto ?? (aviso ? `${aviso.querySelector('.aviso-titulo')!.textContent}. ${aviso.querySelector('.aviso-texto')?.textContent ?? ''}` : 'Perfil cargado.'));
       if (reintento) this.enfocar();
     }
 
-    async resolver() {
+    // Devuelve el texto del anuncio cuando no lo da un aviso del estado.
+    async resolver(): Promise<string | null> {
+      let perfil;
       try {
-        const perfil = await obtenerPerfil();
-        this.mostrar('datos');
-        const texto = { nombre: perfil.nombre ?? 'Sin nombre', rol: perfil.rol, especialidad: perfil.especialidad ?? 'Sin especialidad' };
-        for (const [campo, valor] of Object.entries(texto)) this.querySelector(`[data-campo="${campo}"]`)!.textContent = valor;
+        perfil = await obtenerPerfil();
       } catch (error: any) {
-        if (error.estado === 401) return this.mostrar('no-autenticado');
-        if (error.estado === 404) return this.mostrar('sin-perfil');
+        if (error.estado === 401 || error.estado === 404) {
+          this.mostrar(error.estado === 401 ? 'no-autenticado' : 'sin-perfil');
+          return null;
+        }
         this.mostrar('error');
-        const textos: Record<string, [string, string]> = {
-          sin_conexion: ['Sin conexión', 'No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo.'],
-          autenticacion_no_disponible: ['Servicio no disponible', 'El servicio de acceso no responde. Inténtalo de nuevo en unos minutos.'],
-        };
-        const [titulo, mensaje] = textos[error.codigo] ?? ['No pudimos cargar tu perfil', 'Algo salió mal. Inténtalo de nuevo.'];
+        const [titulo, mensaje] = textoDeError(error);
         this.querySelector('.aviso-titulo')!.textContent = titulo;
         this.querySelector('.aviso-texto')!.textContent = mensaje;
+        return null;
       }
+      this.mostrar('datos');
+      this.perfil = perfil;
+      this.llenar(perfil);
+      this.querySelector<HTMLInputElement>('[name="nombre"]')!.value = perfil.nombre ?? '';
+      this.querySelector<HTMLInputElement>('[name="telefono"]')!.value = perfil.telefono ?? '';
+      if (perfil.rol === 'cliente') this.querySelector<HTMLInputElement>('[name="nombre_artistico"]')!.value = perfil.nombre_artistico ?? '';
+      else this.querySelector('[data-solo-cliente]')!.remove();
+      if (perfil.correo_confirmado === false) {
+        this.querySelector('[data-confirmacion]')!.replaceChildren(this.querySelector<HTMLTemplateElement>('template[data-estado="confirmacion"]')!.content.cloneNode(true));
+      }
+      // La navegación del layout lee el rol de aquí para no pedir el perfil dos veces.
+      document.dispatchEvent(new CustomEvent('bugalu:perfil', { detail: perfil }));
+      return this.verificar ? this.confirmarCorreo() : null;
+    }
+
+    // Lista A2: lo que la persona no puede cambiar.
+    llenar(perfil: any) {
+      const texto: Record<string, string> = { correo: perfil.correo ?? '', rol: roles[perfil.rol] ?? perfil.rol };
+      for (const [campo, valor] of Object.entries(texto)) this.querySelector(`[data-campo="${campo}"]`)!.textContent = valor;
+      if (perfil.especialidad || perfil.rol !== 'cliente') this.querySelector('[data-campo="especialidad"]')!.textContent = perfil.especialidad ?? 'Sin especialidad';
+      else this.querySelector('[data-fila="especialidad"]')?.remove();
+      const marca = perfil.correo_confirmado === true ? 'confirmado' : perfil.correo_confirmado === false ? 'sin-confirmar' : null;
+      this.querySelector('[data-etiqueta]')!.replaceChildren(...(marca ? [this.querySelector<HTMLTemplateElement>(`[data-plantilla-etiqueta="${marca}"]`)!.content.cloneNode(true)] : []));
+    }
+
+    // --- Verificación del correo (CA-06) ---
+
+    async pedirEnlace(boton: HTMLButtonElement) {
+      if (boton.disabled) return;
+      const etiqueta = boton.textContent;
+      boton.disabled = true;
+      boton.setAttribute('aria-busy', 'true');
+      boton.textContent = 'Enviando…';
+      let texto: string;
+      try {
+        await pedirEnlaceVerificacion(this.perfil.correo);
+        texto = `Te enviamos otro correo a ${this.perfil.correo}. Abre el enlace para confirmarlo.`;
+      } catch (error: any) {
+        texto = error.tipo === 'limite' ? 'Ya te enviamos uno hace poco. Espera unos minutos antes de pedir otro.' : 'No pudimos enviar el correo. Inténtalo de nuevo en unos minutos.';
+      }
+      boton.disabled = false;
+      boton.removeAttribute('aria-busy');
+      boton.textContent = etiqueta;
+      this.querySelector('[data-confirmacion] .aviso-texto')!.textContent = texto;
+      this.anunciar(texto);
+    }
+
+    // Al volver del enlace del correo: el backend registra la verificación. Devuelve el texto del anuncio.
+    async confirmarCorreo(): Promise<string> {
+      try {
+        this.perfil = await verificarCorreo();
+        this.llenar(this.perfil);
+        this.querySelector('[data-confirmacion]')!.replaceChildren();
+        this.avisar('exito', 'Correo verificado.');
+        return 'Correo verificado.';
+      } catch (error: any) {
+        const [titulo, texto] =
+          error.estado === 409 ? ['No pudimos verificar tu correo', 'Abre el enlace del último correo en este navegador, o pide otro con "Verificar mi correo".']
+          : error.estado === 401 ? ['Tu sesión caducó', 'Inicia sesión y vuelve a abrir el enlace.']
+          : textoDeError(error);
+        this.avisar('error', titulo, texto);
+        return `${titulo}. ${texto}`;
+      }
+    }
+
+    // --- Guardar (CA-09) ---
+
+    async guardar(form: HTMLFormElement) {
+      const boton = form.querySelector<HTMLButtonElement>('[data-principal]')!;
+      if (boton.disabled) return;
+      limpiarAvisos(this);
+      const nombre = form.querySelector<HTMLInputElement>('[name="nombre"]')!;
+      const telefono = form.querySelector<HTMLInputElement>('[name="telefono"]')!;
+      const artistico = form.querySelector<HTMLInputElement>('[name="nombre_artistico"]');
+      [nombre, telefono].forEach(quitarError);
+      const numero = telefono.value.trim() ? normalizarTelefono(telefono.value) : '';
+      const fallos: [HTMLInputElement, string][] = [];
+      if (!nombre.value.trim()) fallos.push([nombre, 'Escribe tu nombre.']);
+      if (numero === null) fallos.push([telefono, 'Escribe entre 9 y 15 dígitos; puedes empezar con +.']);
+      if (fallos.length) {
+        for (const [entrada, texto] of fallos) ponerError(this, entrada, texto);
+        const aviso = mostrarAviso(this, 'error', `Revisa ${fallos.length} ${fallos.length === 1 ? 'campo' : 'campos'}`, '', {
+          enlaces: fallos.map(([entrada]) => ({ texto: this.querySelector(`label[for="${entrada.id}"]`)!.textContent!.replace('(obligatorio)', '').trim(), href: `#${entrada.id}` })),
+        });
+        return enfocarAviso(aviso);
+      }
+      // El servidor no acepta vacíos: lo que se deja en blanco no se envía.
+      const cambios = { nombre: nombre.value.trim(), ...(numero && { telefono: numero }), ...(artistico?.value.trim() && { nombre_artistico: artistico.value.trim() }) };
+      const etiqueta = boton.textContent;
+      boton.disabled = true;
+      boton.setAttribute('aria-busy', 'true');
+      boton.textContent = 'Guardando…';
+      let aviso: Element | null = null;
+      try {
+        this.perfil = await actualizarPerfil(cambios);
+        nombre.value = this.perfil.nombre ?? '';
+        telefono.value = this.perfil.telefono ?? '';
+        if (artistico) artistico.value = this.perfil.nombre_artistico ?? '';
+        this.llenar(this.perfil);
+        this.avisar('exito', 'Cambios guardados.');
+      } catch (error: any) {
+        aviso =
+          error.estado === 401 ? mostrarAviso(this, 'sesion', 'Tu sesión caducó', 'Inicia sesión y vuelve a guardar.')
+          : error.estado === 422 ? mostrarAviso(this, 'error', error.mensaje, '')
+          : mostrarAviso(this, 'error', ...textoDeError(error));
+      }
+      boton.disabled = false;
+      boton.removeAttribute('aria-busy');
+      boton.textContent = etiqueta;
+      // Tras guardar el foco vuelve al botón; si falló, va al aviso.
+      if (aviso) enfocarAviso(aviso);
+      else boton.focus();
     }
   }
   if (!customElements.get('bugalu-perfil')) customElements.define('bugalu-perfil', BugaluPerfil);
@@ -132,5 +312,41 @@ import Boton from '../componentes/Boton.astro';
   }
   .reintentar {
     margin-block-start: var(--espacio-2);
+  }
+  .perfil [data-avisos]:not(:empty),
+  .perfil :global([data-confirmacion]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  .perfil-rejilla {
+    display: grid;
+    gap: var(--espacio-4);
+    align-items: start;
+  }
+  @media (min-width: 64em) { /* punto-quiebre-escritorio */
+    .perfil-rejilla {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+  }
+  .perfil-formulario {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+  }
+  .perfil-ayuda {
+    margin: var(--espacio-4) 0 0;
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+    line-height: var(--fuente-interlineado-interfaz);
+  }
+  /* Enlaces del resumen de errores: se crean en el navegador. */
+  .perfil :global(.aviso ul) {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding-inline-start: var(--espacio-5);
+  }
+  .perfil :global(.aviso li a) {
+    display: inline-block;
+    padding-block: var(--espacio-1);
   }
 </style>

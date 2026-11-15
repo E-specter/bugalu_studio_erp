@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Solicitudes from '../../../islas/Solicitudes.astro';
+---
+
+<LayoutApp titulo="Usuarios">
+  <EncabezadoPantalla
+    titulo="Usuarios"
+    indice="[A2] EQUIPO / USUARIOS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Usuarios' }]}
+    descripcion="Todas las cuentas del estudio. Cambia el rol o la especialidad de cualquiera."
+  />
+  <Solicitudes vista="usuarios" />
+</LayoutApp>

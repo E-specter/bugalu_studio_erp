@@ -46,7 +46,7 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Pasos | [pasos](pasos.md) | `componentes/Pasos.astro` | Borrador |
 | Barra de acciones | [barra-acciones](barra-acciones.md) | `componentes/BarraAcciones.astro` | Borrador |
 | Resumen persistente | [resumen-persistente](resumen-persistente.md) | `componentes/ResumenPersistente.astro` | Borrador |
-| Tabla | [tabla](tabla.md) | `componentes/Tabla.astro` | Borrador |
+| Tabla | [tabla](tabla.md) | `componentes/Tabla.astro` | Implementado |
 | Tarjeta de proyecto | [tarjeta-proyecto](tarjeta-proyecto.md) | `componentes/TarjetaProyecto.astro` | Borrador |
 | Lista de eventos | [lista-eventos](lista-eventos.md) | `componentes/ListaEventos.astro` | Borrador |
 | Archivo | [archivo](archivo.md) | `componentes/Archivo.astro` | Borrador |

@@ -1,0 +1,604 @@
+---
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Casilla from '../componentes/Casilla.astro';
+import Tabla from '../componentes/Tabla.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.astro';
+
+interface Props {
+  vista: 'bandeja' | 'revisar' | 'usuarios' | 'usuario';
+}
+const { vista } = Astro.props;
+// Panel de la vista mientras carga o falla (codigo y titulo de la spec RF-01-solicitudes).
+const principal = { bandeja: { titulo: 'Pendientes' }, revisar: { codigo: 'S1', titulo: 'Solicitud' }, usuarios: { titulo: 'Cuentas' }, usuario: { codigo: 'U1', titulo: 'Persona' } }[vista];
+const filtros = [
+  { clave: 'todos', texto: 'Todos', href: '/app/usuarios' },
+  { clave: 'cliente', texto: 'Clientes', href: '/app/usuarios?rol=cliente' },
+  { clave: 'personal', texto: 'Personal', href: '/app/usuarios?rol=personal' },
+  { clave: 'administrador', texto: 'Administradores', href: '/app/usuarios?rol=administrador' },
+];
+const opcionesRol = (cliente: boolean) => [
+  ...(cliente ? [{ valor: 'cliente', etiqueta: 'Cliente', detalle: 'Solo ve su portal de artista.' }] : []),
+  { valor: 'personal', etiqueta: 'Personal del estudio', detalle: 'Entra al panel interno.' },
+  { valor: 'administrador', etiqueta: 'Administrador', detalle: 'Además, aprueba solicitudes, valida pagos y cambia roles.' },
+];
+---
+
+<!-- Un bloque por estado (estados-sistema): se pintan en servidor y la isla clona el que toca. Sin JS, el noscript oculta la carga y avisa. -->
+<bugalu-solicitudes class="solicitudes" vista={vista}>
+  <div data-avisos></div>
+  <!-- Región viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  {vista === 'usuarios' && <nav class="filtros" aria-label="Filtrar por rol" data-filtros hidden></nav>}
+  <div data-salida>
+    <Panel {...principal} cargando />
+  </div>
+
+  <template data-estado="cargando"><Panel {...principal} cargando /></template>
+
+  <template data-estado="no-autenticado">
+    <Panel {...principal}><Aviso variante="aviso" titulo=" " texto=" " accion={{ etiqueta: 'Ir al acceso interno', href: '/acceso/interno' }} /></Panel>
+  </template>
+
+  <template data-estado="sin-permiso">
+    <Panel codigo="[403]" titulo="Sin permiso"><Aviso variante="error" titulo=" " texto=" " accion={{ etiqueta: 'Volver al inicio', href: '/app/' }} /></Panel>
+  </template>
+
+  <template data-estado="error">
+    <Panel {...principal}>
+      <Aviso variante="error" titulo=" " texto=" ">
+        <div class="reintentar"><Boton variante="secundario" data-reintentar>Reintentar</Boton></div>
+      </Aviso>
+    </Panel>
+  </template>
+
+  {vista === 'bandeja' && (
+    <>
+      <template data-estado="vacio">
+        <Panel titulo="Pendientes">
+          <p class="vacio-titulo">No hay solicitudes pendientes</p>
+          <p>Cuando alguien del equipo pida acceso desde el registro interno, aparecerá aquí.</p>
+        </Panel>
+      </template>
+      <template data-estado="datos">
+        <Panel titulo="Pendientes">
+          <p class="total" data-total></p>
+          <Tabla titulo="Solicitudes pendientes" columnas={['Persona', 'Especialidad', 'Enviada', '']} />
+        </Panel>
+      </template>
+      <template data-fila>
+        <tr>
+          <th scope="row"><span class="persona-nombre" data-nombre></span><span class="persona-correo" data-correo></span></th>
+          <td data-etiqueta="Especialidad" data-especialidad></td>
+          <td data-etiqueta="Enviada"><time data-enviada></time></td>
+          <td><Boton variante="secundario" href="#" data-accion>Revisar<span class="visualmente-oculto" data-objeto></span></Boton></td>
+        </tr>
+      </template>
+    </>
+  )}
+
+  {vista === 'revisar' && (
+    <>
+      <template data-estado="no-encontrada">
+        <Panel codigo="S1" titulo="Solicitud"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a solicitudes', href: '/app/solicitudes' }} /></Panel>
+      </template>
+      <template data-estado="datos">
+        <div class="revisar">
+          <Panel codigo="S1" titulo="Solicitud">
+            <dl class="datos">
+              <div><dt>Persona</dt><dd data-campo="nombre"></dd></div>
+              <div><dt>Correo</dt><dd data-campo="correo"></dd></div>
+              <div><dt>Especialidad solicitada</dt><dd data-campo="especialidad"></dd></div>
+              <div data-fila="mensaje"><dt>Mensaje</dt><dd data-campo="mensaje"></dd></div>
+              <div><dt>Enviada</dt><dd data-campo="creada_en"></dd></div>
+            </dl>
+          </Panel>
+          <div class="lateral">
+            <Panel codigo="S2" titulo="Aprobar" variante="lateral">
+              <form novalidate method="post" class="formulario" data-formulario="aprobar">
+                <fieldset class="rol">
+                  <legend>Rol</legend>
+                  {opcionesRol(false).map((o) => <Casilla tipo="radio" nombre="rol" valor={o.valor} etiqueta={o.etiqueta} detalle={o.detalle} marcada={o.valor === 'personal'} />)}
+                </fieldset>
+                <Campo nombre="especialidad" etiqueta="Especialidad" ayuda="Puedes corregirla. Para quien da asesorías, escribe asesoria." obligatorio />
+                <Boton tipo="submit" data-principal>Aprobar acceso</Boton>
+              </form>
+            </Panel>
+            <Panel codigo="S3" titulo="Rechazar" variante="lateral">
+              <form novalidate method="post" class="formulario" data-formulario="rechazar">
+                <Campo tipo="area" nombre="motivo" etiqueta="Motivo del rechazo" ayuda="La persona lo verá al entrar. Di qué falta o por qué." obligatorio />
+                <Boton tipo="submit" variante="peligro" data-principal>Rechazar solicitud</Boton>
+              </form>
+            </Panel>
+          </div>
+        </div>
+      </template>
+    </>
+  )}
+
+  {vista === 'usuarios' && (
+    <>
+      {filtros.flatMap((f) => [
+        <template data-filtro={f.clave} data-aplicado="no"><EtiquetaTecnica variante="filtro" texto={f.texto} href={f.href} /></template>,
+        <template data-filtro={f.clave} data-aplicado="si"><EtiquetaTecnica variante="filtro" texto={f.texto} href={f.href} aplicado /></template>,
+      ])}
+      <template data-estado="vacio">
+        <Panel titulo="Cuentas">
+          <p class="vacio-titulo" data-vacio></p>
+          <div class="reintentar" data-quitar><Boton variante="secundario" href="/app/usuarios">Quitar filtros</Boton></div>
+        </Panel>
+      </template>
+      <template data-estado="datos">
+        <Panel titulo="Cuentas">
+          <p class="total" data-total></p>
+          <Tabla titulo="Cuentas del estudio" columnas={['Persona', 'Rol', 'Especialidad', '']} />
+        </Panel>
+      </template>
+      <template data-fila>
+        <tr>
+          <th scope="row"><span class="persona-nombre" data-nombre></span><span class="persona-correo" data-correo></span></th>
+          <td data-etiqueta="Rol"><EtiquetaTecnica texto="Rol" /></td>
+          <td data-etiqueta="Especialidad" data-especialidad></td>
+          <td><Boton variante="secundario" href="#" data-accion>Cambiar rol<span class="visualmente-oculto" data-objeto></span></Boton></td>
+        </tr>
+      </template>
+    </>
+  )}
+
+  {vista === 'usuario' && (
+    <>
+      <template data-estado="no-encontrada">
+        <Panel codigo="U1" titulo="Persona"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a usuarios', href: '/app/usuarios' }} /></Panel>
+      </template>
+      <template data-estado="datos">
+        <div class="revisar">
+          <Panel codigo="U1" titulo="Persona">
+            <dl class="datos">
+              <div><dt>Nombre</dt><dd data-campo="nombre"></dd></div>
+              <div><dt>Correo</dt><dd data-campo="correo"></dd></div>
+              <div data-fila="telefono"><dt>Teléfono</dt><dd data-campo="telefono"></dd></div>
+              <div data-fila="nombre_artistico"><dt>Nombre artístico</dt><dd data-campo="nombre_artistico"></dd></div>
+            </dl>
+          </Panel>
+          <div class="lateral">
+            <div data-propio><Aviso variante="aviso" titulo="Estás cambiando tu propio rol." texto="Si dejas de ser Administrador, perderás el acceso a esta sección." /></div>
+            <Panel codigo="U2" titulo="Rol y especialidad" variante="lateral">
+              <form novalidate method="post" class="formulario" data-formulario="guardar">
+                <fieldset class="rol">
+                  <legend>Rol</legend>
+                  {opcionesRol(true).map((o) => <Casilla tipo="radio" nombre="rol" valor={o.valor} etiqueta={o.etiqueta} detalle={o.detalle} />)}
+                </fieldset>
+                <Campo nombre="especialidad" etiqueta="Especialidad" ayuda="Déjala vacía si es cliente." />
+                <div class="acciones"><Boton tipo="submit" data-principal>Guardar rol y especialidad</Boton></div>
+              </form>
+            </Panel>
+          </div>
+        </div>
+      </template>
+    </>
+  )}
+
+  <PlantillasFormulario />
+
+  <noscript>
+    <style is:inline>bugalu-solicitudes [data-salida] { display: none; }</style>
+    <Panel {...principal}><Aviso variante="informacion" titulo="Esta sección necesita JavaScript" texto="Actívalo en tu navegador y recarga la página." /></Panel>
+  </noscript>
+</bugalu-solicitudes>
+
+<script>
+  import { listarSolicitudes, aprobarSolicitud, rechazarSolicitud, listarUsuarios, cambiarUsuario } from '../servicios/administracion.js';
+  import { obtenerPerfil } from '../servicios/api.js';
+  import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, llenarAviso, formatearFecha } from '../servicios/formulario.js';
+
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const roles: Record<string, string> = { cliente: 'Cliente', personal: 'Personal', administrador: 'Administrador' };
+
+  // Lista cerrada de claves ?aviso= (estados-sistema): el texto sale de aqui, nunca de la URL.
+  const avisosUrl: Record<string, [string, string?]> = {
+    'solicitud-aprobada': ['Solicitud aprobada', 'La persona ya puede entrar al panel.'],
+    'solicitud-rechazada': ['Solicitud rechazada', 'La persona verá el motivo al entrar.'],
+    'usuario-actualizado': ['Rol actualizado'],
+  };
+
+  // Textos de los estados con aviso: [titulo, texto]; llenarAviso los une como una frase.
+  const textos: Record<string, [string, string]> = {
+    'no-autenticado': ['Tu sesión no es válida', 'Inicia sesión para continuar.'],
+    'sin-permiso': ['No tienes permiso', 'Esta sección es solo para el Administrador.'],
+  };
+  const noEncontrada: Record<string, [string, string]> = {
+    revisar: ['Esta solicitud ya no está pendiente', 'Puede que otra persona la haya revisado.'],
+    usuario: ['No encontramos este usuario', 'Puede que el enlace esté mal escrito o que la cuenta ya no exista.'],
+  };
+
+  const mensajeError = (e: any): [string, string] =>
+    e.estado === 0 ? ['Sin conexión', 'Revisa tu red e inténtalo de nuevo.'] : e.estado === 503 ? ['El servicio no responde', 'Inténtalo de nuevo en unos minutos.'] : ['Algo salió mal', 'Inténtalo de nuevo.'];
+
+  // Relativa (< 7 dias) con la absoluta en title; despues, D MMM AAAA.
+  function fechaEnvio(iso: string): [string, string?] {
+    const horas = Math.floor((Date.now() - new Date(iso).getTime()) / 3600e3);
+    if (horas < 0 || horas >= 7 * 24) return [formatearFecha(iso)];
+    const hora = new Date(iso).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', hour12: false });
+    const texto = horas < 1 ? 'hace unos minutos' : horas < 24 ? `hace ${horas} h` : horas < 48 ? 'ayer' : `hace ${Math.floor(horas / 24)} días`;
+    return [texto, `${formatearFecha(iso)}, ${hora}`];
+  }
+
+  class BugaluSolicitudes extends HTMLElement {
+    vista = '';
+    registro = '';
+    yo: any = null;
+
+    connectedCallback() {
+      this.vista = this.getAttribute('vista')!;
+      this.registro = new URLSearchParams(location.search).get('id') ?? '';
+      this.avisoDeUrl();
+      this.addEventListener('click', (e) => {
+        if ((e.target as Element).closest('[data-reintentar]')) this.cargar(true);
+      });
+      this.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formulario = e.target as HTMLFormElement;
+        const accion = formulario.dataset.formulario;
+        if (accion === 'aprobar') this.aprobar(formulario);
+        else if (accion === 'rechazar') this.rechazar(formulario);
+        else this.guardar(formulario);
+      });
+      this.cargar();
+    }
+
+    // Muestra el aviso de ?aviso= si es de la lista cerrada, le da el foco y quita el parametro para que recargar no lo repita.
+    avisoDeUrl() {
+      const url = new URL(location.href);
+      const clave = url.searchParams.get('aviso');
+      if (clave === null) return;
+      url.searchParams.delete('aviso');
+      history.replaceState(null, '', url);
+      if (Object.hasOwn(avisosUrl, clave)) enfocarAviso(mostrarAviso(this, 'exito', ...avisosUrl[clave]));
+    }
+
+    mostrar(estado: string) {
+      const plantilla = this.querySelector<HTMLTemplateElement>(`template[data-estado="${estado}"]`)!;
+      this.querySelector('[data-salida]')!.replaceChildren(plantilla.content.cloneNode(true));
+      const [titulo, texto] = (estado === 'no-encontrada' ? noEncontrada[this.vista] : textos[estado]) ?? [];
+      const aviso = this.querySelector('[data-salida] .aviso');
+      if (aviso && titulo) llenarAviso(aviso, titulo, texto);
+      if (estado === 'no-autenticado') this.querySelector<HTMLAnchorElement>('.aviso-accion')!.href = `/acceso/interno?${new URLSearchParams({ volver: location.pathname + location.search })}`;
+    }
+
+    // Foco al titulo del panel (tabindex -1) para no caer en <body> al sustituirse el contenido.
+    enfocar() {
+      const titulo = this.querySelector<HTMLElement>('[data-salida] .panel-titulo')!;
+      titulo.tabIndex = -1;
+      titulo.focus();
+    }
+
+    // La region viva estable anuncia el estado una sola vez: el aviso clonado pierde su rol vivo.
+    async cargar(reintento = false) {
+      const anuncio = this.querySelector('[data-anuncio]')!;
+      anuncio.textContent = '';
+      this.querySelectorAll('[data-avisos] .aviso-error').forEach((a) => a.remove());
+      this.mostrar('cargando');
+      const texto = await this.resolver();
+      this.querySelectorAll('[data-salida] [role]').forEach((e) => e.removeAttribute('role'));
+      anuncio.textContent = texto ?? this.querySelector('[data-salida] .aviso')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+      if (reintento) this.enfocar();
+    }
+
+    // Devuelve el texto del anuncio (o null si lo da el aviso del estado).
+    async resolver(): Promise<string | null> {
+      try {
+        return await (this as any)[this.vista]();
+      } catch (error: any) {
+        return this.fallo(error);
+      }
+    }
+
+    // 401 y 403 sustituyen el bloque; el resto es un error con Reintentar.
+    fallo(error: any): null {
+      if (error.estado === 401) this.mostrar('no-autenticado');
+      else if (error.estado === 403) this.mostrar('sin-permiso');
+      else {
+        this.mostrar('error');
+        llenarAviso(this.querySelector('[data-salida] .aviso')!, ...mensajeError(error));
+      }
+      return null;
+    }
+
+    encabezado(ruta: string, descripcion: string) {
+      const actual = document.querySelector('.encabezado-ruta [aria-current="page"]');
+      if (actual) actual.textContent = ruta;
+      const texto = document.querySelector('.encabezado-descripcion');
+      if (texto) texto.textContent = descripcion;
+    }
+
+    // --- Bandeja y lista de usuarios: tabla con una fila por registro ---
+
+    pintarTabla(registros: any[], llenar: (fila: HTMLElement, registro: any) => void) {
+      const plantilla = this.querySelector<HTMLTemplateElement>('template[data-fila]')!;
+      this.querySelector('tbody')!.replaceChildren(
+        ...registros.map((r) => {
+          const fila = plantilla.content.cloneNode(true) as DocumentFragment;
+          const raiz = fila.firstElementChild as HTMLElement;
+          raiz.querySelector('[data-nombre]')!.textContent = r.nombre ?? 'Sin nombre';
+          raiz.querySelector('[data-correo]')!.textContent = r.correo;
+          llenar(raiz, r);
+          return raiz;
+        }),
+      );
+    }
+
+    async bandeja() {
+      const lista = (await listarSolicitudes('pendiente')).sort((a: any, b: any) => a.creada_en.localeCompare(b.creada_en));
+      if (!lista.length) {
+        this.mostrar('vacio');
+        return 'No hay solicitudes pendientes';
+      }
+      this.mostrar('datos');
+      this.pintarTabla(lista, (fila, s) => {
+        const [texto, titulo] = fechaEnvio(s.creada_en);
+        const hora = fila.querySelector('time')!;
+        hora.textContent = texto;
+        hora.dateTime = s.creada_en;
+        if (titulo) hora.title = titulo;
+        fila.querySelector('[data-especialidad]')!.textContent = s.especialidad;
+        fila.querySelector('[data-objeto]')!.textContent = ` solicitud de ${s.nombre}`;
+        fila.querySelector<HTMLAnchorElement>('[data-accion]')!.href = `/app/solicitudes/revisar?id=${encodeURIComponent(s.id)}`;
+      });
+      const total = `${lista.length} ${lista.length === 1 ? 'pendiente' : 'pendientes'}`;
+      this.querySelector('[data-total]')!.textContent = total;
+      return `${lista.length} ${lista.length === 1 ? 'solicitud pendiente' : 'solicitudes pendientes'}`;
+    }
+
+    async usuarios() {
+      const rol = new URLSearchParams(location.search).get('rol');
+      const filtro = rol && Object.hasOwn(roles, rol) ? rol : '';
+      const nav = this.querySelector<HTMLElement>('[data-filtros]')!;
+      nav.replaceChildren(
+        ...['', ...Object.keys(roles)].map((clave) => this.querySelector<HTMLTemplateElement>(`template[data-filtro="${clave || 'todos'}"][data-aplicado="${clave === filtro ? 'si' : 'no'}"]`)!.content.cloneNode(true)),
+      );
+      nav.hidden = false;
+      const lista = await listarUsuarios(filtro);
+      if (!lista.length) {
+        this.mostrar('vacio');
+        this.querySelector('[data-vacio]')!.textContent = filtro ? 'No hay usuarios con ese rol.' : 'Todavía no hay usuarios.';
+        if (!filtro) this.querySelector('[data-quitar]')!.remove();
+        return filtro ? 'No hay usuarios con ese rol' : 'Todavía no hay usuarios';
+      }
+      this.mostrar('datos');
+      this.pintarTabla(lista, (fila, u) => {
+        fila.querySelector('.etiqueta span:last-child')!.textContent = roles[u.rol] ?? u.rol;
+        fila.querySelector('[data-especialidad]')!.textContent = u.especialidad ?? '—';
+        fila.querySelector('[data-objeto]')!.textContent = ` de ${u.nombre ?? u.correo}`;
+        fila.querySelector<HTMLAnchorElement>('[data-accion]')!.href = `/app/usuarios/editar?id=${encodeURIComponent(u.id)}`;
+      });
+      this.querySelector('[data-total]')!.textContent = `${lista.length} ${lista.length === 1 ? 'cuenta' : 'cuentas'}`;
+      return `${lista.length} ${lista.length === 1 ? 'usuario' : 'usuarios'}`;
+    }
+
+    // --- Datos de una persona en un <dl>: lo que viene vacio quita su fila ---
+
+    llenarDatos(datos: Record<string, string | null>) {
+      for (const [campo, valor] of Object.entries(datos)) {
+        const dd = this.querySelector(`[data-campo="${campo}"]`)!;
+        if (valor) dd.textContent = valor;
+        else dd.closest('[data-fila]')?.remove();
+      }
+    }
+
+    // --- Revisar una solicitud ---
+
+    async revisar() {
+      // El id viene de la URL: solo se usa si es un UUID; si no, se trata como una solicitud que ya no esta.
+      const s = UUID.test(this.registro) ? (await listarSolicitudes('pendiente')).find((x: any) => x.id === this.registro) : null;
+      if (!s) {
+        this.mostrar('no-encontrada');
+        return null;
+      }
+      this.mostrar('datos');
+      this.llenarDatos({ nombre: s.nombre, correo: s.correo, especialidad: s.especialidad, mensaje: s.mensaje, creada_en: formatearFecha(s.creada_en) });
+      this.querySelector<HTMLInputElement>('[name="especialidad"]')!.value = s.especialidad ?? '';
+      this.encabezado(s.nombre, `Decide si ${s.nombre} entra al panel y con qué rol.`);
+      return `Solicitud de ${s.nombre}`;
+    }
+
+    aprobar(form: HTMLFormElement) {
+      const especialidad = form.querySelector<HTMLInputElement>('[name="especialidad"]')!;
+      if (!this.validar(especialidad, 'Escribe la especialidad.')) return;
+      const rol = form.querySelector<HTMLInputElement>('[name="rol"]:checked')!.value;
+      this.enviar(form, 'Aprobando…', () => aprobarSolicitud(this.registro, { rol, especialidad: especialidad.value.trim() }), () => '/app/solicitudes?aviso=solicitud-aprobada');
+    }
+
+    rechazar(form: HTMLFormElement) {
+      const motivo = form.querySelector<HTMLTextAreaElement>('[name="motivo"]')!;
+      if (!this.validar(motivo, 'Escribe el motivo del rechazo.')) return;
+      this.enviar(form, 'Rechazando…', () => rechazarSolicitud(this.registro, motivo.value.trim()), () => '/app/solicitudes?aviso=solicitud-rechazada');
+    }
+
+    // Error bajo el campo y foco en el si esta vacio.
+    validar(entrada: HTMLInputElement | HTMLTextAreaElement, mensaje: string) {
+      if (this.bloqueado) return false;
+      limpiarAvisos(this);
+      quitarError(entrada);
+      if (entrada.value.trim()) return true;
+      ponerError(this, entrada, mensaje);
+      entrada.focus();
+      return false;
+    }
+
+    // --- Cambiar rol de un usuario ---
+
+    async usuario() {
+      const [lista, yo]: [any[], any] = UUID.test(this.registro) ? await Promise.all([listarUsuarios(''), obtenerPerfil()]) : [[], null];
+      const u = lista.find((x: any) => x.id === this.registro);
+      if (!u) {
+        this.mostrar('no-encontrada');
+        return null;
+      }
+      this.yo = yo;
+      this.mostrar('datos');
+      this.llenarDatos({ nombre: u.nombre ?? 'Sin nombre', correo: u.correo, telefono: u.telefono, nombre_artistico: u.nombre_artistico });
+      this.querySelector<HTMLInputElement>(`[name="rol"][value="${u.rol}"]`)!.checked = true;
+      this.querySelector<HTMLInputElement>('[name="especialidad"]')!.value = u.especialidad ?? '';
+      if (yo.id !== u.id) this.querySelector('[data-propio]')!.remove();
+      this.encabezado(u.nombre ?? u.correo, `El rol decide qué ve ${u.nombre ?? u.correo} en el sistema.`);
+      return `Usuario ${u.nombre ?? u.correo}`;
+    }
+
+    guardar(form: HTMLFormElement) {
+      if (this.bloqueado) return;
+      limpiarAvisos(this);
+      const rol = form.querySelector<HTMLInputElement>('[name="rol"]:checked')!.value;
+      const especialidad = form.querySelector<HTMLInputElement>('[name="especialidad"]')!.value.trim() || null;
+      // Si se quita a si mismo el rol de Administrador, ya no puede ver /app/usuarios.
+      const destino = () => (this.yo?.id === this.registro && rol !== 'administrador' ? '/app/' : '/app/usuarios?aviso=usuario-actualizado');
+      this.enviar(form, 'Guardando…', () => cambiarUsuario(this.registro, { rol, especialidad }), destino);
+    }
+
+    // --- Envio comun: carga, bloqueo del resto, y respuestas ---
+
+    get bloqueado() {
+      return this.querySelector('[data-principal][aria-busy]') !== null;
+    }
+
+    bloquear(form: HTMLFormElement, si: boolean) {
+      this.querySelectorAll<HTMLFormElement>('[data-formulario]').forEach((f) => {
+        const propio = f === form;
+        f.querySelectorAll<HTMLButtonElement>(propio ? '[data-principal]' : 'input, textarea, button').forEach((c) => (c.disabled = si));
+      });
+    }
+
+    async enviar(form: HTMLFormElement, carga: string, accion: () => Promise<unknown>, destino: () => string) {
+      const boton = form.querySelector<HTMLButtonElement>('[data-principal]')!;
+      const original = boton.textContent;
+      this.bloquear(form, true);
+      boton.setAttribute('aria-busy', 'true');
+      boton.textContent = carga;
+      try {
+        await accion();
+        return location.assign(destino());
+      } catch (error: any) {
+        if (error.estado === 401 || error.estado === 403 || error.estado === 404 || (error.estado === 409 && error.codigo !== 'ultimo_administrador')) {
+          const estado = error.estado === 401 ? 'no-autenticado' : error.estado === 403 ? 'sin-permiso' : 'no-encontrada';
+          this.mostrar(estado);
+          this.querySelectorAll('[data-salida] [role]').forEach((e) => e.removeAttribute('role'));
+          this.querySelector('[data-anuncio]')!.textContent = this.querySelector('[data-salida] .aviso')!.textContent!.replace(/\s+/g, ' ').trim();
+          return this.enfocar();
+        }
+        this.bloquear(form, false);
+        boton.removeAttribute('aria-busy');
+        boton.textContent = original;
+        const [titulo, texto] =
+          error.codigo === 'ultimo_administrador' ? ['No puedes quitar el último administrador', 'Da el rol de Administrador a otra persona antes de cambiar este.']
+          : error.estado === 422 ? [error.mensaje, undefined]
+          : mensajeError(error);
+        enfocarAviso(mostrarAviso(this, 'error', titulo, texto));
+      }
+    }
+  }
+
+  if (!customElements.get('bugalu-solicitudes')) customElements.define('bugalu-solicitudes', BugaluSolicitudes);
+</script>
+
+<style>
+  .solicitudes {
+    display: block;
+  }
+  .solicitudes :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  .filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+    margin-block-end: var(--espacio-4);
+  }
+  .filtros[hidden] {
+    display: none;
+  }
+  .total {
+    margin-block-end: var(--espacio-3);
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .vacio-titulo {
+    color: var(--color-texto-principal);
+    font-weight: var(--fuente-peso-titulo);
+  }
+  .persona-nombre {
+    display: block;
+    color: var(--color-texto-principal);
+    font-weight: var(--fuente-peso-medio);
+  }
+  .persona-correo {
+    display: block;
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+    font-weight: var(--fuente-peso-regular);
+  }
+  .revisar {
+    display: grid;
+    gap: var(--espacio-5);
+    align-items: start;
+  }
+  .lateral {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+    min-inline-size: 0;
+  }
+  .lateral :global(.panel-lateral) {
+    inline-size: auto;
+  }
+  @media (min-width: 64em) { /* punto-quiebre-escritorio: el lateral va junto al principal */
+    .revisar {
+      grid-template-columns: minmax(0, 1fr) var(--medida-columna-lateral);
+    }
+  }
+  .formulario {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+  }
+  .rol {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-inline-size: 0;
+  }
+  .rol legend {
+    margin-block-end: var(--espacio-2);
+    padding: 0;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .datos {
+    display: grid;
+    gap: var(--espacio-4);
+    margin: 0;
+  }
+  .datos dt {
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .datos dd {
+    margin: 0;
+    color: var(--color-texto-principal);
+    font-size: var(--fuente-tamano-lectura);
+    overflow-wrap: anywhere;
+  }
+  .reintentar {
+    margin-block-start: var(--espacio-2);
+  }
+</style>

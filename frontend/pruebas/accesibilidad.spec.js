@@ -11,7 +11,7 @@ const destino = (page) =>
 
 for (const [nombre, segunda, texto] of [
   ['503 -> 401', (r) => r.fulfill(error(401, 'no_autenticado')), 'Tu sesión no es válida'],
-  ['503 -> 200', (r) => r.fulfill(perfil()), 'Ana Pérez'],
+  ['503 -> 200', (r) => r.fulfill(perfil()), 'Guardar cambios'],
 ]) {
   test(`reintentar con teclado (${nombre}): el foco no cae en body y el resultado se anuncia`, async ({ page }) => {
     let llamadas = 0;
@@ -27,7 +27,7 @@ for (const [nombre, segunda, texto] of [
     await page.keyboard.press('Enter');
     await expect(page.getByText(texto).first()).toBeVisible();
 
-    expect(await destino(page)).toEqual({ etiqueta: 'H2', texto: 'Tus datos' });
+    expect(await destino(page)).toEqual({ etiqueta: 'H2', texto: nombre.endsWith('401') ? 'Tus datos' : 'A1 Tus datos' });
     await expect(region).toContainText(nombre.endsWith('401') ? texto : 'Perfil cargado');
     // Un solo anunciador: el aviso clonado no duplica su rol vivo.
     await expect(page.locator('bugalu-perfil [data-salida] [role="alert"], bugalu-perfil [data-salida] [role="status"]')).toHaveCount(0);

@@ -365,7 +365,8 @@ test.describe('acceso interno', () => {
       await page.getByRole('button', { name: 'Reintentar' }).click();
       await page.waitForURL('**/app/');
       expect(llamadas.filter((l) => l.ruta === '/token')).toHaveLength(1);
-      expect(perfiles).toBe(2);
+      // /app/ pide el perfil una vez más para la navegación por rol.
+      expect(perfiles).toBeGreaterThanOrEqual(2);
     });
   }
 

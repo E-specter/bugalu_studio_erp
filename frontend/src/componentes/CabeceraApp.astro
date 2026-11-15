@@ -22,7 +22,7 @@ const conMenu = Boolean(usuario) || Astro.slots.has('menu');
       <span class="cabecera-placa"><LogoIcono class="logo-movil" aria-hidden="true" /><LogoApilado class="logo-escritorio" aria-hidden="true" /></span>
       <span class="cabecera-nombre">
         <span class="cabecera-producto">{producto}</span>
-        {area && <span class="cabecera-area">{area}</span>}
+        {area && <span class="cabecera-area" data-area>{area}</span>}
       </span>
     </a>
     {conMenu && (

@@ -86,6 +86,8 @@ export function enfocarAviso(aviso) {
 // Lista cerrada de claves ?aviso= (estados-sistema): el texto sale de aqui, nunca de la URL.
 const avisosUrl = {
   'sesion-cerrada': ['informacion', 'Cerraste sesión.'],
+  'cuenta-creada': ['exito', 'Cuenta creada. Ya puedes reservar.'],
+  'contrasena-cambiada': ['exito', 'Contraseña actualizada. Usa la nueva la próxima vez que inicies sesión.'],
   'solicitud-enviada': ['exito', 'Solicitud enviada. El Administrador la revisará; vuelve aquí para ver su estado.'],
 };
 

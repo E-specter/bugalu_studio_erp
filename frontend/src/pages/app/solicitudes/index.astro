@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Solicitudes from '../../../islas/Solicitudes.astro';
+---
+
+<LayoutApp titulo="Solicitudes de acceso">
+  <EncabezadoPantalla
+    titulo="Solicitudes de acceso"
+    indice="[A1] EQUIPO / SOLICITUDES"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Solicitudes' }]}
+    descripcion="Personas que piden entrar al panel del estudio. Revisa cada una y asígnale rol y especialidad."
+  />
+  <Solicitudes vista="bandeja" />
+</LayoutApp>

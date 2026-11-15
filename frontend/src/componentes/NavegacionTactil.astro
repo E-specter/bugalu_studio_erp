@@ -3,7 +3,7 @@ import Icono from './internos/Icono.astro';
 import type { iconos } from './internos/lucide.js';
 
 interface Props {
-  destinos: { etiqueta: string; href: string; icono: keyof typeof iconos }[];
+  destinos: { etiqueta: string; href: string; icono: keyof typeof iconos; solo?: string }[];
   actual?: string;
   etiqueta?: string;
 }
@@ -13,7 +13,7 @@ const { destinos, actual, etiqueta = 'Principal', class: clase } = Astro.props a
 <nav aria-label={etiqueta} class:list={['tactil', clase]}>
   <ul class="tactil-lista">
     {destinos.slice(0, 5).map((destino) => (
-      <li>
+      <li hidden={destino.solo ? true : undefined} data-solo={destino.solo}>
         <a href={destino.href} class:list={['tactil-destino', destino.href === actual && 'tactil-actual']} aria-current={destino.href === actual ? 'page' : undefined}>
           <Icono nombre={destino.icono} tamano="md" />
           <span class="tactil-etiqueta">{destino.etiqueta}</span>

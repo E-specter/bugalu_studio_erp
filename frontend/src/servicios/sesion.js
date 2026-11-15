@@ -4,7 +4,7 @@ const CLAVE_SESION = 'bugalu-sesion';
 
 // Solo la clave publicable: ninguna clave secreta ni de servicio llega al navegador.
 let cliente;
-function obtenerCliente() {
+export function obtenerCliente() {
   cliente ??= createClient(import.meta.env.PUBLIC_URL_SUPABASE, import.meta.env.PUBLIC_CLAVE_PUBLICABLE_SUPABASE, {
     auth: { storageKey: CLAVE_SESION },
   });

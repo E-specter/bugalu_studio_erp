@@ -1,0 +1,14 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Solicitudes from '../../../islas/Solicitudes.astro';
+---
+
+<LayoutApp titulo="Cambiar rol">
+  <EncabezadoPantalla
+    titulo="Cambiar rol"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Usuarios', href: '/app/usuarios' }, { etiqueta: 'Cambiar rol' }]}
+    descripcion="El rol decide qué ve esta persona en el sistema."
+  />
+  <Solicitudes vista="usuario" />
+</LayoutApp>

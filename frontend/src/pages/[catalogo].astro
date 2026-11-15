@@ -19,6 +19,7 @@ import EncabezadoPantalla from '../componentes/EncabezadoPantalla.astro';
 import CabeceraApp from '../componentes/CabeceraApp.astro';
 import NavegacionLateral from '../componentes/NavegacionLateral.astro';
 import NavegacionTactil from '../componentes/NavegacionTactil.astro';
+import Tabla from '../componentes/Tabla.astro';
 
 const destinos = [
   { etiqueta: 'Inicio', href: '/app/', icono: 'house' as const },
@@ -242,6 +243,25 @@ const destinos = [
   <section class="grupo" aria-labelledby="g-tactil">
     <h2 id="g-tactil">Navegación táctil</h2>
     <NavegacionTactil destinos={destinos} actual="/app/agenda/" etiqueta="Principal, ejemplo táctil" />
+  </section>
+
+  <section class="grupo" aria-labelledby="g-tabla">
+    <h2 id="g-tabla">Tabla</h2>
+    <h3>Directorio</h3>
+    <Tabla titulo="Cuentas de ejemplo" columnas={['Persona', 'Rol', 'Especialidad', '']}>
+      <tr>
+        <th scope="row">Ana Pérez<br />ana@correo.com</th>
+        <td data-etiqueta="Rol"><EtiquetaTecnica texto="Administrador" /></td>
+        <td data-etiqueta="Especialidad">Producción</td>
+        <td><Boton variante="secundario" href="#">Cambiar rol<span class="visualmente-oculto"> de Ana Pérez</span></Boton></td>
+      </tr>
+      <tr>
+        <th scope="row">Luis Mora<br />luis@correo.com</th>
+        <td data-etiqueta="Rol"><EtiquetaTecnica texto="Personal" /></td>
+        <td data-etiqueta="Especialidad">asesoria</td>
+        <td><Boton variante="secundario" href="#">Cambiar rol<span class="visualmente-oculto"> de Luis Mora</span></Boton></td>
+      </tr>
+    </Tabla>
   </section>
 
   <script>
