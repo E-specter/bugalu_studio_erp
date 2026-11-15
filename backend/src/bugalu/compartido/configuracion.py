@@ -12,6 +12,12 @@ class Configuracion(BaseSettings):
     url_supabase: str = "http://127.0.0.1:45621"
     # Solo la usan las pruebas de integracion (alta de usuarios en Auth).
     clave_publicable_supabase: str = ""
+    # Origenes del frontend, separados por comas. Vacio = sin CORS.
+    origenes_permitidos: str = ""
+
+    @property
+    def lista_origenes_permitidos(self) -> list[str]:
+        return [o.strip() for o in self.origenes_permitidos.split(",") if o.strip()]
 
     @property
     def emisor_jwt(self) -> str:
