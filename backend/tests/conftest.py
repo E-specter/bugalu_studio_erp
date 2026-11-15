@@ -1,3 +1,4 @@
+import os
 import uuid
 from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import dataclass
@@ -8,7 +9,7 @@ import pytest
 from psycopg_pool import AsyncConnectionPool
 
 from bugalu.compartido.bucle import crear_bucle
-from bugalu.compartido.configuracion import Configuracion
+from bugalu.compartido.configuracion import Configuracion, obtener_configuracion
 
 
 @dataclass(frozen=True)
@@ -38,9 +39,30 @@ def pytest_asyncio_loop_factories(config: pytest.Config, item: pytest.Item) -> d
     return {"selector": crear_bucle}
 
 
+def saltar_o_fallar(motivo: str) -> None:
+    """Modo estricto para CI: con EXIGIR_INTEGRACION=1 el stack caido es un fallo, no un salto."""
+    if os.environ.get("EXIGIR_INTEGRACION") == "1":
+        pytest.fail(f"EXIGIR_INTEGRACION=1 y no hay stack de integracion: {motivo}", pytrace=False)
+    pytest.skip(motivo)
+
+
 def pytest_runtest_setup(item: pytest.Item) -> None:
     if "integracion" in item.keywords and (motivo := _stack_responde()):
-        pytest.skip(motivo)
+        saltar_o_fallar(motivo)
+
+
+@pytest.fixture(autouse=True)
+def _entorno_aislado(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[None]:
+    """Las pruebas unitarias no dependen de backend/.env: el entorno gana a ese archivo."""
+    if request.node.get_closest_marker("integracion") is None:
+        monkeypatch.setenv("URL_BASE_DATOS", "postgresql://u:p@127.0.0.1:1/db")
+        monkeypatch.setenv("URL_SUPABASE", "http://127.0.0.1:45621")
+        monkeypatch.setenv("ORIGENES_PERMITIDOS", "")
+        obtener_configuracion.cache_clear()
+    yield
+    obtener_configuracion.cache_clear()
 
 
 @pytest.fixture(scope="session")

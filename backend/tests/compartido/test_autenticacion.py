@@ -157,3 +157,58 @@ async def test_jwks_roto_o_lento_es_503_sin_www_authenticate(
     assert r.status_code == 503
     assert r.json()["error"]["codigo"] == "autenticacion_no_disponible"
     assert "www-authenticate" not in r.headers
+
+
+def _jwks(cuerpo: Any) -> Callable[[Any], None]:
+    def responder(m: BaseHTTPRequestHandler) -> None:
+        m.send_response(200)
+        m.send_header("Content-Type", "application/json")
+        m.end_headers()
+        m.wfile.write(json.dumps(cuerpo).encode())
+
+    return responder
+
+
+async def _pedir_con_jwks(app: FastAPI, cuerpo: Any, token: str) -> Any:
+    del app.dependency_overrides[obtener_resolutor_clave]
+    with _servidor_jwks(_jwks(cuerpo)) as url:
+        app.dependency_overrides[obtener_configuracion] = lambda: Configuracion(
+            url_base_datos="x", url_supabase=url
+        )
+        return await pedir(app, token)
+
+
+@pytest.mark.parametrize(
+    "cuerpo",
+    [[], {}, {"keys": []}, {"keys": "x"}, {"keys": [1]}, {"keys": [{"kty": "basura"}]}, "x", 7],
+    ids=[
+        "lista",
+        "objeto",
+        "keys_vacio",
+        "keys_texto",
+        "keys_no_objeto",
+        "clave_basura",
+        "texto",
+        "numero",
+    ],
+)
+async def test_jwks_sin_forma_de_jwks_es_503_sin_www_authenticate(
+    app: FastAPI, cuerpo: Any
+) -> None:
+    r = await _pedir_con_jwks(app, cuerpo, firmar())
+    assert r.status_code == 503
+    assert r.json()["error"]["codigo"] == "autenticacion_no_disponible"
+    assert "www-authenticate" not in r.headers
+
+
+async def test_kid_ausente_del_jwks_bien_formado_sigue_siendo_401(app: FastAPI) -> None:
+    jwk = json.loads(jwt.algorithms.ECAlgorithm.to_jwk(CLAVE.public_key()))
+    cuerpo = {"keys": [{**jwk, "kid": "otra", "alg": "ES256", "use": "sig"}]}
+    token = jwt.encode(
+        {"sub": SUB, "aud": "authenticated", "iss": ISS, "exp": time.time() + 60},
+        CLAVE,
+        algorithm="ES256",
+        headers={"kid": "no-esta"},
+    )
+    r = await _pedir_con_jwks(app, cuerpo, token)
+    assert r.status_code == 401 and r.headers["www-authenticate"] == "Bearer"

@@ -31,7 +31,17 @@ def obtener_resolutor_clave(
     configuracion: Annotated[Configuracion, Depends(obtener_configuracion)],
 ) -> ResolutorClave:
     cliente = _cliente_jwks(configuracion.url_jwks)
-    return lambda token: cliente.get_signing_key_from_jwt(token).key
+    return lambda token: _clave_de(cliente, token)
+
+
+def _clave_de(cliente: PyJWKClient, token: str) -> Any:
+    try:
+        cliente.get_signing_keys()  # el JWKS (en cache) debe tener forma de JWKS: si no, falla Auth
+    except jwt.PyJWKClientConnectionError:
+        raise
+    except jwt.PyJWTError as error:
+        raise ValueError("El JWKS no tiene forma de JWKS.") from error
+    return cliente.get_signing_key_from_jwt(token).key  # un `kid` ausente es del token: 401
 
 
 def obtener_claims(
@@ -43,7 +53,7 @@ def obtener_claims(
         raise NoAutenticado("Falta el token de acceso.")
     try:
         clave = resolutor(credenciales.credentials)
-    except (jwt.PyJWKClientConnectionError, ValueError) as error:  # ValueError: JWKS no es JSON
+    except (jwt.PyJWKClientConnectionError, ValueError) as error:  # ValueError: JWKS no es JWKS
         raise AutenticacionNoDisponible("No se pudo verificar el token ahora.") from error
     except jwt.PyJWTError as error:
         raise NoAutenticado("Token invalido o caducado.") from error

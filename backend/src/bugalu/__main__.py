@@ -5,7 +5,8 @@ import uvicorn
 
 def main() -> None:
     uvicorn.run(
-        "bugalu.main:app",
+        "bugalu.main:crear_app",
+        factory=True,
         host="127.0.0.1",
         port=8000,
         reload=True,
