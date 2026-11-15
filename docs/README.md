@@ -27,28 +27,29 @@ Validación: `python scripts/validar_docs.py docs --ids-desde docs/superpowers/s
 
 [actores-roles](02-dominio/actores-roles.md) · [reglas-negocio](02-dominio/reglas-negocio.md) · [estados-reserva](02-dominio/estados-reserva.md)
 
-Flujos: [ciclo-servicio](02-dominio/flujos/ciclo-servicio.md) · [registrar-reserva](02-dominio/flujos/registrar-reserva.md) · [versionado-feedback](02-dominio/flujos/versionado-feedback.md)
+Flujos: [ciclo-servicio](02-dominio/flujos/ciclo-servicio.md) · [registrar-reserva](02-dominio/flujos/registrar-reserva.md) · [agendar-asesoria](02-dominio/flujos/agendar-asesoria.md) · [versionado-feedback](02-dominio/flujos/versionado-feedback.md)
 
 ## Requerimientos
 
-Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-07/08 → RF-09/10 → RF-11/12 → RF-13 → RF-02 → RF-14.
+Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-15 → RF-02 → RF-07/08 → RF-09/10 → RF-11/12 → RF-13 → RF-14.
 
 | RF | Título | Módulo | Estado |
 |---|---|---|---|
 | [RF-01](03-requerimientos/RF-01.md) | Autenticar usuario y gestionar perfil | `identidad` | borrador |
-| [RF-02](03-requerimientos/RF-02.md) | Solicitar y generar cotización técnica | `catalogo` | borrador |
-| [RF-03](03-requerimientos/RF-03.md) | Consultar disponibilidad de salas | `reservas` | borrador |
-| [RF-04](03-requerimientos/RF-04.md) | Registrar reserva de sala técnica | `reservas` | borrador |
-| [RF-05](03-requerimientos/RF-05.md) | Procesar pago de anticipo | `pagos` | borrador |
+| [RF-02](03-requerimientos/RF-02.md) | Simular precio y emitir cotización a medida | `catalogo` | borrador |
+| [RF-03](03-requerimientos/RF-03.md) | Publicar y consultar franjas de sala | `reservas` | borrador |
+| [RF-04](03-requerimientos/RF-04.md) | Registrar reserva de sala | `reservas` | borrador |
+| [RF-05](03-requerimientos/RF-05.md) | Registrar y validar pagos | `pagos` | borrador |
 | [RF-06](03-requerimientos/RF-06.md) | Gestionar estado de reserva y notificaciones | `reservas` | borrador |
 | [RF-07](03-requerimientos/RF-07.md) | Asignar personal técnico a sala | `personal` | borrador |
 | [RF-08](03-requerimientos/RF-08.md) | Administrar ficha de proyecto musical | `proyectos` | borrador |
 | [RF-09](03-requerimientos/RF-09.md) | Cargar y versionar entregables de audio | `entregables` | borrador |
 | [RF-10](03-requerimientos/RF-10.md) | Auditar audio y registrar observaciones técnicas | `entregables` | borrador |
-| [RF-11](03-requerimientos/RF-11.md) | Liquidar saldo final de proyecto | `pagos` | borrador |
+| [RF-11](03-requerimientos/RF-11.md) | Cobrar posproducción | `pagos` | borrador |
 | [RF-12](03-requerimientos/RF-12.md) | Descargar máster digital definitivo | `entregables` | borrador |
 | [RF-13](03-requerimientos/RF-13.md) | Evaluar calidad y cierre de servicio | `proyectos` | borrador |
 | [RF-14](03-requerimientos/RF-14.md) | Generar reportes de operatividad y gestión | `reportes` | borrador |
+| [RF-15](03-requerimientos/RF-15.md) | Agendar asesoría artística | `asesorias` | borrador |
 
 ## 04 · Agentes
 

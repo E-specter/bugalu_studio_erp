@@ -33,7 +33,19 @@ Estado del archivo: hay unas 32 pantallas, pero no hay biblioteca de componentes
 
 ## Brecha detectada
 
-No hay pantallas para: calendario de salas (RF-03/04), pago de anticipo y liquidación (RF-05/11), asignación de personal (RF-07) ni reportes (RF-14). El flujo de contratación diseñado (con agenda de asesoría) difiere del flujo de [registrar-reserva](../02-dominio/flujos/registrar-reserva.md); se concilia en el trabajo de decisiones.
+Conciliación (fase 1, [spec 2026-11-15](../superpowers/specs/2026-11-15-contratacion-y-decisiones-design.md)): el flujo de contratación diseñado (servicio → brief → agenda de asesoría → cotización → revisión → proyecto activado) es la **rama de asesoría** del flujo real y se conserva ([agendar-asesoria](../02-dominio/flujos/agendar-asesoria.md)).
+
+No hay pantallas para estas partes, que se especifican desde el brief en la fase 2:
+
+| Pantalla faltante | Requerimiento |
+|---|---|
+| Franjas de sala, tramo y simulación de precio | [RF-02](../03-requerimientos/RF-02.md), [RF-03](../03-requerimientos/RF-03.md), [RF-04](../03-requerimientos/RF-04.md) |
+| Publicación de franjas (Administrador) | [RF-03](../03-requerimientos/RF-03.md) |
+| Reserva de ensayo | [RF-04](../03-requerimientos/RF-04.md) |
+| Horarios del profesional y modalidad de asesoría | [RF-15](../03-requerimientos/RF-15.md) |
+| Registro de pago con captura y validación de pagos | [RF-05](../03-requerimientos/RF-05.md), [RF-11](../03-requerimientos/RF-11.md) |
+| Asignación de personal | [RF-07](../03-requerimientos/RF-07.md) |
+| Reportes | [RF-14](../03-requerimientos/RF-14.md) |
 
 ## Extracción
 

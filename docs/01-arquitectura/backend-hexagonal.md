@@ -21,7 +21,9 @@ infraestructura  →  aplicacion  →  dominio
 
 - `dominio`: entidades, objetos de valor, reglas de negocio y puertos (interfaces). Sin dependencias de FastAPI, Supabase ni librerías externas.
 - `aplicacion`: casos de uso. Orquesta el dominio mediante puertos. Sin conocimiento de HTTP ni de la base de datos.
-- `infraestructura`: adaptadores de entrada (routers FastAPI, esquemas Pydantic) y de salida (repositorios Supabase, pasarela de pagos, correo, almacenamiento).
+- `infraestructura`: adaptadores de entrada (routers FastAPI, esquemas Pydantic) y de salida (repositorios Supabase, pagos, correo, almacenamiento).
+- Pagos: el puerto `PasarelaPagos` vive en `pagos/dominio`; en v1 su único adaptador es manual (captura + validación del Administrador, [ADR-004](../00-proyecto/decisiones/ADR-004-pagos-validacion-manual.md)). Una pasarela real será otro adaptador.
+- Almacenamiento: adaptador sobre Supabase Storage ([ADR-003](../00-proyecto/decisiones/ADR-003-almacenamiento-supabase-storage.md)); autenticación: JWT de Supabase Auth ([ADR-005](../00-proyecto/decisiones/ADR-005-supabase-auth.md)).
 
 ## Estructura
 
@@ -56,6 +58,7 @@ backend/
 | `identidad` | [RF-01](../03-requerimientos/RF-01.md) |
 | `catalogo` | [RF-02](../03-requerimientos/RF-02.md) |
 | `reservas` | [RF-03](../03-requerimientos/RF-03.md), [RF-04](../03-requerimientos/RF-04.md), [RF-06](../03-requerimientos/RF-06.md) |
+| `asesorias` | [RF-15](../03-requerimientos/RF-15.md) |
 | `pagos` | [RF-05](../03-requerimientos/RF-05.md), [RF-11](../03-requerimientos/RF-11.md) |
 | `personal` | [RF-07](../03-requerimientos/RF-07.md) |
 | `proyectos` | [RF-08](../03-requerimientos/RF-08.md), [RF-13](../03-requerimientos/RF-13.md) |
