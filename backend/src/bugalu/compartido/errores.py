@@ -18,3 +18,8 @@ class NoAutenticado(ErrorDeNegocio):
 class NoEncontrado(ErrorDeNegocio):
     codigo = "no_encontrado"
     estado_http = 404
+
+
+class AutenticacionNoDisponible(ErrorDeNegocio):
+    codigo = "autenticacion_no_disponible"
+    estado_http = 503

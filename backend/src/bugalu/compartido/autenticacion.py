@@ -10,10 +10,10 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWKClient
 
 from bugalu.compartido.configuracion import Configuracion, obtener_configuracion
-from bugalu.compartido.errores import NoAutenticado
+from bugalu.compartido.errores import AutenticacionNoDisponible, NoAutenticado
 
 ResolutorClave = Callable[[str], Any]
-ALGORITMOS = ["ES256", "RS256", "EdDSA"]  # solo asimetricos: nunca HS256 con la clave publica
+ALGORITMOS = ["ES256"]  # lo unico que firma el stack local; ni HS256 ni otro tipo de clave
 
 _esquema = HTTPBearer(auto_error=False)
 
@@ -46,5 +46,7 @@ def obtener_claims(
             issuer=configuracion.emisor_jwt,
             options={"require": ["exp", "sub"]},
         )
+    except jwt.PyJWKClientConnectionError as error:
+        raise AutenticacionNoDisponible("No se pudo verificar el token ahora.") from error
     except jwt.PyJWTError as error:
         raise NoAutenticado("Token invalido o caducado.") from error

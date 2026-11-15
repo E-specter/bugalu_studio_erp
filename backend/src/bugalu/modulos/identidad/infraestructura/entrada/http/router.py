@@ -21,6 +21,7 @@ router = APIRouter(tags=["identidad"])
     summary="Perfil del usuario autenticado",
     responses={
         401: {"model": RespuestaError, "description": "Token ausente, invalido o caducado"},
+        503: {"model": RespuestaError, "description": "Servicio de autenticacion no disponible"},
         404: {"model": RespuestaError, "description": "El usuario no tiene perfil"},
     },
 )

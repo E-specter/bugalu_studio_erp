@@ -94,3 +94,8 @@ async def test_404_si_el_usuario_no_tiene_perfil(
     r = await cliente.get("/api/v1/perfil", headers=_con(a.token))
     assert r.status_code == 404
     assert r.json()["error"]["codigo"] == "perfil_no_encontrado"
+
+
+def test_el_contrato_openapi_declara_401_404_y_503(app: FastAPI) -> None:
+    respuestas = app.openapi()["paths"]["/api/v1/perfil"]["get"]["responses"]
+    assert {"200", "401", "404", "503"} <= set(respuestas)

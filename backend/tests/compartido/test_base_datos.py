@@ -1,7 +1,10 @@
+from collections.abc import Callable
+
 import pytest
 from psycopg_pool import AsyncConnectionPool
 
 from bugalu.compartido.base_datos import transaccion_con_identidad
+from tests.conftest import UsuarioDePrueba
 
 pytestmark = pytest.mark.integracion
 
@@ -32,3 +35,20 @@ async def test_la_identidad_no_se_filtra_entre_transacciones_en_la_misma_conexio
     async with pool.connection() as conexion:  # tras las transacciones, la conexion vuelve limpia
         cursor = await conexion.execute("select auth.uid(), current_user")
         assert await cursor.fetchone() == (None, "postgres")
+
+
+async def test_una_excepcion_deshace_la_transaccion_y_la_conexion_vuelve_limpia(
+    pool: AsyncConnectionPool, crear_usuario: Callable[[], UsuarioDePrueba]
+) -> None:
+    a = crear_usuario()
+    with pytest.raises(RuntimeError):
+        async with transaccion_con_identidad(
+            pool, {"sub": str(a.id), "role": "authenticated"}
+        ) as c:
+            await c.execute("update public.usuario set nombre = 'Cambiado' where id = %s", (a.id,))
+            raise RuntimeError("fallo a mitad de la transaccion")
+    async with pool.connection() as conexion:
+        cursor = await conexion.execute("select auth.uid(), current_user")
+        assert await cursor.fetchone() == (None, "postgres")
+        cursor = await conexion.execute("select nombre from public.usuario where id = %s", (a.id,))
+        assert await cursor.fetchone() == (None,)  # el update se deshizo
