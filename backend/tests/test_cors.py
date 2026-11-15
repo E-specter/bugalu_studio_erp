@@ -8,11 +8,9 @@ from bugalu.main import crear_app
 PERMITIDO = "http://localhost:4321"
 
 
-async def _preflight(monkeypatch: pytest.MonkeyPatch, env: str | None, origen: str):  # type: ignore[no-untyped-def]
-    if env is None:
-        monkeypatch.delenv("ORIGENES_PERMITIDOS", raising=False)
-    else:
-        monkeypatch.setenv("ORIGENES_PERMITIDOS", env)
+async def _preflight(monkeypatch: pytest.MonkeyPatch, env: str, origen: str):  # type: ignore[no-untyped-def]
+    # setenv (incluso vacio) gana al backend/.env local; delenv dejaria pasar el del .env.
+    monkeypatch.setenv("ORIGENES_PERMITIDOS", env)
     obtener_configuracion.cache_clear()
     try:
         app = crear_app()
@@ -42,6 +40,6 @@ async def test_preflight_desde_origen_no_permitido(monkeypatch: pytest.MonkeyPat
     assert "access-control-allow-origin" not in r.headers
 
 
-async def test_sin_variable_no_hay_cors(monkeypatch: pytest.MonkeyPatch) -> None:
-    r = await _preflight(monkeypatch, None, PERMITIDO)
+async def test_sin_origenes_no_hay_cors(monkeypatch: pytest.MonkeyPatch) -> None:
+    r = await _preflight(monkeypatch, "", PERMITIDO)
     assert "access-control-allow-origin" not in r.headers
