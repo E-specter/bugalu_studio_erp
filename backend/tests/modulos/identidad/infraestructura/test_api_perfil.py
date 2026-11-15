@@ -89,7 +89,7 @@ async def test_404_si_el_usuario_no_tiene_perfil(
     configuracion: Configuracion,
 ) -> None:
     a = crear_usuario()
-    with psycopg.connect(configuracion.url_base_datos) as conexion:
+    with psycopg.connect(configuracion.url_base_datos_admin) as conexion:
         conexion.execute("delete from public.usuario where id = %s", (a.id,))
     r = await cliente.get("/api/v1/perfil", headers=_con(a.token))
     assert r.status_code == 404

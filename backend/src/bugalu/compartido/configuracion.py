@@ -1,15 +1,23 @@
 from functools import lru_cache
+from pathlib import Path
 
+from pydantic import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_ENV = Path(__file__).parents[3] / ".env"  # backend/.env, desde cualquier directorio
 
 
 class Configuracion(BaseSettings):
-    """Variables de entorno (o backend/.env). Los valores por defecto son los del stack local."""
+    """Variables de entorno (o backend/.env). Sin credenciales por defecto."""
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_ENV, extra="ignore")
 
-    url_base_datos: str = "postgresql://postgres:postgres@127.0.0.1:45622/postgres"
-    url_supabase: str = "http://127.0.0.1:45621"
+    url_base_datos: str  # rol `bugalu_api` (supabase/migrations), nunca el superusuario
+    url_supabase: str
+    # Solo pruebas: rol administrador para altas de usuarios y limpieza (RLS no aplica).
+    url_base_datos_admin: str = ""
+    # Espera maxima por una conexion libre del pool antes de responder 503.
+    timeout_pool_segundos: float = 5
     # Solo la usan las pruebas de integracion (alta de usuarios en Auth).
     clave_publicable_supabase: str = ""
     # Origenes del frontend, separados por comas. Vacio = sin CORS.
@@ -30,4 +38,12 @@ class Configuracion(BaseSettings):
 
 @lru_cache
 def obtener_configuracion() -> Configuracion:
-    return Configuracion()
+    try:
+        return Configuracion()
+    except ValidationError as error:
+        faltan = ", ".join(
+            str(e["loc"][0]).upper() for e in error.errors() if e["type"] == "missing"
+        )
+        raise RuntimeError(
+            f"Falta configuracion: {faltan}. Copia backend/.env.example a backend/.env."
+        ) from None

@@ -42,7 +42,7 @@ async def test_el_administrador_lee_el_perfil_de_otros(
     configuracion: Configuracion,
 ) -> None:
     admin, b = crear_usuario(), crear_usuario()
-    with psycopg.connect(configuracion.url_base_datos) as conexion:
+    with psycopg.connect(configuracion.url_base_datos_admin) as conexion:
         conexion.execute(
             "update public.usuario set rol = 'administrador' where id = %s", (admin.id,)
         )

@@ -32,10 +32,14 @@ Variables de `backend/.env` (`.env` está ignorado por git):
 
 | Variable | Origen |
 |---|---|
-| `URL_BASE_DATOS` | `DB_URL` de `npx supabase status` (puerto 45622) |
-| `URL_SUPABASE` | `API_URL` (puerto 45621); de ahí sale el JWKS con el que se verifican los JWT |
+| `URL_BASE_DATOS` | Obligatoria, sin valor por defecto: la API no arranca si falta. Conecta como `bugalu_api` (rol sin superusuario ni `bypassrls`, creado por la migración `rol_conexion_api`; su contraseña de desarrollo `bugalu_api_dev` la fija `supabase/seed.sql`, solo local): `postgresql://bugalu_api:bugalu_api_dev@127.0.0.1:45622/postgres` |
+| `URL_BASE_DATOS_ADMIN` | Solo pruebas: `DB_URL` de `npx supabase status` (superusuario `postgres`). Las fixtures la usan para borrar usuarios y subir roles; la API nunca |
+| `TIMEOUT_POOL_SEGUNDOS` | Opcional (5): espera por una conexión del pool; si vence, 503 `base_de_datos_no_disponible` |
+| `URL_SUPABASE` | Obligatoria. `API_URL` (puerto 45621); de ahí sale el JWKS con el que se verifican los JWT (espera máxima 5 s; si falla o no es JSON, 503 `autenticacion_no_disponible`) |
 | `CLAVE_PUBLICABLE_SUPABASE` | `PUBLISHABLE_KEY`; solo la usan las pruebas de integración |
 | `ORIGENES_PERMITIDOS` | Orígenes del frontend, separados por comas (`http://localhost:4321`). Vacío = sin CORS: el navegador bloquea las llamadas del frontend |
+
+PostgREST (`/rest/v1`) no expone `public` (`[api] schemas = ["graphql_public"]` en `supabase/config.toml`; la lista vacía vuelve al valor por defecto, que incluye `public`): `GET /rest/v1/usuario` da 404 `PGRST205` y `POST /rest/v1/rpc/es_administrador` da 404 `PGRST202`. Los datos solo se leen por el backend (ADR-007). Tras cambiar `config.toml`: `npx supabase stop` y `npx supabase start`. Auth redirige al frontend (`site_url` `http://localhost:4321`, más `http://127.0.0.1:4321`).
 
 Comprueba que responde con `curl -i http://127.0.0.1:8000/api/v1/perfil`: sin token devuelve 401.
 

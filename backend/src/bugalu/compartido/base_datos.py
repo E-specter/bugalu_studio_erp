@@ -9,8 +9,8 @@ from psycopg import AsyncConnection
 from psycopg_pool import AsyncConnectionPool
 
 
-def crear_pool(url: str) -> AsyncConnectionPool:
-    return AsyncConnectionPool(url, open=False, min_size=1, max_size=10)
+def crear_pool(url: str, timeout: float = 5) -> AsyncConnectionPool:
+    return AsyncConnectionPool(url, open=False, min_size=1, max_size=10, timeout=timeout)
 
 
 @asynccontextmanager

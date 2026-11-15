@@ -12,7 +12,10 @@ from bugalu.modulos.identidad.infraestructura.entrada.http.router import router 
 
 @asynccontextmanager
 async def _ciclo_de_vida(app: FastAPI) -> AsyncIterator[None]:
-    async with crear_pool(obtener_configuracion().url_base_datos) as pool:
+    configuracion = obtener_configuracion()
+    async with crear_pool(
+        configuracion.url_base_datos, configuracion.timeout_pool_segundos
+    ) as pool:
         app.state.pool = pool
         yield
 

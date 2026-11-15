@@ -23,7 +23,8 @@ Bugalú usa su propio stack (`project_id = "bugalu"`, puertos **456xx**) para co
 |---|---|
 | API | `http://127.0.0.1:45621` |
 | MCP | `http://127.0.0.1:45621/mcp` |
-| PostgreSQL | `postgresql://postgres:postgres@127.0.0.1:45622/postgres` |
+| PostgreSQL (backend) | `postgresql://bugalu_api:bugalu_api_dev@127.0.0.1:45622/postgres` (rol `bugalu_api`, [ADR-007](../00-proyecto/decisiones/ADR-007-acceso-postgres-directo.md)) |
+| PostgreSQL (administración, solo pruebas y CLI) | `postgresql://postgres:postgres@127.0.0.1:45622/postgres` |
 | Studio | `http://127.0.0.1:45623` |
 | Mailpit (correos de prueba) | `http://127.0.0.1:45624` |
 

@@ -71,5 +71,5 @@ def crear_usuario(configuracion: Configuracion) -> Iterator[Callable[[], Usuario
         return usuario
 
     yield crear
-    with psycopg.connect(configuracion.url_base_datos) as conexion:
+    with psycopg.connect(configuracion.url_base_datos_admin) as conexion:
         conexion.execute("delete from auth.users where id = any(%s)", (creados,))
