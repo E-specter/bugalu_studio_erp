@@ -28,7 +28,7 @@ Columna **origen**: nodo de Figma del que sale el valor (verificado en TAREA-201
 | `color-marca-navy` | `#262757` | Brand Secondary | `86:86`, `35:29` |
 | `color-marca-lienzo` | `#EBEBFF` | Canvas Background | `86:92`, `35:29` |
 | `color-marca-naranja` | `#FF5A1F` | Action Primary (naranja reactivo) | `86:98` |
-| `color-marca-tinta` | `#231F20` | Contraste | `35:29` |
+| `color-marca-tinta` | `#231F20` | Texto de cuerpo y texto sobre naranja | `35:29`, variable `color/text/primary` (`86:20`) |
 
 ## Color — rol
 
@@ -40,7 +40,8 @@ Columna **origen**: nodo de Figma del que sale el valor (verificado en TAREA-201
 | `color-fondo-destacado` | `color-marca-lavanda` | Botón primario, etiqueta activa, sección destacada, fila seleccionada | `86:81` |
 | `color-fondo-invertido` | `color-marca-navy` | Paneles de acceso, cabecera de tabla, etiqueta invertida | `86:87` |
 | `color-fondo-alerta` | `color-marca-naranja` | Hover de acción, alerta crítica | `86:99` |
-| `color-texto-principal` | `color-marca-navy` | Texto, títulos y valores | `86:87`; brief: Figma usa tinta `#231F20` en párrafos (`color/text/primary`), se unifica en navy (≥ 11:1 en ambos) |
+| `color-texto-principal` | `color-marca-navy` | Títulos, etiquetas, botones, celdas, valores y navegación | `86:87`, variable `color/text/secondary` (`86:20`) |
+| `color-texto-cuerpo` | `color-marca-tinta` | Prosa sobre fondos claros: párrafos, descripciones, texto de avisos y comentarios | variable `color/text/primary` (`86:20`); confirmado por el usuario (2026-11-15) |
 | `color-texto-secundario` | `#4A4B7D` | Ayudas, metadatos, etiquetas de columna | brief: `#5D5F89` de Figma (`161:702`) oscurecido; aquel da 3,95:1 sobre lavanda |
 | `color-texto-invertido` | `color-marca-lienzo` | Texto sobre `color-fondo-invertido` | `86:175` |
 | `color-texto-sobre-alerta` | `color-marca-tinta` | Texto sobre `color-fondo-alerta` | brief: Figma pone lienzo sobre naranja (`86:179`, 2,65:1); la tinta da 5,23:1 |

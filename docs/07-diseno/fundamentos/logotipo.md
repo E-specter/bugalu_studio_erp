@@ -44,3 +44,5 @@ Exportados de Figma el 2026-11-15 (TAREA-201b, `download_assets`):
 | Icono + texto (apilado) | [logo-apilado.svg](assets/logo-apilado.svg) | `58:77` | 94 × 86 |
 
 Limpieza aplicada a la exportación: se quitó el fondo `#1E1E1E` del marco y los rellenos navy (`#262757` en el icono, `#23275C` en el texto) pasan a `currentColor`, para que el color lo dé la regla 3. Los trazados no se tocaron.
+
+**Pendiente del taller de marca:** el navy del texto del logo en Figma (`#23275C`) no coincide con el navy de marca (`#262757`). Lo resuelve el taller de marca; no afecta a la interfaz, que pinta el logo con `currentColor` (decisión del usuario, 2026-11-15).

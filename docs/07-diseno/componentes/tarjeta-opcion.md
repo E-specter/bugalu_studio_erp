@@ -14,7 +14,7 @@ depende_de: [diseno-tokens, comp-casilla]
 1. Contenedor: `color-fondo-superficie`, `borde-grosor-base` `color-borde-fuerte`, relleno `espacio-5`.
 2. Control de selección (radio) arriba a la izquierda, con su texto de estado.
 3. Título: `fuente-familia-titulo`, `fuente-tamano-titulo-sm`, mayúsculas.
-4. Descripción: `fuente-tamano-base`.
+4. Descripción: `fuente-tamano-base`, `color-texto-cuerpo`.
 5. Metadato al pie: `fuente-familia-tecnica`, `fuente-tamano-micro` (precio base, duración, modalidad).
 
 Tarjetas en retícula de 3 columnas con hueco `espacio-3`; en móvil, una columna.
@@ -38,7 +38,7 @@ Comunes: [catálogo](README.md#estados-comunes). Propios:
 
 ## Tokens
 
-`color-fondo-superficie`, `color-fondo-claro`, `color-fondo-destacado`, `color-borde-fuerte`, `borde-grosor-base`, `sombra-plana`, `espacio-3`, `espacio-5`, `fuente-*`.
+`color-fondo-superficie`, `color-fondo-claro`, `color-fondo-destacado`, `color-borde-fuerte`, `color-texto-principal`, `color-texto-cuerpo`, `borde-grosor-base`, `sombra-plana`, `espacio-3`, `espacio-5`, `fuente-*`.
 
 ## Relaciones
 

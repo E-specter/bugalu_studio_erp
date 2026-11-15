@@ -13,7 +13,7 @@ Mensaje en línea que informa el resultado de una acción o una condición de la
 
 1. Contenedor: `color-fondo-superficie`, `borde-grosor-base` en el color de la variante, `borde-radio-ninguno`, relleno `espacio-4`.
 2. Icono `medida-icono-sm` en el color de la variante.
-3. Título corto (`fuente-familia-titulo`, `fuente-tamano-base`) y texto (`fuente-tamano-base`).
+3. Título corto (`fuente-familia-titulo`, `fuente-tamano-base`, `color-texto-principal`) y texto (`fuente-tamano-base`, `color-texto-cuerpo`).
 4. Acción opcional: enlace o [botón](boton.md) secundario ("Reintentar", "Ver pago").
 
 ## Variantes
@@ -32,7 +32,7 @@ Estático. Si se puede descartar, el botón de cerrar (`x`, solo icono) cumple l
 
 ## Tokens
 
-`color-fondo-superficie`, `color-fondo-alerta`, `color-borde-fuerte`, `color-texto-exito`, `color-texto-aviso`, `color-texto-alerta`, `color-texto-sobre-alerta`, `borde-grosor-base`, `borde-radio-ninguno`, `espacio-4`, `medida-icono-sm`, `fuente-*`.
+`color-fondo-superficie`, `color-fondo-alerta`, `color-borde-fuerte`, `color-texto-principal`, `color-texto-cuerpo`, `color-texto-exito`, `color-texto-aviso`, `color-texto-alerta`, `color-texto-sobre-alerta`, `borde-grosor-base`, `borde-radio-ninguno`, `espacio-4`, `medida-icono-sm`, `fuente-*`.
 
 ## Relaciones
 

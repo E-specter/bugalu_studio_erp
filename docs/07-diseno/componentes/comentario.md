@@ -14,7 +14,7 @@ depende_de: [diseno-tokens, comp-avatar]
 1. Contenedor: `color-fondo-superficie`, `borde-grosor-base`, relleno `espacio-4`; [avatar](avatar.md) medio a la izquierda, contenido con sangría `espacio-3`.
 2. Autor y estado: nombre (`fuente-peso-titulo`), rol, [etiqueta](etiqueta-tecnica.md) de estado ("ABIERTO", "RESUELTO").
 3. Marca temporal del audio: botón `fuente-familia-tecnica` (`02:14`) que lleva el reproductor a ese punto.
-4. Mensaje: `fuente-tamano-lectura`, `medida-linea-lectura`.
+4. Mensaje: `fuente-tamano-lectura`, `color-texto-cuerpo`, `medida-linea-lectura`.
 5. Fecha de publicación: `fuente-tamano-micro`, `color-texto-secundario`.
 
 ## Variantes
@@ -31,7 +31,7 @@ La marca temporal y "Marcar resuelto" cumplen los [estados comunes](README.md#es
 
 ## Tokens
 
-`color-fondo-superficie`, `color-texto-secundario`, `borde-grosor-base`, `borde-grosor-grueso`, `color-borde-fuerte`, `espacio-3`, `espacio-4`, `medida-linea-lectura`, `fuente-*`.
+`color-fondo-superficie`, `color-texto-principal`, `color-texto-cuerpo`, `color-texto-secundario`, `borde-grosor-base`, `borde-grosor-grueso`, `color-borde-fuerte`, `espacio-3`, `espacio-4`, `medida-linea-lectura`, `fuente-*`.
 
 ## Relaciones
 

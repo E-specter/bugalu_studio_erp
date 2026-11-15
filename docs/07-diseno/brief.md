@@ -45,8 +45,8 @@ Verificado en Figma el 2026-11-15 ([registro](figma.md#verificación-cerrada-tar
 | Paleta de cinco colores y sus variables (`86:70`, `86:20`) | Colores de estado: éxito verde, aviso ámbar, error naranja oscuro; Figma no los define (**usuario**, 2026-11-15) |
 | Unbounded 900, Mona Sans, Geist y **Geist Mono** (`86:100`, `86:154`; Geist Mono confirmada por el **usuario**) | Texto mínimo 11 px: las pantallas `erp` usan 8 px, ilegible |
 | Radio 0, borde 2 px navy, etiqueta con radio 4 px (`86:152`, `161:705`) | Texto secundario `#4A4B7D` y tinta sobre naranja: los valores de Figma no pasan AA |
-| Superficie del color del lienzo, campos blancos, una sombra plana lavanda de 4 px (`161:705`, `112:365`) | Acción principal en lavanda (guía `86:161`); el naranja de las pantallas `erp` (`161:695`) queda para el hover |
-| Botón secundario lienzo con texto navy (`86:168`) | Todo el texto en navy; Figma usa tinta en párrafos |
+| Superficie del color del lienzo, campos blancos, una sombra plana lavanda de 4 px (`161:705`, `112:365`) | Acción principal en lavanda (guía `86:161`); el naranja de las pantallas `erp` (`161:695`, 2,65:1 con texto lienzo) queda para el hover (**usuario**, 2026-11-15) |
+| Botón secundario lienzo con texto navy (`86:168`); párrafos en tinta `#231F20` (`color/text/primary`) y títulos en navy (**usuario**, 2026-11-15) | Navy del logotipo: el SVG del texto trae `#23275C` y la marca `#262757`; pendiente del taller de marca, sin efecto en la interfaz porque los SVG usan `currentColor` (**usuario**, 2026-11-15) |
 | Navegación táctil móvil arriba, bajo la cabecera (`169:5490`; conservada por el **usuario**) | Movimiento, foco y puntos de quiebre: Figma no los dibuja |
 | Logotipo en tres variantes, exportado en SVG (`58:2`, `40:150`, `58:77`; **usuario**) | Solo iconos Lucide; ilustraciones de Streamline descartadas (**usuario**) |
 

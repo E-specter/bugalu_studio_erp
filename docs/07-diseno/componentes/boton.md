@@ -42,7 +42,7 @@ Comunes: [catálogo](README.md#estados-comunes). Propios:
 | Hover (peligro) | Fondo `color-texto-alerta`, texto `color-texto-invertido` |
 | Carga | Etiqueta cambia a verbo en gerundio ("Publicando…"), `aria-busy="true"`, `disabled` para evitar doble envío; mismo ancho |
 
-Las pantallas `erp` rellenan la acción de naranja con texto lienzo (`161:695`, 2,65:1): no se adopta; el naranja queda para el hover, como en la guía.
+Las pantallas `erp` rellenan la acción de naranja con texto lienzo (`161:695`, 2,65:1): no se adopta; el naranja queda para el hover, como en la guía (decisión del usuario, 2026-11-15).
 
 ## Tokens
 

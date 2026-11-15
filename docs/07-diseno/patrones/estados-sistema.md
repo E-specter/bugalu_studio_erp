@@ -14,7 +14,7 @@ Figma solo dibuja el estado "con datos". Este patrón es **decisión del brief**
 [Panel](../componentes/panel.md) con el mismo título, y en el cuerpo:
 
 1. Título corto en `fuente-familia-titulo`: qué no hay ("Aún no hay versiones").
-2. Una frase: por qué y qué pasará ("El ingeniero publicará la primera versión al terminar la mezcla").
+2. Una frase en `color-texto-cuerpo`: por qué y qué pasará ("El ingeniero publicará la primera versión al terminar la mezcla").
 3. Acción solo si el usuario puede resolverlo ([botón](../componentes/boton.md) primario: "Registrar cliente").
 
 Sin ilustraciones ([iconografía e imagen](../fundamentos/iconografia-imagen.md#ilustración)); como mucho, un icono `medida-icono-md`. Distinguir **vacío** de **sin resultados** de un filtro: este último ofrece "Quitar filtros".
