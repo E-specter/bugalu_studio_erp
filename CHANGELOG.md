@@ -2,6 +2,7 @@
 
 ## 2026-11-15
 
+- **Contratación y D-01..D-04 (fase 1):** ADR-003..006 (Supabase Storage, pagos sin pasarela con validación manual, Supabase Auth, claves UUID). Flujo real del estudio: franjas semanales por sala, reserva de grabación o ensayo en tramos de 30 min, asesoría con profesional (presencial o virtual), cuotas 50/50 o plan a medida, posproducción 50/50. Reglas RN-12..RN-16, RF-02..05 y RF-11 reescritos, RF-15 nuevo. Spec: docs/superpowers/specs/2026-11-15-contratacion-y-decisiones-design.md.
 - **Equipo multiagente:** seis roles (`leader`, `disenador-ui`, `dev-backend`, `dev-frontend`, `dev-audit`, `documentador`) con modelo, effort, maxTurns, skills precargadas y herramientas por lista permitida. Configuración en `docs/04-agentes/equipo.md`.
 - **Ciclo de bajo consumo:** un implementador más `dev-audit` por tarea; Opus solo en las compuertas.
 - **Decisiones:** ADR-001 (Figma como fuente de extracción única) y ADR-002 (Code Connect descartado) cierran D-13 y D-14.
