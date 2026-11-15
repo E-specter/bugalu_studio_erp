@@ -28,7 +28,7 @@ Mensaje en línea que informa el resultado de una acción o una condición de la
 
 ## Estados
 
-Estático. Si se puede descartar, el botón de cerrar (`x`, solo icono) cumple los [estados comunes](README.md#estados-comunes).
+Estático. **Descartable:** el botón de cerrar (`x`, solo icono, `aria-label="Cerrar aviso"`, `medida-control-tactil`) es una isla `<bugalu-aviso>` (`islas/AvisoDescartable.astro`), como la de contraseña: sin JS el botón queda `hidden` y el aviso se lee entero. Al cerrar, el foco pasa a `<main id="contenido">` para no perderse en `<body>`. Cumple los [estados comunes](README.md#estados-comunes).
 
 ## Tokens
 
@@ -40,10 +40,10 @@ Base del patrón de [estados del sistema](../patrones/estados-sistema.md). El re
 
 ## Accesibilidad
 
-- Resultado de una acción: `role="status"` (éxito, información) o `role="alert"` (error, crítico), presente en el DOM antes de insertar el texto.
+- Resultado de una acción: `role="status"` (información, éxito, aviso) o `role="alert"` (error, crítico), presente en el DOM antes de insertar el texto.
 - El color nunca es el único indicador: título + icono.
 - No desaparece solo: el usuario lo cierra o cambia de vista.
 
 ## Código
 
-`frontend/src/componentes/Aviso.astro`, props `variante`, `titulo`, `texto`, `accion`, `descartable`.
+`frontend/src/componentes/Aviso.astro`, props `variante` (`informacion|exito|aviso|error|critico`), `titulo`, `texto`, `accion` (`{ etiqueta, href }`), `descartable`; ranura por defecto para contenido extra (lista de errores). Si `descartable`, envuelve el contenido en la isla `<bugalu-aviso>`.

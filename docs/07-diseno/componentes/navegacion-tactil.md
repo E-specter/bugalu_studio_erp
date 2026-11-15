@@ -14,7 +14,7 @@ depende_de: [diseno-tokens, comp-navegacion-lateral]
 1. Barra de ancho completo, alto `medida-nav-tactil`, fondo `color-fondo-superficie`, regla inferior `borde-grosor-base` `color-borde-fuerte`.
 2. Destinos en partes iguales: icono `medida-icono-md` sobre etiqueta (`fuente-familia-tecnica`, `fuente-tamano-micro`, mayúsculas).
 
-Máximo cinco destinos; el resto va al menú de la [cabecera](cabecera-app.md).
+Máximo cinco destinos; el resto va al menú de la [cabecera](cabecera-app.md). Etiqueta de una palabra y **≤ 9 caracteres** ("ENTREGAS", no "ENTREGABLES"): a 320 px cada destino mide 64 px y una palabra más larga se parte. La misma etiqueta se usa en la [navegación lateral](navegacion-lateral.md).
 
 **Foco no tapado (WCAG 2.4.11):** la fila 1 de la cabecera móvil y esta barra quedan fijas (`position: sticky`) y la fila de contexto se desplaza. El documento lleva `scroll-padding-top: var(--medida-zona-fija-movil)` para que el elemento enfocado o el ancla nunca quede debajo; ≥ `punto-quiebre-escritorio` no hay barra y vuelve a `0`. Decisión del brief (TAREA-203).
 
@@ -42,4 +42,4 @@ Solo < `punto-quiebre-escritorio`. Parte de [estructura de app](../patrones/estr
 
 ## Código
 
-`frontend/src/componentes/NavegacionTactil.astro`, props `destinos`, `actual`.
+`frontend/src/componentes/NavegacionTactil.astro`, props `destinos`, `actual`, `etiqueta` (`aria-label`, por defecto "Principal"). La navegación lateral y la táctil nunca están visibles a la vez, por eso comparten nombre.

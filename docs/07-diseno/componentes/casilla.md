@@ -24,7 +24,11 @@ Capa "Casilla" del brief de proyecto (`141:28788`, "Necesidades": control 20 × 
 
 ## Estados
 
-Comunes: [catálogo](README.md#estados-comunes). Propios: marcada (fondo `color-fondo-destacado` + marca), indeterminada (raya horizontal), error de grupo (mensaje bajo el `<fieldset>`).
+Comunes: [catálogo](README.md#estados-comunes). Propios:
+
+- Marcada: fondo `color-fondo-destacado` + `check`; radio: punto `medida-senal` en `color-texto-principal`.
+- Indeterminada: icono `minus`. La propiedad `indeterminate` solo existe en JS: el componente estático no la ofrece y la usa una isla (p. ej. "seleccionar todo" de una tabla). El nativo se anuncia como "mixto" sin ARIA extra.
+- Error de grupo: borde `color-texto-alerta` en cada control (`aria-invalid="true"`) y mensaje al final, **dentro** del `<fieldset>`, unido con `aria-describedby` en el `<fieldset>`.
 
 ## Tokens
 
@@ -42,4 +46,4 @@ En [formularios](../patrones/formularios.md) y en el selector de comparación de
 
 ## Código
 
-`frontend/src/componentes/Casilla.astro`, props `tipo` (`casilla|radio`), `nombre`, `valor`, `etiqueta`, `detalle`, `marcada`.
+`frontend/src/componentes/Casilla.astro`, props `tipo` (`casilla|radio`), `nombre`, `valor`, `etiqueta`, `detalle`, `marcada`; el resto de atributos va al `<input>` (`disabled`, `aria-invalid`, `required`).

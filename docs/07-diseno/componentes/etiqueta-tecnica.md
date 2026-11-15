@@ -17,7 +17,7 @@ depende_de: [diseno-tokens, fund-forma-elevacion]
 
 ## Variantes
 
-| Variante | Fondo | Texto / borde | Uso |
+| Variante | Fondo | Texto y borde (mismo color) | Uso |
 |---|---|---|---|
 | Neutra | transparente | `color-texto-principal` | Categoría, metadato (sala, género, formato) |
 | Activa | `color-fondo-destacado`, borde `borde-grosor-base` | `color-texto-principal` | Estado vigente ("V3 MASTER ACTIVO"), filtro seleccionado |
@@ -31,7 +31,7 @@ Correspondencia de estados del dominio: [estados de reserva](../../02-dominio/es
 
 ## Estados
 
-Estática: no tiene estados interactivos. La variante **Filtro** es un enlace y cumple los [estados comunes](README.md#estados-comunes); el filtro aplicado lleva la variante Activa, el icono `check` (`medida-icono-sm`) antes del texto y `aria-current="true"` (es un enlace: `aria-pressed` es solo para botones). Así se distingue del inactivo por borde, icono y atributo, no solo por el relleno lavanda (1,31:1). En un formulario (etiquetado rápido de [formularios](../patrones/formularios.md)) el Filtro es una casilla nativa con este aspecto: marcada = Activa + `check`, sin ARIA extra.
+Estática: no tiene estados interactivos. La variante **Filtro** es un enlace y cumple los [estados comunes](README.md#estados-comunes); el filtro aplicado lleva la variante Activa, el icono `check` (`medida-icono-sm`) antes del texto y `aria-current="true"` (es un enlace: `aria-pressed` es solo para botones). Así se distingue del inactivo por borde, icono y atributo, no solo por el relleno lavanda (1,31:1). En un formulario (etiquetado rápido de [formularios](../patrones/formularios.md)) el Filtro será una casilla nativa con este aspecto (marcada = Activa + `check`, sin ARIA extra); **no implementado**: se agrega con la primera pantalla que lo use. Tamaño: el filtro cumple el mínimo de 24 × 24 px (WCAG 2.5.8) y no se agranda a `medida-control-tactil` en móvil (sería un botón); entre filtros, hueco `espacio-2`.
 
 ## Tokens
 
@@ -49,4 +49,4 @@ Dentro de [tabla](tabla.md), [tarjeta-proyecto](tarjeta-proyecto.md), [tarjeta-v
 
 ## Código
 
-`frontend/src/componentes/EtiquetaTecnica.astro`, props `variante`, `texto`, `href`, `senal`.
+`frontend/src/componentes/EtiquetaTecnica.astro`, props `variante`, `texto`, `href`, `senal`, `aplicado` (solo Filtro: aspecto Activa + `check` + `aria-current="true"`).

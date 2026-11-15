@@ -19,10 +19,10 @@ Logo "icono + texto" de Bugalú Studio (ficha de marca `35:29`, *Taller de marca
 
 En las cabeceras de la app el logo apilado va dentro de una **placa** (`161:611`, `169:5453`): marco cuadrado con `borde-grosor-base`, relleno `espacio-1-5`, seguido del nombre del sistema (producto + ruta) en [cabecera-app](../componentes/cabecera-app.md).
 
-| Contexto | Alto de la placa | Origen |
-|---|---|---|
-| Escritorio | `medida-placa-marca` | `161:611` |
-| Móvil | `medida-control-base` | `169:5453` |
+| Contexto | Alto de la placa | Logo dentro | Origen |
+|---|---|---|---|
+| Escritorio | `medida-placa-marca` | Apilado (38 px de alto: cumple `medida-logo-min`) | `161:611` |
+| Móvil | `medida-control-base` | **Icono** (26 px): con borde y relleno, el apilado quedaría por debajo de `medida-logo-min` (regla 1) | `169:5453`; brief: Figma pone el apilado y no cabe con el relleno de la placa |
 
 ## Reglas
 
@@ -32,7 +32,7 @@ En las cabeceras de la app el logo apilado va dentro de una **placa** (`161:611`
 
    | Fondo | Color del logo | Contraste |
    |---|---|---|
-   | Claros: `color-fondo-lienzo`, `color-fondo-claro`, `color-fondo-destacado` | `color-marca-navy` | 11,83 / 13,91 / 9,05 : 1 |
+   | Claros: `color-fondo-lienzo`, `color-fondo-claro`, `color-fondo-destacado` | Navy: token de rol `color-texto-principal` (nunca `color-marca-*` en código) | 11,83 / 13,91 / 9,05 : 1 |
    | `color-fondo-invertido` (navy) | `color-marca-lavanda`, el primario de marca | 9,05 : 1 |
 
    Prohibido: lavanda sobre fondos claros (1,31:1), naranja, y sobre fotografía sin superficie.

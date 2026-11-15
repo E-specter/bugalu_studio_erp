@@ -27,12 +27,12 @@ Paneles apilados con hueco `espacio-6`.
 | Base | — | Agrupaciones de formulario, listados |
 | Sin borde | Sin contenedor, solo título + regla `borde-grosor-fino` | Secciones del contenido principal (actividad reciente) |
 | Destacado | Fondo `color-fondo-destacado` | Un bloque que debe leerse primero (entrega destacada, próximo hito). El lavanda no es la única señal: va primero en el orden y su título lo nombra ("PRÓXIMA ENTREGA") |
-| Técnico | Borde parcial lavanda (efecto 10) sobre `color-fondo-invertido`, texto invertido | Paneles de control: cadena de señal, monitor (solo decorativo, `88:344`) |
+| Técnico | Fondo `color-fondo-invertido`, texto `color-texto-invertido`, foco `color-foco-invertido`. Borde parcial (efecto 10, `88:344`): solo el lado izquierdo en `color-borde-tecnico`, mismo grosor `borde-grosor-base` que el resto del contorno ([forma](../fundamentos/forma-elevacion.md#bordes), regla 1); decorativo | Paneles de control: cadena de señal, monitor |
 | Lateral | Ancho `medida-columna-lateral` | Panel de acción a la derecha (transformación, comentario) |
 
 ## Estados
 
-Estático. Carga: cuerpo con `aria-busy="true"` y texto "Cargando…"; vacío y error según [estados del sistema](../patrones/estados-sistema.md).
+Estático. Carga (prop `cargando`): el cuerpo lleva `aria-busy="true"` y el texto "Cargando…" en lugar de la ranura; vacío y error según [estados del sistema](../patrones/estados-sistema.md).
 
 ## Tokens
 
@@ -49,4 +49,4 @@ Contenedor de casi todo: [tabla](tabla.md), [lista-eventos](lista-eventos.md), [
 
 ## Código
 
-`frontend/src/componentes/Panel.astro`, props `codigo`, `titulo`, `ayuda`, `variante`, `nivel`; ranuras `acciones` y por defecto.
+`frontend/src/componentes/Panel.astro`, props `codigo`, `titulo`, `ayuda`, `variante`, `nivel` (2–4), `cargando`, `id` (base del id del título; si dos paneles comparten título en la vista, es obligatorio); ranuras `acciones` y por defecto.

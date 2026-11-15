@@ -18,8 +18,8 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 |---|---|---|
 | Reposo | Según la variante | — |
 | Hover | Cambio de fondo según la variante en `movimiento-duracion-rapida` | Solo con puntero (`@media (hover: hover)`) |
-| Foco | `outline` de `borde-grosor-base` en `color-foco-anillo` (`color-foco-invertido` sobre navy) con separación `borde-grosor-base` | Solo `:focus-visible`; nunca se elimina sin sustituto |
-| Activo | Desplazamiento de tecla ([forma](../fundamentos/forma-elevacion.md#interacción-física)) | — |
+| Foco | `outline` de `borde-grosor-base` en `color-foco-anillo` (`color-foco-invertido` sobre navy) con separación `borde-grosor-base` | Solo `:focus-visible`; nunca se elimina sin sustituto. Excepción: el destino no interactivo de "Saltar al contenido" ([estructura de app](../patrones/estructura-app.md#navegación)) |
+| Activo | Desplazamiento de tecla solo si el componente lleva `sombra-plana` ([forma](../fundamentos/forma-elevacion.md#interacción-física)); sin sombra, ningún cambio propio | — |
 | Deshabilitado | `opacity: var(--efecto-opacidad-capa)`, sin sombra, cursor `not-allowed` | Atributo `disabled` nativo; si debe seguir siendo enfocable para explicar por qué, `aria-disabled="true"` + texto de ayuda |
 | Error | Borde en `color-texto-alerta` + mensaje con icono `alert-triangle` | `aria-invalid="true"` y `aria-describedby` al mensaje |
 | Carga | Contenido sustituido por texto "Cargando…" o barra de progreso; mantiene su tamaño | `aria-busy="true"` en el contenedor |
@@ -58,6 +58,23 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Carga de archivos | [carga-archivos](carga-archivos.md) | isla `<bugalu-carga-archivos>` | Borrador |
 
 Rutas relativas a `frontend/src/`. Islas en `islas/<Nombre>.astro`.
+
+## Reglas de las fichas
+
+- **Variantes responsivas** (Móvil de cabecera y encabezado): no son props; el componente cambia con el punto de quiebre. El catálogo de desarrollo las muestra según el ancho de la ventana y se comprueban con las capturas de escritorio y móvil.
+- **Atributos extra:** los componentes con control (`Boton`, `Campo`, `Casilla`) y `IndicadorEstado` reenvían al elemento nativo los atributos que no son props (`autocomplete`, `aria-*`, `role`, `disabled`, `form`…). La ficha no los enumera.
+- **Props fuera de la ficha:** se aceptan si la ficha los recoge en su sección Código; si no, primero se amplía la ficha.
+
+## Piezas internas
+
+`frontend/src/componentes/internos/` contiene piezas que solo usan los componentes; **no son del catálogo** y una pantalla nunca las importa:
+
+| Pieza | Qué es | La usan |
+|---|---|---|
+| `Icono.astro` + `lucide.js` | SVG en línea de un icono de la [tabla de iconos](../fundamentos/iconografia-imagen.md#iconos), decorativo (`aria-hidden`), `medida-icono-sm` o `-md` | Todos los que llevan icono |
+| `MensajeError.astro` | Mensaje de error con `alert-triangle` en `color-texto-alerta` ([estados comunes](#estados-comunes), Error) | [campo](campo.md), [casilla](casilla.md) (error de grupo) |
+
+Si una pantalla necesita un icono o un mensaje suelto, se usa el componente del catálogo que lo contiene; si no existe, se escribe su ficha.
 
 ## Fuera del catálogo (no hay diseño en Figma)
 

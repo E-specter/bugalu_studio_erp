@@ -40,7 +40,8 @@ Comunes: [catálogo](README.md#estados-comunes). Propios:
 |---|---|
 | Hover (primario, secundario) | Fondo `color-fondo-alerta`, texto `color-texto-sobre-alerta` (la guía reserva el naranja para el hover interactivo, `86:99`) |
 | Hover (peligro) | Fondo `color-fondo-peligro`, texto `color-texto-invertido` (6,38:1) |
-| Carga | Etiqueta cambia a verbo en gerundio ("Publicando…"), `aria-busy="true"`, `disabled` para evitar doble envío; mismo ancho |
+| Activo | Sin desplazamiento ni cambio propio: el botón no lleva sombra ([forma](../fundamentos/forma-elevacion.md#interacción-física)) |
+| Carga | Etiqueta en gerundio ("Publicando…"), `aria-busy="true"`, `disabled` para evitar doble envío. El ancho puede variar con el texto: no se fija a mano. En un grupo, el botón que entra en carga va al final para que el cambio no desplace a los demás |
 
 Las pantallas `erp` rellenan la acción de naranja con texto lienzo (`161:695`, 2,65:1): no se adopta; el naranja queda para el hover, como en la guía (decisión del usuario, 2026-11-15).
 
@@ -61,4 +62,4 @@ Usado por [barra-acciones](barra-acciones.md), [encabezado-pantalla](encabezado-
 
 ## Código
 
-`frontend/src/componentes/Boton.astro`, props `variante`, `tamano`, `tipo`, `href`, `icono`, `cargando`.
+`frontend/src/componentes/Boton.astro`, props `variante`, `tamano`, `tipo`, `href`, `icono` (`arrow-right`, `x`, `eye`, `search`, `menu`), `cargando`; el resto de atributos va al `<button>` o `<a>` ([reglas de las fichas](README.md#reglas-de-las-fichas)). La etiqueta es la ranura por defecto; en carga, quien usa el botón pasa el gerundio.

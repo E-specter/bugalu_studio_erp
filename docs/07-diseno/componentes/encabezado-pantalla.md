@@ -24,8 +24,8 @@ Separaciones: `espacio-2` entre contexto e índice, `espacio-3` hasta el título
 | Variante | Diferencia | Uso |
 |---|---|---|
 | App | Con contexto y acción | Panel interno y portal |
-| Flujo | Sin contexto; el índice indica paso ("PASO 02 / 06") y metadato a la derecha | Flujo de contratación |
-| Móvil | Acción debajo de la descripción, ancho del contenido | < `punto-quiebre-tableta` |
+| Flujo | Sin contexto (ni ruta ni fecha: la ubicación la dan los [pasos](pasos.md)); el índice indica paso ("PASO 02 / 06") y el metadato va a la derecha por la ranura `acciones` | Flujo de contratación |
+| Móvil | Acción debajo de la descripción, ancho del contenido. No es prop: lo aplica el punto de quiebre | < `punto-quiebre-tableta` |
 
 ## Estados
 
@@ -41,9 +41,9 @@ Siempre el primer bloque de `<main>` en [estructura de app](../patrones/estructu
 
 ## Accesibilidad
 
-- El título es el único `<h1>` de la vista y coincide con el `<title>` del documento.
+- El título es el único `<h1>` de la vista y coincide con el `<title>` del documento. Única excepción: el catálogo de desarrollo, que muestra varias variantes en una página y no es una vista.
 - La ruta es un `<nav aria-label="Ruta">` con `<ol>` y `aria-current="page"` en el último elemento.
 
 ## Código
 
-`frontend/src/componentes/EncabezadoPantalla.astro`, props `ruta`, `fecha`, `indice`, `titulo`, `descripcion`, `variante`; ranura `acciones`.
+`frontend/src/componentes/EncabezadoPantalla.astro`, props `ruta` (`{ etiqueta, href }[]`, el último es la página actual), `fecha`, `indice`, `titulo`, `descripcion`, `variante` (`app|flujo`); ranura `acciones`.

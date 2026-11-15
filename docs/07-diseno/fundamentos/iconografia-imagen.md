@@ -34,10 +34,13 @@ Figma usa dos sistemas: glifos de texto como marcadores en las pantallas del `er
 | Información / pendiente / error | `info` / `clock` / `alert-triangle` |
 | Cerrar, quitar | `x` |
 | Buscar | `search` |
+| Inicio (destino de navegación) | `house` |
+| Menú (cabecera móvil) | `menu` |
+| Casilla indeterminada | `minus` |
 | Ordenar columna | `arrow-up-down`, `arrow-up`, `arrow-down` |
 | Tendencia | `arrow-up-right` / `arrow-down-right` |
 
-Conceptos nuevos: se elige de Lucide y se agrega a esta tabla.
+Conceptos nuevos: se elige de Lucide y se agrega a esta tabla. `alert-triangle` y `check-circle` son los nombres antiguos (alias) de `triangle-alert` y `circle-check` en Lucide; se conservan. Los trazos viven en `frontend/src/componentes/internos/lucide.js` ([piezas internas](../componentes/README.md#piezas-internas)), revisados contra Lucide en la revisión visual de la fase 4. Un icono nuevo se copia de lucide.dev (sin dependencia), nunca se escribe de memoria.
 
 ## Imagen fotográfica
 

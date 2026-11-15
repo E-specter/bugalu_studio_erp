@@ -54,7 +54,7 @@ Secciones a ancho completo, contenedor `medida-contenedor-max`, separación `esp
 - Un destino = una página con su URL; no hay pestañas que oculten contenido principal.
 - El destino actual se marca en la navegación y en la ruta del encabezado.
 - Volver: la ruta del [encabezado](../componentes/encabezado-pantalla.md) es la navegación jerárquica; no se depende del botón atrás del navegador.
-- Enlace "Saltar al contenido" en toda estructura.
+- Enlace "Saltar al contenido" en toda estructura: primer enfocable, visible al recibir foco, lleva a `<main id="contenido" tabindex="-1">`. El `<main>` recibe el foco para que el siguiente Tab siga desde ahí, pero **no muestra anillo** (`main:focus { outline: none }`): no es un control y un contorno a toda la página confunde; el anillo vuelve en el primer control enfocado.
 
 ## Formato de datos
 

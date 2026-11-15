@@ -48,4 +48,4 @@ En [cabecera-app](cabecera-app.md), [tarjeta-version](tarjeta-version.md), [paso
 
 ## Código
 
-`frontend/src/componentes/IndicadorEstado.astro`, props `variante` (`linea|barra`), `tono`, `texto`, `dato`.
+`frontend/src/componentes/IndicadorEstado.astro`, props `variante` (`linea|barra`), `tono`, `texto`, `dato`, `activo` (señal que parpadea); el resto de atributos va al contenedor (`role="status"` lo pasa quien lo usa).

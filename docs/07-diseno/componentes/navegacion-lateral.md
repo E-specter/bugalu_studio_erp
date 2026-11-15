@@ -12,8 +12,9 @@ depende_de: [diseno-tokens, comp-cabecera-app]
 ## Anatomía
 
 1. Columna de `medida-nav-lateral`, fondo `color-fondo-superficie`, regla derecha `borde-grosor-base` `color-borde-fuerte`, relleno `espacio-4`.
-2. Título de sección: `fuente-familia-tecnica`, `fuente-tamano-micro`, `color-texto-secundario`.
-3. Elemento de navegación: alto `medida-control-base`, icono `medida-icono-md`, etiqueta `fuente-tamano-pequeno`, metadato a la derecha (contador en `fuente-familia-tecnica`). Separación entre elementos `espacio-2`.
+   La columna ocupa todo el alto disponible bajo la cabecera (la regla derecha llega al pie de la ventana aunque el contenido sea corto).
+2. Título de sección: `fuente-familia-tecnica`, `fuente-tamano-micro`, mayúsculas, `color-texto-secundario`; dice el área según la variante ("ESTUDIO", "PORTAL").
+3. Elemento de navegación: alto `medida-control-base`, icono `medida-icono-md`, etiqueta `fuente-tamano-pequeno`, contador opcional a la derecha. Separación entre elementos `espacio-2`. El contador solo existe para **pendientes que piden acción** (pagos por validar, revisiones abiertas) y siempre es una [etiqueta](etiqueta-tecnica.md) Alerta; los totales informativos no van en la navegación.
 4. Bloque de control al pie: mini panel con lectura (canal / nivel), fase actual, [barra de progreso](barra-progreso.md) y ayuda.
 
 ## Variantes
@@ -33,7 +34,7 @@ Comunes: [catálogo](README.md#estados-comunes). Propios:
 |---|---|
 | Hover | Fondo `color-fondo-claro` |
 | Actual | Fondo `color-fondo-destacado`, `borde-grosor-base` `color-borde-fuerte`, etiqueta en `fuente-peso-titulo` |
-| Con pendientes | Metadato en [etiqueta](etiqueta-tecnica.md) Alerta (p. ej. pagos por validar) |
+| Con pendientes | Contador en [etiqueta](etiqueta-tecnica.md) Alerta |
 
 ## Tokens
 
@@ -50,4 +51,4 @@ Solo ≥ `punto-quiebre-escritorio`; por debajo la sustituye [navegacion-tactil]
 
 ## Código
 
-`frontend/src/componentes/NavegacionLateral.astro`, props `variante`, `destinos` (etiqueta, href, icono, contador), `actual`; ranura `control`.
+`frontend/src/componentes/NavegacionLateral.astro`, props `variante`, `destinos` (etiqueta, href, icono, contador), `actual`, `etiqueta` (`aria-label` del `<nav>`, por defecto "Principal"); ranura `control`.
