@@ -40,3 +40,4 @@ frontend/test-results/
 
 # Registros del MCP de Playwright
 .playwright-mcp/
+frontend/pruebas/resultados-real/

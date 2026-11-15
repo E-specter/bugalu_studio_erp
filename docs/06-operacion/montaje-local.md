@@ -85,6 +85,8 @@ npm run test:e2e            # Playwright + axe; construye el sitio y simula la A
 
 `test:e2e` no necesita backend ni Supabase (usa valores ficticios) y deja capturas en `frontend/pruebas/capturas/`. La primera vez, instala el navegador con `npx playwright install chromium`. `/catalogo` existe en `npm run dev` y en el build de pruebas (`PUBLIC_CATALOGO=1`, en `dist-pruebas/`, lo activa `test:e2e`); nunca en `npm run build`.
 
+**Recorrido real de RF-01 (sin `page.route`):** `npm run test:e2e:real` (aparte de `test:e2e`, que lo ignora). Necesita el stack de Supabase local con Mailpit, `backend/.env` (con `URL_BASE_DATOS_ADMIN`) y `frontend/.env`, y `uv` instalado. La config `playwright.real.config.js` levanta el backend en el puerto 8010 (`uvicorn`, sin tocar el 8000) y `astro dev` en `localhost:4321` (el único origen al que Auth redirige) con `PUBLIC_URL_API` apuntando al 8010; el puerto 4321 debe estar libre. `frontend/pruebas/real/rf01.real.spec.js` registra tres usuarios `rf01-*@prueba.bugalu.pe`, lee Mailpit por su API, promueve a uno con `crear_administrador` y, al terminar (pase o falle), `limpiar.py` los borra con `URL_BASE_DATOS_ADMIN` y comprueba que no quedan huérfanos. Sin stack, se salta; con `EXIGIR_INTEGRACION` definida, falla. Las capturas quedan en `frontend/pruebas/capturas/real-rf01-*.png`.
+
 ## Calidad (desde `backend/`)
 
 ```bash

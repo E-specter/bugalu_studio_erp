@@ -2,6 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: 'pruebas',
+  testIgnore: 'real/**', // el recorrido real tiene su propia config (playwright.real.config.js)
   outputDir: 'pruebas/resultados',
   reporter: 'list',
   use: { baseURL: 'http://localhost:4321' },
