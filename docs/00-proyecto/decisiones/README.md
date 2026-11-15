@@ -21,6 +21,8 @@ Registro de decisiones abiertas. Cuando una se cierra, se crea `ADR-<nnn>-<tema>
 | D-13 | Archivo y plan de Figma | URL del archivo maestro, plan y asiento (determinan límites de uso del MCP) | **Cerrada:** [ADR-001](ADR-001-figma-fuente-extraccion.md) |
 | D-14 | Code Connect de Figma | Vincular componentes de Figma con el código; aporta precisión pero exige mantenimiento | **Cerrada:** [ADR-002](ADR-002-code-connect-descartado.md) |
 
+**Decisiones sin fila D previa:** [ADR-007](ADR-007-acceso-postgres-directo.md) (acceso a PostgreSQL directo con RLS por transacción, fase 3).
+
 D-01 a D-04 se cerraron en la fase 1 con la [spec de contratación](../../superpowers/specs/2026-11-15-contratacion-y-decisiones-design.md).
 
 ## Plantilla de ADR

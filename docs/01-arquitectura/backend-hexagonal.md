@@ -21,7 +21,8 @@ infraestructura  →  aplicacion  →  dominio
 
 - `dominio`: entidades, objetos de valor, reglas de negocio y puertos (interfaces). Sin dependencias de FastAPI, Supabase ni librerías externas.
 - `aplicacion`: casos de uso. Orquesta el dominio mediante puertos. Sin conocimiento de HTTP ni de la base de datos.
-- `infraestructura`: adaptadores de entrada (routers FastAPI, esquemas Pydantic) y de salida (repositorios Supabase, pagos, correo, almacenamiento).
+- `infraestructura`: adaptadores de entrada (routers FastAPI, esquemas Pydantic) y de salida (repositorios PostgreSQL con `psycopg`, pagos, correo, almacenamiento).
+- Datos: los repositorios reciben la transacción con identidad que abre `compartido/` ([ADR-007](../00-proyecto/decisiones/ADR-007-acceso-postgres-directo.md)); `dominio/` no sabe de SQL.
 - Pagos: el puerto `PasarelaPagos` vive en `pagos/dominio`; en v1 su único adaptador es manual (captura + validación del Administrador, [ADR-004](../00-proyecto/decisiones/ADR-004-pagos-validacion-manual.md)). Una pasarela real será otro adaptador.
 - Almacenamiento: adaptador sobre Supabase Storage ([ADR-003](../00-proyecto/decisiones/ADR-003-almacenamiento-supabase-storage.md)); autenticación: JWT de Supabase Auth ([ADR-005](../00-proyecto/decisiones/ADR-005-supabase-auth.md)).
 
