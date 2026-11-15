@@ -45,6 +45,7 @@ def leer_frontmatter(texto: str) -> dict | None:
     return campos
 
 
+# shortcut: no genera los sufijos -1, -2 de encabezados repetidos; añadirlos si algún enlace los necesita.
 def anclas(ruta: Path) -> set[str]:
     """Anclas de los encabezados al estilo GitHub: minúsculas, sin puntuación, espacios → guiones (conserva tildes)."""
     titulos = re.findall(r"^#+ (.+)$", ruta.read_text(encoding="utf-8"), re.MULTILINE)
@@ -134,9 +135,10 @@ def validar_agentes(dir_agentes: Path, equipo: Path) -> list[str]:
     seccion = texto.split("## Subagentes", 1)[1].split("\n## ", 1)[0] if "## Subagentes" in texto else ""
     esperados, errores = {}, []
     for nombre, resto in re.findall(r"^\| `([\w-]+)` \|(.*)$", seccion, re.MULTILINE):
-        celdas = [c.strip() for c in resto.split("|")]
-        if len(celdas) < 4:
+        celdas = [c.strip() for c in resto.split("|")]  # la barra final deja una celda vacía de más
+        if len(celdas) < 5:
             errores.append(f"{nombre}: fila de {equipo.name} con menos de 5 columnas")
+            esperados[nombre] = None
             continue
         modelo, effort, turnos, precarga = celdas[:4]
         esperados[nombre] = {
@@ -148,7 +150,8 @@ def validar_agentes(dir_agentes: Path, equipo: Path) -> list[str]:
     archivos = {p.stem: p for p in dir_agentes.glob("*.md")}
     errores += [f"{n}: agente sin fila en {equipo.name}" for n in sorted(archivos.keys() - esperados.keys())]
     errores += [f"{n}: fila de {equipo.name} sin archivo en {dir_agentes}" for n in sorted(esperados.keys() - archivos.keys())]
-    for nombre in sorted(archivos.keys() & esperados.keys()):
+    ver = lambda v: ", ".join(sorted(v)) if isinstance(v, set) else v  # noqa: E731
+    for nombre in sorted(n for n in archivos.keys() & esperados.keys() if esperados[n]):
         fm = leer_frontmatter(archivos[nombre].read_text(encoding="utf-8").replace("\r\n", "\n")) or {}
         real = {
             "model": _norm(fm.get("model", "")),
@@ -158,7 +161,6 @@ def validar_agentes(dir_agentes: Path, equipo: Path) -> list[str]:
         }
         for campo, valor in esperados[nombre].items():
             if real[campo] != valor:
-                ver = lambda v: ", ".join(sorted(v)) if isinstance(v, set) else v  # noqa: E731
                 errores.append(f"{nombre}: {campo} es {ver(real[campo]) or '∅'} y {equipo.name} dice {ver(valor) or '∅'}")
     return errores
 

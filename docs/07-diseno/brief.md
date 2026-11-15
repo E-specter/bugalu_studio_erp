@@ -24,6 +24,7 @@ Pendiente (fase 2). Dirección visual, atributos de marca y el porqué de cada d
 
 | Tema | Archivo | Estado |
 |---|---|---|
+| Logotipo y variantes | `fundamentos/logotipo.md` | Pendiente (fase 2) |
 | Color | `fundamentos/color.md` | Pendiente (fase 2) |
 | Tipografía | `fundamentos/tipografia.md` | Pendiente (fase 2) |
 | Espaciado y retícula | `fundamentos/espaciado-reticula.md` | Pendiente (fase 2) |

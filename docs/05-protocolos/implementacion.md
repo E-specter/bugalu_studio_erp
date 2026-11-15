@@ -10,11 +10,11 @@ depende_de: [protocolo-pruebas, agentes-equipo]
 Spec aprobada → tarea → rama → código + pruebas + docs → entrega → auditoría.
 
 ```
-1. leader       → lee RF y specs relacionadas, crea tarea
-2. dev_backend  → implementa + pruebas + actualiza docs del módulo
-   dev_frontend → implementa sobre contrato aprobado + pruebas
-3. dev_audit    → revisa contra spec y criterios → APROBADO | RECHAZADO
-4. leader       → integra; documentador actualiza changelog e índice documental
+1. leader        → lee RF y specs relacionadas, crea tarea
+2. implementador → dev-backend | dev-frontend | disenador-ui | documentador:
+                   implementa + pruebas + actualiza docs del módulo
+3. dev-audit     → revisa contra spec y criterios → APROBADO | RECHAZADO
+4. leader        → integra; documentador actualiza changelog e índice documental
 ```
 
 Un rechazo en el paso 3 devuelve la tarea al paso 2 junto con el informe de auditoría.

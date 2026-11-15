@@ -102,6 +102,11 @@ class TestValidarDocs(unittest.TestCase):
     def test_fila_sin_agente(self):
         self.assertIn("otro", self.agentes(equipo=EQUIPO.replace("`dev-backend` | sonnet", "`otro` | sonnet")))
 
+    def test_fila_corta(self):
+        errores = self.agentes(equipo=EQUIPO.replace(f"| 40 | `{TDD}`, `{VERIF}` | — | Backend |", "| 40 |"))
+        self.assertIn("columnas", errores)
+        self.assertNotIn("sin fila", errores)
+
     def test_agente_valores_normalizados(self):
         self.assertEqual(self.agentes(model="Sonnet", turnos='"40"', skills=(VERIF, TDD)), "")
 
