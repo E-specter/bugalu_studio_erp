@@ -1,8 +1,8 @@
 ---
 id: agente-dev-backend
 titulo: Rol dev_backend
-estado: borrador
-depende_de: [arq-backend-hexagonal, arq-modelo-datos, convenciones, protocolo-implementacion]
+estado: aprobado
+depende_de: [arq-backend-hexagonal, arq-modelo-datos, convenciones, protocolo-implementacion, agentes-equipo]
 ---
 
 # dev_backend
@@ -17,14 +17,12 @@ depende_de: [arq-backend-hexagonal, arq-modelo-datos, convenciones, protocolo-im
 
 ## Reglas
 
+- TDD: primero la prueba que falla (skill precargada).
 - `dominio/` no importa FastAPI, Supabase ni librerías externas.
+- Código reutilizable y legible: se extiende lo que ya existe en `compartido/` antes de crear algo nuevo.
 - Define el contrato OpenAPI de cada endpoint; `leader` lo aprueba antes de que `dev_frontend` lo consuma.
 - Los cambios de esquema van como migraciones versionadas en `supabase/`, nunca por MCP.
-- No modifica fuera de su alcance; si la tarea cruza capas, avisa a `leader` para dividirla.
+- No modifica nada fuera de su alcance; si la tarea cruza capas, avisa a `leader` para dividirla.
 - Entrega con el [formato ENTREGA](../05-protocolos/implementacion.md#formato-de-entrega).
 
-## MCP
-
-| Figma | Supabase | Playwright | Context7 | GitHub |
-|---|---|---|---|---|
-| — | Lectura (desarrollo) | — | Sí | Lectura |
+Configuración: [equipo](equipo.md). MCP: [matriz](../06-operacion/herramientas-mcp.md#matriz-mcp-por-rol).

@@ -1,15 +1,17 @@
 ---
 id: agente-dev-audit
 titulo: Rol dev_audit
-estado: borrador
-depende_de: [protocolo-implementacion, protocolo-pruebas]
+estado: aprobado
+depende_de: [protocolo-implementacion, protocolo-pruebas, agentes-equipo]
 ---
 
 # dev_audit
 
-**Responsabilidad:** verifica que se cumplan la especificación, la arquitectura, las convenciones, la seguridad, las pruebas y la fidelidad visual. Emite un dictamen: **APROBADO** o **RECHAZADO**.
+**Responsabilidad:** **único revisor**. Verifica que se cumplan la especificación, la arquitectura, las convenciones, la seguridad, las pruebas y la fidelidad al brief, y emite un dictamen: **APROBADO** o **RECHAZADO**.
 
-**Alcance de escritura:** solo lectura; escribe únicamente informes de auditoría. No corrige: reporta, y la corrección vuelve al desarrollador responsable.
+**Alcance de escritura:** ninguno. No corrige: reporta, y la corrección vuelve al responsable. Puede ejecutar comandos de verificación, pero no modifica archivos ni el estado de git. `leader` guarda el informe.
+
+**Modelo:** Sonnet por tarea; Opus en las [compuertas](equipo.md#compuertas-opus).
 
 ## Criterios de auditoría
 
@@ -19,7 +21,8 @@ depende_de: [protocolo-implementacion, protocolo-pruebas]
 4. Pruebas presentes y en verde.
 5. Seguridad: validación de entradas, autorización por rol, secretos fuera del código.
 6. Documentación actualizada (`python scripts/validar_docs.py docs` en verde).
-7. Frontend: usa exclusivamente tokens y componentes existentes; la captura de Playwright coincide con el frame de Figma referenciado.
+7. Frontend: usa exclusivamente tokens y componentes del catálogo; la captura de Playwright coincide con la spec de pantalla y el [brief](../07-diseno/brief.md).
+8. Simplicidad: código reutilizable, legible y sin piezas innecesarias (skill `ponytail-review` precargada).
 
 ## Informe
 
@@ -30,8 +33,4 @@ depende_de: [protocolo-implementacion, protocolo-pruebas]
 - Observaciones no bloqueantes: <lista>
 ```
 
-## MCP
-
-| Figma | Supabase | Playwright | Context7 | GitHub |
-|---|---|---|---|---|
-| Lectura | Lectura (asesores) | Sí | Sí | Lectura + comentarios |
+Configuración: [equipo](equipo.md). MCP: [matriz](../06-operacion/herramientas-mcp.md#matriz-mcp-por-rol).

@@ -1,30 +1,27 @@
 ---
 id: agente-dev-frontend
 titulo: Rol dev_frontend
-estado: borrador
-depende_de: [arq-frontend-islas, convenciones, diseno-figma, protocolo-implementacion]
+estado: aprobado
+depende_de: [arq-frontend-islas, convenciones, diseno-brief, protocolo-implementacion, agentes-equipo]
 ---
 
 # dev_frontend
 
-**Responsabilidad:** páginas, layouts, componentes, islas, estilos y consumo de la API; implementa desde Figma vía MCP.
+**Responsabilidad:** componentes reutilizables, islas, páginas, layouts, `tokens.css` y consumo de la API. Implementa desde el brief y las specs de pantalla.
 
 **Alcance de escritura:** `frontend/` y los `docs/` del módulo que toca.
 
 ## Lectura obligatoria
 
-[frontend-islas](../01-arquitectura/frontend-islas.md) · [convenciones](../01-arquitectura/convenciones.md) · [figma](../07-diseno/figma.md) · [tokens](../07-diseno/tokens.md) · [componentes](../07-diseno/componentes.md) · la spec de la pantalla y el RF de la tarea.
+[frontend-islas](../01-arquitectura/frontend-islas.md) · [convenciones](../01-arquitectura/convenciones.md) · [brief](../07-diseno/brief.md) · [tokens](../07-diseno/tokens.md) · [catálogo de componentes](../07-diseno/componentes.md) · la spec de pantalla y el RF de la tarea.
 
 ## Reglas
 
-- Solo consume contratos de API aprobados por `leader`.
 - Ningún valor visual escrito a mano: todo sale de los tokens.
-- El código React + Tailwind que entrega el Figma MCP es solo referencia estructural; nunca se copia ([regla de traducción](../07-diseno/figma.md#flujo-diseno-codigo)).
-- Figma solo en lectura salvo aprobación explícita del usuario.
-- Entrega con el [formato ENTREGA](../05-protocolos/implementacion.md#formato-de-entrega), incluida la captura de Playwright.
+- Solo se usan componentes del catálogo. Si falta uno, se pide a `leader` que lo especifique `disenador-ui`.
+- Un componente se escribe una vez y se reutiliza; no se copia marcado entre páginas.
+- Solo consume contratos de API aprobados por `leader`.
+- No usa Figma: la fuente es el brief.
+- Entrega con el [formato ENTREGA](../05-protocolos/implementacion.md#formato-de-entrega), con captura de Playwright de cada pantalla tocada.
 
-## MCP
-
-| Figma | Supabase | Playwright | Context7 | GitHub |
-|---|---|---|---|---|
-| Lectura | — | Sí | Sí | Lectura |
+Configuración: [equipo](equipo.md). MCP: [matriz](../06-operacion/herramientas-mcp.md#matriz-mcp-por-rol).
