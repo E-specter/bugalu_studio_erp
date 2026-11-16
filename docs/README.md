@@ -61,7 +61,7 @@ Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-15 →
 
 ## 06 · Operación
 
-[montaje-local](06-operacion/montaje-local.md) · [entornos](06-operacion/entornos.md) · [despliegue](06-operacion/despliegue.md) · [herramientas-mcp](06-operacion/herramientas-mcp.md)
+[montaje-local](06-operacion/montaje-local.md) · [entornos](06-operacion/entornos.md) · [despliegue](06-operacion/despliegue.md) · [herramientas-mcp](06-operacion/herramientas-mcp.md) · [credenciales-oauth](06-operacion/credenciales-oauth.md) · [correo-gmail](06-operacion/correo-gmail.md)
 
 ## 07 · Diseño
 
