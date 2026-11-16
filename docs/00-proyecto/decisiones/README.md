@@ -12,7 +12,7 @@ Registro de decisiones abiertas. Cuando una se cierra, se crea `ADR-<nnn>-<tema>
 | D-04 | Tipo de clave primaria | UUID (alineado con Supabase Auth) vs. entero (informe) | **Cerrada:** [ADR-006](ADR-006-claves-uuid.md) |
 | D-05 | Límite por defecto de rondas de corrección | Sin definir | — |
 | D-06 | Caducidad de una reserva `Pre-reservada` sin pago | 3 días antes o 1 hora, ajustables | **Cerrada:** [ADR-009](ADR-009-reservas-tarifas-y-caducidad.md) (reservas de sala) |
-| D-07 | Proveedor de correo transaccional | Sin definir | — |
+| D-07 | Proveedor de correo transaccional | Cuenta de Google del estudio por SMTP con contraseña de aplicación | **Cerrada:** [ADR-011](ADR-011-correo-gmail-del-estudio.md) |
 | D-08 | Hosting de backend y frontend | Sin definir | — |
 | D-09 | Moneda, impuestos y facturación electrónica | Moneda **PEN** decidida ([ADR-004](ADR-004-pagos-validacion-manual.md)); boleta o factura fuera de la v1 ([ADR-010](ADR-010-pagos-estados-y-cancelacion.md)); impuestos sin definir | Parcial |
 | D-10 | Sello/Mánager y Músico de sesión | ¿Roles del sistema o fuera de alcance v1? | **Cerrada:** [ADR-008](ADR-008-acceso-y-roles-v1.md) (fuera de la v1) |
