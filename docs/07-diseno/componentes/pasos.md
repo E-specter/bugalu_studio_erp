@@ -28,7 +28,7 @@ depende_de: [diseno-tokens]
 
 | Estado del paso | Visual |
 |---|---|
-| Hecho | Lectura "HECHO" con icono `check`; es enlace para volver a ese paso |
+| Hecho | Lectura "HECHO" con icono `check`; es enlace para volver a ese paso (si el paso no tiene página propia, como la cuenta de la reserva, es texto) |
 | Actual | Fondo `color-fondo-destacado`, `borde-grosor-base` `color-borde-fuerte` |
 | Pendiente | `color-texto-secundario`; no es enlace |
 | Con error | Lectura "REVISAR" en `color-texto-alerta` |
@@ -45,9 +45,9 @@ Núcleo del [flujo por pasos](../patrones/flujo-por-pasos.md), junto con [barra-
 
 ## Accesibilidad
 
-- `<nav aria-label="Progreso de la solicitud">` con `<ol>`; el paso actual con `aria-current="step"`.
+- `<nav aria-label>` con `<ol>` ("Progreso de la solicitud", "Progreso de la reserva"); el paso actual con `aria-current="step"`.
 - La lectura de estado es texto, no solo color.
 
 ## Código
 
-`frontend/src/componentes/Pasos.astro`, props `pasos` (nombre, href, estado), `actual`.
+`frontend/src/componentes/Pasos.astro`, props `pasos` (nombre, href, estado), `actual`, `etiqueta` (`aria-label`). Primer uso: la reserva de sala (TAREA-RF04-6); la isla cambia el `href` de los pasos HECHO (la consulta de la URL lleva la elección) y la lectura a REVISAR.

@@ -23,7 +23,7 @@ depende_de: [diseno-tokens, comp-panel]
 | Solicitud | Flujo de contratación y reserva |
 | Ficha | Lateral de detalle de proyecto o pago (datos clave del objeto) |
 
-En móvil deja de ser lateral: pasa a un `<details>` "Ver resumen" sobre la barra de acciones.
+En móvil (< `punto-quiebre-escritorio`) deja de ser lateral: va como bloque `<aside>` normal tras el cierre del paso, sin plegar (decisión TAREA-RF04-6: el `<details>` "Ver resumen" sobre la barra escondía lo elegido y no aportaba, porque el principal de cada paso ya muestra el precio cuando importa).
 
 ## Estados
 
@@ -44,4 +44,4 @@ En el [flujo por pasos](../patrones/flujo-por-pasos.md). Los datos usan la misma
 
 ## Código
 
-`frontend/src/componentes/ResumenPersistente.astro`, props `titulo`, `estado`, `datos`, `total`, `variante`.
+`frontend/src/componentes/ResumenPersistente.astro`, props `titulo`, `estado`, `datos`, `total`, `variante`. Mientras solo lo use la reserva (cuyos datos pinta la isla), vale componerlo con [panel](panel.md) Lateral + [etiqueta](etiqueta-tecnica.md) + `<dl>` siguiendo esta anatomía; el componente se extrae con el segundo flujo (contratación, [RF-15](../../03-requerimientos/RF-15.md)). Lo que no se negocia: hueco `espacio-3` entre la etiqueta y los datos, "—" en `color-texto-secundario` y el total al pie en `fuente-tamano-titulo-sm` con `tabular-nums`, separado por `borde-grosor-fino`.

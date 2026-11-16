@@ -27,12 +27,12 @@ depende_de: [RF-02, ADR-009, diseno-brief, patron-estructura-app, patron-formula
 
 | Dato | Origen | Formato |
 |---|---|---|
-| Servicios | `GET /servicios` → `[Servicio]` | `nombre`; `categoria` en [etiqueta](../componentes/etiqueta-tecnica.md) Neutra (GRABACIÓN, ENSAYO, LIVE, POSPRODUCCIÓN); `ocupa_sala` "Sí" / "No (va por proyecto)"; `tarifa_hora` `S/ 120,00`; `activo` en etiqueta Éxito ACTIVO / Neutra INACTIVO |
+| Servicios | `GET /servicios` → `[Servicio]` | `nombre`; `categoria` en [etiqueta](../componentes/etiqueta-tecnica.md) Neutra (GRABACIÓN, ENSAYO, LIVE, POSPRODUCCIÓN); `ocupa_sala` "Sí" / "No (va por proyecto)"; `tarifa_hora` y `monto_fijo` `S/ 120,00`; `activo` en etiqueta Éxito ACTIVO / Neutra INACTIVO |
 | Por defecto | `especialistas_por_defecto` → nombres de `GET /especialistas` | Separados por comas, o "—" |
-| Editar servicio | La de la lista con ese `id` → `PATCH /servicios/{id} {tarifa_hora?, activo?, especialistas_por_defecto?}` | TARIFA POR HORA (S/) ([campo](../componentes/campo.md) importe); ESPECIALISTAS POR DEFECTO ([casillas](../componentes/casilla.md)); ACTIVO (casilla). Categoría y sala, solo lectura |
+| Editar servicio | La de la lista con ese `id` → `PATCH /servicios/{id} {tarifa_hora?, monto_fijo?, activo?, especialistas_por_defecto?}` | TARIFA POR HORA (S/) y MONTO FIJO (S/) ([campo](../componentes/campo.md) importe); ESPECIALISTAS POR DEFECTO ([casillas](../componentes/casilla.md)); ACTIVO (casilla). Categoría y sala, solo lectura |
 | Especialistas | `GET /especialistas` → `[Especialista]` | `nombre`; `monto_fijo` y `monto_variable` `S/ 25,00`; `unidad` "por hora" / "por media hora"; `activo` como arriba |
 | Editar especialista | `PATCH /especialistas/{id} {monto_fijo?, monto_variable?, unidad?, activo?}` | MONTO FIJO (S/) y MONTO VARIABLE (S/) (importe, en fila); UNIDAD (casilla Radio: Por hora · Por media hora); ACTIVO |
-| Recargos | `GET /recargos` / `PUT /recargos` → `{noche: {porcentaje, desde, hasta}, fin_de_semana: {porcentaje}, feriado: {porcentaje}}` | Porcentaje: `type="number"`, `min="0"`, `step="0.01"`, sufijo "%" en la etiqueta; DESDE y HASTA de noche: `time`, hora de Lima |
+| Recargos | `GET /recargos` / `PUT /recargos` → `{noche: {porcentaje, desde, hasta}, fin_de_semana: {porcentaje}, feriado: {porcentaje}}` | Porcentaje: `type="number"`, `min="0"`, `step="0.01"`, sufijo "%" en la etiqueta; el valor se pinta como número (`25`, `12.5`), nunca con ceros de relleno ("25.00"); DESDE y HASTA de noche: `time`, hora de Lima |
 | Feriados | `GET /feriados?anio=` → `[Feriado]` | `D MMM AAAA` + `nombre`, por fecha |
 | Añadir / quitar feriado | `POST /feriados {fecha, nombre}` → 201; `DELETE /feriados/{fecha}` → 204 | FECHA (`date`) y NOMBRE (texto), obligatorios |
 
@@ -43,12 +43,12 @@ Importes: el campo acepta `125,5` o `125.50`; la isla envía texto decimal con p
 | Vista | Región | Componente (variante) | Contenido |
 |---|---|---|---|
 | Todas | Encabezado | [encabezado-pantalla](../componentes/encabezado-pantalla.md) App | Ruta, índice, título y descripción; en Lista, "Recargos y feriados" ([botón](../componentes/boton.md) Secundario como enlace) en la ranura `acciones` |
-| Lista | Principal | [panel](../componentes/panel.md) `T1 SERVICIOS` + [tabla](../componentes/tabla.md) Directorio | SERVICIO · CATEGORÍA · OCUPA SALA · TARIFA POR HORA · POR DEFECTO · ESTADO · "Editar {servicio}" |
+| Lista | Principal | [panel](../componentes/panel.md) `T1 SERVICIOS` + [tabla](../componentes/tabla.md) Directorio | SERVICIO · CATEGORÍA · OCUPA SALA · TARIFA POR HORA · MONTO FIJO · POR DEFECTO · ESTADO · "Editar {servicio}" |
 | Lista | Principal | panel `T2 ESPECIALISTAS` + tabla Directorio | ESPECIALISTA · FIJO · VARIABLE · UNIDAD · ESTADO · "Editar {especialista}" |
 | Servicio | Principal + lateral | panel `S1 SERVICIO` (`<dl>`: nombre, categoría, ocupa sala) + panel Lateral `S2 TARIFA` | Campos y Primario "Guardar servicio" |
 | Especialista | Principal + lateral | panel `E1 ESPECIALISTA` (`<dl>`: nombre) + panel Lateral `E2 TARIFA` | Campos y Primario "Guardar especialista" |
 | Recargos | Principal | panel `R1 RECARGOS POR HORARIO` | NOCHE (% + DESDE + HASTA en fila), FIN DE SEMANA (%), FERIADO (%); Primario "Guardar recargos" |
-| Recargos | Lateral | panel Lateral `R2 FERIADOS {anio}` | Enlaces "{anio − 1}" / "{anio + 1}"; tabla FECHA · NOMBRE · "Quitar feriado" (Secundario); formulario FECHA + NOMBRE + Secundario "Añadir feriado" |
+| Recargos | Lateral | panel Lateral `R2 FERIADOS {anio}` | Enlaces "{anio − 1}" / "{anio + 1}"; tabla (siempre tarjetas en el lateral: [tabla](../componentes/tabla.md#adaptabilidad)) FECHA · NOMBRE · "Quitar feriado" (Secundario); formulario FECHA + NOMBRE + Secundario "Añadir feriado" |
 
 Patrones: [formularios](../patrones/formularios.md), [tablas y tableros](../patrones/tablas-y-tableros.md). Una sola acción por formulario: sin [barra de acciones](../componentes/barra-acciones.md#cuándo-se-usa). Adaptabilidad: < `punto-quiebre-escritorio`, tablas a tarjetas y laterales debajo. Sin crear ni borrar servicios ni especialistas: el contrato solo los edita (desactivar es el borrado).
 
@@ -81,7 +81,7 @@ Claves `aviso` (lista cerrada): `servicio-actualizado`, `especialista-actualizad
 | Especialista | Inicio / Tarifas / {especialista} | EDITAR ESPECIALISTA | Cuánto suma {especialista} a cada reserva. |
 | Recargos | Inicio / Tarifas / Recargos | RECARGOS Y FERIADOS | Porcentaje extra por horario y días feriados del año. |
 
-Ayudas (supuestos de [ADR-009](../../00-proyecto/decisiones/ADR-009-reservas-tarifas-y-caducidad.md)): MONTO FIJO "Se cobra una vez por reserva." · MONTO VARIABLE "Se cobra por cada hora o media hora de la reserva, según la unidad." · ESPECIALISTAS POR DEFECTO "Van incluidos y el cliente no puede quitarlos." · ACTIVO (servicio) "Si lo desactivas, deja de ofrecerse al reservar." · Recargo "Se aplica a la parte variable de cada media hora que cae en ese horario, nunca al monto fijo." · NOCHE, DESDE / HASTA "Puede pasar la medianoche: de 22:00 a 06:00." Aviso Información fijo en S2 y E2: "Los cambios valen para las simulaciones y reservas nuevas; las ya hechas guardan su precio."
+Ayudas (supuestos de [ADR-009](../../00-proyecto/decisiones/ADR-009-reservas-tarifas-y-caducidad.md)): TARIFA POR HORA sin ayuda (la etiqueta basta). MONTO FIJO (servicio y especialista) "Se cobra una vez por reserva." · MONTO VARIABLE "Se cobra por cada hora o media hora de la reserva, según la unidad." · ESPECIALISTAS POR DEFECTO "Van incluidos y el cliente no puede quitarlos." · ACTIVO (servicio) "Si lo desactivas, deja de ofrecerse al reservar." · Recargo "Se aplica a la parte variable de cada media hora que cae en ese horario, nunca al monto fijo." · NOCHE, DESDE / HASTA "Puede pasar la medianoche: de 22:00 a 06:00." Aviso Información fijo en S2 y E2: "Los cambios valen para las simulaciones y reservas nuevas; las ya hechas guardan su precio."
 
 ## Accesibilidad
 

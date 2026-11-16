@@ -46,10 +46,10 @@ depende_de: [RF-03, ADR-009, diseno-brief, patron-estructura-app, patron-formula
 | Vista | Región | Componente (variante) | Contenido |
 |---|---|---|---|
 | Ambas | Encabezado | [encabezado-pantalla](../componentes/encabezado-pantalla.md) App | Ruta, índice, título, descripción; ranura `acciones`: "Parámetros de reserva" / "Volver a franjas" ([botón](../componentes/boton.md) Secundario como enlace) |
-| Semana | Controles | Enlaces del periodo con aspecto de [etiqueta](../componentes/etiqueta-tecnica.md) | "Semana anterior" · título de la semana · "Semana siguiente" · "Esta semana" |
+| Semana | Controles | La barra del periodo del [calendario](../componentes/calendario.md#anatomía) (mismo marcado y clases, alto `medida-control-tactil`, iconos `chevron-left` / `chevron-right`) | Título de la semana encima ([formato](RF-03-calendario.md#datos)); debajo "Semana anterior" · "Esta semana" · "Semana siguiente", en ese orden |
 | Semana | Principal | [panel](../componentes/panel.md) `F1 PUBLICADAS` + [tabla](../componentes/tabla.md) Directorio | DÍA · HORARIO · RESERVAS · "Retirar franja" ([botón](../componentes/boton.md) Peligro) |
 | Semana | Principal | panel `F2 PUBLICAR FRANJAS` | Un `<fieldset>` por día ("LUNES 16 NOV"); por franja, DESDE y HASTA ([campo](../componentes/campo.md) `time`, en fila) + "Quitar" (Secundario de solo icono `x`); "Añadir franja" (Secundario) al pie de cada día; cierra con Primario "Publicar franjas" |
-| Semana | Lateral | panel Lateral `F3 CIERRES` | Tabla de cierres de la semana + formulario de cierre con Secundario "Registrar cierre" |
+| Semana | Lateral | panel Lateral `F3 CIERRES` | Tabla de cierres de la semana (en el lateral, siempre como tarjetas: [tabla](../componentes/tabla.md#adaptabilidad)) + formulario de cierre, separado de la tabla por `espacio-5`, con Secundario "Registrar cierre" |
 | Parámetros | Principal | panel `P1 PLAZO PARA PAGAR` y `P2 ANTICIPACIÓN` | Dos campos cada uno; Primario "Guardar parámetros" al final (sin [barra](../componentes/barra-acciones.md#cuándo-se-usa)) |
 
 Patrones: [formularios](../patrones/formularios.md), [tablas y tableros](../patrones/tablas-y-tableros.md). Adaptabilidad: < `punto-quiebre-escritorio`, F3 pasa debajo y las tablas a tarjetas.
@@ -67,6 +67,7 @@ Patrones: [formularios](../patrones/formularios.md), [tablas y tableros](../patr
 | F2 | Validación al enviar | Error bajo el campo: "Elige la hora de inicio." · "La hora de fin debe ser posterior a la de inicio." · "Usa horas en punto o y media." · "Se cruza con la franja de 10:00–14:00 del mismo día." Aviso resumen "Revisa 2 franjas" con enlaces |
 | F2 | 409 `franja_solapada` | Aviso Error "Una de las franjas se cruza con otra ya publicada. Revisa las horas y vuelve a publicar." Filas conservadas |
 | F2 | Éxito | Recarga F1; aviso Éxito "Franjas publicadas. Ya se ven en el calendario." |
+| F1 | Éxito al retirar | Aviso Éxito "Franja retirada." y F1 recargada |
 | F1 | 409 `franja_con_reservas` | Aviso Error "Esta franja tiene reservas vigentes. Cancélalas o espera a que terminen antes de retirarla." |
 | F3 | Sin cierres | "No hay cierres esta semana." |
 | F3 | 409 `cierre_con_reservas` | Aviso Error "No puedes cerrar ese horario: tiene 2 reservas vigentes. Resuélvelas antes de cerrarlo." + `<ul>` de las reservas, cada una enlazada a su detalle. Datos conservados |

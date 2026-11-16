@@ -35,10 +35,11 @@ Comunes: [catálogo](README.md#estados-comunes). Ningún estado se distingue sol
 | Estado | Visual | Texto del bloque |
 |---|---|---|
 | Libre | `color-fondo-claro`, `borde-grosor-fino` `color-borde-fuerte` | LIBRE |
-| Ocupado | Rayas (`efecto-patron-paso`, `color-borde-fuerte` a `efecto-opacidad-capa`); el texto va en una [etiqueta](etiqueta-tecnica.md) Neutra sobre `color-fondo-superficie` opaco, nunca sobre las rayas | OCUPADO (Personal: cliente, servicio y etiqueta de estado de la reserva) |
+| Ocupado | Rayas (`efecto-patron-paso`, `color-borde-fuerte` a `efecto-opacidad-capa`); el texto va en una [etiqueta](etiqueta-tecnica.md) Neutra sobre `color-fondo-superficie` **opaco** (la etiqueta es transparente por defecto: el calendario le pone el fondo), nunca sobre las rayas. En el modo Personal, el enlace (cliente, servicio, etiqueta de estado) va en una caja `color-fondo-superficie` con relleno `espacio-1` | OCUPADO (Personal: cliente, servicio y etiqueta de estado de la reserva) |
 | Propio (cliente) | `color-fondo-destacado` + `borde-grosor-base` `color-borde-fuerte` | TU RESERVA + folio |
 | Cerrado | `color-fondo-superficie`, sin caja, icono `lock` | CERRADO + motivo ("Feriado") |
-| No reservable | `color-texto-secundario`, sin caja | NO RESERVABLE (pasado, fuera de la anticipación o margen de preparación) |
+| Pasado | `color-texto-secundario`, sin caja | PASADO (media hora que ya empezó; decisión TAREA-RF04-6: se distingue de NO RESERVABLE porque el motivo es otro) |
+| No reservable | `color-texto-secundario`, sin caja | NO RESERVABLE (fuera de la anticipación o margen de preparación) |
 | Sin franja | Celda vacía, sin caja | — |
 | Inicio elegido | `color-fondo-invertido`, texto `color-texto-invertido`, icono `check` | INICIO |
 | En el tramo | `color-fondo-destacado` + `borde-grosor-grueso` `color-borde-fuerte` | TU SELECCIÓN (en la primera celda) |

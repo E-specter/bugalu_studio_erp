@@ -31,7 +31,7 @@ Esta spec fija el bloque del calendario en los dos contextos. El resto del paso 
 | Dato | Origen | Formato |
 |---|---|---|
 | Sala | `GET /salas` → `Sala.nombre` | Una sola: [etiqueta](../componentes/etiqueta-tecnica.md) Neutra "SALA · LA MOLINA"; varias: [campo](../componentes/campo.md) Selector SALA |
-| Periodo | `fecha` → semana de lunes a domingo o mes de 6 semanas (42 días), hora de Lima | "SEMANA DEL 16 AL 22 NOV 2026" · "NOVIEMBRE 2026" |
+| Periodo | `fecha` → semana de lunes a domingo o mes de 6 semanas (42 días), hora de Lima | "SEMANA DEL 16 AL 22 NOV 2026" · cruza mes: "SEMANA DEL 30 NOV AL 6 DIC 2026" · cruza año: "SEMANA DEL 28 DIC 2026 AL 3 ENE 2027" (cada extremo con su año) · "NOVIEMBRE 2026". Igual en [franjas](RF-03-franjas.md) |
 | Franjas, ocupados, cierres | `GET /disponibilidad?sala=&desde=&hasta=` → `franjas`, `ocupados[].{inicio, fin, propia}`, `cierres[].{inicio, fin, motivo}` | Estados de la [ficha](../componentes/calendario.md#estados-de-la-media-hora). `ocupados` ya incluye el buffer de 30 min |
 | Horas libres por día | `dias[].{fecha, minutos_libres}` | [Duración de reserva](../patrones/estructura-app.md#formato-de-datos) + "libres": "3 h 30 min libres"; 0 → "Sin horas libres" |
 | Horas libres del periodo | Suma de `dias[].minutos_libres` | Solo en el anuncio |
@@ -54,7 +54,7 @@ Patrones: [tablas y tableros](../patrones/tablas-y-tableros.md) (Lista), [estado
 | Situación | Forma y texto |
 |---|---|
 | Carga | La de la ficha: "Cargando semana…" / "Cargando mes…" |
-| Periodo sin franjas (`franjas` vacío) | Vacío en el panel: "Aún no hay horarios publicados" + "Publicamos la agenda semana a semana. Mira la siguiente semana o vuelve pronto." + "Ver semana siguiente" (Secundario). Administrador: además "Publicar franjas de esta semana" (Secundario) |
+| Periodo sin franjas (`franjas` vacío) | Vacío en el panel, **bajo la barra del periodo** (sigue visible para moverse de semana; decisión TAREA-RF04-6): "Aún no hay horarios publicados" + "Publicamos la agenda semana a semana. Mira la siguiente semana o vuelve pronto." + "Ver semana siguiente" (Secundario). Administrador: además "Publicar franjas de esta semana" (Secundario) |
 | Con franjas y sin horas libres | No es vacío: se ve la cuadrícula; anuncio "… 0 horas libres" |
 | Lista sin reservas | "No hay reservas en este periodo." Sin acción |
 | `?fecha` inválida o 422 `rango_invalido` | Muestra la semana actual + [aviso](../componentes/aviso.md) Información "La fecha del enlace no es válida. Te mostramos esta semana." |
@@ -77,7 +77,7 @@ Tras "Reintentar", el foco va al título del panel. Permisos: el visitante y el 
 | Agenda: título y descripción | AGENDA DE SALA · "Reservas y horas libres de la sala. Abre una reserva para ver su detalle." |
 | Periodo | "Semana anterior" · "Semana siguiente" · "Esta semana"; "Mes anterior" · "Mes siguiente" · "Este mes"; bajo el título "Horario de Lima" |
 | Vistas | SEMANA · MES · LISTA |
-| Leyenda | LIBRE · OCUPADO · TU RESERVA · CERRADO · NO RESERVABLE (solo las presentes) |
+| Leyenda | LIBRE · OCUPADO · TU RESERVA · CERRADO · PASADO · NO RESERVABLE (solo las presentes) |
 | Columnas de Lista | FOLIO · FECHA · CLIENTE · SERVICIO · ESTADO; acción "Ver reserva {folio}" |
 | Anuncio | "Semana del 16 al 22 nov 2026: 32 horas libres." · "Noviembre 2026: 120 horas libres." · Lista: "8 reservas en este periodo." |
 

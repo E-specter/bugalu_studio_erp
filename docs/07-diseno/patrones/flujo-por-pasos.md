@@ -29,12 +29,12 @@ pasos: 01 ── 02 ── 03 ── 04 ── 05 ── 06
 4. **El resumen persistente** muestra siempre lo elegido y el importe que corresponda; el usuario nunca llega a la revisión sin haber visto el precio.
 5. **Revisión antes de comprometer:** el penúltimo paso muestra todo, condiciones (cláusulas) y la [casilla](../componentes/casilla.md) de aceptación; el botón principal nombra el compromiso ("Confirmar contratación").
 6. **Paso final de confirmación:** qué pasó, qué sigue (próximos hitos) y acceso al portal; sin barra de acciones de flujo.
-7. **Visitante sin cuenta:** la cuenta se crea dentro del flujo, en el paso donde es necesaria, sin sacarlo del flujo ([actores](../../02-dominio/actores-roles.md)).
+7. **Visitante sin cuenta:** la cuenta se crea en el paso donde es necesaria, sin perder nada de lo elegido ([actores](../../02-dominio/actores-roles.md)). Si el flujo no tiene borrador en el servidor (reserva de sala), ese paso es el [acceso](../pantallas/RF-01-acceso.md) con `volver` = URL del paso siguiente con toda la elección, y al terminar vuelve ahí; los pasos lo muestran HECHO (decisión TAREA-RF04-6).
 8. Máximo 6 pasos visibles; si un proceso necesita más, se agrupan.
 
 ## Móvil
 
-[Pasos](../componentes/pasos.md) Compacta, resumen como `<details>` sobre la barra de acciones y botones apilados.
+[Pasos](../componentes/pasos.md) Compacta, resumen como bloque tras la barra de acciones ([ficha](../componentes/resumen-persistente.md)) y botones apilados.
 
 ## Accesibilidad
 

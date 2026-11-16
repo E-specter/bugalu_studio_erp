@@ -18,7 +18,7 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 |---|---|---|
 | Reposo | Según la variante | — |
 | Hover | Cambio de fondo según la variante en `movimiento-duracion-rapida` | Solo con puntero (`@media (hover: hover)`) |
-| Foco | `outline` de `borde-grosor-base` en `color-foco-anillo` (`color-foco-invertido` sobre navy) con separación `borde-grosor-base` | Solo `:focus-visible`; nunca se elimina sin sustituto. Excepción: el destino no interactivo de "Saltar al contenido" ([estructura de app](../patrones/estructura-app.md#navegación)) |
+| Foco | `outline` de `borde-grosor-base` en `color-foco-anillo` (`color-foco-invertido` sobre navy) con separación `borde-grosor-base` | Solo `:focus-visible`; nunca se elimina sin sustituto. Excepción: los destinos no interactivos de foco por programa (`tabindex="-1"`): el de "Saltar al contenido" ([estructura de app](../patrones/estructura-app.md#navegación)) y los títulos (`h1`, `h2`) que reciben el foco al cargar un paso o abrir un panel. Los avisos enfocados sí llevan anillo |
 | Activo | Desplazamiento de tecla solo si el componente lleva `sombra-plana` ([forma](../fundamentos/forma-elevacion.md#interacción-física)); sin sombra, ningún cambio propio | — |
 | Deshabilitado | `opacity: var(--efecto-opacidad-capa)`, sin sombra, cursor `not-allowed` | Atributo `disabled` nativo; si debe seguir siendo enfocable para explicar por qué, `aria-disabled="true"` + texto de ayuda |
 | Error | Borde en `color-texto-alerta` + mensaje con icono `alert-triangle` | `aria-invalid="true"` y `aria-describedby` al mensaje |

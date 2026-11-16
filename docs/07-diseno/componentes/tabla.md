@@ -40,6 +40,8 @@ Cifras alineadas a la derecha con `tabular-nums`; texto a la izquierda.
 
 < `punto-quiebre-escritorio`: cada fila pasa a tarjeta con pares etiqueta/valor (`<dl>`) en una columna. Si se necesita la tabla completa, contenedor con `overflow-x: auto` y `tabindex="0"` + `aria-label`.
 
+Dentro de un [panel](panel.md) Lateral (`medida-columna-lateral`) la tabla es **siempre** tarjeta, también en escritorio: a ese ancho las columnas parten palabras y botones letra a letra (revisión visual TAREA-RF04-6, F3 CIERRES y R2 FERIADOS). En las tarjetas, una celda vacía no pinta su rótulo. Excepción: Partidas (ver Código).
+
 ## Tokens
 
 `color-fondo-superficie`, `color-fondo-invertido`, `color-fondo-claro`, `color-fondo-destacado`, `color-texto-invertido`, `color-texto-secundario`, `color-borde-fuerte`, `borde-grosor-base`, `borde-grosor-fino`, `borde-grosor-grueso`, `espacio-3`, `espacio-4`, `fuente-*`, `punto-quiebre-escritorio`.
@@ -57,8 +59,10 @@ Dentro de un [panel](panel.md); controles encima según [tablas y tableros](../p
 
 ## Código
 
-`frontend/src/componentes/Tabla.astro`, props `titulo` (`<caption>` oculto), `columnas` (`string[]`; `""` es la columna de acciones, con nombre oculto "Acciones") y `variante` (`directorio|compacta`). Las filas entran por la **ranura por defecto** como `<tr>` completos: la celda principal es `<th scope="row">` y cada `<td>` lleva `data-etiqueta` con el rótulo de su columna, que la tarjeta móvil muestra delante del valor (`data-etiqueta=""` en la de acciones). Cada `<td>` ya es la "ranura por celda": dentro va cualquier componente ([etiqueta](etiqueta-tecnica.md), [botón](boton.md)).
+`frontend/src/componentes/Tabla.astro`, props `titulo` (`<caption>` oculto), `columnas` (`string[]`; `""` es la columna de acciones, con nombre oculto "Acciones") y `variante` (`directorio|compacta|partidas`). Las filas entran por la **ranura por defecto** como `<tr>` completos: la celda principal es `<th scope="row">` y cada `<td>` lleva `data-etiqueta` con el rótulo de su columna, que la tarjeta móvil muestra delante del valor (`data-etiqueta=""` en la de acciones). Cada `<td>` ya es la "ranura por celda": dentro va cualquier componente ([etiqueta](etiqueta-tecnica.md), [botón](boton.md)).
 
 Sin prop `filas`: las tablas de datos del servidor las pinta una isla clonando un `<template>` de fila en el navegador, así que una prop que solo sirve al pintar en el servidor no la usaría nadie. Decisión de la revisión visual de RF-01.
 
-Se implementan con la primera pantalla que los pida (antes, sin código): variante Partidas (cifras a la derecha con `tabular-nums` y fila de total), cabecera ordenable, fila seleccionada y pie.
+**Partidas** (la piden [reservar](../pantallas/RF-04-reservar.md) y [mis reservas](../pantallas/RF-04-mis-reservas.md), TAREA-RF04-6): `variante="partidas"` y un `<tfoot>` en la ranura `pie` con las filas de total (TOTAL, ANTICIPO 50 %) en `fuente-peso-titulo` y regla superior `borde-grosor-base`. Las columnas numéricas (CANTIDAD, IMPORTE) van a la derecha con `tabular-nums`, cabecera incluida. No pasa a tarjetas: con tres columnas cabe a 320 px (el concepto se ajusta en varias líneas).
+
+Se implementan con la primera pantalla que los pida (antes, sin código): cabecera ordenable y fila seleccionada.

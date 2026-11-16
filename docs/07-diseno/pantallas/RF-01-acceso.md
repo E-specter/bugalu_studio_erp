@@ -112,6 +112,6 @@ Etiquetas (con `//` del layout): CORREO, CONTRASEÑA, NOMBRE, TELÉFONO, NOMBRE 
 ## Pendientes
 
 - **dev-backend / dev-frontend:** los metadatos de `signUp` se llaman `nombre`, `telefono` y `nombre_artistico` (migración de RF-01 en curso). El disparador descarta en silencio un teléfono mal formado, así que la isla debe validarlo (sin espacios, 9 a 15 dígitos) antes de llamar a `signUp`.
-- **Usuario:** ¿el registro pide aceptar condiciones (`112:472`)? El texto legal no se redacta aquí.
+- **Decidido (usuario, [ADR-009](../../00-proyecto/decisiones/ADR-009-reservas-tarifas-y-caducidad.md)):** sin casilla de condiciones hasta que el estudio tenga el texto legal; la pantalla solo informa.
 - **Usuario:** quien entra con Google no da teléfono ni nombre artístico; por ahora los completa en el [perfil](RF-01-perfil.md).
 - **leader:** registrar `<bugalu-acceso>` en [frontend-islas](../../01-arquitectura/frontend-islas.md) (fuera del alcance de diseño).

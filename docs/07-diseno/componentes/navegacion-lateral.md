@@ -32,7 +32,7 @@ Destinos implementados (etiqueta ≤ 9 caracteres · icono · ruta):
 |---|---|
 | Cliente | INICIO (`house`, `/app/`) · RESERVAS (`calendar-check`, `/app/reservas/`) · PERFIL (menú de la cabecera) |
 | Personal | INICIO · AGENDA (`calendar`, `/app/agenda/`) |
-| Administrador | INICIO · AGENDA · ACCESOS (`user-plus`) · USUARIOS (`users`) · FRANJAS (`calendar-cog`, `/app/franjas/`) · TARIFAS (`tag`, `/app/tarifas/`) |
+| Administrador | INICIO · AGENDA · ACCESOS (`user-plus`) · USUARIOS (`users`) · FRANJAS (`calendar-cog`, `/app/franjas/`) · TARIFAS (`tag`, `/app/tarifas/`). En móvil, TARIFAS (sexto) va al menú de la [cabecera](cabecera-app.md), con `aria-current="page"` cuando es la sección actual ([navegación táctil](navegacion-tactil.md)) |
 
 ## Estados
 
