@@ -283,6 +283,22 @@ test('agenda (personal): la vista Lista trae las reservas del periodo en una tab
   await page.screenshot({ path: 'pruebas/capturas/calendario-lista-escritorio.png', fullPage: true });
 });
 
+test('agenda (personal): PAGO POR VALIDAR en la lista y en las celdas con detalle.pago_por_validar', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const disp = disponibilidad({ conDetalle: true });
+  disp.ocupados[0].detalle.pago_por_validar = true;
+  await montar(page, { rol: 'personal', disp, reservas: [RESERVA({ pago_por_validar: true }), RESERVA({ id: 'r2', folio: 'R-2026-00013', inicio: t('20', '10:00'), fin: t('20', '12:00') })] });
+  await page.goto('/app/agenda/?vista=lista&fecha=2026-11-16');
+  await expect(page.getByRole('row').nth(1)).toContainText('PAGO POR VALIDAR');
+  await expect(page.getByRole('row').nth(2)).not.toContainText('PAGO POR VALIDAR');
+  await sinViolaciones(page);
+  await page.goto('/app/agenda/?vista=semana&fecha=2026-11-16');
+  await expect(page.locator('.cal-celda[data-estado="ocupado"]').filter({ hasText: 'PAGO POR VALIDAR' })).toHaveCount(1);
+  await expect(page.locator('.cal-celda[data-estado="ocupado"]').first()).not.toContainText(/confirmada/i);
+  await sinViolaciones(page);
+  await page.screenshot({ path: 'pruebas/capturas/calendario-pago-por-validar-1440.png', fullPage: true });
+});
+
 test('agenda (personal): Lista sin reservas', async ({ page }) => {
   await montar(page, { rol: 'personal', reservas: [] });
   await page.goto('/app/agenda/?vista=lista&fecha=2026-11-16');
@@ -462,12 +478,12 @@ test.describe('navegacion por rol', () => {
     expect(await visibles(page)).toEqual(['Inicio', 'Agenda']);
   });
 
-  test('administrador (escritorio): Agenda, Accesos, Usuarios, Franjas y Tarifas', async ({ page }) => {
+  test('administrador (escritorio): Agenda, Pagos, Accesos, Usuarios, Franjas y Tarifas', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await montar(page, { rol: 'administrador' });
     await page.goto('/app/');
-    await expect(page.locator('.lateral-destino:visible')).toHaveCount(6);
-    expect(await visibles(page)).toEqual(['Inicio', 'Agenda', 'Accesos', 'Usuarios', 'Franjas', 'Tarifas']);
+    await expect(page.locator('.lateral-destino:visible')).toHaveCount(7);
+    expect(await visibles(page)).toEqual(['Inicio', 'Agenda', 'Pagos', 'Accesos', 'Usuarios', 'Franjas', 'Tarifas']);
     const nav = page.getByRole('navigation', { name: 'Principal' });
     await expect(nav.getByRole('link', { name: 'Franjas' })).toHaveAttribute('href', '/app/franjas/');
     await expect(nav.getByRole('link', { name: 'Tarifas' })).toHaveAttribute('href', '/app/tarifas/');
@@ -479,8 +495,9 @@ test.describe('navegacion por rol', () => {
     await montar(page, { rol: 'administrador' });
     await page.goto('/app/');
     await expect(page.locator('.tactil-destino:visible')).toHaveCount(5);
-    expect(await visibles(page)).toEqual(['Inicio', 'Agenda', 'Accesos', 'Usuarios', 'Franjas']);
+    expect(await visibles(page)).toEqual(['Inicio', 'Agenda', 'Pagos', 'Accesos', 'Usuarios']);
     await page.getByText('Menú', { exact: true }).click();
+    await expect(page.locator('.cabecera-menu-panel').getByRole('link', { name: 'Franjas' })).toHaveAttribute('href', '/app/franjas/');
     await expect(page.locator('.cabecera-menu-panel').getByRole('link', { name: 'Tarifas' })).toHaveAttribute('href', '/app/tarifas/');
     await sinViolaciones(page);
   });
@@ -490,7 +507,7 @@ test.describe('navegacion por rol', () => {
     await montar(page, { rol: 'administrador', retraso: 800 });
     await page.goto('/app/');
     expect(await visibles(page)).toEqual(['Inicio']);
-    await expect(page.locator('.lateral-destino:visible')).toHaveCount(6);
+    await expect(page.locator('.lateral-destino:visible')).toHaveCount(7);
   });
 });
 

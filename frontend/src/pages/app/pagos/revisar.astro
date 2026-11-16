@@ -1,0 +1,14 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Pagos from '../../../islas/Pagos.astro';
+---
+
+<LayoutApp titulo="Revisar pago">
+  <EncabezadoPantalla
+    titulo="REVISAR PAGO"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Pagos', href: '/app/pagos/' }, { etiqueta: 'Revisar' }]}
+    descripcion="Mira la captura, compárala con el pago y decide."
+  />
+  <Pagos vista="revisar" />
+</LayoutApp>

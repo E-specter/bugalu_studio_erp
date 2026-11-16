@@ -1,0 +1,603 @@
+---
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Casilla from '../componentes/Casilla.astro';
+import Tabla from '../componentes/Tabla.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import IndicadorEstado from '../componentes/IndicadorEstado.astro';
+import Archivo from '../componentes/Archivo.astro';
+import BarraAcciones from '../componentes/BarraAcciones.astro';
+import Icono from '../componentes/internos/Icono.astro';
+import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+
+interface Props {
+  vista: 'lista' | 'revisar' | 'datos';
+}
+const { vista } = Astro.props;
+// Panel de la vista mientras carga o falla (codigos y titulos de la spec RF-05-pagos).
+const principal = { lista: { titulo: 'Pagos' }, revisar: { codigo: 'V1', titulo: 'Comprobante' }, datos: { codigo: 'D1', titulo: 'Datos para pagar' } }[vista];
+const filtros = [
+  { clave: 'pendiente_validacion', texto: 'POR VALIDAR', href: '/app/pagos/' },
+  { clave: 'aprobado', texto: 'APROBADOS', href: '/app/pagos/?estado=aprobado' },
+  { clave: 'rechazado', texto: 'RECHAZADOS', href: '/app/pagos/?estado=rechazado' },
+];
+const metodos = [
+  { clave: 'transferencia', nombre: 'Transferencia bancaria' },
+  { clave: 'yape', nombre: 'Yape' },
+  { clave: 'plin', nombre: 'Plin' },
+  { clave: 'tarjeta', nombre: 'Tarjeta' },
+];
+const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captura ilegible'];
+---
+
+<EstilosGestion />
+
+<!-- Un bloque por estado (estados-sistema): la isla clona el que toca. Sin JS, el noscript oculta la carga y avisa. -->
+<bugalu-pagos class="pagos" data-gestion vista={vista}>
+  <div data-avisos></div>
+  <!-- Region viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  {vista === 'lista' && <nav class="pagos-filtros" aria-label="Filtrar por estado" data-filtros hidden></nav>}
+  <div data-salida><Panel {...principal} cargando /></div>
+
+  <EstadosIsla principal={principal} noEncontrada={vista === 'revisar' ? { etiqueta: 'Volver a pagos', href: '/app/pagos/' } : undefined} />
+
+  {['neutra', 'exito', 'aviso', 'activa', 'alerta'].map((variante) => <template data-sello={variante}><EtiquetaTecnica variante={variante as 'neutra'} texto=" " /></template>)}
+
+  {vista === 'lista' && (
+    <>
+      {filtros.flatMap((f) => [
+        <template data-filtro={f.clave} data-aplicado="no"><EtiquetaTecnica variante="filtro" texto={f.texto} href={f.href} /></template>,
+        <template data-filtro={f.clave} data-aplicado="si"><EtiquetaTecnica variante="filtro" texto={f.texto} href={f.href} aplicado /></template>,
+      ])}
+      <template data-estado="vacio">
+        <Panel titulo="Pagos">
+          <p class="gestion-vacio-titulo" data-vacio-titulo></p>
+          <p data-vacio-texto></p>
+          <div class="pagos-aparte" data-ver-pendientes><Boton variante="secundario" href="/app/pagos/">Ver pagos por validar</Boton></div>
+        </Panel>
+      </template>
+      <template data-estado="datos">
+        <Panel titulo="Pagos">
+          <p class="pagos-total" data-total></p>
+          <Tabla titulo="Pagos" columnas={['Reserva', 'Cliente', 'Método', 'Monto', 'Operación', 'Registrado', '']} numericas={[3]} />
+        </Panel>
+      </template>
+      <template data-fila>
+        <tr>
+          <th scope="row"><span class="pagos-folio" data-folio></span><span class="pagos-secundario" data-cuota></span></th>
+          <td data-etiqueta="Cliente" data-cliente></td>
+          <td data-etiqueta="Método" data-metodo></td>
+          <td class="tabla-num" data-etiqueta="Monto"><span data-monto></span><span data-nocoincide></span></td>
+          <td data-etiqueta="Operación"><span class="pagos-folio" data-operacion></span></td>
+          <td data-etiqueta="Registrado"><time data-fecha></time></td>
+          <td><Boton variante="secundario" href="#" data-revisar>Revisar pago<span class="visualmente-oculto" data-objeto></span></Boton></td>
+        </tr>
+      </template>
+    </>
+  )}
+
+  {vista === 'revisar' && (
+    <>
+      <template data-captura-aviso="error"><Aviso variante="error" titulo=" " texto=" "><div class="pagos-aparte"><Boton variante="secundario" data-captura-recargar>Reintentar</Boton></div></Aviso></template>
+      <template data-captura-aviso="caducada"><Aviso variante="informacion" titulo=" " texto=" "><div class="pagos-aparte"><Boton variante="secundario" data-captura-recargar>Cargar captura de nuevo</Boton></div></Aviso></template>
+      <template data-indicador="correcto"><div><IndicadorEstado variante="barra" tono="correcto" texto="APROBADO" dato=" " activo /></div></template>
+      <template data-indicador="problema"><div><IndicadorEstado variante="barra" tono="problema" texto="RECHAZADO" dato=" " activo /><p class="pagos-motivo" data-motivo></p></div></template>
+      <template data-estado="datos">
+        <div class="gestion-rejilla">
+          <div class="gestion-principal">
+            <Panel codigo="V1" titulo="Comprobante">
+              <div class="pagos-captura" data-captura>
+                <img class="pagos-imagen" data-imagen alt=" " hidden />
+                <div data-archivo hidden><Archivo variante="lectura" tipo="pdf" nombre="Comprobante en PDF" metadato="PDF" href="#" /></div>
+                <a class="pagos-abrir" data-abrir href="#" target="_blank" rel="noopener noreferrer" hidden>Abrir en una pestaña nueva<Icono nombre="external-link" /></a>
+                <div data-captura-zona></div>
+              </div>
+            </Panel>
+            <Panel codigo="V2" titulo="Pago">
+              <dl class="gestion-datos">
+                <div><dt>Método</dt><dd data-campo="metodo"></dd></div>
+                <div><dt>Monto</dt><dd class="pagos-monto" data-campo="monto"></dd></div>
+                <div><dt>Número de operación</dt><dd data-campo="operacion"></dd></div>
+                <div><dt>Registrado</dt><dd data-campo="registrado"></dd></div>
+                <div><dt>Cliente</dt><dd data-campo="cliente"></dd></div>
+              </dl>
+            </Panel>
+          </div>
+          <div class="gestion-lateral">
+            <Panel codigo="V3" titulo="Reserva" variante="lateral">
+              <dl class="gestion-datos">
+                <div><dt>Reserva</dt><dd><a class="pagos-enlace" data-reserva href="#"></a></dd></div>
+                <div><dt>Sesión</dt><dd data-campo="sesion"></dd></div>
+                <div><dt>Estado</dt><dd data-campo="estado"></dd></div>
+                <div><dt>Cuota</dt><dd data-campo="cuota"></dd></div>
+              </dl>
+            </Panel>
+            <div data-panel="decidir">
+              <Panel codigo="V4" titulo="Decisión" variante="lateral">
+                <div class="pagos-decision" data-decidir>
+                  <p data-consecuencias></p>
+                  <BarraAcciones variante="decision">
+                    <Boton slot="secundaria" variante="peligro" data-envio data-abrir-rechazo>Rechazar pago</Boton>
+                    <Boton slot="principal" data-envio data-aprobar>Aprobar pago</Boton>
+                  </BarraAcciones>
+                </div>
+                <div data-validado hidden></div>
+              </Panel>
+            </div>
+            <div data-panel="rechazo" hidden>
+              <Panel codigo="V4" titulo="Rechazar pago" variante="lateral">
+                <form novalidate method="post" class="gestion-formulario" data-formulario="rechazar">
+                  <Campo tipo="area" nombre="motivo" etiqueta="Motivo del rechazo" ayuda="El cliente lo verá en su reserva y en el correo. Di qué corregir." obligatorio maxlength="300" />
+                  <fieldset class="gestion-grupo">
+                    <legend>Motivos frecuentes</legend>
+                    <div class="pagos-sugerencias">
+                      {sugerencias.map((s) => <Boton variante="secundario" data-envio data-sugerencia>{s}</Boton>)}
+                    </div>
+                  </fieldset>
+                  <p>La cuota sigue pendiente y el cliente verá el motivo. Si la reserva está pre-reservada, vuelve a tener al menos 1 hora para pagar.</p>
+                  <BarraAcciones variante="decision">
+                    <Boton slot="secundaria" variante="secundario" data-envio data-volver>Volver</Boton>
+                    <Boton slot="principal" variante="peligro" tipo="submit" data-envio>Rechazar pago</Boton>
+                  </BarraAcciones>
+                </form>
+              </Panel>
+            </div>
+          </div>
+        </div>
+      </template>
+    </>
+  )}
+
+  {vista === 'datos' && (
+    <template data-estado="datos">
+      <div class="gestion-rejilla gestion-rejilla-simple">
+        <Panel codigo="D1" titulo="Datos para pagar">
+          <form novalidate method="post" class="gestion-formulario" data-formulario="datos">
+            <div data-sin-activos hidden><Aviso variante="aviso" titulo="Ningún método está activo: los clientes no podrán registrar pagos." /></div>
+            {metodos.map((m) => (
+              <fieldset class="gestion-grupo">
+                <legend>{m.nombre}</legend>
+                <Campo tipo="area" nombre={`texto-${m.clave}`} etiqueta="Datos para pagar" ayuda="Banco, cuenta, CCI, número de Yape o Plin y titular. Se muestra tal cual escribas." maxlength="1000" />
+                <Casilla nombre={`activo-${m.clave}`} etiqueta="Activo" detalle="Los clientes pueden pagar así." data-metodo-activo />
+              </fieldset>
+            ))}
+            <fieldset class="gestion-grupo">
+              <legend>Contacto del estudio</legend>
+              <Campo tipo="area" nombre="contacto" etiqueta="Mensaje de contacto" ayuda="Dónde escribirte cuando el cliente no puede pagar o cancelar por su cuenta. Hasta 500 caracteres." maxlength="500" />
+            </fieldset>
+            <div><Boton tipo="submit" data-envio>Guardar datos para pagar</Boton></div>
+          </form>
+        </Panel>
+      </div>
+    </template>
+  )}
+</bugalu-pagos>
+
+<script>
+  // @ts-nocheck
+  import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { listarPagos, obtenerPago, obtenerCaptura, aprobarPago, rechazarPago, obtenerInstrucciones, guardarInstrucciones, obtenerContacto, guardarContacto } from '../servicios/pagos.js';
+  import { soles, fechaDe, horaDe, diaMes, diaMesAnio } from '../servicios/formatos.js';
+  import { mostrarAviso, enfocarAviso, ponerError, quitarError, limpiarAvisos, llenarAviso } from '../servicios/formulario.js';
+
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const METODOS = { transferencia: 'Transferencia bancaria', yape: 'Yape', plin: 'Plin', tarjeta: 'Tarjeta' };
+  const HITOS = { al_reservar: 'Al reservar', al_terminar: 'Al terminar' };
+  const ESTADOS_RESERVA = { pre_reservada: ['Pre-reservada', 'aviso'], confirmada: ['Confirmada', 'exito'], en_curso: ['En curso', 'activa'], finalizada: ['Finalizada', 'exito'], cancelada: ['Cancelada', 'alerta'] };
+  // Estado de la URL -> [estado de la API, nombre en la lista, plural en el total]
+  const LISTAS = { pendiente_validacion: ['por validar', 'pagos por validar', 'pago por validar'], aprobado: ['aprobados', 'pagos aprobados', 'pago aprobado'], rechazado: ['rechazados', 'pagos rechazados', 'pago rechazado'] };
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  const hora = (iso) => `${diaMes(fechaDe(iso))}, ${horaDe(iso)}`;
+  const horaAnio = (iso) => `${diaMesAnio(fechaDe(iso))}, ${horaDe(iso)}`;
+
+  // Relativa (< 7 dias) con la absoluta en title; despues, D MMM, HH:mm.
+  function fechaPago(iso) {
+    const horas = Math.floor((Date.now() - new Date(iso).getTime()) / 3600e3);
+    if (horas < 0 || horas >= 7 * 24) return [hora(iso)];
+    const texto = horas < 1 ? 'hace unos minutos' : horas < 24 ? `hace ${horas} h` : horas < 48 ? 'ayer' : `hace ${Math.floor(horas / 24)} días`;
+    return [texto, horaAnio(iso)];
+  }
+
+  class BugaluPagos extends IslaGestion {
+    avisosUrl = {
+      'pago-aprobado': ['Pago aprobado', 'La cuota quedó pagada y avisamos al cliente.'],
+      'reserva-confirmada': ['Pago aprobado', 'La reserva quedó confirmada y avisamos al cliente.'],
+      'pago-rechazado': ['Pago rechazado', 'Avisamos al cliente con el motivo.'],
+      'datos-actualizados': ['Datos para pagar guardados', 'Los clientes ya ven los nuevos.'],
+    };
+
+    iniciar() {
+      this.registro = new URLSearchParams(location.search).get('id') ?? '';
+      this.noEncontrada = ['No encontramos este pago', 'Puede que el enlace esté mal escrito.'];
+      this.addEventListener('click', (e) => {
+        const boton = e.target.closest('button');
+        if (!boton) return;
+        if (boton.matches('[data-aprobar]')) this.aprobar(boton);
+        else if (boton.matches('[data-abrir-rechazo]')) this.abrirRechazo();
+        else if (boton.matches('[data-volver]')) this.cerrarRechazo();
+        else if (boton.matches('[data-sugerencia]')) this.sugerir(boton.textContent.trim());
+        else if (boton.matches('[data-captura-recargar]')) this.cargarCaptura();
+      });
+      this.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && e.target.closest('[data-panel="rechazo"]')) this.cerrarRechazo();
+      });
+      this.addEventListener('change', (e) => e.target.matches('[data-metodo-activo]') && this.avisarSinActivos());
+    }
+
+    alEnviar(formulario) {
+      if (formulario.dataset.formulario === 'rechazar') this.rechazar(formulario);
+      else this.guardar(formulario);
+    }
+
+    errorEnvio(error) {
+      if (error.estado === 404 && this.vista === 'revisar') this.sustituir('no-encontrada');
+      else if (error.codigo === 'pago_ya_validado') this.yaValidado();
+      else if (error.estado === 422 && this.vista === 'revisar') {
+        const entrada = this.querySelector('[name="motivo"]');
+        this.validar([{ entrada, mensaje: entrada.value.trim() ? 'El motivo admite hasta 300 caracteres.' : 'Escribe el motivo del rechazo.', texto: 'Motivo del rechazo' }]);
+      } else if (error.estado === 422 && error.detalles?.campo && this.querySelector(`[name="${error.detalles.campo}"]`)) {
+        const entrada = this.querySelector(`[name="${error.detalles.campo}"]`);
+        this.validar([{ entrada, mensaje: error.mensaje, texto: this.etiqueta(entrada) }]);
+      } else return false;
+      return true;
+    }
+
+    // Estados de una etiqueta del catalogo desde su plantilla.
+    sello(variante, texto) {
+      const nodo = this.querySelector(`template[data-sello="${variante}"]`).content.cloneNode(true);
+      nodo.querySelector('.etiqueta > span:last-child').textContent = texto;
+      return nodo;
+    }
+
+    emitir(n) {
+      this.dispatchEvent(new CustomEvent('bugalu:pagos-por-validar', { detail: n, bubbles: true }));
+    }
+
+    // --- Lista ---
+
+    async lista() {
+      const pedido = new URLSearchParams(location.search).get('estado');
+      const estado = Object.hasOwn(LISTAS, pedido) && pedido !== 'pendiente_validacion' ? pedido : 'pendiente_validacion';
+      const nav = this.querySelector('[data-filtros]');
+      nav.replaceChildren(...filtrosEstado.map((clave) => this.querySelector(`template[data-filtro="${clave}"][data-aplicado="${clave === estado ? 'si' : 'no'}"]`).content.cloneNode(true)));
+      nav.hidden = false;
+      const pagos = await listarPagos(estado === 'pendiente_validacion' ? undefined : estado);
+      const [nombre, varios, uno] = LISTAS[estado];
+      if (estado === 'pendiente_validacion') this.emitir(pagos.length);
+      if (!pagos.length) {
+        this.mostrar('vacio');
+        this.querySelector('[data-vacio-titulo]').textContent = estado === 'pendiente_validacion' ? 'No hay pagos por validar' : `Aún no hay ${varios}.`;
+        if (estado === 'pendiente_validacion') {
+          this.querySelector('[data-vacio-texto]').textContent = 'Cuando un cliente registre un pago, aparecerá aquí.';
+          this.querySelector('[data-ver-pendientes]').remove();
+        } else this.querySelector('[data-vacio-texto]').remove();
+        return estado === 'pendiente_validacion' ? 'No hay pagos por validar' : `Aún no hay ${varios}`;
+      }
+      this.mostrar('datos');
+      const validados = estado !== 'pendiente_validacion';
+      this.querySelector('caption').textContent = `Pagos ${nombre}`;
+      if (validados) this.querySelector('thead th:nth-child(6)').textContent = 'Validado';
+      const modelo = this.querySelector('template[data-fila]');
+      this.querySelector('tbody').replaceChildren(...pagos.map((p) => {
+        const fila = modelo.content.cloneNode(true).firstElementChild;
+        fila.querySelector('[data-folio]').textContent = p.reserva.folio;
+        fila.querySelector('[data-cuota]').textContent = HITOS[p.cuota.hito] ?? p.cuota.hito;
+        const cliente = fila.querySelector('[data-cliente]');
+        cliente.textContent = p.cliente?.nombre ?? 'Sin nombre';
+        if (!p.cliente?.nombre) cliente.classList.add('pagos-secundario');
+        fila.querySelector('[data-metodo]').textContent = METODOS[p.metodo] ?? p.metodo;
+        fila.querySelector('[data-monto]').textContent = soles(p.monto);
+        if (p.monto_coincide === false) fila.querySelector('[data-nocoincide]').append(this.sello('alerta', 'NO COINCIDE'));
+        fila.querySelector('[data-operacion]').textContent = p.numero_operacion;
+        const [texto, titulo] = fechaPago(validados ? p.validado_en : p.registrado_en);
+        const tiempo = fila.querySelector('time');
+        tiempo.textContent = texto;
+        tiempo.dateTime = validados ? p.validado_en : p.registrado_en;
+        if (titulo) tiempo.title = titulo;
+        fila.querySelector('[data-revisar]').href = `/app/pagos/revisar?id=${encodeURIComponent(p.id)}`;
+        fila.querySelector('[data-objeto]').textContent = ` de ${p.reserva.folio}`;
+        return fila;
+      }));
+      const total = plural(pagos.length, uno, varios);
+      this.querySelector('[data-total]').textContent = total;
+      return total;
+    }
+
+    // --- Revisar ---
+
+    async revisar() {
+      // El id viene de la URL: solo se usa si es un UUID; si no, es un pago que no existe.
+      if (!UUID.test(this.registro)) return this.noExiste();
+      let p;
+      try {
+        p = await obtenerPago(this.registro);
+      } catch (error) {
+        if (error.estado === 404) return this.noExiste();
+        throw error;
+      }
+      this.pago = p;
+      this.mostrar('datos');
+      const campo = (nombre) => this.querySelector(`[data-campo="${nombre}"]`);
+      const cuota = HITOS[p.cuota.hito] ?? p.cuota.hito;
+      const cliente = p.cliente?.nombre ?? 'Sin nombre';
+      campo('metodo').textContent = METODOS[p.metodo] ?? p.metodo;
+      campo('monto').append(soles(p.monto));
+      if (p.monto_coincide === false) {
+        campo('monto').append(' ', this.sello('alerta', 'NO COINCIDE'));
+        const ayuda = document.createElement('p');
+        ayuda.className = 'gestion-ayuda';
+        ayuda.textContent = `La cuota es de ${soles(p.cuota.monto)}.`;
+        campo('monto').append(ayuda);
+      }
+      campo('operacion').textContent = p.numero_operacion;
+      campo('registrado').textContent = horaAnio(p.registrado_en);
+      campo('cliente').textContent = cliente;
+      const enlace = this.querySelector('[data-reserva]');
+      enlace.textContent = p.reserva.folio;
+      enlace.href = `/app/reservas/detalle?id=${encodeURIComponent(p.reserva.id)}`;
+      campo('sesion').textContent = horaAnio(p.reserva.inicio);
+      const [textoEstado, variante] = ESTADOS_RESERVA[p.reserva.estado] ?? [p.reserva.estado, 'neutra'];
+      campo('estado').append(this.sello(variante, textoEstado));
+      campo('cuota').textContent = `${cuota} · ${soles(p.cuota.monto)}`;
+      const confirma = p.cuota.hito === 'al_reservar' && p.reserva.estado === 'pre_reservada';
+      this.querySelector('[data-consecuencias]').textContent = `Al aprobar, la cuota queda pagada${confirma ? ', la reserva se confirma' : ''} y avisamos al cliente. No se puede deshacer.`;
+      this.querySelector('[data-panel="rechazo"] .panel-titulo').lastChild.textContent = ` Rechazar pago de ${p.reserva.folio}`; // tras el codigo V4
+      if (p.estado !== 'pendiente_validacion') this.mostrarResultado(p);
+      this.encabezado(`${cliente} · ${cuota} de la reserva ${p.reserva.folio}`, p.reserva.folio);
+      this.cargarCaptura();
+      return `Pago de ${p.reserva.folio}`;
+    }
+
+    noExiste() {
+      this.mostrar('no-encontrada');
+      return null;
+    }
+
+    // Ya validado: la decision se sustituye por el indicador con la fecha (y el motivo si se rechazo).
+    mostrarResultado(p) {
+      const bloque = this.querySelector(`template[data-indicador="${p.estado === 'aprobado' ? 'correcto' : 'problema'}"]`).content.cloneNode(true);
+      bloque.querySelector('.indicador-dato').textContent = p.validado_en ? `Validado ${horaAnio(p.validado_en)}` : '';
+      const motivo = bloque.querySelector('[data-motivo]');
+      if (motivo) motivo.textContent = p.motivo_rechazo ? `Motivo: ${p.motivo_rechazo}` : '';
+      this.querySelector('[data-decidir]').hidden = true;
+      const zona = this.querySelector('[data-validado]');
+      zona.hidden = false;
+      zona.replaceChildren(bloque);
+    }
+
+    // La captura carga aparte: si falla, la decision sigue disponible.
+    async cargarCaptura() {
+      clearTimeout(this.caduca);
+      const zona = this.querySelector('[data-captura-zona]');
+      const imagen = this.querySelector('[data-imagen]');
+      const archivo = this.querySelector('[data-archivo]');
+      const abrir = this.querySelector('[data-abrir]');
+      [imagen, archivo, abrir].forEach((e) => (e.hidden = true));
+      zona.replaceChildren();
+      const aviso = (clave, titulo) => {
+        const nodo = this.querySelector(`template[data-captura-aviso="${clave}"]`).content.cloneNode(true);
+        llenarAviso(nodo.querySelector('.aviso'), titulo);
+        zona.replaceChildren(nodo);
+      };
+      try {
+        const c = await obtenerCaptura(this.registro);
+        // La URL firmada solo se usa si es http(s).
+        const url = new URL(c.url);
+        if (!/^https?:$/.test(url.protocol)) throw new Error('url');
+        const pdf = (c.tipo ?? (/\.pdf$/i.test(url.pathname) ? 'pdf' : 'imagen')) === 'pdf';
+        abrir.href = url.href;
+        if (pdf) {
+          archivo.querySelector('a').href = url.href;
+          archivo.hidden = false;
+        } else {
+          const p = this.pago;
+          imagen.alt = `Captura del comprobante de ${p.cliente?.nombre ?? 'cliente sin nombre'}, ${METODOS[p.metodo] ?? p.metodo}, ${soles(p.monto)}`;
+          imagen.onerror = () => this.caducar(aviso);
+          imagen.src = url.href;
+          imagen.hidden = false;
+          abrir.hidden = false;
+        }
+        const falta = Date.parse(c.expira_en) - Date.now();
+        if (falta > 0) this.caduca = setTimeout(() => this.caducar(aviso), Math.min(falta, 2 ** 31 - 1));
+      } catch {
+        aviso('error', 'No pudimos cargar la captura.');
+      }
+    }
+
+    caducar(aviso) {
+      this.querySelectorAll('[data-imagen], [data-archivo], [data-abrir]').forEach((e) => (e.hidden = true));
+      aviso('caducada', 'La vista de la captura caducó.');
+    }
+
+    // --- Decidir ---
+
+    // 409: otra sesion ya lo valido; se explica y la ficha se recarga con el resultado.
+    yaValidado() {
+      limpiarAvisos(this);
+      const aviso = mostrarAviso(this, 'informacion', 'Este pago ya se validó, quizá desde otra sesión.');
+      this.cargar().then(() => enfocarAviso(aviso));
+    }
+
+    aprobar(boton) {
+      const confirma = this.pago.cuota.hito === 'al_reservar';
+      this.enviar(boton, 'Aprobando…', () => aprobarPago(this.registro), (r) => this.terminar(confirma && r.reserva?.estado === 'confirmada' ? 'reserva-confirmada' : 'pago-aprobado'));
+    }
+
+    rechazar(formulario) {
+      limpiarAvisos(this);
+      const entrada = formulario.querySelector('[name="motivo"]');
+      quitarError(entrada);
+      const motivo = entrada.value.trim();
+      const mensaje = !motivo ? 'Escribe el motivo del rechazo.' : motivo.length > 300 ? 'El motivo admite hasta 300 caracteres.' : null;
+      if (mensaje) {
+        ponerError(this, entrada, mensaje);
+        entrada.focus();
+        return;
+      }
+      this.enviar(formulario.querySelector('[type="submit"]'), 'Rechazando…', () => rechazarPago(this.registro, motivo), () => this.terminar('pago-rechazado'));
+    }
+
+    // Avisa a la navegacion con el numero real de pagos por validar y vuelve a la lista.
+    async terminar(aviso) {
+      try {
+        this.emitir((await listarPagos()).length);
+      } catch {}
+      location.assign(`/app/pagos/?aviso=${aviso}`);
+    }
+
+    abrirRechazo() {
+      limpiarAvisos(this);
+      this.querySelector('[data-panel="decidir"]').hidden = true;
+      this.querySelector('[data-panel="rechazo"]').hidden = false;
+      const titulo = this.querySelector('[data-panel="rechazo"] .panel-titulo');
+      titulo.tabIndex = -1;
+      titulo.focus();
+    }
+
+    cerrarRechazo() {
+      if (this.ocupado) return;
+      this.querySelector('[data-panel="rechazo"]').hidden = true;
+      this.querySelector('[data-panel="decidir"]').hidden = false;
+      this.querySelector('[data-abrir-rechazo]').focus();
+    }
+
+    // Las sugerencias escriben el motivo y le pasan el foco.
+    sugerir(texto) {
+      const entrada = this.querySelector('[name="motivo"]');
+      quitarError(entrada);
+      entrada.value = texto;
+      entrada.focus();
+    }
+
+    // --- Datos para pagar ---
+
+    async datos() {
+      const [instrucciones, contacto] = await Promise.all([obtenerInstrucciones(), obtenerContacto()]);
+      this.mostrar('datos');
+      for (const clave of Object.keys(METODOS)) {
+        const i = instrucciones.find((x) => x.metodo === clave);
+        this.querySelector(`[name="texto-${clave}"]`).value = i?.texto ?? '';
+        this.querySelector(`[name="activo-${clave}"]`).checked = Boolean(i?.activo);
+      }
+      this.querySelector('[name="contacto"]').value = contacto?.texto ?? '';
+      this.avisarSinActivos();
+      return 'Datos para pagar';
+    }
+
+    avisarSinActivos() {
+      this.querySelector('[data-sin-activos]').hidden = [...this.querySelectorAll('[data-metodo-activo]')].some((c) => c.checked);
+    }
+
+    guardar(formulario) {
+      if (this.ocupado) return;
+      const errores = [];
+      const instrucciones = Object.keys(METODOS).map((clave) => {
+        const entrada = formulario.querySelector(`[name="texto-${clave}"]`);
+        quitarError(entrada);
+        const texto = entrada.value.trim();
+        const activo = formulario.querySelector(`[name="activo-${clave}"]`).checked;
+        if (activo && !texto) errores.push({ entrada, mensaje: 'Escribe los datos para pagar con este método.', texto: METODOS[clave] });
+        else if (texto.length > 1000) errores.push({ entrada, mensaje: 'Los datos admiten hasta 1000 caracteres.', texto: METODOS[clave] });
+        return { metodo: clave, texto, activo };
+      });
+      const contacto = formulario.querySelector('[name="contacto"]');
+      quitarError(contacto);
+      if (contacto.value.trim().length > 500) errores.push({ entrada: contacto, mensaje: 'El contacto admite hasta 500 caracteres.', texto: 'Mensaje de contacto' });
+      if (!this.validar(errores)) return;
+      this.enviar(formulario.querySelector('[type="submit"]'), 'Guardando…', async () => {
+        await guardarInstrucciones(instrucciones);
+        await guardarContacto(contacto.value.trim());
+      }, () => location.assign('/app/pagos/?aviso=datos-actualizados'));
+    }
+  }
+
+  const filtrosEstado = Object.keys(LISTAS);
+  if (!customElements.get('bugalu-pagos')) customElements.define('bugalu-pagos', BugaluPagos);
+</script>
+
+<style>
+  .pagos {
+    display: block;
+  }
+  .pagos :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  .pagos-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+    margin-block-end: var(--espacio-4);
+  }
+  .pagos-filtros[hidden] {
+    display: none;
+  }
+  .pagos-total {
+    margin-block-end: var(--espacio-3);
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .pagos-folio {
+    display: block;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-weight: var(--fuente-peso-medio);
+  }
+  .pagos-secundario {
+    display: block;
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+    font-weight: var(--fuente-peso-regular);
+  }
+  .pagos-aparte {
+    margin-block-start: var(--espacio-2);
+  }
+  .pagos-captura {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    align-items: start;
+  }
+  .pagos-imagen {
+    display: block;
+    max-inline-size: 100%;
+    block-size: auto;
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+  }
+  .pagos-captura [hidden] {
+    display: none;
+  }
+  .pagos-abrir,
+  .pagos-enlace {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--espacio-2);
+    min-block-size: var(--medida-control-tactil);
+    color: var(--color-texto-principal);
+  }
+  .pagos-decision[hidden] {
+    display: none;
+  }
+  .pagos-monto :global(.etiqueta) {
+    margin-inline-start: var(--espacio-2);
+  }
+  .pagos-decision {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+  }
+  .pagos-motivo {
+    margin-block-start: var(--espacio-3);
+    color: var(--color-texto-principal);
+  }
+  .pagos-sugerencias {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+  }
+</style>

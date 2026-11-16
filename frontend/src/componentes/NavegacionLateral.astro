@@ -5,7 +5,7 @@ import EtiquetaTecnica from './EtiquetaTecnica.astro';
 
 interface Props {
   variante?: 'estudio' | 'portal';
-  destinos: { etiqueta: string; href: string; icono: keyof typeof iconos; contador?: number; solo?: string }[];
+  destinos: { etiqueta: string; href: string; icono: keyof typeof iconos; contador?: number; vivo?: string; solo?: string }[]; // vivo: contador que un script rellena (nace oculto)
   actual?: string;
   etiqueta?: string;
   neutro?: boolean; // rol aún sin cargar: título de sección vacío y oculto (el layout lo muestra al conocer el rol)
@@ -23,6 +23,12 @@ const seccion = { estudio: 'Estudio', portal: 'Portal' }[variante];
           <a href={destino.href} class:list={['lateral-destino', destino.href === actual && 'lateral-actual']} aria-current={destino.href === actual ? 'page' : undefined}>
             <Icono nombre={destino.icono} tamano="md" />
             <span class="lateral-etiqueta">{destino.etiqueta}</span>
+            {destino.vivo && (
+              <span class="lateral-contador" data-contador={destino.vivo} hidden>
+                <span aria-hidden="true"><EtiquetaTecnica variante="alerta" texto="0" /></span>
+                <span class="visualmente-oculto" data-contador-texto></span>
+              </span>
+            )}
             {destino.contador !== undefined && (
               <span class="lateral-contador">
                 <span class="visualmente-oculto">pendientes:</span>
@@ -90,6 +96,9 @@ const seccion = { estudio: 'Estudio', portal: 'Portal' }[variante];
   }
   .lateral-contador {
     margin-inline-start: auto;
+  }
+  .lateral-contador[hidden] {
+    display: none;
   }
   @media (hover: hover) {
     .lateral-destino:not(.lateral-actual):hover {

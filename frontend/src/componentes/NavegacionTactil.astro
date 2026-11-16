@@ -1,9 +1,10 @@
 ---
 import Icono from './internos/Icono.astro';
 import type { iconos } from './internos/lucide.js';
+import EtiquetaTecnica from './EtiquetaTecnica.astro';
 
 interface Props {
-  destinos: { etiqueta: string; href: string; icono: keyof typeof iconos; solo?: string }[];
+  destinos: { etiqueta: string; href: string; icono: keyof typeof iconos; vivo?: string; solo?: string }[]; // vivo: contador que un script rellena (nace oculto)
   actual?: string;
   etiqueta?: string;
 }
@@ -16,7 +17,15 @@ const { destinos, actual, etiqueta = 'Principal', class: clase } = Astro.props a
     {destinos.slice(0, 5 + destinos.filter((d) => d.solo).length).map((destino) => (
       <li hidden={destino.solo ? true : undefined} data-solo={destino.solo}>
         <a href={destino.href} class:list={['tactil-destino', destino.href === actual && 'tactil-actual']} aria-current={destino.href === actual ? 'page' : undefined}>
-          <Icono nombre={destino.icono} tamano="md" />
+          <span class="tactil-icono">
+            <Icono nombre={destino.icono} tamano="md" />
+            {destino.vivo && (
+              <span class="tactil-contador" data-contador={destino.vivo} hidden>
+                <span aria-hidden="true"><EtiquetaTecnica variante="alerta" texto="0" /></span>
+                <span class="visualmente-oculto" data-contador-texto></span>
+              </span>
+            )}
+          </span>
           <span class="tactil-etiqueta">{destino.etiqueta}</span>
         </a>
       </li>
@@ -57,6 +66,14 @@ const { destinos, actual, etiqueta = 'Principal', class: clase } = Astro.props a
     text-decoration: none;
     text-transform: uppercase;
     transition: background-color var(--movimiento-duracion-rapida) var(--movimiento-curva-estandar);
+  }
+  .tactil-icono {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-1);
+  }
+  .tactil-contador[hidden] {
+    display: none;
   }
   .tactil-etiqueta {
     max-inline-size: 100%;

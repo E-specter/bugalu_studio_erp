@@ -44,7 +44,7 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Navegación lateral | [navegacion-lateral](navegacion-lateral.md) | `componentes/NavegacionLateral.astro` | Implementado |
 | Navegación táctil | [navegacion-tactil](navegacion-tactil.md) | `componentes/NavegacionTactil.astro` | Implementado |
 | Pasos | [pasos](pasos.md) | `componentes/Pasos.astro` | Implementado |
-| Barra de acciones | [barra-acciones](barra-acciones.md) | `componentes/BarraAcciones.astro` | Borrador |
+| Barra de acciones | [barra-acciones](barra-acciones.md) | `componentes/BarraAcciones.astro` | Implementado |
 | Resumen persistente | [resumen-persistente](resumen-persistente.md) | `componentes/ResumenPersistente.astro` | Borrador |
 | Tabla | [tabla](tabla.md) | `componentes/Tabla.astro` | Implementado |
 | Tarjeta de proyecto | [tarjeta-proyecto](tarjeta-proyecto.md) | `componentes/TarjetaProyecto.astro` | Borrador |

@@ -22,6 +22,7 @@ import NavegacionTactil from '../componentes/NavegacionTactil.astro';
 import Tabla from '../componentes/Tabla.astro';
 import Pasos from '../componentes/Pasos.astro';
 import Archivo from '../componentes/Archivo.astro';
+import BarraAcciones from '../componentes/BarraAcciones.astro';
 import CargaArchivos from '../islas/CargaArchivos.astro';
 
 const destinos = [
@@ -300,6 +301,20 @@ const destinos = [
     <Archivo variante="descarga" tipo="audio" nombre="CYBERNETIC_MIX_V3.wav" metadato="54 MB" etiqueta="WAV" href="#descarga" />
     <Archivo variante="lectura" tipo="pdf" nombre="comprobante.pdf" metadato="PDF · 120 KB" href="#lectura" />
     <Archivo variante="lectura" tipo="imagen" nombre="captura.png" metadato="PNG · 800 KB" />
+  </section>
+
+  <section class="grupo" aria-labelledby="g-barra">
+    <h2 id="g-barra">Barra de acciones</h2>
+    <h3>Decisión</h3>
+    <BarraAcciones variante="decision">
+      <Boton slot="secundaria" variante="peligro">Rechazar pago</Boton>
+      <Boton slot="principal">Aprobar pago</Boton>
+    </BarraAcciones>
+    <h3>Formulario con nota</h3>
+    <BarraAcciones variante="formulario" nota="Tus cambios se guardan al enviar.">
+      <Boton slot="secundaria" variante="secundario">Cancelar</Boton>
+      <Boton slot="principal">Guardar</Boton>
+    </BarraAcciones>
   </section>
 
   <section class="grupo" aria-labelledby="g-carga">

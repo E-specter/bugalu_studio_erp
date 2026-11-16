@@ -1,0 +1,54 @@
+---
+interface Props {
+  variante?: 'flujo' | 'formulario' | 'decision';
+  nota?: string;
+}
+const { variante = 'decision', nota, class: clase } = Astro.props as Props & { class?: string };
+---
+
+<!-- Cierra un formulario con dos o más acciones. El DOM va en orden de lectura (secundaria → principal); en móvil el principal se pinta arriba, solo visual. -->
+<div class:list={['barra', `barra-${variante}`, clase]}>
+  <div class="barra-secundaria">
+    <slot name="secundaria" />
+    {nota && <p class="barra-nota">{nota}</p>}
+  </div>
+  <div class="barra-principal"><slot name="principal" /></div>
+</div>
+
+<style>
+  .barra {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--espacio-3);
+    padding-block-start: var(--espacio-4);
+    border-block-start: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+  }
+  .barra-secundaria,
+  .barra-principal {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+  }
+  .barra :global(.boton) {
+    inline-size: 100%;
+  }
+  .barra-nota {
+    margin: 0;
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+  }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    .barra {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .barra-secundaria {
+      flex-direction: row;
+      align-items: center;
+    }
+    .barra :global(.boton) {
+      inline-size: auto;
+    }
+  }
+</style>

@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Pagos from '../../../islas/Pagos.astro';
+---
+
+<LayoutApp titulo="Datos para pagar">
+  <EncabezadoPantalla
+    titulo="DATOS PARA PAGAR"
+    indice="[A7] COBROS / DATOS PARA PAGAR"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Pagos', href: '/app/pagos/' }, { etiqueta: 'Datos para pagar' }]}
+    descripcion="Lo que ven los clientes al pagar y en el correo de su reserva."
+  />
+  <Pagos vista="datos" />
+</LayoutApp>

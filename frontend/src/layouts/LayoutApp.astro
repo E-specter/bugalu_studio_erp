@@ -10,11 +10,12 @@ interface Props {
 }
 const { titulo } = Astro.props;
 // Los destinos con `solo` (roles separados por espacio) nacen ocultos y el script los muestra según el rol del perfil (la API es la barrera real: 403).
-// Etiquetas de 9 caracteres como máximo (navegación táctil). Orden de navegacion-lateral.md#variantes; la barra táctil admite cinco: el sexto del Administrador (Tarifas) va al menú de la cabecera.
+// Etiquetas de 9 caracteres como máximo (navegación táctil). Orden de navegacion-lateral.md#variantes; la barra táctil admite cinco: el sexto y el séptimo del Administrador (Franjas y Tarifas) van al menú de la cabecera.
 const destinos = [
   { etiqueta: 'Inicio', href: '/app/', icono: 'house' as const },
   { etiqueta: 'Reservas', href: '/app/reservas/', icono: 'calendar-check' as const, solo: 'cliente' },
   { etiqueta: 'Agenda', href: '/app/agenda/', icono: 'calendar' as const, solo: 'personal administrador' },
+  { etiqueta: 'Pagos', href: '/app/pagos/', icono: 'receipt' as const, solo: 'administrador', vivo: 'pagos' },
   { etiqueta: 'Accesos', href: '/app/solicitudes/', icono: 'user-plus' as const, solo: 'administrador' },
   { etiqueta: 'Usuarios', href: '/app/usuarios/', icono: 'users' as const, solo: 'administrador' },
   { etiqueta: 'Franjas', href: '/app/franjas/', icono: 'calendar-cog' as const, solo: 'administrador' },
@@ -29,13 +30,14 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
     <CabeceraApp variante="estudio" producto="Bugalú Studio" area="Panel interno" neutro>
       <a slot="menu" href="/app/perfil">Mi perfil</a>
       <!-- El destino que no cabe en la barra táctil; solo < punto-quiebre-escritorio. Nace oculto hasta conocer el rol. -->
+      <a slot="menu" class="menu-solo-movil" href="/app/franjas/" data-solo="administrador" hidden>Franjas</a>
       <a slot="menu" class="menu-solo-movil" href="/app/tarifas/" data-solo="administrador" hidden>Tarifas</a>
       <!-- Sin JS no sirve: nace oculto y lo muestra el script. -->
       <div slot="menu"><Boton variante="secundario" data-cerrar-sesion hidden>Cerrar sesión</Boton></div>
     </CabeceraApp>
 
     <!-- < punto-quiebre-escritorio: fija bajo la fila 1 de la cabecera (estructura-app, "Lo fijo") -->
-    <div class="app-nav-tactil"><NavegacionTactil destinos={destinos.slice(0, -1)} {actual} /></div>
+    <div class="app-nav-tactil"><NavegacionTactil destinos={destinos.slice(0, -2)} {actual} /></div>
 
     <!-- >= punto-quiebre-escritorio -->
     <div class="app-nav-lateral"><NavegacionLateral {destinos} {actual} neutro /></div>
@@ -48,6 +50,7 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
 
 <script>
   import { obtenerPerfil } from '../servicios/api.js';
+  import { listarPagos } from '../servicios/pagos.js';
   import { obtenerToken, cerrarSesion, areaRecordada } from '../servicios/sesion.js';
 
   // Rol del perfil cargado: muestra los destinos del Administrador y fija la variante (Estudio o Portal).
@@ -58,9 +61,21 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
     const portal = rol === 'cliente';
     // El título de sección y el área nacen neutros (vacíos y ocultos): aparecen solo al conocer el rol.
     document.querySelectorAll<HTMLElement>('[data-seccion]').forEach((e) => { e.textContent = portal ? 'Portal' : 'Estudio'; e.removeAttribute('data-neutro'); });
+    if (rol === 'administrador') listarPagos().then((l) => contarPagos(l.length), () => contarPagos(0));
     document.querySelectorAll<HTMLElement>('[data-area]').forEach((e) => { e.textContent = portal ? 'Portal del artista' : 'Panel interno'; e.removeAttribute('data-neutro'); });
   }
 
+  // Contador de PAGOS (navegacion-lateral.md): 0 o error, sin contador. Más de 99: "99+".
+  function contarPagos(n: unknown) {
+    const total = Number(n);
+    document.querySelectorAll<HTMLElement>('[data-contador="pagos"]').forEach((c) => {
+      c.hidden = !(total > 0);
+      c.querySelector('.etiqueta span:last-child')!.textContent = total > 99 ? '99+' : String(total);
+      c.querySelector('[data-contador-texto]')!.textContent = total > 99 ? 'más de 99 pagos por validar' : `${total} ${total === 1 ? 'pago por validar' : 'pagos por validar'}`;
+    });
+  }
+
+  document.addEventListener('bugalu:pagos-por-validar', (e) => contarPagos((e as CustomEvent).detail));
   document.addEventListener('bugalu:perfil', (e) => aplicar((e as CustomEvent).detail));
   // La pantalla de perfil ya pide los datos y avisa con el evento; las demás los piden aquí (solo con sesión).
   if (!document.querySelector('bugalu-perfil') && (await obtenerToken())) obtenerPerfil().then(aplicar, () => {});

@@ -1,0 +1,18 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Boton from '../../../componentes/Boton.astro';
+import Pagos from '../../../islas/Pagos.astro';
+---
+
+<LayoutApp titulo="Pagos">
+  <EncabezadoPantalla
+    titulo="PAGOS"
+    indice="[A6] COBROS / PAGOS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Pagos' }]}
+    descripcion="Pagos que registraron los clientes. Revisa la captura y aprueba o rechaza cada uno."
+  >
+    <Boton slot="acciones" variante="secundario" href="/app/pagos/datos">Editar datos para pagar</Boton>
+  </EncabezadoPantalla>
+  <Pagos vista="lista" />
+</LayoutApp>

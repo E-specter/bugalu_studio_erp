@@ -503,7 +503,9 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
     }
 
     // Texto de estado de una reserva con su etiqueta (Personal).
-    estadoReserva(estado: string) {
+    // Con pago por validar, la etiqueta de estado se sustituye por PAGO POR VALIDAR (RN-23: la Pre-reservada no caduca ni avanza).
+    estadoReserva(estado: string, porValidar = false) {
+      if (porValidar) return this.etiqueta('aviso', 'PAGO POR VALIDAR');
       const [texto, variante] = ESTADOS_RESERVA[estado] ?? [estado, 'neutra'];
       return this.etiqueta(variante, texto);
     }
@@ -572,7 +574,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
       const o = this.datos.ocupados[c.oc];
       if (this.modo === 'personal' && o.detalle) {
         const x = o.detalle;
-        return { href: `/app/reservas/detalle?id=${encodeURIComponent(x.id_reserva)}`, cliente: x.cliente?.nombre ?? x.cliente, servicio: x.servicio?.nombre ?? x.servicio, estado: x.estado, horas: `${hm(Date.parse(o.inicio))} a ${hm(Date.parse(o.fin))}` };
+        return { href: `/app/reservas/detalle?id=${encodeURIComponent(x.id_reserva)}`, cliente: x.cliente?.nombre ?? x.cliente, servicio: x.servicio?.nombre ?? x.servicio, estado: x.estado, porValidar: x.pago_por_validar === true, horas: `${hm(Date.parse(o.inicio))} a ${hm(Date.parse(o.fin))}` };
       }
       const mia = this.propias[c.oc];
       return c.e === 'propio' ? { folio: mia?.folio, href: mia ? `/app/reservas/detalle?id=${encodeURIComponent(mia.id)}` : null, horas: mia ? `${hm(Date.parse(mia.inicio))} a ${hm(Date.parse(mia.fin))}` : `${hm(Date.parse(o.inicio))} a ${hm(Date.parse(o.fin))}` } : null;
@@ -586,7 +588,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
         if (this.modo === 'personal' && r?.cliente) {
           return [h('a', { class: 'cal-enlace', href: r.href },
             h('span', { class: 'visualmente-oculto' }, `${largo(c.f)}, ${r.horas}, `),
-            h('span', { class: 'cal-cliente' }, r.cliente), h('span', { class: 'cal-servicio' }, r.servicio ?? ''), this.estadoReserva(r.estado))];
+            h('span', { class: 'cal-cliente' }, r.cliente), h('span', { class: 'cal-servicio' }, r.servicio ?? ''), this.estadoReserva(r.estado, r.porValidar))];
         }
         if (c.e === 'propio') {
           const etiqueta = `TU RESERVA${r?.folio ? ` ${r.folio}` : ''}`;
@@ -741,6 +743,8 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
         x.querySelector('[data-cliente]')!.textContent = r.cliente?.nombre ?? r.cliente ?? '';
         x.querySelector('[data-servicio]')!.textContent = r.servicio?.nombre ?? r.servicio ?? '';
         x.querySelector('[data-estado-reserva]')!.append(this.estadoReserva(r.estado));
+        // En la lista, debajo de la etiqueta de estado.
+        if (r.pago_por_validar === true) x.querySelector('[data-estado-reserva]')!.append(this.estadoReserva(r.estado, true));
         x.querySelector<HTMLAnchorElement>('[data-ver]')!.href = `/app/reservas/detalle?id=${encodeURIComponent(r.id)}`;
         x.querySelector('[data-objeto]')!.textContent = ` ${r.folio}`;
         return x;
