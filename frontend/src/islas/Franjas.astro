@@ -149,7 +149,8 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
 <script>
   // @ts-nocheck
   import { IslaGestion, hacerUnico } from '../servicios/isla-gestion.js';
-  import { listarSalas, obtenerDisponibilidad, obtenerSugerencia, publicarFranjas, retirarFranja, registrarCierre, quitarCierre, obtenerParametros, guardarParametros } from '../servicios/franjas.js';
+  import { listarSalas, obtenerDisponibilidad } from '../servicios/reservas.js';
+  import { obtenerSugerencia, publicarFranjas, retirarFranja, registrarCierre, quitarCierre, obtenerParametros, guardarParametros } from '../servicios/franjas.js';
   import { hoyLima, fechaDe, horaDe, instante, sumarDias, lunesDe, semanaDe, rangoSemana, diaCorto, diaLargo, diaMes, nombreDia } from '../servicios/formatos.js';
   import { mostrarAviso, enfocarAviso, limpiarAvisos, quitarError } from '../servicios/formulario.js';
 
@@ -234,7 +235,7 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
       this.salas = await listarSalas();
       const pedida = new URLSearchParams(location.search).get('sala');
       this.sala = this.salas.find((s) => s.id === pedida) ?? this.salas[0];
-      const pedir = (l) => obtenerDisponibilidad(this.sala.id, instante(l, '00:00'), instante(sumarDias(l, 7), '00:00'));
+      const pedir = (l) => obtenerDisponibilidad({ sala: this.sala.id, desde: instante(l, '00:00'), hasta: instante(sumarDias(l, 7), '00:00') });
       let disponibilidad;
       try {
         disponibilidad = await pedir(lunes);

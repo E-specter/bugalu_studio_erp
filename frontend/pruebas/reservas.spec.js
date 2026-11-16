@@ -65,6 +65,7 @@ for (const t of tamanos) {
     await expect(page.getByRole('link', { name: 'Reservar sala' })).toHaveAttribute('href', '/reservar/');
     const filas = page.getByRole('row');
     await expect(filas).toHaveCount(3); // cabecera + 2; ascendente por inicio
+    if (t.ancho === 1440) expect(await filas.nth(1).evaluate((tr) => getComputedStyle(tr).display)).toBe('table-row');
     await expect(filas.nth(1)).toContainText('RES-0001');
     await expect(filas.nth(1)).toContainText('Grabación de voces');
     await expect(filas.nth(1)).toContainText('18 dic 2026');

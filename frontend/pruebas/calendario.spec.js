@@ -273,6 +273,7 @@ test('agenda (personal): la vista Lista trae las reservas del periodo en una tab
   expect(lista.get('desde')).toBe('2026-11-16T00:00:00-05:00');
   expect(lista.get('hasta')).toBe('2026-11-23T00:00:00-05:00');
   await expect(page.getByRole('row')).toHaveCount(3);
+  expect(await page.getByRole('row').nth(1).evaluate((tr) => getComputedStyle(tr).display)).toBe('table-row');
   await expect(page.getByRole('row').nth(1)).toContainText('RSV-0012');
   await expect(page.getByRole('row').nth(1)).toContainText('18 nov, 11:00–12:00');
   await expect(page.getByRole('row').nth(1)).toContainText('Ana Pérez');

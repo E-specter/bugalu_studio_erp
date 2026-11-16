@@ -396,7 +396,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
     // --- Barra del periodo, vistas y sala ---
 
     barra(vistas: string[]) {
-      const { vista, fecha } = this.estado;
+      const { vista } = this.estado;
       const mes = vista === 'mes';
       const unidad = mes ? 'Mes' : 'Semana';
       const enlace = (clave: string, texto: string, destino: any, icono = '') => {
@@ -548,7 +548,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
             h('span', { class: 'cal-libres' }, libresTexto(this.minutosLibres(f))))))),
         h('tbody', {}, ...[...Array(filas)].map((_, r) => h('tr', {},
           h('th', { scope: 'row', class: 'cal-hora' }, hm(inicioDia(dias[0]) + (min + r * 30) * 60e3)),
-          ...dias.map((f, i) => {
+          ...dias.map((_, i) => {
             const c = celdas[i][r];
             if (!c) return h('td', { class: 'cal-celda cal-sin-franja' });
             if (UNIBLES.includes(c.e) && r > 0 && celdas[i][r - 1]?.clave === c.clave) return null;
@@ -609,7 +609,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
     }
 
     botonLibre(c: any) {
-      const { f, s } = c;
+      const { s } = c;
       const sufijo = c.inicio ? 'libre, inicio elegido' : c.tramo ? 'en tu selección' : 'libre';
       const contenido = c.inicio ? [this.pieza('icono-check'), 'INICIO'] : c.tramo ? (this.primeroDelTramo(c) ? ['TU SELECCIÓN'] : []) : ['LIBRE'];
       return h('button', {

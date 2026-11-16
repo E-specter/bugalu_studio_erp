@@ -574,3 +574,56 @@ test.describe('N2 a N8', () => {
     });
   });
 });
+
+test.describe('B1 parámetros inválidos en la URL', () => {
+  const sano = `inicio=${encodeURIComponent(INI)}&duracion=120&sala=sala-1&servicio=s1`;
+  for (const [nombre, ruta, destino] of [
+    ['inicio=basura en servicio', '/reservar/servicio/?inicio=basura&duracion=120&sala=sala-1', /^\/reservar\/\?/],
+    ['inicio=basura en confirmar', '/reservar/confirmar/?inicio=basura&duracion=120&sala=sala-1&servicio=s1', /^\/reservar\/\?/],
+    ['duracion=7 en servicio', `/reservar/servicio/?inicio=${encodeURIComponent(INI)}&duracion=7&sala=sala-1`, /^\/reservar\/\?/],
+    ['duracion=999 en confirmar', `/reservar/confirmar/?inicio=${encodeURIComponent(INI)}&duracion=999&sala=sala-1&servicio=s1`, /^\/reservar\/\?/],
+    ['duracion=45 en confirmar', `/reservar/confirmar/?inicio=${encodeURIComponent(INI)}&duracion=45&sala=sala-1&servicio=s1`, /^\/reservar\/\?/],
+  ]) {
+    test(`redirige al horario: ${nombre}`, async ({ page }) => {
+      const consola = vigilarConsola(page);
+      await montar(page);
+      await page.goto(ruta);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Elige tu horario');
+      const u = new URL(page.url());
+      expect(u.pathname + u.search).toMatch(destino);
+      expect(u.search).not.toContain('basura');
+      expect(consola).toEqual([]);
+    });
+  }
+
+  test('inicio=basura en el horario: el calendario carga y no hay errores', async ({ page }) => {
+    const consola = vigilarConsola(page);
+    await montar(page, { sesion: false });
+    await page.goto('/reservar/?inicio=basura&duracion=7&fecha=2026-11-16&vista=basura');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Elige tu horario');
+    await expect(page.getByRole('button', { name: 'jueves 19 de noviembre, 10:00, libre' })).toBeVisible();
+    expect(consola).toEqual([]);
+  });
+
+  test('parámetros válidos se conservan', async ({ page }) => {
+    await montar(page);
+    await page.goto(`/reservar/confirmar/?${sano}`);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Confirma tu reserva');
+  });
+
+  test('N1: listo con 401 ofrece iniciar sesión; 403 y 404 siguen en sin datos', async ({ page }) => {
+    await montar(page);
+    await page.route(`${API}/reservas/${R1}`, (r) => r.fulfill(errorApi(401, 'no_autenticado')));
+    await page.goto(`/reservar/listo/?id=${R1}`);
+    const enlace = page.getByRole('link', { name: 'Iniciar sesión' });
+    await expect(enlace).toHaveAttribute('href', `/acceso?volver=${encodeURIComponent(`/reservar/listo/?id=${R1}`)}`);
+    await sinViolaciones(page);
+    await page.screenshot({ path: 'pruebas/capturas/reservar-05-listo-401-1440.png', fullPage: true });
+    for (const estado of [403, 404]) {
+      await page.route(`${API}/reservas/${R1}`, (r) => r.fulfill(errorApi(estado, 'x')));
+      await page.goto(`/reservar/listo/?id=${R1}`);
+      await expect(page.getByRole('link', { name: 'Ver mis reservas' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Iniciar sesión' })).toHaveCount(0);
+    }
+  });
+});

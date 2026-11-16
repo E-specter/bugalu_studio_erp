@@ -293,17 +293,23 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
 
     // --- Estado en la URL (no hay borrador en el servidor) ---
 
+    // La URL es entrada no confiable: cada dato se acepta solo con su forma válida; si no, queda vacío y guardar() manda al paso incompleto.
     leerUrl() {
       const p = new URLSearchParams(location.search);
+      const inicio = p.get('inicio');
+      const duracion = +(p.get('duracion') ?? 0);
+      const fecha = p.get('fecha');
+      const vista = p.get('vista');
+      const id = (x: string | null) => (x && /^[\w-]{1,64}$/.test(x) ? x : null);
       this.e = {
-        inicio: p.get('inicio'),
-        duracion: +(p.get('duracion') ?? 0) || 0,
-        sala: p.get('sala'),
-        servicio: p.get('servicio'),
-        esp: (p.get('esp') ?? '').split(',').filter(Boolean),
-        fecha: p.get('fecha'),
-        vista: p.get('vista'),
-        id: p.get('id'),
+        inicio: inicio && /^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?(Z|[+-]\d\d:\d\d)$/.test(inicio) && !isNaN(Date.parse(inicio)) ? inicio : null,
+        duracion: Number.isInteger(duracion) && duracion % 30 === 0 && duracion >= 30 && duracion <= 480 ? duracion : 0,
+        sala: id(p.get('sala')),
+        servicio: id(p.get('servicio')),
+        esp: (p.get('esp') ?? '').split(',').filter((x) => id(x)),
+        fecha: fecha && /^\d{4}-\d\d-\d\d$/.test(fecha) && !isNaN(Date.parse(fecha)) ? fecha : null,
+        vista: ['semana', 'mes'].includes(vista ?? '') ? vista : null,
+        id: id(p.get('id')),
       };
     }
     url(paso: string, extra: Record<string, string | null> = {}) {
@@ -742,7 +748,11 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
       let reserva: any;
       try {
         reserva = await obtenerReserva(this.e.id);
-      } catch {
+      } catch (error) {
+        if (error instanceof ErrorApi && error.estado === 401) {
+          salida.replaceChildren();
+          return this.aviso('Tu sesión caducó. Inicia sesión para ver tu reserva.', { etiqueta: 'Iniciar sesión', href: `/acceso?${new URLSearchParams({ volver: location.pathname + location.search })}` });
+        }
         return salida.replaceChildren(this.plantilla('listo-sin-datos'));
       }
       const nodo = this.plantilla('listo');

@@ -4,8 +4,6 @@ import { pedir } from './api.js';
 const ruta = (parte) => encodeURIComponent(parte);
 const consulta = (datos) => new URLSearchParams(datos).toString();
 
-export const listarSalas = () => pedir('/api/v1/salas');
-export const obtenerDisponibilidad = (sala, desde, hasta) => pedir(`/api/v1/disponibilidad?${consulta({ sala, desde, hasta })}`);
 export const obtenerSugerencia = (sala, semana) => pedir(`/api/v1/franjas/sugerencia?${consulta({ sala, semana })}`);
 export const publicarFranjas = (id_sala, franjas) => pedir('/api/v1/franjas', { method: 'POST', cuerpo: { id_sala, franjas } });
 export const retirarFranja = (id) => pedir(`/api/v1/franjas/${ruta(id)}`, { method: 'DELETE' });
