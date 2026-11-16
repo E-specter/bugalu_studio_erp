@@ -247,7 +247,9 @@ async def test_la_sugerencia_desplaza_la_ultima_semana_publicada(
     assert (await pedir("2027-W09")).json() == []  # nada publicado antes de esa semana
 
 
-@pytest.mark.parametrize("semana", ["2027-W53", "2027-W00", "abc", "2027-W9", ""])
+@pytest.mark.parametrize(
+    "semana", ["2027-W53", "2027-W00", "abc", "2027-W9", "", "9999-W52", "1999-W52", "2101-W01"]
+)
 async def test_la_sugerencia_con_semana_invalida_es_422(
     cliente: AsyncClient, sala: str, administrador: UsuarioDePrueba, semana: str
 ) -> None:
@@ -414,6 +416,40 @@ async def test_no_se_retira_una_franja_con_reservas_vigentes_pero_si_con_cancela
     )
     r = await cliente.delete(f"/api/v1/franjas/{id_franja}", headers=con(administrador))
     assert r.status_code == 204
+
+
+async def test_se_retira_una_franja_con_reservas_enlazadas_canceladas_o_vencidas(
+    cliente: AsyncClient,
+    administrador: UsuarioDePrueba,
+    cliente_a: UsuarioDePrueba,
+    franja: Crear,
+    reservar: Crear,
+    sql: Ejecutar,
+) -> None:
+    id_franja = franja("2027-03-01 08:00-05", "2027-03-01 12:00-05")
+    vigente = reservar(
+        cliente_a.id, "2027-03-01 09:00-05", "2027-03-01 10:00-05", id_franja=id_franja
+    )
+    url = f"/api/v1/franjas/{id_franja}"
+    r = await cliente.delete(url, headers=con(administrador))
+    assert r.status_code == 409 and r.json()["error"]["codigo"] == "franja_con_reservas"
+    sql(
+        "update public.reserva set estado = 'cancelada', motivo_cancelacion = 'cliente' "
+        "where id = %s",
+        vigente,
+    )
+    vencida = reservar(
+        cliente_a.id,
+        "2027-03-01 10:30-05",
+        "2027-03-01 11:00-05",
+        "pre_reservada",
+        "2020-01-01",
+        id_franja,
+    )
+    r = await cliente.delete(url, headers=con(administrador))
+    assert r.status_code == 204
+    assert sql("select id_franja from public.reserva where id = %s", vencida) == [(None,)]
+    assert sql("select count(*) from public.reserva where id = %s", vigente) == [(1,)]
 
 
 async def test_retirar_franja_sin_ser_administrador_deja_la_fila_intacta(

@@ -1,4 +1,4 @@
-"""Redaccion de los correos: texto plano en espanol, hora de Lima, montos S/ 1.234,50."""
+"""Redaccion de los correos: texto plano en espanol, hora de Lima, montos S/ 1 234,50."""
 
 from decimal import Decimal
 
@@ -20,9 +20,9 @@ CREADA = {
 @pytest.mark.parametrize(
     ("monto", "texto"),
     [
-        (Decimal("1234.5"), "S/ 1.234,50"),
+        (Decimal("1234.5"), "S/ 1 234,50"),
         (Decimal("50"), "S/ 50,00"),
-        (Decimal("1234567.891"), "S/ 1.234.567,89"),
+        (Decimal("1234567.891"), "S/ 1 234 567,89"),
     ],
 )
 def test_formatea_soles_como_el_frontend(monto: Decimal, texto: str) -> None:
@@ -38,7 +38,7 @@ def test_reserva_creada_lleva_folio_servicio_horario_total_y_fecha_limite() -> N
         "miércoles 10 de marzo de 2027",
         "10:00",
         "12:00",
-        "S/ 1.234,50",
+        "S/ 1 234,50",
         "lunes 8 de marzo de 2027, 15:30",
     ):
         assert esperado in cuerpo

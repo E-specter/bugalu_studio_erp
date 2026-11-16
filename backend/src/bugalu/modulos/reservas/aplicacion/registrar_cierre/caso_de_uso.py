@@ -13,6 +13,7 @@ class RegistrarCierre:
 
     async def ejecutar(self, id_sala: UUID, tramo: Tramo, motivo: str) -> Cierre:
         await exigir_administrador(self._reservas)
+        await self._reservas.bloquear_sala(id_sala)
         if not await self._reservas.existe_sala(id_sala):
             raise NoEncontrado("No existe la sala.")
         ocupados = {

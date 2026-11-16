@@ -27,6 +27,7 @@ class RegistrarReserva:
         ahora: datetime,
     ) -> Reserva:
         reglas.exigir_duracion(inicio, fin)
+        await self._reservas.bloquear_sala(id_sala)  # antes de leer franjas, cierres y ocupacion
         cotizacion = await self._cotizador.cotizar(
             id_sala, id_servicio, inicio, fin, id_especialistas
         )  # valida sala, servicio y especialistas

@@ -55,8 +55,8 @@ select lives_ok($$select public.cancelar_reserva((select id from public.reserva 
 select is((select estado || '/' || motivo_cancelacion from public.reserva where inicio = '2027-05-01 10:00-05'), 'cancelada/cliente', 'queda cancelada con motivo cliente');
 select is((select count(*)::int from public.reserva r join antes a using (id, inicio, fin, total, folio, id_cliente, vence_pago) where md5(r.precio::text) = a.precio), 1,
   'la cancelacion solo cambia estado y motivo');
-select lives_ok($$insert into public.reserva (id_cliente, id_sala, id_servicio, inicio, fin, total)
-  select auth.uid(), sa.id, se.id, '2027-05-01 10:00-05', '2027-05-01 11:00-05', 1
+select lives_ok($$insert into public.reserva (id_cliente, id_sala, id_servicio, inicio, fin, total, vence_pago)
+  select auth.uid(), sa.id, se.id, '2027-05-01 10:00-05', '2027-05-01 11:00-05', 1, '2099-01-01'
   from public.sala_tecnica sa, public.servicio se where se.nombre = 'Ensayo'$$, 'el tramo cancelado queda libre');
 select throws_ok($$select public.cancelar_reserva((select id from public.reserva where inicio = '2027-05-02 10:00-05'))$$, 'P0001', 'tiene_pagos', 'con pagos: tiene_pagos');
 select throws_ok($$select public.cancelar_reserva((select id from public.reserva where inicio = '2027-05-03 10:00-05'))$$, 'P0001', 'no_cancelable', 'ya cancelada: no_cancelable');

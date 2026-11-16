@@ -87,8 +87,20 @@ def test_vence_1_hora_despues_si_faltan_menos_de_3_dias() -> None:
     assert calcular_vence_pago(t(1, 10), t(3, 15), 3, 1) == t(1, 11)
 
 
-def test_a_exactamente_3_dias_vence_3_dias_antes() -> None:
-    assert calcular_vence_pago(t(1, 10), t(4, 10), 3, 1) == t(1, 10)
+def test_a_exactamente_3_dias_el_cliente_tiene_la_hora_completa() -> None:
+    assert calcular_vence_pago(t(1, 10), t(4, 10), 3, 1) == t(1, 11)
+
+
+def test_a_3_dias_y_5_minutos_el_cliente_tiene_la_hora_completa_y_no_5_minutos() -> None:
+    assert calcular_vence_pago(t(1, 10), t(4, 10, 5), 3, 1) == t(1, 11)
+
+
+def test_pasada_la_hora_extra_manda_el_plazo_de_3_dias() -> None:
+    assert calcular_vence_pago(t(1, 10), t(4, 11, 30), 3, 1) == t(1, 11, 30)
+
+
+def test_nunca_vence_despues_del_inicio() -> None:
+    assert calcular_vence_pago(t(1, 10), t(1, 10, 30), 3, 1) == t(1, 10, 30)
 
 
 def test_los_plazos_son_parametros() -> None:

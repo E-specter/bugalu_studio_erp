@@ -16,7 +16,7 @@ _MESES = [
 
 def formatear_soles(monto: Decimal) -> str:
     entero, decimales = f"{monto.quantize(Decimal('0.01'), ROUND_HALF_UP):,.2f}".split(".")
-    return f"S/ {entero.replace(',', '.')},{decimales}"
+    return f"S/ {entero.replace(',', ' ')},{decimales}"
 
 
 def _lima(iso: str) -> datetime:

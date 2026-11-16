@@ -135,6 +135,12 @@ class RepositorioReservasPostgres:
             nuevas.append(Franja(*filas[0]))
         return nuevas
 
+    async def bloquear_sala(self, id_sala: UUID) -> None:
+        # Bloqueo hasta el fin de la transaccion; todas las lecturas del caso de uso van despues.
+        await self._conexion.execute(
+            "select pg_advisory_xact_lock(hashtextextended(%s, 0))", (str(id_sala),)
+        )
+
     async def obtener_franja(self, id_franja: UUID) -> Franja | None:
         filas = await self._filas(
             "select id, id_sala, inicio, fin from public.franja_sala where id = %s", (id_franja,)

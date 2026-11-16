@@ -152,12 +152,13 @@ def reservar(sql: Ejecutar, sala: str) -> Callable[..., str]:
         fin: str,
         estado: str = "confirmada",
         vence_pago: str | None = None,
+        id_franja: str | None = None,
     ) -> str:
         return str(
             sql(
                 "insert into public.reserva (id_cliente, id_sala, id_servicio, inicio, fin, total, "
-                "estado, vence_pago, motivo_cancelacion) "
-                "select %s, %s, se.id, %s, %s, 50, %s, %s, %s "
+                "estado, vence_pago, motivo_cancelacion, id_franja) "
+                "select %s, %s, se.id, %s, %s, 50, %s, %s, %s, %s "
                 "from public.servicio se where se.nombre = 'Ensayo' returning id",
                 id_cliente,
                 sala,
@@ -166,6 +167,7 @@ def reservar(sql: Ejecutar, sala: str) -> Callable[..., str]:
                 estado,
                 vence_pago,
                 "cliente" if estado == "cancelada" else None,
+                id_franja,
             )[0][0]
         )
 

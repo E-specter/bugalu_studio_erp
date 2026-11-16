@@ -21,6 +21,7 @@ class ReservasFalso:
         self.franjas: dict[UUID, Franja] = {}
         self.cierres: dict[UUID, Cierre] = {}
         self.ocupados: list[Tramo] = []
+        self.bloqueos: list[UUID] = []
         self.visibles: list[ReservaVisible] = []
         self.nombres: dict[UUID, str | None] = {}
         self.parametros = {
@@ -77,6 +78,9 @@ class ReservasFalso:
             self.franjas[f.id] = f
             nuevas.append(f)
         return nuevas
+
+    async def bloquear_sala(self, id_sala: UUID) -> None:
+        self.bloqueos.append(id_sala)
 
     async def obtener_franja(self, id_franja: UUID) -> Franja | None:
         return self.franjas.get(id_franja)

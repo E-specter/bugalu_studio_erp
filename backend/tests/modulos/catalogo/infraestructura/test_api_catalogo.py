@@ -665,3 +665,30 @@ def test_openapi_declara_los_codigos_del_contrato_con_respuesta_error(app: FastA
             )
     assert rutas["/api/v1/feriados/{fecha}"]["delete"]["responses"]["204"]
     assert rutas["/api/v1/feriados"]["post"]["responses"]["201"]
+
+
+async def test_dos_patch_concurrentes_de_especialistas_dan_200_y_una_lista_entera(
+    cliente: AsyncClient, administrador: Cabeceras, sql: Sql
+) -> None:
+    import asyncio
+
+    voces = (await _servicios(cliente))["Grabación de voces"]
+    e = [x["id"] for x in (await _especialistas(cliente)).values()]
+    listas = ([e[0], e[1]], [e[1], e[2]])
+    url = f"/api/v1/servicios/{voces['id']}"
+    for _ in range(15):
+        rs = await asyncio.gather(
+            *(
+                cliente.patch(url, headers=administrador, json={"especialistas_por_defecto": ids})
+                for ids in listas
+            )
+        )
+        assert [r.status_code for r in rs] == [200, 200]
+        final = sorted(
+            str(f[0])
+            for f in sql(
+                "select id_especialista from public.servicio_especialista where id_servicio = %s",
+                voces["id"],
+            )
+        )
+        assert final in (sorted(listas[0]), sorted(listas[1]))

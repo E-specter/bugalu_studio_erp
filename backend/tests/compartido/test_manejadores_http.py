@@ -26,6 +26,10 @@ def cliente() -> AsyncClient:
     def dato_invalido() -> None:
         raise psycopg.DataError("invalid byte sequence: secreto-interno")
 
+    @app.get("/integridad")
+    def integridad() -> None:
+        raise psycopg.errors.ForeignKeyViolation("viola reserva_id_franja_fkey: secreto-interno")
+
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://t")
 
 
@@ -115,3 +119,14 @@ async def test_un_error_de_negocio_con_detalles_los_incluye_y_sin_ellos_no() -> 
         sin_detalles = (await c.get("/sin")).json()
     assert con_detalles["error"]["detalles"] == {"reservas": [{"folio": "R-1"}]}
     assert "detalles" not in sin_detalles["error"]
+
+
+async def test_una_violacion_de_integridad_imprevista_es_409_y_nunca_500(
+    cliente: AsyncClient,
+) -> None:
+    r = await cliente.get("/integridad")
+    assert r.status_code == 409
+    assert r.json() == {
+        "error": {"codigo": "conflicto", "mensaje": "La operación choca con datos existentes."}
+    }
+    assert "secreto-interno" not in r.text

@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from psycopg import DataError, OperationalError  # incluye PoolTimeout
+from psycopg import DataError, IntegrityError, OperationalError  # incluye PoolTimeout
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from bugalu.compartido.errores import ErrorDeNegocio
@@ -74,3 +74,8 @@ def registrar_manejadores(app: FastAPI) -> None:
     async def _dato_invalido(_: Request, __: DataError) -> JSONResponse:
         # Defensa en profundidad: lo que la validacion de entrada no atajo, sin detalles de la base.
         return respuesta_de_error(422, "datos_invalidos", "Datos invalidos.")
+
+    @app.exception_handler(IntegrityError)
+    async def _integridad(_: Request, __: IntegrityError) -> JSONResponse:
+        # Restriccion no prevista (FK, unique, exclusion): conflicto, nunca 500.
+        return respuesta_de_error(409, "conflicto", "La operación choca con datos existentes.")

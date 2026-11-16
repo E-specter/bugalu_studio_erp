@@ -69,6 +69,8 @@ def minutos_libres_por_dia(
 def lunes_de_semana_iso(semana: str) -> date:
     """`AAAA-Www` -> lunes de esa semana ISO; ValueError si no existe."""
     anio, _, numero = semana.partition("-W")
+    if not 2000 <= int(anio) <= 2100:
+        raise ValueError("Anio fuera de 2000 a 2100.")
     return date.fromisocalendar(int(anio), int(numero), 1)
 
 
