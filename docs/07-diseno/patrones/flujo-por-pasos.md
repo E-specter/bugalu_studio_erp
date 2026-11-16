@@ -23,7 +23,7 @@ pasos: 01 ── 02 ── 03 ── 04 ── 05 ── 06
 
 ## Reglas
 
-1. **Un paso = una página** con su URL (`/solicitud/<codigo>/agenda`). Avanzar envía el formulario; el servidor guarda y redirige al siguiente.
+1. **Un paso = una página** con su URL (`/solicitud/<codigo>/agenda`). Avanzar envía el formulario; el servidor guarda y redirige al siguiente. Si no hay borrador en el servidor (reserva de sala), lo elegido viaja en la consulta de la URL de cada paso y se guarda al confirmar ([reservar](../pantallas/RF-04-reservar.md)).
 2. **Se puede volver** a cualquier paso hecho desde [pasos](../componentes/pasos.md) o "Anterior", sin perder datos.
 3. **Guardado continuo:** cada paso enviado queda guardado; la cabecera muestra el [indicador](../componentes/indicador-estado.md) y el código de solicitud (para retomarla).
 4. **El resumen persistente** muestra siempre lo elegido y el importe que corresponda; el usuario nunca llega a la revisión sin haber visto el precio.

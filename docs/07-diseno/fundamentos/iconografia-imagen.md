@@ -30,7 +30,9 @@ Figma usa dos sistemas: glifos de texto como marcadores en las pantallas del `er
 | Reproducir / pausar | `play` / `pause` |
 | Subir / descargar | `upload` / `download` |
 | Comentario | `message-square` |
-| Calendario, franja | `calendar` |
+| Calendario, franja; agenda (destino del personal) | `calendar` |
+| Mis reservas / franjas / tarifas (destinos de navegación) | `calendar-check` / `calendar-cog` / `tag` |
+| Horario cerrado ([calendario](../componentes/calendario.md)) | `lock` |
 | Información / pendiente / error | `info` / `clock` / `alert-triangle` |
 | Condición de contraseña pendiente / cumplida ([medidor](../componentes/campo.md#medidor-de-robustez)) | `circle` / `check-circle` |
 | Solicitudes de acceso / usuarios (destinos del Administrador) | `user-plus` / `users` |

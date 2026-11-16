@@ -22,7 +22,7 @@ Separación etiqueta → entrada: `espacio-2`. Campos en fila: hueco `espacio-3`
 
 | Variante | Elemento | Notas |
 |---|---|---|
-| Texto | `<input type="text|email|tel|url|number|date">` | La base |
+| Texto | `<input type="text|email|tel|url|number|date|time">` | La base. Hora: `time` con `step="1800"` (medias horas, hora de Lima). Importe: `text` con `inputmode="decimal"`, prefijo "S/" en la etiqueta y dos decimales (la isla acepta coma o punto) |
 | Área | `<textarea>` | Alto mínimo 2 × `medida-control-base`. Si hay límite: `maxlength` + la ayuda lo dice ("Máximo 500 caracteres"). El contador en vivo (`145:3617` "Contador") necesita JS: se hace isla con la primera pantalla que lo pida |
 | Contraseña | `<input type="password">` + botón `eye` | El botón de mostrar es la isla `<bugalu-contrasena>`; sin JS el campo funciona igual. En una contraseña nueva suma el [medidor](#medidor-de-robustez) |
 | Búsqueda | `<input type="search">` con icono `search` a la izquierda | Sin atajo de teclado: el "Atajo" de `161:842` no se adopta (un atajo de una tecla choca con WCAG 2.1.4 y pide JS) |
@@ -95,4 +95,4 @@ Compone los [formularios](../patrones/formularios.md). Para opciones múltiples:
 
 ## Código
 
-`frontend/src/componentes/Campo.astro`, props `tipo` (`text|email|tel|url|number|date|password|search|area|selector`), `nombre`, `etiqueta`, `ayuda`, `error`, `obligatorio`, `soloLectura`, `valor`, `id`; el resto de atributos va al control (`autocomplete`, `placeholder`…). `selector` recibe los `<option>` en la ranura; `medidor` (solo con `password`) añade el [medidor de robustez](#medidor-de-robustez). Isla `frontend/src/islas/Contrasena.astro` registra `<bugalu-contrasena>` (atributo `medidor`).
+`frontend/src/componentes/Campo.astro`, props `tipo` (`text|email|tel|url|number|date|time|password|search|area|selector`), `nombre`, `etiqueta`, `ayuda`, `error`, `obligatorio`, `soloLectura`, `valor`, `id`; el resto de atributos va al control (`autocomplete`, `placeholder`…). `selector` recibe los `<option>` en la ranura; `medidor` (solo con `password`) añade el [medidor de robustez](#medidor-de-robustez). Isla `frontend/src/islas/Contrasena.astro` registra `<bugalu-contrasena>` (atributo `medidor`).

@@ -52,6 +52,8 @@ No hay pantallas para estas partes, que se especifican desde el brief en la fase
 
 *Nota (2026-11-15, TAREA-RF01-3): RF-01 ya tiene spec de pantalla, sin abrir Figma (solo el volcado local de la página `login`): [acceso](pantallas/RF-01-acceso.md), [acceso interno](pantallas/RF-01-acceso-interno.md), [restablecer](pantallas/RF-01-restablecer.md), [perfil](pantallas/RF-01-perfil.md) y [solicitudes](pantallas/RF-01-solicitudes.md). Este registro sigue congelado.*
 
+*Nota (2026-11-15, TAREA-RF03-1): las pantallas de sala ya tienen spec desde el brief, sin abrir Figma: [calendario](pantallas/RF-03-calendario.md), [reservar](pantallas/RF-04-reservar.md) (simulación incluida), [mis reservas](pantallas/RF-04-mis-reservas.md), [franjas](pantallas/RF-03-franjas.md) y [tarifas](pantallas/RF-02-tarifas.md). La reserva de ensayo es la misma pantalla con otro servicio.*
+
 Brechas transversales (sin RF propio): estados vacío, carga y error; diálogo de confirmación; notificación emergente. Se cubren con el patrón [estados del sistema](patrones/estados-sistema.md) y la sección "Fuera del catálogo" del [catálogo](componentes/README.md).
 
 ## Extracción

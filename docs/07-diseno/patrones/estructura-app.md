@@ -65,6 +65,8 @@ Secciones a ancho completo, contenedor `medida-contenedor-max`, separación `esp
 | Relativa (< 7 días) | "hace N h / ayer" + absoluta en `title` | hace 2 h |
 | Importe | `S/ 1 250,00` (PEN, [reglas de negocio](../../02-dominio/reglas-negocio.md)) con `tabular-nums` | S/ 450,00 |
 | Duración de audio | `m:ss` | 3:45 |
+| Duración de reserva | `N h` / `N h 30 min` / `30 min` | 2 h 30 min |
+| Plazo restante | Absoluta + "faltan N d N h" (≥ 1 día), "faltan N h N min" o "faltan N min"; se recalcula cada minuto sin anunciarse | 18 nov, 14:30 · faltan 2 d 3 h |
 | Códigos | Prefijo + número con ceros | PRY-014, PAG-031 |
 
 Zona horaria del estudio (Lima); idioma de interfaz: español.

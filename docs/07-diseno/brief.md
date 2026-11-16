@@ -76,7 +76,7 @@ Decisiones `brief:` de la auditoría de cierre (TAREA-203):
 | Tokens | [tokens](tokens.md) | Borrador |
 | Componentes | [catálogo](componentes/README.md) (28 fichas) | Borrador |
 | Patrones | [patrones](patrones/README.md) (6) | Borrador |
-| Pantallas | `pantallas/`: RF-01 ([acceso](pantallas/RF-01-acceso.md), [acceso interno](pantallas/RF-01-acceso-interno.md), [restablecer](pantallas/RF-01-restablecer.md), [perfil](pantallas/RF-01-perfil.md), [solicitudes](pantallas/RF-01-solicitudes.md)) | Borrador; el resto se especifica por RF desde el brief |
+| Pantallas | `pantallas/`: RF-01 ([acceso](pantallas/RF-01-acceso.md), [acceso interno](pantallas/RF-01-acceso-interno.md), [restablecer](pantallas/RF-01-restablecer.md), [perfil](pantallas/RF-01-perfil.md), [solicitudes](pantallas/RF-01-solicitudes.md)); RF-02 ([tarifas](pantallas/RF-02-tarifas.md)); RF-03 ([calendario](pantallas/RF-03-calendario.md), [franjas](pantallas/RF-03-franjas.md)); RF-04 ([reservar](pantallas/RF-04-reservar.md), [mis reservas](pantallas/RF-04-mis-reservas.md)) | Borrador; el resto se especifica por RF desde el brief |
 
 ## Transversales
 
