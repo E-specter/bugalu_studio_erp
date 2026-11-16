@@ -19,7 +19,7 @@ const SIMULACION = {
   anticipo: '207.50',
 };
 const reserva = (extra = {}) => ({
-  id: ID, folio: 'RES-0001', estado: 'pre_reservada', motivo_cancelacion: null,
+  id: ID, folio: 'R-2026-00001', estado: 'pre_reservada', motivo_cancelacion: null,
   inicio: '2026-12-18T15:00:00-05:00', fin: '2026-12-18T17:30:00-05:00', fin_buffer: '2026-12-18T18:00:00-05:00',
   sala: 'Sala principal', servicio: 'Grabación de voces', especialistas: [{ id: 'e1', nombre: 'Luis Mora' }, { id: 'e2', nombre: 'Eva Soto' }],
   precio: SIMULACION,
@@ -28,10 +28,10 @@ const reserva = (extra = {}) => ({
   ...extra,
 });
 const LISTA = [
-  reserva({ id: ID3, folio: 'RES-0003', estado: 'confirmada', inicio: '2027-01-10T10:00:00-05:00', fin: '2027-01-10T12:00:00-05:00', servicio: 'Ensayo' }),
+  reserva({ id: ID3, folio: 'R-2026-00003', estado: 'confirmada', inicio: '2027-01-10T10:00:00-05:00', fin: '2027-01-10T12:00:00-05:00', servicio: 'Ensayo' }),
   reserva(),
-  reserva({ id: ID2, folio: 'RES-0002', estado: 'finalizada', inicio: '2026-10-01T10:00:00-05:00', fin: '2026-10-01T11:00:00-05:00', servicio: 'Mezcla en vivo', vence_pago: null }),
-  reserva({ id: 'c', folio: 'RES-0000', estado: 'cancelada', motivo_cancelacion: 'caducada', inicio: '2026-09-01T10:00:00-05:00', fin: '2026-09-01T10:30:00-05:00' }),
+  reserva({ id: ID2, folio: 'R-2026-00002', estado: 'finalizada', inicio: '2026-10-01T10:00:00-05:00', fin: '2026-10-01T11:00:00-05:00', servicio: 'Mezcla en vivo', vence_pago: null }),
+  reserva({ id: 'c', folio: 'R-2026-00000', estado: 'cancelada', motivo_cancelacion: 'caducada', inicio: '2026-09-01T10:00:00-05:00', fin: '2026-09-01T10:30:00-05:00' }),
 ];
 
 const comoRol = (page, rol) => page.route(`${API}/perfil`, (r) => r.fulfill(perfil({ rol })));
@@ -66,7 +66,7 @@ for (const t of tamanos) {
     const filas = page.getByRole('row');
     await expect(filas).toHaveCount(3); // cabecera + 2; ascendente por inicio
     if (t.ancho === 1440) expect(await filas.nth(1).evaluate((tr) => getComputedStyle(tr).display)).toBe('table-row');
-    await expect(filas.nth(1)).toContainText('RES-0001');
+    await expect(filas.nth(1)).toContainText('R-2026-00001');
     await expect(filas.nth(1)).toContainText('Grabación de voces');
     await expect(filas.nth(1)).toContainText('18 dic 2026');
     await expect(filas.nth(1)).toContainText('15:00–17:30');
@@ -76,10 +76,10 @@ for (const t of tamanos) {
     await expect(filas.nth(1)).toContainText(/Antes del \d{1,2} \w{3}, \d{2}:\d{2}/);
     await expect(filas.nth(1)).toContainText('faltan 2 d 3 h');
     await expect(filas.nth(1)).not.toContainText('Sin pago registrado');
-    await expect(filas.nth(2)).toContainText('RES-0003');
+    await expect(filas.nth(2)).toContainText('R-2026-00003');
     await expect(filas.nth(2)).toContainText('Confirmada');
     await expect(filas.nth(2)).not.toContainText('caduca');
-    await expect(page.getByRole('link', { name: 'Ver reserva RES-0001' })).toHaveAttribute('href', `/app/reservas/detalle?id=${ID}`);
+    await expect(page.getByRole('link', { name: 'Ver reserva R-2026-00001' })).toHaveAttribute('href', `/app/reservas/detalle?id=${ID}`);
     await expect(page.getByRole('link', { name: 'Próximas' })).toHaveAttribute('aria-current', 'true');
     await expect(page.locator('[aria-busy]')).toHaveCount(0);
     await sinViolaciones(page);
@@ -94,9 +94,9 @@ for (const t of tamanos) {
     await expect(page.getByRole('link', { name: 'Historial' })).toHaveAttribute('aria-current', 'true');
     await expect(page.getByRole('status').filter({ hasText: '2 reservas en el historial' })).toHaveCount(1);
     const filas = page.getByRole('row');
-    await expect(filas.nth(1)).toContainText('RES-0002'); // descendente por inicio
+    await expect(filas.nth(1)).toContainText('R-2026-00002'); // descendente por inicio
     await expect(filas.nth(1)).toContainText('Finalizada');
-    await expect(filas.nth(2)).toContainText('RES-0000');
+    await expect(filas.nth(2)).toContainText('R-2026-00000');
     await expect(filas.nth(2)).toContainText('Cancelada');
     await expect(filas.nth(2)).toContainText('Caducó sin pago');
     await expect(filas.nth(2)).not.toContainText('faltan');
@@ -157,11 +157,11 @@ test('lista: el plazo se recalcula cada minuto y solo se anuncia al cruzar un um
   await expect(anuncio).toHaveText('1 reserva próxima'); // sin anuncio por cada minuto
   await page.clock.runFor(60_000);
   await expect(plazo).toHaveText('faltan 59 min');
-  await expect(anuncio).toHaveText('La reserva RES-0001 vence en menos de 1 h.');
+  await expect(anuncio).toHaveText('La reserva R-2026-00001 vence en menos de 1 h.');
   await page.clock.runFor(45 * 60_000);
-  await expect(anuncio).toHaveText('La reserva RES-0001 vence en menos de 15 min.');
+  await expect(anuncio).toHaveText('La reserva R-2026-00001 vence en menos de 15 min.');
   await page.clock.runFor(15 * 60_000);
-  await expect(anuncio).toHaveText('La reserva RES-0001 venció sin pago.');
+  await expect(anuncio).toHaveText('La reserva R-2026-00001 venció sin pago.');
   await expect(page.getByRole('row').nth(1)).toContainText('Caducada');
   await expect(page.getByRole('row').nth(1)).toContainText('Venció sin pago');
 });
@@ -216,9 +216,9 @@ for (const t of tamanos) {
     await page.setViewportSize({ width: t.ancho, height: t.alto });
     await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva()));
     await ver(page);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/reserva RES-0001/i);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/reserva R-2026-00001/i);
     await expect(page.locator('.encabezado-descripcion')).toHaveText('Grabación de voces · 18 dic 2026, 15:00–17:30');
-    await expect(page.locator('.encabezado-ruta li')).toHaveText(['Inicio', 'Reservas', 'RES-0001']);
+    await expect(page.locator('.encabezado-ruta li')).toHaveText(['Inicio', 'Reservas', 'R-2026-00001']);
     const datos = page.locator('dl');
     await expect(datos).toContainText('Pre-reservada');
     await expect(datos).toContainText('2 h 30 min');
@@ -295,7 +295,7 @@ test('detalle: el personal ve al cliente y no puede cancelar', async ({ page }) 
   await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva({ cliente: 'Ana Pérez' })));
   await ver(page);
   await expect(page.locator('dl')).toContainText('Ana Pérez');
-  await expect(page.locator('.encabezado-ruta li')).toHaveText(['Inicio', 'Agenda', 'RES-0001']);
+  await expect(page.locator('.encabezado-ruta li')).toHaveText(['Inicio', 'Agenda', 'R-2026-00001']);
   await expect(page.getByRole('button', { name: 'Cancelar reserva' })).toHaveCount(0);
   await sinViolaciones(page);
 });
@@ -317,9 +317,9 @@ test('cancelar: confirmación accesible, foco, y el estado se actualiza al confi
   const abrir = page.getByRole('button', { name: 'Cancelar reserva', exact: true });
   await abrir.focus();
   await page.keyboard.press('Enter');
-  const confirmacion = page.getByRole('region', { name: /Cancelar reserva RES-0001/ });
+  const confirmacion = page.getByRole('region', { name: /Cancelar reserva R-2026-00001/ });
   await expect(confirmacion).toBeVisible();
-  await expect(page.getByRole('heading', { name: /Cancelar reserva RES-0001/ })).toBeFocused();
+  await expect(page.getByRole('heading', { name: /Cancelar reserva R-2026-00001/ })).toBeFocused();
   await expect(confirmacion).toContainText('El horario se libera al momento y no se te cobra nada.');
   await expect(confirmacion).toContainText('18 dic 2026');
   await sinViolaciones(page);
@@ -330,7 +330,7 @@ test('cancelar: confirmación accesible, foco, y el estado se actualiza al confi
   await expect(abrir).toBeFocused();
   expect(cancelar).toHaveLength(0);
   await page.keyboard.press('Enter');
-  await page.getByRole('button', { name: 'Cancelar reserva RES-0001' }).click();
+  await page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' }).click();
   expect(cancelar).toHaveLength(1);
   const aviso = page.locator('[data-avisos] .aviso');
   await expect(aviso).toContainText('Reserva cancelada. El horario quedó libre y no se te cobró nada.');
@@ -351,7 +351,7 @@ test('cancelar: enviando bloquea los botones', async ({ page }) => {
   await simular(page, 'POST', `/reservas/${ID}/cancelar`, async (r) => { await espera; await r.fulfill(json(200, reserva({ estado: 'cancelada', motivo_cancelacion: 'cliente' }))); });
   await ver(page);
   await page.getByRole('button', { name: 'Cancelar reserva', exact: true }).click();
-  await page.getByRole('button', { name: 'Cancelar reserva RES-0001' }).click();
+  await page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' }).click();
   await expect(page.getByRole('button', { name: 'Cancelando…' })).toHaveAttribute('aria-busy', 'true');
   await expect(page.getByRole('button', { name: 'Volver a la reserva' })).toBeDisabled();
   soltar();
@@ -369,12 +369,12 @@ for (const [codigo, texto] of conflictos) {
     await simular(page, 'POST', `/reservas/${ID}/cancelar`, (r) => r.fulfill(errorApi(409, codigo)));
     await ver(page);
     await page.getByRole('button', { name: 'Cancelar reserva', exact: true }).click();
-    await page.getByRole('button', { name: 'Cancelar reserva RES-0001' }).click();
+    await page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' }).click();
     const aviso = page.locator('[data-avisos] .aviso');
     await expect(aviso).toContainText(texto);
     await expect(aviso).toBeFocused();
     await expect(page.getByRole('button', { name: 'Volver a la reserva' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Cancelar reserva RES-0001' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' })).toHaveCount(0);
     await sinViolaciones(page);
     await page.screenshot({ path: `pruebas/capturas/reservas-cancelar-${codigo}.png`, fullPage: true });
   });
@@ -385,10 +385,10 @@ test('cancelar: un 503 deja el botón disponible y avisa sin Reintentar', async 
   await simular(page, 'POST', `/reservas/${ID}/cancelar`, (r) => r.fulfill(errorApi(503, 'x')));
   await ver(page);
   await page.getByRole('button', { name: 'Cancelar reserva', exact: true }).click();
-  await page.getByRole('button', { name: 'Cancelar reserva RES-0001' }).click();
+  await page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' }).click();
   await expect(page.locator('[data-avisos] .aviso')).toContainText('El servicio no responde. Inténtalo de nuevo en unos minutos.');
   await expect(page.getByRole('button', { name: 'Reintentar' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Cancelar reserva RES-0001' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' })).toBeEnabled();
 });
 
 // --- 4. Estados de carga del detalle ---
@@ -506,7 +506,7 @@ test.describe('N13 orden móvil del detalle', () => {
     expect(b.y).toBeLessThan(d1.y);
     expect(cancelar.y).toBeLessThan(d1.y);
     expect(cancelar.y).toBeLessThan(1000);
-    const folio = page.getByRole('heading', { level: 1 }).getByText('RES-0001');
+    const folio = page.getByRole('heading', { level: 1 }).getByText('R-2026-00001');
     expect(await folio.evaluate((e) => getComputedStyle(e).whiteSpace)).toBe('nowrap');
   });
 
@@ -523,9 +523,9 @@ test('N14: "Volver a la reserva" devuelve el foco a "Cancelar reserva"', async (
   await ver(page);
   const abrir = page.getByRole('button', { name: 'Cancelar reserva', exact: true });
   await abrir.click();
-  await expect(page.getByRole('heading', { name: /Cancelar reserva RES-0001/ })).toBeFocused();
+  await expect(page.getByRole('heading', { name: /Cancelar reserva R-2026-00001/ })).toBeFocused();
   await page.getByRole('button', { name: 'Volver a la reserva' }).click();
-  await expect(page.getByRole('region', { name: /Cancelar reserva RES-0001/ })).toBeHidden();
+  await expect(page.getByRole('region', { name: /Cancelar reserva R-2026-00001/ })).toBeHidden();
   await expect(abrir).toBeVisible();
   await expect(abrir).toBeFocused();
 });

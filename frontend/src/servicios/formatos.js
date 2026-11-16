@@ -15,6 +15,16 @@ export const instante = (fecha, hora) => `${fecha}T${hora}:00-05:00`;
 export const sumarDias = (fecha, n) => new Date(aFecha(fecha).getTime() + n * DIA_MS).toISOString().slice(0, 10);
 export const esFecha = (texto) => /^\d{4}-\d{2}-\d{2}$/.test(texto ?? '') && !isNaN(aFecha(texto)) && aFecha(texto).toISOString().startsWith(texto);
 
+// `inicio` de la URL: ISO con hora y zona. Date.parse corrige el 31 de noviembre al 1 de diciembre, asi que el texto debe conservar su fecha. Devuelve el texto o null.
+export const inicioValido = (t) =>
+  typeof t === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?(Z|[+-]\d\d:\d\d)$/.test(t) && !isNaN(Date.parse(t)) && esFecha(t.slice(0, 10)) ? t : null;
+
+// `duracion` de la URL: solo digitos, multiplo de 30, de 30 a 480 min. Devuelve minutos o 0.
+export const duracionValida = (t) => {
+  const n = /^\d+$/.test(t ?? '') ? +t : 0;
+  return n % 30 === 0 && n >= 30 && n <= 480 ? n : 0;
+};
+
 // Lunes (AAAA-MM-DD) de una semana ISO AAAA-Www; null si no es valida.
 export function lunesDe(semana) {
   const m = /^(\d{4})-W(\d{2})$/.exec(semana ?? '');

@@ -1,6 +1,6 @@
 // Formatos compartidos (sin navegador): título de semana (N9) y partidas de precio (B3).
 import { test, expect } from '@playwright/test';
-import { esFecha, rangoSemana, duracionReserva, partidasPrecio, soles } from '../src/servicios/formatos.js';
+import { inicioValido, duracionValida, esFecha, rangoSemana, duracionReserva, partidasPrecio, soles } from '../src/servicios/formatos.js';
 
 test('rangoSemana: dentro de un mes, entre meses y entre años', () => {
   expect(rangoSemana('2026-11-16')).toBe('SEMANA DEL 16 AL 22 NOV 2026');
@@ -37,4 +37,15 @@ test('soles: miles con espacio no separable y coma decimal; el campo no agrupa',
 test('esFecha: solo días reales', () => {
   expect(['2026-11-16', '2028-02-29'].map(esFecha)).toEqual([true, true]);
   expect(['2026-13-01', '2026-99-99', '2026-11-99', '2026-02-30', 'basura', null].map(esFecha)).toEqual([false, false, false, false, false, false]);
+});
+
+test('inicioValido: ISO con hora y zona y fecha real; si no, null', () => {
+  expect(inicioValido('2026-11-19T15:00:00Z')).toBe('2026-11-19T15:00:00Z');
+  expect(inicioValido('2026-11-19T10:00:00-05:00')).toBe('2026-11-19T10:00:00-05:00');
+  for (const x of ['2026-11-31T15:00:00Z', '2026-02-30T10:00:00Z', '2026-11-19', '2026-11-19T10:00', 'basura', '', null]) expect(inicioValido(x)).toBeNull();
+});
+
+test('duracionValida: solo digitos, multiplo de 30, de 30 a 480; si no, 0', () => {
+  expect(['30', '60', '480'].map(duracionValida)).toEqual([30, 60, 480]);
+  for (const x of ['0x1e', '1e2', '+30', '30.0', '45', '0', '510', '', null]) expect(duracionValida(x)).toBe(0);
 });

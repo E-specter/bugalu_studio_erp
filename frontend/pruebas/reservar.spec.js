@@ -22,7 +22,7 @@ const SIM = {
   total: '290.00',
   anticipo: '145.00',
 };
-const RESERVA = { id: R1, folio: 'RSV-0013', estado: 'pre_reservada', motivo_cancelacion: null, inicio: INI, fin: t('19', '12:00'), fin_buffer: t('19', '12:30'), sala: 'La Molina', servicio: 'Grabación', especialistas: [{ id: 'e1', nombre: 'Ingeniero de sonido' }], precio: SIM, cuotas: [], vence_pago: '2026-11-17T10:00:00-05:00' };
+const RESERVA = { id: R1, folio: 'R-2026-00013', estado: 'pre_reservada', motivo_cancelacion: null, inicio: INI, fin: t('19', '12:00'), fin_buffer: t('19', '12:30'), sala: 'La Molina', servicio: 'Grabación', especialistas: [{ id: 'e1', nombre: 'Ingeniero de sonido' }], precio: SIM, cuotas: [], vence_pago: '2026-11-17T10:00:00-05:00' };
 const DISP = {
   limites: { desde: t('16', '10:00'), hasta: '2026-12-15T10:00:00-05:00' },
   franjas: [{ id: 'f1', inicio: t('19', '10:00'), fin: t('19', '14:00') }],
@@ -282,7 +282,7 @@ test.describe('04 Confirmar y 05 Listo', () => {
     expect(envios.crear).toEqual([{ id_sala: 'sala-1', id_servicio: 's1', inicio: INI, fin: t('19', '12:00'), especialistas: ['e2'], detalle: 'Voz y guitarra' }]);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Reserva registrada');
     await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
-    await expect(page.getByText('RSV-0013').first()).toBeVisible();
+    await expect(page.getByText('R-2026-00013').first()).toBeVisible();
     await expect(page.getByText('PRE-RESERVADA')).toBeVisible();
     await expect(page.getByText(/Paga el anticipo de S\/ 145,00 antes del/)).toBeVisible();
     await expect(page.getByText('Te enviamos estos datos a ana@correo.com.')).toBeVisible();
@@ -380,7 +380,7 @@ test.describe('04 Confirmar y 05 Listo', () => {
       await sinViolaciones(page);
       await page.screenshot({ path: `pruebas/capturas/reservar-04-confirmar-${tm.nombre}.png`, fullPage: true });
       await page.goto(`/reservar/listo/?id=${R1}`);
-      await expect(page.getByText('RSV-0013').first()).toBeVisible();
+      await expect(page.getByText('R-2026-00013').first()).toBeVisible();
       await sinViolaciones(page);
       await page.screenshot({ path: `pruebas/capturas/reservar-05-listo-${tm.nombre}.png`, fullPage: true });
     });
@@ -487,7 +487,7 @@ test.describe('B4 pasos', () => {
   test('en Listo los pasos no llevan enlaces', async ({ page }) => {
     await montar(page);
     await page.goto(`/reservar/listo/?id=${R1}`);
-    await expect(page.getByText('RSV-0013').first()).toBeVisible();
+    await expect(page.getByText('R-2026-00013').first()).toBeVisible();
     await expect(pasos(page).getByRole('link')).toHaveCount(0);
   });
 });
@@ -496,16 +496,16 @@ test.describe('N2 a N8', () => {
   test('N3: L1 conserva su código y no hay fila FOLIO', async ({ page }) => {
     await montar(page);
     await page.goto(`/reservar/listo/?id=${R1}`);
-    const panel = page.getByRole('region', { name: /Reserva RSV-0013/ });
+    const panel = page.getByRole('region', { name: /Reserva R-2026-00013/ });
     await expect(panel.locator('.panel-codigo')).toHaveText('L1');
-    await expect(panel.locator('.panel-titulo')).toContainText('Reserva RSV-0013');
+    await expect(panel.locator('.panel-titulo')).toContainText('Reserva R-2026-00013');
     await expect(panel.locator('dt', { hasText: 'Folio' })).toHaveCount(0);
   });
 
   test('N2: hueco entre los bloques de Listo y entre la etiqueta y SALA', async ({ page }) => {
     await montar(page);
     await page.goto(`/reservar/listo/?id=${R1}`);
-    await expect(page.getByText('RSV-0013').first()).toBeVisible();
+    await expect(page.getByText('R-2026-00013').first()).toBeVisible();
     const g = await page.locator('[data-listo]').evaluate((e) => ({ d: getComputedStyle(e).display, g: getComputedStyle(e).rowGap }));
     expect(g).toEqual({ d: 'grid', g: '20px' });
     await page.goto(PASO2);
@@ -630,6 +630,26 @@ test.describe('B1 parámetros inválidos en la URL', () => {
       await expect(page.locator('bugalu-reserva select[name="duracion"]')).toHaveValue('60');
     });
   }
+
+  // El calendario valida inicio y duracion igual que Reserva: Date.parse corrige 31 de noviembre a 1 de diciembre.
+  test('inicio imposible en el calendario: ninguna celda elegida, sin errores', async ({ page }) => {
+    const consola = vigilarConsola(page);
+    await montar(page, { sesion: false });
+    const disp = { ...DISP, franjas: [{ id: 'f2', inicio: '2026-12-01T10:00:00-05:00', fin: '2026-12-01T14:00:00-05:00' }], dias: [{ fecha: '2026-12-01', minutos_libres: 240 }] };
+    await page.route(`${API}/disponibilidad?**`, (r) => r.fulfill(json(200, disp)));
+    await page.goto('/reservar/?fecha=2026-12-01&inicio=2026-11-31T15:00:00Z&duracion=60');
+    await expect(page.getByRole('button', { name: 'martes 1 de diciembre, 10:00, libre' })).toBeVisible();
+    await expect(page.locator('bugalu-calendario [data-estado="inicio"], bugalu-calendario [data-estado="tramo"]')).toHaveCount(0);
+    expect(consola).toEqual([]);
+  });
+
+  test('duracion=0x1e no se reescribe en la URL del calendario', async ({ page }) => {
+    await montar(page, { sesion: false });
+    await page.goto('/reservar/?fecha=2026-11-16&duracion=0x1e');
+    const siguiente = page.getByRole('link', { name: 'Semana siguiente' });
+    await expect(siguiente).toHaveAttribute('href', /fecha=2026-11-23/);
+    expect(await siguiente.getAttribute('href')).not.toContain('duracion');
+  });
 
   test('parámetros válidos se conservan', async ({ page }) => {
     await montar(page);

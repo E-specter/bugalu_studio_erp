@@ -107,7 +107,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
   import { obtenerPerfil } from '../servicios/api.js';
   import { obtenerToken } from '../servicios/sesion.js';
   import { llenarAviso } from '../servicios/formulario.js';
-  import { hoyLima, fechaDe, horaDe, instante, sumarDias, esFecha, nombreDia, diaMes, rangoSemana, semanaDe } from '../servicios/formatos.js';
+  import { hoyLima, fechaDe, horaDe, instante, sumarDias, esFecha, inicioValido, duracionValida, nombreDia, diaMes, rangoSemana, semanaDe } from '../servicios/formatos.js';
 
   const MEDIA = 30 * 60e3;
   const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -175,7 +175,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
 
     attributeChangedCallback(nombre: string, _antes: string | null, valor: string | null) {
       if (nombre === 'duracion' && this.estado) {
-        this.estado.duracion = valor;
+        this.estado.duracion = duracionValida(valor);
         if (this.datos) this.pintar();
       }
     }
@@ -196,8 +196,8 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
         vista,
         fecha: this.avisoFecha || !fecha ? hoy : fecha,
         sala: p.get('sala') ?? '',
-        inicio: this.getAttribute('inicio') ?? p.get('inicio'),
-        duracion: this.getAttribute('duracion') ?? p.get('duracion'),
+        inicio: inicioValido(this.getAttribute('inicio') ?? p.get('inicio')),
+        duracion: duracionValida(this.getAttribute('duracion') ?? p.get('duracion')),
       };
       if (recargar) this.cargar();
     }

@@ -24,7 +24,7 @@ const disponibilidad = ({ conDetalle = false, propia = false } = {}) => ({
   dias: ['16', '17', '18', '19', '20', '21', '22'].map((d) => ({ fecha: `2026-11-${d}`, minutos_libres: { 18: 90, 19: 90, 20: 30 }[d] ?? 0 })),
 });
 const VACIA = { limites: { desde: t('16', '10:00'), hasta: '2026-12-15T10:00:00-05:00' }, franjas: [], ocupados: [], cierres: [], dias: [] };
-const RESERVA = (extra = {}) => ({ id: R1, folio: 'RSV-0012', estado: 'confirmada', inicio: t('18', '11:00'), fin: t('18', '12:00'), sala: 'La Molina', servicio: 'Grabación', cliente: 'Ana Pérez', ...extra });
+const RESERVA = (extra = {}) => ({ id: R1, folio: 'R-2026-00012', estado: 'confirmada', inicio: t('18', '11:00'), fin: t('18', '12:00'), sala: 'La Molina', servicio: 'Grabación', cliente: 'Ana Pérez', ...extra });
 
 // Monta la API: `rol` null = visitante (sin sesion). Devuelve las peticiones a /disponibilidad.
 async function montar(page, { rol = null, disp = disponibilidad({ conDetalle: rol === 'personal' || rol === 'administrador' }), salas = [SALA], mias = [], reservas = [], retraso = 0 } = {}) {
@@ -59,7 +59,7 @@ for (const tm of tamanos) {
   test(`semana (reserva): estados con texto y horas libres, a ${tm.nombre}`, async ({ page }) => {
     const consola = vigilarConsola(page);
     await page.setViewportSize({ width: tm.ancho, height: tm.alto });
-    const vistas = await montar(page, { rol: 'cliente', disp: disponibilidad({ propia: true }), mias: [RESERVA({ id: R1, folio: 'RSV-0012', inicio: t('20', '10:00'), fin: t('20', '10:30') })] });
+    const vistas = await montar(page, { rol: 'cliente', disp: disponibilidad({ propia: true }), mias: [RESERVA({ id: R1, folio: 'R-2026-00012', inicio: t('20', '10:00'), fin: t('20', '10:30') })] });
     await page.goto(SEMANA);
     await expect(titulo(page)).toHaveText(/semana del 16 al 22 nov 2026/i);
     await expect(ver(page, 'Horario de Lima')).toBeVisible();
@@ -79,8 +79,8 @@ for (const tm of tamanos) {
     const textos = (await visible.allTextContents()).map((x) => x.trim());
     for (const estado of ['LIBRE', 'OCUPADO', 'CERRADO', 'NO RESERVABLE', 'TU RESERVA']) expect(textos.some((x) => x.startsWith(estado)), estado).toBe(true);
     await expect(ver(page, 'Feriado').filter({ visible: true }).first()).toBeVisible();
-    await expect(ver(page, 'RSV-0012').filter({ visible: true }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /tu reserva RSV-0012/ })).toHaveAttribute('href', `/app/reservas/detalle?id=${R1}`);
+    await expect(ver(page, 'R-2026-00012').filter({ visible: true }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /tu reserva R-2026-00012/ })).toHaveAttribute('href', `/app/reservas/detalle?id=${R1}`);
     if (tm.ancho > 600) {
       await expect(page.getByRole('columnheader', { name: /MIÉ 18/ })).toContainText('1 h 30 min libres');
       await expect(page.getByRole('columnheader', { name: /LUN 16/ })).toContainText('Sin horas libres');
@@ -266,7 +266,7 @@ for (const tm of tamanos) {
 
 test('agenda (personal): la vista Lista trae las reservas del periodo en una tabla', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  const vistas = await montar(page, { rol: 'personal', reservas: [RESERVA(), RESERVA({ id: 'r2', folio: 'RSV-0013', cliente: 'Eva Soto', servicio: 'Mezcla', estado: 'pre_reservada', inicio: t('20', '10:00'), fin: t('20', '12:00') })] });
+  const vistas = await montar(page, { rol: 'personal', reservas: [RESERVA(), RESERVA({ id: 'r2', folio: 'R-2026-00013', cliente: 'Eva Soto', servicio: 'Mezcla', estado: 'pre_reservada', inicio: t('20', '10:00'), fin: t('20', '12:00') })] });
   await page.goto('/app/agenda/?vista=lista&fecha=2026-11-16');
   await expect(page.getByRole('table')).toBeVisible();
   const lista = vistas.find((v) => !v.has('sala'));
@@ -274,10 +274,10 @@ test('agenda (personal): la vista Lista trae las reservas del periodo en una tab
   expect(lista.get('hasta')).toBe('2026-11-23T00:00:00-05:00');
   await expect(page.getByRole('row')).toHaveCount(3);
   expect(await page.getByRole('row').nth(1).evaluate((tr) => getComputedStyle(tr).display)).toBe('table-row');
-  await expect(page.getByRole('row').nth(1)).toContainText('RSV-0012');
+  await expect(page.getByRole('row').nth(1)).toContainText('R-2026-00012');
   await expect(page.getByRole('row').nth(1)).toContainText('18 nov, 11:00–12:00');
   await expect(page.getByRole('row').nth(1)).toContainText('Ana Pérez');
-  await expect(page.getByRole('link', { name: 'Ver reserva RSV-0013' })).toHaveAttribute('href', '/app/reservas/detalle?id=r2');
+  await expect(page.getByRole('link', { name: 'Ver reserva R-2026-00013' })).toHaveAttribute('href', '/app/reservas/detalle?id=r2');
   await expect(anuncio(page)).toHaveText('2 reservas en este periodo.');
   await sinViolaciones(page);
   await page.screenshot({ path: 'pruebas/capturas/calendario-lista-escritorio.png', fullPage: true });
@@ -293,7 +293,7 @@ test('agenda: en movil, sin vista en la URL abre Lista', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await montar(page, { rol: 'personal', reservas: [RESERVA()] });
   await page.goto('/app/agenda/?fecha=2026-11-16');
-  await expect(page.getByRole('link', { name: 'Ver reserva RSV-0012' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Ver reserva R-2026-00012' })).toBeVisible();
 });
 
 // --- 5. Estados ---

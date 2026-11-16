@@ -216,7 +216,7 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
   import { listarSalas, crearReserva, obtenerReserva } from '../servicios/reservas.js';
   import { listarServicios, listarEspecialistas, simular } from '../servicios/catalogo.js';
   import { ErrorApi } from '../servicios/api.js';
-  import { soles, fechaDe, horaDe, instante, nombreDia, diaMes, duracionReserva, pintarPartidas, esFecha } from '../servicios/formatos.js';
+  import { soles, fechaDe, horaDe, instante, nombreDia, diaMes, duracionReserva, pintarPartidas, esFecha, inicioValido, duracionValida } from '../servicios/formatos.js';
 
   const RUTAS: Record<string, string> = { horario: '/reservar/', servicio: '/reservar/servicio/', confirmar: '/reservar/confirmar/' };
   const DESCRIPCION: Record<string, string> = {
@@ -226,8 +226,6 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
   };
   const UNIDAD: Record<string, string> = { hora: 'por hora', lapso_30: 'por media hora' };
   const dur = duracionReserva;
-  // Date.parse corrige 30 de febrero a 2 de marzo: el texto debe conservar su año, mes y día (en su propia zona).
-  const inicioReal = (t: string) => !isNaN(Date.parse(t)) && esFecha(t.slice(0, 10));
   const sumar = (iso: string, min: number) => {
     const d = new Date(Date.parse(iso) + min * 6e4).toISOString();
     return instante(fechaDe(d), horaDe(d));
@@ -298,15 +296,12 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
     // La URL es entrada no confiable: cada dato se acepta solo con su forma válida; si no, queda vacío y guardar() manda al paso incompleto.
     leerUrl() {
       const p = new URLSearchParams(location.search);
-      const inicio = p.get('inicio');
-      const texto = p.get('duracion') ?? '';
-      const duracion = /^\d+$/.test(texto) ? +texto : 0;
       const fecha = p.get('fecha');
       const vista = p.get('vista');
       const id = (x: string | null) => (x && /^[\w-]{1,64}$/.test(x) ? x : null);
       this.e = {
-        inicio: inicio && /^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?(Z|[+-]\d\d:\d\d)$/.test(inicio) && inicioReal(inicio) ? inicio : null,
-        duracion: Number.isInteger(duracion) && duracion % 30 === 0 && duracion >= 30 && duracion <= 480 ? duracion : 0,
+        inicio: inicioValido(p.get('inicio')),
+        duracion: duracionValida(p.get('duracion')),
         sala: id(p.get('sala')),
         servicio: id(p.get('servicio')),
         esp: (p.get('esp') ?? '').split(',').filter((x) => id(x)),
