@@ -33,7 +33,7 @@ frontend/
 
 | Isla | Requerimiento |
 |---|---|
-| Franjas de sala y simulación (`<bugalu-calendario>`) | [RF-02](../03-requerimientos/RF-02.md), [RF-03](../03-requerimientos/RF-03.md), [RF-04](../03-requerimientos/RF-04.md) |
+| Calendario de sala: reserva y agenda (`<bugalu-calendario>`) | [RF-02](../03-requerimientos/RF-02.md), [RF-03](../03-requerimientos/RF-03.md), [RF-04](../03-requerimientos/RF-04.md) |
 | Agenda de asesoría | [RF-15](../03-requerimientos/RF-15.md) |
 | Registro de pago con captura | [RF-05](../03-requerimientos/RF-05.md), [RF-11](../03-requerimientos/RF-11.md) |
 | Validación de pagos (Administrador) | [RF-05](../03-requerimientos/RF-05.md) |

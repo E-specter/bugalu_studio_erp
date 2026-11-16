@@ -36,9 +36,9 @@ Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-15 →
 | RF | Título | Módulo | Estado |
 |---|---|---|---|
 | [RF-01](03-requerimientos/RF-01.md) | Autenticar usuario y gestionar perfil | `identidad` | implementado |
-| [RF-02](03-requerimientos/RF-02.md) | Simular precio y emitir cotización a medida | `catalogo` | borrador |
-| [RF-03](03-requerimientos/RF-03.md) | Publicar y consultar franjas de sala | `reservas` | borrador |
-| [RF-04](03-requerimientos/RF-04.md) | Registrar reserva de sala | `reservas` | borrador |
+| [RF-02](03-requerimientos/RF-02.md) | Simular precio y emitir cotización a medida | `catalogo` | borrador (CA-01…CA-05 implementados; CA-06 con RF-15) |
+| [RF-03](03-requerimientos/RF-03.md) | Publicar y consultar franjas de sala | `reservas` | implementado |
+| [RF-04](03-requerimientos/RF-04.md) | Registrar reserva de sala | `reservas` | implementado |
 | [RF-05](03-requerimientos/RF-05.md) | Registrar y validar pagos | `pagos` | borrador |
 | [RF-06](03-requerimientos/RF-06.md) | Gestionar estado de reserva y notificaciones | `reservas` | borrador |
 | [RF-07](03-requerimientos/RF-07.md) | Asignar personal técnico a sala | `personal` | borrador |
@@ -79,6 +79,6 @@ Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-15 →
 | 4 | Esqueleto frontend (Astro, layouts, `tokens.css` desde el brief, componentes base, cliente API) | dev_frontend | Hecho |
 | 5 | Skills propias del proyecto ([herramientas-mcp](06-operacion/herramientas-mcp.md#skills-propias-del-proyecto)) | leader | Hecho |
 | 6 | Auditoría del esqueleto contra arquitectura, convenciones y brief | dev_audit (Opus) | Hecho |
-| 7 | Implementación por RF en el orden indicado arriba | todos | Siguiente |
+| 7 | Implementación por RF en el orden indicado arriba | todos | En curso: RF-01, RF-03 y RF-04 hechos; RF-02 parcial (CA-06 con RF-15); siguiente RF-05 |
 
 Planes de implementación: `superpowers/plans/`. Spec original congelada: `superpowers/specs/PROYECTO-v0.2.md`.
