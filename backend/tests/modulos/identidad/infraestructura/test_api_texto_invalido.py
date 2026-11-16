@@ -28,7 +28,9 @@ def _cuerpo(ruta: str, campo: str, valor: str) -> dict[str, str]:
     return {**BASE.get(ruta.rsplit("/", 1)[-1], {}), campo: valor}
 
 
-@pytest.mark.parametrize("valor", [
+@pytest.mark.parametrize(
+    "valor",
+    [
         "a\u0000b",
         "a\x07b",
         "a\x1fb",

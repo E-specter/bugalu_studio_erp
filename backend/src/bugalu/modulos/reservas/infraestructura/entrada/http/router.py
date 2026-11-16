@@ -10,14 +10,19 @@ from bugalu.compartido.esquemas import RespuestaError
 from bugalu.modulos.reservas.aplicacion.actualizar_parametros.caso_de_uso import (
     ActualizarParametros,
 )
+from bugalu.modulos.reservas.aplicacion.cancelar_reserva.caso_de_uso import CancelarReserva
 from bugalu.modulos.reservas.aplicacion.consultar_disponibilidad.caso_de_uso import (
     ConsultarDisponibilidad,
 )
+from bugalu.modulos.reservas.aplicacion.listar_mis_reservas.caso_de_uso import ListarMisReservas
+from bugalu.modulos.reservas.aplicacion.listar_reservas.caso_de_uso import ListarReservas
 from bugalu.modulos.reservas.aplicacion.listar_salas.caso_de_uso import ListarSalas
 from bugalu.modulos.reservas.aplicacion.obtener_parametros.caso_de_uso import ObtenerParametros
+from bugalu.modulos.reservas.aplicacion.obtener_reserva.caso_de_uso import ObtenerReserva
 from bugalu.modulos.reservas.aplicacion.publicar_franjas.caso_de_uso import PublicarFranjas
 from bugalu.modulos.reservas.aplicacion.quitar_cierre.caso_de_uso import QuitarCierre
 from bugalu.modulos.reservas.aplicacion.registrar_cierre.caso_de_uso import RegistrarCierre
+from bugalu.modulos.reservas.aplicacion.registrar_reserva.caso_de_uso import RegistrarReserva
 from bugalu.modulos.reservas.aplicacion.retirar_franja.caso_de_uso import RetirarFranja
 from bugalu.modulos.reservas.aplicacion.sugerir_franjas.caso_de_uso import SugerirFranjas
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo as TramoDominio
@@ -27,12 +32,15 @@ from bugalu.modulos.reservas.infraestructura.entrada.http.esquemas import (
     Disponibilidad,
     Franja,
     Instante,
+    NuevaReserva,
     NuevasFranjas,
     NuevoCierre,
     Parametros,
+    Reserva,
     Sala,
     Tramo,
 )
+from bugalu.modulos.reservas.infraestructura.salida.cotizador_catalogo import CotizadorCatalogo
 from bugalu.modulos.reservas.infraestructura.salida.repositorio_postgres import (
     RepositorioReservasPostgres,
 )
@@ -44,7 +52,7 @@ ClaimsOpcionales = Annotated[dict[str, Any] | None, Depends(obtener_claims_opcio
 
 _DESCRIPCION = {
     401: "Token ausente, invalido o caducado",
-    403: "Se requiere el rol administrador",
+    403: "Sin permiso para esta operacion o recurso",
     404: "No encontrado",
     409: "Conflicto con el estado actual",
     422: "Datos invalidos",
@@ -195,3 +203,87 @@ async def actualizar_parametros(
             cuerpo.model_dump(exclude_unset=True)
         )
     return Parametros(**valores)
+
+
+@router.post(
+    "/reservas",
+    response_model=Reserva,
+    response_model_exclude_unset=True,
+    status_code=201,
+    summary="Reserva un tramo de la sala; el precio y las cuotas los calcula el sistema (cliente)",
+    responses=_respuestas(401, 403, 409, 422),
+)
+async def registrar_reserva(request: Request, claims: Claims, cuerpo: NuevaReserva) -> Reserva:
+    ahora = datetime.now(UTC)
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        reserva = await RegistrarReserva(
+            RepositorioReservasPostgres(conexion), CotizadorCatalogo(conexion)
+        ).ejecutar(
+            cuerpo.id_sala,
+            cuerpo.id_servicio,
+            cuerpo.inicio,
+            cuerpo.fin,
+            cuerpo.especialistas,
+            cuerpo.detalle,
+            ahora,
+        )
+    return Reserva.desde_dominio(reserva)
+
+
+@router.get(
+    "/reservas/mias",
+    response_model=list[Reserva],
+    response_model_exclude_unset=True,
+    summary="Mis reservas con estado, precio, cuotas y fecha limite",
+    responses=_respuestas(401),
+)
+async def listar_mis_reservas(request: Request, claims: Claims) -> list[Reserva]:
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        reservas = await ListarMisReservas(RepositorioReservasPostgres(conexion)).ejecutar()
+    return [Reserva.desde_dominio(r) for r in reservas]
+
+
+@router.get(
+    "/reservas",
+    response_model=list[Reserva],
+    response_model_exclude_unset=True,
+    summary="Reservas de un rango de hasta 42 dias con su cliente (personal o administrador)",
+    responses=_respuestas(401, 403, 422),
+)
+async def listar_reservas(
+    request: Request,
+    claims: Claims,
+    desde: Annotated[Instante, Query()],
+    hasta: Annotated[Instante, Query()],
+) -> list[Reserva]:
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        reservas = await ListarReservas(RepositorioReservasPostgres(conexion)).ejecutar(
+            desde, hasta
+        )
+    return [Reserva.desde_dominio(r) for r in reservas]
+
+
+@router.get(
+    "/reservas/{id_reserva}",
+    response_model=Reserva,
+    response_model_exclude_unset=True,
+    summary="Una reserva: su dueno, el personal o un administrador",
+    responses=_respuestas(401, 403, 404, 422),
+)
+async def obtener_reserva(request: Request, claims: Claims, id_reserva: UUID) -> Reserva:
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        reserva = await ObtenerReserva(RepositorioReservasPostgres(conexion)).ejecutar(id_reserva)
+    return Reserva.desde_dominio(reserva)
+
+
+@router.post(
+    "/reservas/{id_reserva}/cancelar",
+    response_model=Reserva,
+    response_model_exclude_unset=True,
+    summary="Cancela sin costo mientras no haya pagos (dueno o administrador)",
+    responses=_respuestas(401, 403, 404, 409, 422),
+)
+async def cancelar_reserva(request: Request, claims: Claims, id_reserva: UUID) -> Reserva:
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        reserva = await CancelarReserva(RepositorioReservasPostgres(conexion)).ejecutar(id_reserva)
+    return Reserva.desde_dominio(reserva)

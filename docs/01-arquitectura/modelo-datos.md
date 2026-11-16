@@ -39,6 +39,8 @@ Todas las claves primarias son `uuid` ([ADR-006](../00-proyecto/decisiones/ADR-0
 
 **Lecturas de RF-03** (migración `20261123100000_rf03_lectura_disponibilidad`): `public.limites_reserva()` (`security definer`, `anon` y `authenticated`) devuelve solo `minima_horas` y `maxima_semanas` de `parametro`; `public.nombres_de_clientes(uuid[])` (`security definer`, solo `authenticated`) devuelve `id` y `nombre` únicamente si quien llama es personal o administrador (si no, sin filas).
 
+**Funciones de RF-04** (migración `20261124100000_rf04_cancelar_y_avisos`, todas `security definer`, solo `authenticated`): `public.cancelar_reserva(id)` cancela una `pre_reservada` o `confirmada` sin pagos (dueño: motivo `cliente`; administrador: `administrador`, y con pagos también recibe `tiene_pagos` mientras D-11 siga abierta); errores `P0002` (no existe), `42501` (ajena o personal) y `P0001` con mensaje `no_cancelable` o `tiene_pagos`. `public.existe_reserva(id)` distingue 403 de 404 sin devolver datos. `public.plazos_pago()` devuelve `dias` y `horas` de RN-18. `public.encolar_aviso_reserva(id)` encola `reserva_creada` (una vez por reserva) al correo del dueño con folio, inicio, fin, `vence_pago`, servicio y total.
+
 ## Cotizaciones y pagos
 
 | Tabla | Campos clave | Relaciones |

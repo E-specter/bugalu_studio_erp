@@ -1,14 +1,27 @@
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
 from bugalu.compartido.errores import DatosInvalidos
 from bugalu.modulos.catalogo.dominio.precio import (
+    Especialista,
+    Servicio,
     Simulacion,
     bloques_del_tramo,
     calcular_simulacion,
+    combinar_especialistas,
 )
 from bugalu.modulos.catalogo.dominio.puertos import RepositorioCatalogo
+
+
+@dataclass(frozen=True)
+class Cotizacion:
+    """Lo que una reserva necesita guardar: el servicio, los especialistas aplicados y el precio."""
+
+    servicio: Servicio
+    especialistas: tuple[Especialista, ...]
+    simulacion: Simulacion
 
 
 class SimularPrecio:
@@ -25,6 +38,16 @@ class SimularPrecio:
         fin: datetime,
         id_especialistas: Sequence[UUID],
     ) -> Simulacion:
+        return (await self.cotizar(id_sala, id_servicio, inicio, fin, id_especialistas)).simulacion
+
+    async def cotizar(
+        self,
+        id_sala: UUID,
+        id_servicio: UUID,
+        inicio: datetime,
+        fin: datetime,
+        id_especialistas: Sequence[UUID],
+    ) -> Cotizacion:
         if not await self._catalogo.existe_sala(id_sala):
             raise DatosInvalidos("La sala no existe.")
         servicio = await self._catalogo.obtener_servicio(id_servicio)
@@ -43,12 +66,14 @@ class SimularPrecio:
             conocidos[i] for i in servicio.especialistas_por_defecto if conocidos[i].activo
         ]
         fechas = {b.date() for b in bloques_del_tramo(inicio, fin)}  # valida el tramo
-        return calcular_simulacion(
+        extra = [conocidos[i] for i in elegidos]
+        simulacion = calcular_simulacion(
             servicio,
             por_defecto,
-            [conocidos[i] for i in elegidos],
+            extra,
             inicio,
             fin,
             await self._catalogo.obtener_recargos(),
             await self._catalogo.feriados_en(fechas),
         )
+        return Cotizacion(servicio, tuple(combinar_especialistas(por_defecto, extra)), simulacion)

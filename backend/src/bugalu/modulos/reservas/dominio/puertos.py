@@ -4,7 +4,28 @@ from typing import Protocol
 from uuid import UUID
 
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo
-from bugalu.modulos.reservas.dominio.modelos import Cierre, Franja, ReservaVisible, Sala
+from bugalu.modulos.reservas.dominio.modelos import (
+    Cierre,
+    Cotizacion,
+    Franja,
+    NuevaReserva,
+    Reserva,
+    ReservaVisible,
+    Sala,
+)
+
+
+class Cotizador(Protocol):
+    """Precio de un tramo con el motor del catalogo (RN-15); sin escribir nada."""
+
+    async def cotizar(
+        self,
+        id_sala: UUID,
+        id_servicio: UUID,
+        inicio: datetime,
+        fin: datetime,
+        id_especialistas: Sequence[UUID],
+    ) -> Cotizacion: ...
 
 
 class RepositorioReservas(Protocol):
@@ -59,3 +80,33 @@ class RepositorioReservas(Protocol):
     async def obtener_parametros(self) -> dict[str, int]: ...
 
     async def guardar_parametros(self, cambios: Mapping[str, int]) -> None: ...
+
+    async def plazos_pago(self) -> tuple[int, int]:
+        """(dias, horas) de RN-18."""
+        ...
+
+    async def tiene_servicio_previo(self) -> bool:
+        """El usuario tiene una reserva no ensayo `confirmada` o posterior (RN-13)."""
+        ...
+
+    async def insertar_reserva(self, nueva: NuevaReserva) -> UUID:
+        """TramoNoDisponible si la base detecta un solape. Con sus cuotas y especialistas."""
+        ...
+
+    async def encolar_aviso_reserva(self, id_reserva: UUID) -> None: ...
+
+    async def obtener_reserva(self, id_reserva: UUID) -> Reserva | None:
+        """Solo las que la RLS deja ver."""
+        ...
+
+    async def existe_reserva(self, id_reserva: UUID) -> bool:
+        """Existe, sea o no visible para quien pregunta."""
+        ...
+
+    async def listar_mias(self) -> list[Reserva]: ...
+
+    async def listar_en_rango(self, desde: datetime, hasta: datetime) -> list[Reserva]: ...
+
+    async def cancelar_reserva(self, id_reserva: UUID) -> None:
+        """NoEncontrado, SinPermiso, NoCancelable o TienePagos."""
+        ...

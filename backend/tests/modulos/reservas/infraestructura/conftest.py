@@ -63,9 +63,18 @@ def reservas_intactas(
         c.execute(
             "delete from public.cierre_sala where inicio >= '2027-01-01' and inicio < '2028-01-01'"
         )
-        c.execute("delete from public.notificacion where tipo = 'reserva_caducada'")
+        c.execute("delete from public.notificacion")
         for clave, valor in antes:
             c.execute("update public.parametro set valor = %s where clave = %s", (valor, clave))
+        huerfanos = c.execute(
+            "select (select count(*) from public.cuota q where not exists "
+            "(select 1 from public.reserva r where r.id = q.id_reserva)) "
+            "+ (select count(*) from public.reserva_especialista e where not exists "
+            "(select 1 from public.reserva r where r.id = e.id_reserva)) "
+            "+ (select count(*) from public.reserva where inicio >= '2027-01-01' "
+            "and inicio < '2028-01-01')"
+        ).fetchone()
+        assert huerfanos == (0,), f"las pruebas dejaron reservas o cuotas huerfanas: {huerfanos}"
 
 
 def _con_rol(

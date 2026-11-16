@@ -34,9 +34,7 @@ def test_promueve_a_administrador_por_correo_y_es_idempotente(
         with psycopg.connect(
             configuracion.url_base_datos_admin
         ) as c:  # sin el trigger del ultimo administrador
-            c.execute(
-                "alter table public.usuario disable trigger usuario_conserva_administrador"
-            )
+            c.execute("alter table public.usuario disable trigger usuario_conserva_administrador")
             c.execute("update public.usuario set rol = 'cliente' where id = %s", (usuario.id,))
             c.execute("alter table public.usuario enable trigger usuario_conserva_administrador")
 

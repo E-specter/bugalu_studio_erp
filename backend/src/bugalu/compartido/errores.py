@@ -88,3 +88,35 @@ class CierreConReservas(Conflicto):
 
 class RangoInvalido(DatosInvalidos):
     codigo = "rango_invalido"
+
+
+class DuracionInvalida(DatosInvalidos):
+    codigo = "duracion_invalida"
+
+
+class AnticipacionInsuficiente(DatosInvalidos):
+    codigo = "anticipacion_insuficiente"
+
+
+class AnticipacionExcesiva(DatosInvalidos):
+    codigo = "anticipacion_excesiva"
+
+
+class FueraDeFranja(DatosInvalidos):
+    codigo = "fuera_de_franja"
+
+
+class EnsayoNoDisponible(SinPermiso):
+    codigo = "ensayo_no_disponible"
+
+
+class TramoNoDisponible(Conflicto):
+    codigo = "tramo_no_disponible"
+
+
+class TienePagos(Conflicto):
+    codigo = "tiene_pagos"
+
+
+class NoCancelable(Conflicto):
+    codigo = "no_cancelable"

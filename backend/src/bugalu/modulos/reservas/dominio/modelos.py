@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 
@@ -38,6 +40,78 @@ class ReservaVisible:
     estado: str
     inicio: datetime
     fin_buffer: datetime
+
+
+@dataclass(frozen=True)
+class Referencia:
+    id: UUID
+    nombre: str | None
+
+
+@dataclass(frozen=True)
+class ServicioReservado:
+    id: UUID
+    nombre: str
+    categoria: str
+
+
+@dataclass(frozen=True)
+class CuotaReserva:
+    id: UUID
+    hito: str
+    monto: Decimal
+    estado: str
+
+
+@dataclass(frozen=True)
+class Reserva:
+    """Reserva con sus datos de lectura; `precio` es la simulacion guardada al reservarla."""
+
+    id: UUID
+    folio: str
+    estado: str
+    motivo_cancelacion: str | None
+    inicio: datetime
+    fin: datetime
+    fin_buffer: datetime
+    sala: Referencia
+    servicio: ServicioReservado
+    especialistas: tuple[Referencia, ...]
+    precio: dict[str, Any]
+    cuotas: tuple[CuotaReserva, ...]
+    vence_pago: datetime | None
+    id_cliente: UUID
+    cliente: Referencia | None = None  # solo para personal y administrador
+
+
+@dataclass(frozen=True)
+class EspecialistaAplicado:
+    id: UUID
+    monto_fijo: Decimal
+    monto_variable: Decimal
+    unidad: str
+
+
+@dataclass(frozen=True)
+class Cotizacion:
+    categoria: str
+    precio: dict[str, Any]
+    total: Decimal
+    anticipo: Decimal
+    especialistas: tuple[EspecialistaAplicado, ...]
+
+
+@dataclass(frozen=True)
+class NuevaReserva:
+    id_sala: UUID
+    id_servicio: UUID
+    id_franja: UUID
+    inicio: datetime
+    fin: datetime
+    detalle: str | None
+    vence_pago: datetime
+    cotizacion: Cotizacion
+    cuotas: tuple[tuple[str, Decimal], ...]
 
 
 PARAMETROS = (

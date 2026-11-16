@@ -4,18 +4,37 @@ from typing import Any
 from uuid import UUID
 
 from psycopg import AsyncConnection, errors
+from psycopg.types.json import Jsonb
 
-from bugalu.compartido.errores import FranjaSolapada
+from bugalu.compartido.errores import (
+    FranjaSolapada,
+    NoCancelable,
+    NoEncontrado,
+    SinPermiso,
+    TienePagos,
+    TramoNoDisponible,
+)
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo
 from bugalu.modulos.reservas.dominio.modelos import (
     PARAMETROS,
     Cierre,
+    CuotaReserva,
     Franja,
+    NuevaReserva,
+    Referencia,
+    Reserva,
     ReservaVisible,
     Sala,
+    ServicioReservado,
 )
 
 _TOPE_SUGERENCIA = 300
+_RESERVA = (
+    "select r.id, r.folio, r.estado, r.motivo_cancelacion, r.inicio, r.fin, r.fin_buffer, "
+    "r.precio, r.vence_pago, r.id_cliente, sa.id, sa.nombre, se.id, se.nombre, se.categoria "
+    "from public.reserva r join public.sala_tecnica sa on sa.id = r.id_sala "
+    "join public.servicio se on se.id = r.id_servicio "
+)
 
 
 class RepositorioReservasPostgres:
@@ -155,3 +174,120 @@ class RepositorioReservasPostgres:
             await self._conexion.execute(
                 "update public.parametro set valor = %s where clave = %s", (valor, clave)
             )
+
+    async def plazos_pago(self) -> tuple[int, int]:
+        dias, horas = (await self._filas("select * from public.plazos_pago()"))[0]
+        return int(dias), int(horas)
+
+    async def tiene_servicio_previo(self) -> bool:
+        filas = await self._filas(
+            "select exists (select 1 from public.reserva r "
+            "join public.servicio s on s.id = r.id_servicio "
+            "where r.id_cliente = (select auth.uid()) "
+            "and r.estado in ('confirmada', 'en_curso', 'finalizada') and s.categoria <> 'ensayo')"
+        )
+        return bool(filas[0][0])
+
+    async def insertar_reserva(self, nueva: NuevaReserva) -> UUID:
+        try:
+            filas = await self._filas(
+                "insert into public.reserva (id_cliente, id_sala, id_servicio, id_franja, inicio, "
+                "fin, precio, total, vence_pago, detalle) "
+                "values ((select auth.uid()), %s, %s, %s, %s, %s, %s, %s, %s, %s) returning id",
+                (
+                    nueva.id_sala,
+                    nueva.id_servicio,
+                    nueva.id_franja,
+                    nueva.inicio,
+                    nueva.fin,
+                    Jsonb(nueva.cotizacion.precio),
+                    nueva.cotizacion.total,
+                    nueva.vence_pago,
+                    nueva.detalle,
+                ),
+            )
+        except errors.ExclusionViolation:  # RN-01: la base es quien decide el solape
+            raise TramoNoDisponible("Ese horario ya no está disponible.") from None
+        id_reserva: UUID = filas[0][0]
+        for e in nueva.cotizacion.especialistas:
+            await self._conexion.execute(
+                "insert into public.reserva_especialista "
+                "(id_reserva, id_especialista, monto_fijo, monto_variable, unidad) "
+                "values (%s, %s, %s, %s, %s)",
+                (id_reserva, e.id, e.monto_fijo, e.monto_variable, e.unidad),
+            )
+        for hito, monto in nueva.cuotas:
+            await self._conexion.execute(
+                "insert into public.cuota (id_reserva, hito, monto) values (%s, %s, %s)",
+                (id_reserva, hito, monto),
+            )
+        return id_reserva
+
+    async def encolar_aviso_reserva(self, id_reserva: UUID) -> None:
+        await self._conexion.execute("select public.encolar_aviso_reserva(%s)", (id_reserva,))
+
+    async def _reservas(self, condicion: str, parametros: Sequence[Any]) -> list[Reserva]:
+        filas = await self._filas(
+            f"{_RESERVA} where {condicion} order by r.inicio, r.folio", parametros
+        )
+        ids = [f[0] for f in filas]
+        cuotas: dict[UUID, list[CuotaReserva]] = {}
+        especialistas: dict[UUID, list[Referencia]] = {}
+        if ids:
+            for f in await self._filas(
+                "select id, id_reserva, hito, monto, estado from public.cuota "
+                "where id_reserva = any(%s) order by hito",
+                (ids,),
+            ):
+                cuotas.setdefault(f[1], []).append(CuotaReserva(f[0], f[2], f[3], f[4]))
+            for f in await self._filas(
+                "select re.id_reserva, e.id, e.nombre from public.reserva_especialista re "
+                "join public.especialista e on e.id = re.id_especialista "
+                "where re.id_reserva = any(%s) order by e.nombre",
+                (ids,),
+            ):
+                especialistas.setdefault(f[0], []).append(Referencia(f[1], f[2]))
+        return [
+            Reserva(
+                id=f[0],
+                folio=f[1],
+                estado=f[2],
+                motivo_cancelacion=f[3],
+                inicio=f[4],
+                fin=f[5],
+                fin_buffer=f[6],
+                precio=f[7],
+                vence_pago=f[8],
+                id_cliente=f[9],
+                sala=Referencia(f[10], f[11]),
+                servicio=ServicioReservado(f[12], f[13], f[14]),
+                especialistas=tuple(especialistas.get(f[0], [])),
+                cuotas=tuple(cuotas.get(f[0], [])),
+            )
+            for f in filas
+        ]
+
+    async def obtener_reserva(self, id_reserva: UUID) -> Reserva | None:
+        encontradas = await self._reservas("r.id = %s", (id_reserva,))
+        return encontradas[0] if encontradas else None
+
+    async def existe_reserva(self, id_reserva: UUID) -> bool:
+        return bool((await self._filas("select public.existe_reserva(%s)", (id_reserva,)))[0][0])
+
+    async def listar_mias(self) -> list[Reserva]:
+        return await self._reservas("r.id_cliente = (select auth.uid())", ())
+
+    async def listar_en_rango(self, desde: datetime, hasta: datetime) -> list[Reserva]:
+        return await self._reservas("r.inicio < %s and r.fin_buffer > %s", (hasta, desde))
+
+    async def cancelar_reserva(self, id_reserva: UUID) -> None:
+        try:
+            await self._conexion.execute("select public.cancelar_reserva(%s)", (id_reserva,))
+        except errors.NoDataFound:
+            raise NoEncontrado("No existe la reserva.") from None
+        except errors.InsufficientPrivilege:
+            raise SinPermiso("Esa reserva no es tuya.") from None
+        except errors.RaiseException as error:
+            if error.diag.message_primary == "tiene_pagos":
+                raise TienePagos("La reserva ya tiene pagos registrados.") from None
+            raise NoCancelable("La reserva ya no se puede cancelar.") from None

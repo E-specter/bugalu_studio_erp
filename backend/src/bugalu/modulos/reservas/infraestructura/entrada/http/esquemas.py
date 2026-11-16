@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
 
@@ -15,11 +16,13 @@ from pydantic import (
     model_validator,
 )
 
-from bugalu.compartido.esquemas import TextoCorto
+from bugalu.compartido.esquemas import TextoCorto, TextoLargo
+from bugalu.modulos.catalogo.infraestructura.entrada.http.esquemas import Simulacion
 from bugalu.modulos.reservas.aplicacion.consultar_disponibilidad.caso_de_uso import (
     Disponibilidad as DisponibilidadDominio,
 )
 from bugalu.modulos.reservas.dominio import modelos
+from bugalu.modulos.reservas.dominio.disponibilidad import LIMA
 
 
 def _acotado(valor: datetime) -> datetime:
@@ -183,3 +186,76 @@ class CambiosParametros(BaseModel):
         if valor is None:
             raise ValueError("El campo no admite nulo.")
         return valor
+
+
+class NuevaReserva(BaseModel):
+    """El cliente nunca envia precios, estado ni cuotas: `extra` prohibido."""
+
+    model_config = ConfigDict(extra="forbid")
+    id_sala: UUID
+    id_servicio: UUID
+    inicio: Instante
+    fin: Instante
+    especialistas: Annotated[list[UUID], Field(max_length=20)] = []
+    detalle: TextoLargo | None = None
+
+
+class Referencia(BaseModel):
+    id: UUID
+    nombre: str | None
+
+
+class ServicioReserva(BaseModel):
+    id: UUID
+    nombre: str
+    categoria: str
+
+
+class Cuota(BaseModel):
+    id: UUID
+    hito: str
+    monto: Decimal
+    estado: str
+
+
+class Reserva(BaseModel):
+    id: UUID
+    folio: str
+    estado: str
+    motivo_cancelacion: str | None
+    inicio: datetime
+    fin: datetime
+    fin_buffer: datetime
+    sala: Referencia
+    servicio: ServicioReserva
+    especialistas: list[Referencia]
+    precio: Simulacion
+    cuotas: list[Cuota]
+    vence_pago: datetime | None
+    cliente: Referencia | None = None
+
+    @classmethod
+    def desde_dominio(cls, r: modelos.Reserva) -> Reserva:
+        def lima(instante: datetime | None) -> datetime | None:
+            return instante.astimezone(LIMA) if instante else None
+
+        return cls(
+            id=r.id,
+            folio=r.folio,
+            estado=r.estado,
+            motivo_cancelacion=r.motivo_cancelacion,
+            inicio=r.inicio.astimezone(LIMA),
+            fin=r.fin.astimezone(LIMA),
+            fin_buffer=r.fin_buffer.astimezone(LIMA),
+            sala=Referencia(id=r.sala.id, nombre=r.sala.nombre),
+            servicio=ServicioReserva(**vars(r.servicio)),
+            especialistas=[Referencia(id=e.id, nombre=e.nombre) for e in r.especialistas],
+            precio=Simulacion.model_validate(r.precio),
+            cuotas=[Cuota(**vars(c)) for c in r.cuotas],
+            vence_pago=lima(r.vence_pago),
+            **(
+                {"cliente": Referencia(id=r.cliente.id, nombre=r.cliente.nombre)}
+                if r.cliente
+                else {}
+            ),
+        )
