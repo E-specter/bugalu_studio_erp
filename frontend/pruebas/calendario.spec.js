@@ -367,6 +367,21 @@ test('404 de la sala: aviso con enlace a la sala de La Molina', async ({ page })
   await expect(page.getByRole('link', { name: 'Ver la sala de La Molina' })).toHaveAttribute('href', /^\/reservar\/(\?(?!.*sala=).*)?$/);
 });
 
+for (const [modo, rol, ruta] of [['reserva', null, '/reservar/'], ['personal', 'personal', '/app/agenda/']]) {
+  for (const vista of ['semana', 'mes']) {
+    for (const fecha of ['2026-13-01', '2026-99-99', '2026-11-99', '2026-02-30']) {
+      test(`fecha imposible ${fecha} (${modo}, ${vista}): aviso y calendario cargado`, async ({ page }) => {
+        const consola = vigilarConsola(page);
+        await montar(page, { rol });
+        await page.goto(`${ruta}?vista=${vista}&fecha=${fecha}`);
+        await expect(ver(page, 'La fecha del enlace no es válida.', { exact: false })).toBeVisible();
+        await expect(titulo(page)).toBeVisible();
+        expect(consola).toEqual([]);
+      });
+    }
+  }
+}
+
 test('fecha invalida: muestra la semana actual con un aviso', async ({ page }) => {
   await montar(page);
   await page.goto('/reservar/?fecha=basura');

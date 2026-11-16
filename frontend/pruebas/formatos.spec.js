@@ -1,6 +1,6 @@
 // Formatos compartidos (sin navegador): título de semana (N9) y partidas de precio (B3).
 import { test, expect } from '@playwright/test';
-import { rangoSemana, duracionReserva, partidasPrecio, soles } from '../src/servicios/formatos.js';
+import { esFecha, rangoSemana, duracionReserva, partidasPrecio, soles } from '../src/servicios/formatos.js';
 
 test('rangoSemana: dentro de un mes, entre meses y entre años', () => {
   expect(rangoSemana('2026-11-16')).toBe('SEMANA DEL 16 AL 22 NOV 2026');
@@ -32,4 +32,9 @@ test('soles: miles con espacio no separable y coma decimal; el campo no agrupa',
   expect(soles('1250.00')).toBe('S/ 1 250,00');
   expect(soles('1234567.5')).toBe('S/ 1 234 567,50');
   expect(soles('120.00')).toBe('S/ 120,00');
+});
+
+test('esFecha: solo días reales', () => {
+  expect(['2026-11-16', '2028-02-29'].map(esFecha)).toEqual([true, true]);
+  expect(['2026-13-01', '2026-99-99', '2026-11-99', '2026-02-30', 'basura', null].map(esFecha)).toEqual([false, false, false, false, false, false]);
 });

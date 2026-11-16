@@ -605,6 +605,32 @@ test.describe('B1 parámetros inválidos en la URL', () => {
     expect(consola).toEqual([]);
   });
 
+  for (const [nombre, qs] of [
+    ['fecha 2026-13-01', 'fecha=2026-13-01'],
+    ['fecha 2026-99-99', 'fecha=2026-99-99'],
+    ['inicio 2026-02-30', 'inicio=2026-02-30T10%3A00%3A00Z&duracion=60'],
+  ]) {
+    test(`${nombre}: se descarta sin errores`, async ({ page }) => {
+      const consola = vigilarConsola(page);
+      await montar(page, { sesion: false });
+      await page.goto(`/reservar/?${qs}`);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Elige tu horario');
+      await expect(page.locator('bugalu-calendario h2').first()).toBeVisible();
+      if (qs.startsWith('fecha')) await expect(page.getByText('La fecha del enlace no es válida.', { exact: false }).first()).toBeVisible();
+      else await expect(page.locator('bugalu-reserva select[name="duracion"]')).toBeDisabled();
+      expect(consola).toEqual([]);
+    });
+  }
+
+  // Con inicio válido, una duración inválida cae al valor por omisión (60), no a 30.
+  for (const d of ['0x1e', '1e2', '%2B30', '30.0']) {
+    test(`duracion=${d}: se descarta`, async ({ page }) => {
+      await montar(page, { sesion: false });
+      await page.goto(`/reservar/?fecha=2026-11-16&inicio=${encodeURIComponent(INI)}&duracion=${d}`);
+      await expect(page.locator('bugalu-reserva select[name="duracion"]')).toHaveValue('60');
+    });
+  }
+
   test('parámetros válidos se conservan', async ({ page }) => {
     await montar(page);
     await page.goto(`/reservar/confirmar/?${sano}`);

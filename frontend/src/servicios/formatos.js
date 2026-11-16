@@ -13,7 +13,7 @@ export const fechaDe = (iso) => deLima(iso).toISOString().slice(0, 10);
 export const horaDe = (iso) => deLima(iso).toISOString().slice(11, 16);
 export const instante = (fecha, hora) => `${fecha}T${hora}:00-05:00`;
 export const sumarDias = (fecha, n) => new Date(aFecha(fecha).getTime() + n * DIA_MS).toISOString().slice(0, 10);
-export const esFecha = (texto) => /^\d{4}-\d{2}-\d{2}$/.test(texto ?? '') && aFecha(texto).toISOString().startsWith(texto);
+export const esFecha = (texto) => /^\d{4}-\d{2}-\d{2}$/.test(texto ?? '') && !isNaN(aFecha(texto)) && aFecha(texto).toISOString().startsWith(texto);
 
 // Lunes (AAAA-MM-DD) de una semana ISO AAAA-Www; null si no es valida.
 export function lunesDe(semana) {

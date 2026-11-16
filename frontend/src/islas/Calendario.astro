@@ -483,7 +483,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
       this.querySelector('[data-barra]')!.replaceChildren(...this.barra(this.vistasDisponibles()));
       const cuerpo = this.querySelector('[data-cuerpo]')!;
       const estados = new Set<string>();
-      cuerpo.replaceChildren(...(lista ? this.mes(estados) : this.semana(estados)));
+      cuerpo.replaceChildren(...(lista ? this.mes() : this.semana(estados)));
       this.querySelector('[data-leyenda]')!.replaceChildren(...[...estados].map((e) => h('li', {}, (() => { const t = this.pieza('etiqueta-neutra'); t.querySelector('span')!.textContent = TEXTO[e]; return t; })())));
       this.fijarTabulable();
       const dias = this.datos.dias.filter((x: any) => !lista || x.fecha.slice(0, 7) === this.estado.fecha.slice(0, 7));
@@ -556,7 +556,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
             if (UNIBLES.includes(c.e)) while (celdas[i][r + largo]?.clave === c.clave) largo++;
             return this.celda(c, i, largo, grid);
           })))));
-      const lista = this.listaSemana(dias, celdas, maximo, fecha);
+      const lista = this.listaSemana(dias, celdas, fecha);
       this.maximo = maximo;
       return [tabla, lista];
     }
@@ -624,7 +624,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
       return c.s === Date.parse(this.estado.inicio) + MEDIA;
     }
 
-    listaSemana(dias: string[], celdas: any[][], maximo: any, ancla: string) {
+    listaSemana(dias: string[], celdas: any[][], ancla: string) {
       const hoy = hoyLima();
       return h('ul', { class: 'cal-lista-dias' }, ...dias.map((f, i) => {
         const min = this.minutosLibres(f);
@@ -669,7 +669,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
 
     // --- Mes ---
 
-    mes(estados: Set<string>): HTMLElement[] {
+    mes(): HTMLElement[] {
       const { fecha } = this.estado;
       const grid = h('tbody');
       const { desde } = this.rango();
