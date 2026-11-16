@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(22);
 
 -- RF-06: avanzar_reservas() (RN-23): confirmada -> en_curso -> finalizada con el reloj, aviso de saldo una sola vez.
 insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data)
@@ -64,6 +64,31 @@ insert into public.cuota (id_reserva, hito, monto) values ('aaaaaaaa-0000-0000-0
 select is(public.avanzar_reservas(), 1, 'al llegar su fin, la en_curso pasa a finalizada');
 select is((select count(*)::int from public.notificacion where tipo = 'reserva_finalizada_saldo'), 2, 'y avisa su saldo');
 select is(public.avanzar_reservas(), 0, 'idempotente otra vez');
+
+-- Con un pago en validacion el cliente ya pago y espera: no se le avisa del saldo. Con el pago rechazado, si.
+insert into public.reserva (id, id_cliente, id_sala, id_servicio, inicio, fin, total, estado, vence_pago)
+select d.id, '00000000-0000-0000-0000-0000000000c1', sa.id, se.id, d.inicio, d.fin, 80, 'confirmada', '2099-01-01'
+from public.sala_tecnica sa, public.servicio se,
+  (values
+    ('aaaaaaaa-0000-0000-0000-000000000007'::uuid, '2020-01-07 10:00-05'::timestamptz, '2020-01-07 11:00-05'::timestamptz),
+    ('aaaaaaaa-0000-0000-0000-000000000008', '2020-01-08 10:00-05', '2020-01-08 11:00-05')
+  ) as d(id, inicio, fin)
+where se.nombre = 'Ensayo';
+insert into public.cuota (id, id_reserva, hito, monto)
+values ('cccccccc-0000-0000-0000-000000000007', 'aaaaaaaa-0000-0000-0000-000000000007', 'al_terminar', 30),
+       ('cccccccc-0000-0000-0000-000000000008', 'aaaaaaaa-0000-0000-0000-000000000008', 'al_terminar', 35);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c1","role":"authenticated"}', true);
+insert into public.comprobante_pago (id_cuota, id_cliente, metodo, monto, numero_operacion, ruta_captura, tipo_captura)
+values ('cccccccc-0000-0000-0000-000000000007', '00000000-0000-0000-0000-0000000000c1', 'yape', 30, '12345678', 'r/7', 'image/png'),
+       ('cccccccc-0000-0000-0000-000000000008', '00000000-0000-0000-0000-0000000000c1', 'yape', 35, '87654321', 'r/8', 'image/png');
+select set_config('request.jwt.claims', '', true);
+update public.comprobante_pago set estado = 'rechazado', motivo_rechazo = 'Monto errado', validado_en = now()
+  where id_cuota = 'cccccccc-0000-0000-0000-000000000008';
+select is(public.avanzar_reservas(), 2, 'finalizan la del pago en validacion y la del pago rechazado');
+select is((select count(*)::int from public.notificacion where tipo = 'reserva_finalizada_saldo'
+  and datos ->> 'id_reserva' = 'aaaaaaaa-0000-0000-0000-000000000007'), 0, 'con pago en validacion no se avisa del saldo');
+select is((select count(*)::int from public.notificacion where tipo = 'reserva_finalizada_saldo'
+  and datos ->> 'id_reserva' = 'aaaaaaaa-0000-0000-0000-000000000008'), 1, 'con el pago rechazado si se avisa');
 
 select * from finish();
 rollback;

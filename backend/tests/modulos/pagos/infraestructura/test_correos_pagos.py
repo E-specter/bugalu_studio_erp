@@ -8,21 +8,17 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 
 from bugalu.compartido.configuracion import Configuracion
-from bugalu.modulos.notificaciones.infraestructura.entrada.ejecucion import enviar_una_vez
 from tests.conftest import UsuarioDePrueba
 from tests.modulos.pagos.infraestructura.test_api_pagos import PAGOS, pagar
-from tests.modulos.reservas.infraestructura.conftest import con
-from tests.modulos.reservas.infraestructura.test_correos_reserva import correos_de  # noqa: F401
+from tests.modulos.reservas.infraestructura.conftest import Ejecutar, con
+from tests.modulos.reservas.infraestructura.test_correos_reserva import (  # noqa: F401
+    correos_de,
+    enviar_solo_a,
+)
 
 pytestmark = pytest.mark.integracion
 
 Correos = Callable[[str], list[dict[str, Any]]]
-
-
-async def _enviar_todo(app: FastAPI, configuracion: Configuracion) -> None:
-    """Cada administrador de prueba recibe `pago_registrado`: son mas que un lote de 20."""
-    while await enviar_una_vez(app.state.pool, configuracion):
-        pass
 
 
 async def test_aprobar_avisa_al_cliente_que_su_reserva_esta_confirmada(
@@ -33,11 +29,12 @@ async def test_aprobar_avisa_al_cliente_que_su_reserva_esta_confirmada(
     administrador: UsuarioDePrueba,
     cuota_de: Callable[..., str],
     correos_de: Correos,  # noqa: F811
+    sql: Ejecutar,
 ) -> None:
     pago = (await pagar(cliente, cliente_a, cuota_de(cliente_a, "pre_reservada"))).json()
     r = await cliente.post(f"{PAGOS}/{pago['id']}/aprobar", headers=con(administrador))
     assert r.status_code == 200, r.text
-    await _enviar_todo(app, configuracion)
+    await enviar_solo_a(app, configuracion, sql, cliente_a.correo, administrador.correo)
     [correo] = correos_de(cliente_a.correo)
     assert pago["reserva"]["folio"] in correo["Subject"]
     assert "S/ 25,00" in correo["Text"]
@@ -54,6 +51,7 @@ async def test_rechazar_avisa_el_motivo_al_cliente(
     administrador: UsuarioDePrueba,
     cuota_de: Callable[..., str],
     correos_de: Correos,  # noqa: F811
+    sql: Ejecutar,
 ) -> None:
     pago = (await pagar(cliente, cliente_a, cuota_de(cliente_a, "pre_reservada"))).json()
     await cliente.post(
@@ -61,6 +59,6 @@ async def test_rechazar_avisa_el_motivo_al_cliente(
         json={"motivo": "Monto errado"},
         headers=con(administrador),
     )
-    await _enviar_todo(app, configuracion)
+    await enviar_solo_a(app, configuracion, sql, cliente_a.correo, administrador.correo)
     [correo] = correos_de(cliente_a.correo)
     assert "Monto errado" in correo["Text"] and "otro pago" in correo["Text"]

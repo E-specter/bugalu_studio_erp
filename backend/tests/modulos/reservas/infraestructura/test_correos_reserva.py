@@ -45,6 +45,20 @@ def correos_de(request: pytest.FixtureRequest) -> Iterator[Callable[[str], list[
         httpx.request("DELETE", f"{MAILPIT}/search", params={"query": f"to:{correo}"})
 
 
+async def enviar_solo_a(
+    app: FastAPI, configuracion: Configuracion, sql: Ejecutar, *destinatarios: str
+) -> None:
+    """Envia la bandeja de estos destinatarios. Los administradores de otras pruebas (decenas en
+    la sesion) reciben el mismo aviso y cada SMTP cuesta ~0,6 s: se dan por enviados sin enviar."""
+    sql(
+        "update public.notificacion set enviada_en = now() "
+        "where enviada_en is null and destinatario <> all(%s)",
+        list(destinatarios),
+    )
+    while await enviar_una_vez(app.state.pool, configuracion):
+        pass
+
+
 async def test_la_reserva_creada_llega_con_folio_y_fecha_limite(
     app: FastAPI,
     cliente: AsyncClient,
@@ -134,8 +148,7 @@ async def test_el_saldo_al_finalizar_y_las_cancelaciones_llegan_por_correo(
     assert r.status_code == 200, r.text
     r = await cliente.post(f"/api/v1/reservas/{por_cliente}/cancelar", headers=con(cliente_a))
     assert r.status_code == 200, r.text
-    while await enviar_una_vez(app.state.pool, configuracion):  # varios administradores: >1 lote
-        pass
+    await enviar_solo_a(app, configuracion, sql, cliente_a.correo, administrador.correo)
 
     textos = [c["Text"] for c in correos_de(cliente_a.correo)]
     saldo = next(t for t in textos if "saldo pendiente" in t)
