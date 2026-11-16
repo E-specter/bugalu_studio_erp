@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import ValidationError
+from pydantic import SecretStr, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _ENV = Path(__file__).parents[3] / ".env"  # backend/.env, desde cualquier directorio
@@ -26,8 +26,22 @@ class Configuracion(BaseSettings):
     smtp_host: str = "127.0.0.1"
     smtp_puerto: int = 45625
     correo_remitente: str = "no-responder@bugalu.pe"
+    # Cuenta de Google del estudio (ADR-011): con usuario hacen falta clave y STARTTLS.
+    smtp_usuario: str = ""
+    smtp_clave: SecretStr = SecretStr("")
+    smtp_starttls: bool = False
     # Segundos entre envios de la bandeja de correos; 0 desactiva la tarea periodica.
     intervalo_envio_correos: int = 30
+
+    @model_validator(mode="after")
+    def _smtp_con_usuario_exige_clave_y_starttls(self) -> Configuracion:
+        if self.smtp_usuario and not self.smtp_clave.get_secret_value():
+            raise ValueError("SMTP_USUARIO exige SMTP_CLAVE")
+        if self.smtp_usuario and not self.smtp_starttls:
+            raise ValueError(
+                "SMTP_USUARIO exige SMTP_STARTTLS=true (no se envia la clave en claro)"
+            )
+        return self
 
     @property
     def lista_origenes_permitidos(self) -> list[str]:
@@ -47,9 +61,13 @@ def obtener_configuracion() -> Configuracion:
     try:
         return Configuracion()
     except ValidationError as error:
-        faltan = ", ".join(
-            str(e["loc"][0]).upper() for e in error.errors() if e["type"] == "missing"
+        errores = error.errors()
+        faltan = ", ".join(str(e["loc"][0]).upper() for e in errores if e["type"] == "missing")
+        # Solo el mensaje de nuestras reglas: el detalle de pydantic repetiria los valores.
+        invalidas = "; ".join(str(e["ctx"]["error"]) for e in errores if e["type"] == "value_error")
+        detalle = "; ".join(
+            parte for parte in (f"falta {faltan}" if faltan else "", invalidas) if parte
         )
         raise RuntimeError(
-            f"Falta configuracion: {faltan}. Copia backend/.env.example a backend/.env."
+            f"Configuracion invalida: {detalle}. Revisa backend/.env y backend/.env.example."
         ) from None

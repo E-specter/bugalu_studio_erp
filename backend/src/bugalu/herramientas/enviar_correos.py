@@ -1,7 +1,7 @@
 """Herramienta de mantenimiento: envia una vez los correos pendientes de la bandeja `notificacion`.
 
 Uso: uv run python -m bugalu.herramientas.enviar_correos
-Usa URL_BASE_DATOS (rol bugalu_api) y SMTP_HOST/SMTP_PUERTO; no forma parte de la API.
+Usa URL_BASE_DATOS (rol bugalu_api) y las variables SMTP_*; no forma parte de la API.
 """
 
 import asyncio

@@ -35,3 +35,43 @@ def test_src_no_conoce_la_clave_de_servicio() -> None:
     from bugalu.compartido.configuracion import Configuracion
 
     assert not any("servicio" in campo for campo in Configuracion.model_fields)
+
+
+def _base(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("URL_BASE_DATOS", "postgresql://u:p@h/db")
+    monkeypatch.setenv("URL_SUPABASE", "http://127.0.0.1:45621")
+    monkeypatch.setenv("CLAVE_PUBLICABLE_SUPABASE", "k")
+    for variable in ("SMTP_USUARIO", "SMTP_CLAVE", "SMTP_STARTTLS"):
+        monkeypatch.delenv(variable, raising=False)
+
+
+def test_smtp_por_defecto_es_sin_credenciales_ni_starttls(monkeypatch: pytest.MonkeyPatch) -> None:
+    _base(monkeypatch)
+    c = obtener_configuracion()
+    assert (c.smtp_usuario, c.smtp_starttls) == ("", False)
+    assert c.smtp_clave.get_secret_value() == ""
+
+
+@pytest.mark.parametrize(
+    ("entorno", "falta"),
+    [
+        ({"SMTP_USUARIO": "a@b.c", "SMTP_STARTTLS": "true"}, "SMTP_CLAVE"),
+        ({"SMTP_USUARIO": "a@b.c", "SMTP_CLAVE": "x"}, "SMTP_STARTTLS"),
+    ],
+)
+def test_usuario_smtp_exige_clave_y_starttls(
+    monkeypatch: pytest.MonkeyPatch, entorno: dict[str, str], falta: str
+) -> None:
+    _base(monkeypatch)
+    for nombre, valor in entorno.items():
+        monkeypatch.setenv(nombre, valor)
+    with pytest.raises(RuntimeError, match=falta):
+        obtener_configuracion()
+
+
+def test_la_clave_smtp_no_aparece_en_repr(monkeypatch: pytest.MonkeyPatch) -> None:
+    _base(monkeypatch)
+    monkeypatch.setenv("SMTP_USUARIO", "a@b.c")
+    monkeypatch.setenv("SMTP_CLAVE", "secreto-123")
+    monkeypatch.setenv("SMTP_STARTTLS", "true")
+    assert "secreto-123" not in repr(obtener_configuracion())

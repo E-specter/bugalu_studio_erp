@@ -16,7 +16,12 @@ registro = logging.getLogger(__name__)
 
 async def enviar_una_vez(pool: AsyncConnectionPool, configuracion: Configuracion) -> int:
     enviador = EnviadorSmtp(
-        configuracion.smtp_host, configuracion.smtp_puerto, configuracion.correo_remitente
+        configuracion.smtp_host,
+        configuracion.smtp_puerto,
+        configuracion.correo_remitente,
+        configuracion.smtp_usuario,
+        configuracion.smtp_clave.get_secret_value(),
+        configuracion.smtp_starttls,
     )
     return await enviar_pendientes(BandejaPostgres(pool), enviador)
 
