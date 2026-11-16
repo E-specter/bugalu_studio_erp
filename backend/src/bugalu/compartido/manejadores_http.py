@@ -1,5 +1,6 @@
 """Formato unico de error HTTP: {"error": {"codigo": str, "mensaje": str, "detalles"?: dict}}."""
 
+import logging
 from collections.abc import Mapping
 from typing import Any
 
@@ -11,6 +12,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from bugalu.compartido.errores import ErrorDeNegocio
 
+_registro = logging.getLogger(__name__)
 _HTTP = {
     404: ("no_encontrado", "Recurso no encontrado."),
     405: ("metodo_no_permitido", "Metodo no permitido."),
@@ -76,6 +78,10 @@ def registrar_manejadores(app: FastAPI) -> None:
         return respuesta_de_error(422, "datos_invalidos", "Datos invalidos.")
 
     @app.exception_handler(IntegrityError)
-    async def _integridad(_: Request, __: IntegrityError) -> JSONResponse:
-        # Restriccion no prevista (FK, unique, exclusion): conflicto, nunca 500.
+    async def _integridad(_: Request, error: IntegrityError) -> JSONResponse:
+        # Restriccion no prevista (FK, unique, exclusion): conflicto, nunca 500. Se registra
+        # solo el tipo y la restriccion, sin los valores de la fila.
+        _registro.warning(
+            "Integridad imprevista: %s (%s)", type(error).__name__, error.diag.constraint_name
+        )
         return respuesta_de_error(409, "conflicto", "La operación choca con datos existentes.")

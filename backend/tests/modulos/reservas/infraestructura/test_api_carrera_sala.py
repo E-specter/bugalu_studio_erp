@@ -94,3 +94,20 @@ async def test_reservar_y_cerrar_a_la_vez_nunca_dejan_una_reserva_vigente_dentro
         assert dentro == [(0,)]
         sql("delete from public.reserva where inicio >= '2027-01-01' and inicio < '2028-01-01'")
         sql("delete from public.cierre_sala where inicio >= '2027-01-01' and inicio < '2028-01-01'")
+
+
+async def test_reservar_no_espera_a_un_patch_de_especialistas_en_curso(
+    peticion: dict[str, Callable[[], Any]], configuracion: Configuracion, voces: str
+) -> None:
+    from uuid import UUID
+
+    from bugalu.modulos.catalogo.infraestructura.salida.repositorio_postgres import (
+        RepositorioCatalogoPostgres,
+    )
+
+    # Transaccion abierta con el bloqueo del servicio que toma el PATCH (sin commit).
+    async with await psycopg.AsyncConnection.connect(configuracion.url_base_datos_admin) as c:
+        await RepositorioCatalogoPostgres(c).reemplazar_especialistas_por_defecto(UUID(voces), [])
+        respuesta = await asyncio.wait_for(peticion["reservar"](), 5)
+        await c.rollback()
+    assert respuesta.status_code == 201, respuesta.text

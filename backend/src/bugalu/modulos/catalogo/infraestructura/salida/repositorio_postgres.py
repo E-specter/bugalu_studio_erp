@@ -64,9 +64,10 @@ class RepositorioCatalogoPostgres:
     async def reemplazar_especialistas_por_defecto(
         self, id_servicio: UUID, ids: Sequence[UUID]
     ) -> None:
-        # Serializa reemplazos concurrentes (si no: UniqueViolation o listas mezcladas).
+        # Serializa reemplazos concurrentes (si no: UniqueViolation o listas mezcladas); "no key"
+        # no frena el insert de reservas (FK, key share).
         await self._conexion.execute(
-            "select 1 from public.servicio where id = %s for update", (id_servicio,)
+            "select 1 from public.servicio where id = %s for no key update", (id_servicio,)
         )
         await self._conexion.execute(
             "delete from public.servicio_especialista where id_servicio = %s", (id_servicio,)

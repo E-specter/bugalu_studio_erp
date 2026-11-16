@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from typing import Any
 
 import psycopg
@@ -7,6 +8,10 @@ from httpx import ASGITransport, AsyncClient
 
 from bugalu.compartido.manejadores_http import registrar_manejadores
 from bugalu.main import crear_app
+
+
+class _ViolacionFk(psycopg.errors.ForeignKeyViolation):
+    diag = SimpleNamespace(constraint_name="reserva_id_franja_fkey")  # type: ignore[assignment]
 
 
 @pytest.fixture
@@ -28,7 +33,7 @@ def cliente() -> AsyncClient:
 
     @app.get("/integridad")
     def integridad() -> None:
-        raise psycopg.errors.ForeignKeyViolation("viola reserva_id_franja_fkey: secreto-interno")
+        raise _ViolacionFk("viola: secreto-interno")
 
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://t")
 
@@ -130,3 +135,14 @@ async def test_una_violacion_de_integridad_imprevista_es_409_y_nunca_500(
         "error": {"codigo": "conflicto", "mensaje": "La operación choca con datos existentes."}
     }
     assert "secreto-interno" not in r.text
+
+
+async def test_la_violacion_de_integridad_se_registra_sin_valores_de_la_fila(
+    cliente: AsyncClient, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level("WARNING"):
+        await cliente.get("/integridad")
+    registro = next(r for r in caplog.records if r.levelname == "WARNING")
+    mensaje = registro.getMessage()
+    assert "_ViolacionFk" in mensaje and "reserva_id_franja_fkey" in mensaje
+    assert "secreto-interno" not in mensaje
