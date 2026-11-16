@@ -66,11 +66,17 @@ Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-15 →
 
 ## 06 · Operación
 
+Montaje: desarrollo [montaje-local](06-operacion/montaje-local.md) · [pruebas-locales](06-operacion/pruebas-locales.md) — producción [produccion](06-operacion/produccion.md) · [produccion-supabase](06-operacion/produccion-supabase.md) · [produccion-servicios](06-operacion/produccion-servicios.md) · [produccion-exposicion](06-operacion/produccion-exposicion.md) · [produccion-mantenimiento](06-operacion/produccion-mantenimiento.md)
+
 [montaje-local](06-operacion/montaje-local.md) · [entornos](06-operacion/entornos.md) · [despliegue](06-operacion/despliegue.md) · [herramientas-mcp](06-operacion/herramientas-mcp.md) · [credenciales-oauth](06-operacion/credenciales-oauth.md) · [correo-gmail](06-operacion/correo-gmail.md) · [calendario-google](06-operacion/calendario-google.md)
 
 ## 07 · Diseño
 
 [brief](07-diseno/brief.md) · [figma](07-diseno/figma.md) · [tokens](07-diseno/tokens.md) · [componentes](07-diseno/componentes/README.md) · `fundamentos/`, [patrones](07-diseno/patrones/README.md), `pantallas/` (pantallas en la fase 7)
+
+## 08 · Legal
+
+[textos legales](08-legal/README.md) (borradores para revisión de un abogado, [ADR-012](00-proyecto/decisiones/ADR-012-textos-legales-y-consentimientos.md))
 
 ## Hoja de ruta
 

@@ -10,10 +10,10 @@ depende_de: [D-08]
 | Entorno | Base de datos | Ejecución |
 |---|---|---|
 | Desarrollo | Supabase **local** (CLI + Docker) | `npx supabase start` · `uv run python -m bugalu` (en `backend/`, ver [montaje-local](montaje-local.md)) · `npm run dev` |
-| Pruebas | Pendiente (D-08) | — |
-| Producción | Pendiente (D-08) | Despliegue controlado tras aprobación |
+| Pruebas | Pendiente | — |
+| Producción | Supabase **autoalojado** (Docker Compose) en el servidor del estudio ([ADR-014](../00-proyecto/decisiones/ADR-014-alojamiento-inicial-local.md)) | Backend como servicio, frontend estático y proxy con HTTPS ([produccion](produccion.md)); despliegue controlado tras aprobación |
 
-No hay suscripción a Supabase: por ahora todo corre en local. Pruebas y producción dependen del hosting (D-08, ver [decisiones](../00-proyecto/decisiones/README.md)).
+No hay suscripción a Supabase: el desarrollo usa el stack del CLI y la producción, Supabase autoalojado en el servidor del estudio. El entorno de pruebas no está decidido.
 
 ## Servicios del stack local de Supabase
 
