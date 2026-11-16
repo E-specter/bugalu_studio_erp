@@ -1,0 +1,11 @@
+---
+import LayoutPublico from '../../layouts/LayoutPublico.astro';
+import EncabezadoPantalla from '../../componentes/EncabezadoPantalla.astro';
+import Calendario from '../../islas/Calendario.astro';
+---
+
+<!-- Paso 01 del flujo de reserva (RF-04): por ahora solo el calendario; los pasos, el resumen y "Continuar" llegan con la pantalla de reservar. -->
+<LayoutPublico titulo="Reservar sala">
+  <EncabezadoPantalla variante="flujo" titulo="Elige tu horario" indice="PASO 01 / 05" descripcion="Elige una media hora libre de la sala." />
+  <Calendario modo="reserva" />
+</LayoutPublico>

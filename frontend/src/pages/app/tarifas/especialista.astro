@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Tarifas from '../../../islas/Tarifas.astro';
+---
+
+<LayoutApp titulo="Editar especialista">
+  <EncabezadoPantalla
+    titulo="Editar especialista"
+    indice="[A5] CATÁLOGO / TARIFAS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Tarifas', href: '/app/tarifas' }, { etiqueta: 'Especialista' }]}
+    descripcion="Cuánto suma este especialista a cada reserva."
+  />
+  <Tarifas vista="especialista" />
+</LayoutApp>

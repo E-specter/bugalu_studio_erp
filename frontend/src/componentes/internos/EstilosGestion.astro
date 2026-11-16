@@ -1,0 +1,119 @@
+---
+// Pieza interna (no es del catalogo): clases de composicion compartidas por las islas de gestion (Franjas, Tarifas): rejilla
+// principal + lateral, formularios, grupos (fieldset), datos (dl) y filas de campos. Solo tokens.
+---
+
+<style is:global>
+  .gestion-rejilla {
+    display: grid;
+    gap: var(--espacio-5);
+    align-items: start;
+  }
+  .gestion-principal,
+  .gestion-lateral {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+    min-inline-size: 0;
+  }
+  .gestion-lateral .panel-lateral {
+    inline-size: auto;
+  }
+  @media (min-width: 64em) { /* punto-quiebre-escritorio: el lateral va junto al principal */
+    .gestion-rejilla {
+      grid-template-columns: minmax(0, 1fr) var(--medida-columna-lateral);
+    }
+    .gestion-rejilla-simple {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  .gestion-formulario {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+  }
+  .gestion-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-inline-size: 0;
+  }
+  .gestion-grupo > legend {
+    margin-block-end: var(--espacio-2);
+    padding: 0;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .gestion-ayuda {
+    margin: 0;
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+  }
+  .gestion-fila-campos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-3);
+    align-items: start;
+  }
+  .gestion-fila-campos > * {
+    flex: 1 1 calc(var(--espacio-20) + var(--espacio-12));
+    min-inline-size: 0;
+  }
+  .gestion-datos {
+    display: grid;
+    gap: var(--espacio-4);
+    margin: 0;
+  }
+  .gestion-datos dt {
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .gestion-datos dd {
+    margin: 0;
+    color: var(--color-texto-principal);
+    font-size: var(--fuente-tamano-lectura);
+    overflow-wrap: anywhere;
+  }
+  /* Enlaces de resumen de errores y de reservas afectadas: objetivo tactil (WCAG 2.5.8). */
+  [data-gestion] .aviso-cuerpo ul a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--medida-control-tactil);
+  }
+  .gestion-vacio-titulo {
+    margin: 0;
+    color: var(--color-texto-principal);
+    font-weight: var(--fuente-peso-titulo);
+  }
+  .gestion-periodo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-2) var(--espacio-4);
+    margin-block-end: var(--espacio-4);
+  }
+  .gestion-periodo-titulo {
+    margin: 0;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .gestion-motivo {
+    display: block;
+    margin-block-start: var(--espacio-1);
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+  }
+  .gestion-motivo[hidden],
+  [data-gestion] [hidden] {
+    display: none;
+  }
+</style>

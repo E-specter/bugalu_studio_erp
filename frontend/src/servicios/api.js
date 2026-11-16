@@ -4,12 +4,13 @@ const base = (import.meta.env.PUBLIC_URL_API ?? '').replace(/\/$/, '');
 
 // Formato unico de error del backend: {"error": {"codigo", "mensaje"}}. estado 0 = sin respuesta.
 export class ErrorApi extends Error {
-  constructor(estado, codigo, mensaje) {
+  constructor(estado, codigo, mensaje, detalles) {
     super(mensaje);
     this.name = 'ErrorApi';
     this.estado = estado;
     this.codigo = codigo;
     this.mensaje = mensaje;
+    this.detalles = detalles; // opcional: datos que la interfaz necesita (p. ej. las reservas de un 409)
   }
 }
 
@@ -34,7 +35,7 @@ export async function pedir(ruta, { cuerpo, headers, ...opciones } = {}) {
   }
   if (!respuesta.ok) {
     const { error } = await respuesta.json().catch(() => ({}));
-    throw new ErrorApi(respuesta.status, error?.codigo ?? 'error_desconocido', error?.mensaje ?? 'El servidor devolvió un error.');
+    throw new ErrorApi(respuesta.status, error?.codigo ?? 'error_desconocido', error?.mensaje ?? 'El servidor devolvió un error.', error?.detalles);
   }
   return respuesta.status === 204 ? null : respuesta.json();
 }

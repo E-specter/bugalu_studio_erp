@@ -1,0 +1,479 @@
+---
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Casilla from '../componentes/Casilla.astro';
+import Tabla from '../componentes/Tabla.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+
+interface Props {
+  vista: 'lista' | 'servicio' | 'especialista' | 'recargos';
+}
+const { vista } = Astro.props;
+// Panel de la vista mientras carga o falla (codigos y titulos de la spec RF-02-tarifas).
+const principal = { lista: { codigo: 'T1', titulo: 'Servicios' }, servicio: { codigo: 'S1', titulo: 'Servicio' }, especialista: { codigo: 'E1', titulo: 'Especialista' }, recargos: { codigo: 'R1', titulo: 'Recargos por horario' } }[vista];
+const aviso = 'Los cambios valen para las simulaciones y reservas nuevas; las ya hechas guardan su precio.';
+const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
+---
+
+<EstilosGestion />
+
+<!-- Un bloque por estado (estados-sistema): la isla clona el que toca. Sin JS, el noscript oculta la carga y avisa. -->
+<bugalu-tarifas class="tarifas" data-gestion vista={vista}>
+  <div data-avisos></div>
+  <!-- Region viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  <div data-salida><Panel {...principal} cargando /></div>
+
+  <EstadosIsla principal={principal} noEncontrada={vista === 'servicio' || vista === 'especialista' ? { etiqueta: 'Volver a tarifas', href: '/app/tarifas' } : undefined} />
+
+  <template data-sello="neutra"><EtiquetaTecnica texto=" " /></template>
+  <template data-sello="exito"><EtiquetaTecnica variante="exito" texto=" " /></template>
+
+  {vista === 'lista' && (
+    <>
+      <template data-estado="datos">
+        <div class="gestion-principal">
+          <Panel codigo="T1" titulo="Servicios">
+            <div data-vacio="servicios" hidden>
+              <p class="gestion-vacio-titulo">Aún no hay servicios cargados.</p>
+              <p>Se cargan con la base de datos inicial; avisa al equipo técnico.</p>
+            </div>
+            <Tabla titulo="Servicios" columnas={['Servicio', 'Categoría', 'Ocupa sala', 'Tarifa por hora', 'Monto fijo', 'Por defecto', 'Estado', '']} />
+          </Panel>
+          <Panel codigo="T2" titulo="Especialistas">
+            <div data-vacio="especialistas" hidden>
+              <p class="gestion-vacio-titulo">Aún no hay especialistas cargados.</p>
+              <p>Se cargan con la base de datos inicial; avisa al equipo técnico.</p>
+            </div>
+            <Tabla titulo="Especialistas" columnas={['Especialista', 'Monto fijo', 'Monto variable', 'Unidad', 'Estado', '']} />
+          </Panel>
+        </div>
+      </template>
+      <template data-fila-servicio>
+        <tr>
+          <th scope="row" data-nombre></th>
+          <td data-etiqueta="Categoría" data-categoria></td>
+          <td data-etiqueta="Ocupa sala" data-ocupa></td>
+          <td data-etiqueta="Tarifa por hora" data-tarifa></td>
+          <td data-etiqueta="Monto fijo" data-fijo></td>
+          <td data-etiqueta="Por defecto" data-defecto></td>
+          <td data-etiqueta="Estado" data-activo></td>
+          <td><Boton variante="secundario" href="#" data-editar>Editar<span class="visualmente-oculto" data-objeto></span></Boton></td>
+        </tr>
+      </template>
+      <template data-fila-especialista>
+        <tr>
+          <th scope="row" data-nombre></th>
+          <td data-etiqueta="Monto fijo" data-fijo></td>
+          <td data-etiqueta="Monto variable" data-variable></td>
+          <td data-etiqueta="Unidad" data-unidad></td>
+          <td data-etiqueta="Estado" data-activo></td>
+          <td><Boton variante="secundario" href="#" data-editar>Editar<span class="visualmente-oculto" data-objeto></span></Boton></td>
+        </tr>
+      </template>
+    </>
+  )}
+
+  {vista === 'servicio' && (
+    <>
+      <template data-estado="datos">
+        <div class="gestion-rejilla">
+          <Panel codigo="S1" titulo="Servicio">
+            <dl class="gestion-datos">
+              <div><dt>Nombre</dt><dd data-campo="nombre"></dd></div>
+              <div><dt>Categoría</dt><dd data-campo="categoria"></dd></div>
+              <div><dt>Ocupa sala</dt><dd data-campo="ocupa_sala"></dd></div>
+            </dl>
+          </Panel>
+          <div class="gestion-lateral">
+            <Panel codigo="S2" titulo="Tarifa" variante="lateral">
+              <form novalidate method="post" class="gestion-formulario" data-formulario="servicio">
+                <Aviso titulo={aviso} />
+                <Campo nombre="tarifa_hora" etiqueta="Tarifa por hora (S/)" obligatorio {...ayudaImporte} />
+                <Campo nombre="monto_fijo" etiqueta="Monto fijo (S/)" ayuda="Se cobra una vez por reserva." obligatorio {...ayudaImporte} />
+                <fieldset class="gestion-grupo">
+                  <legend>Especialistas por defecto</legend>
+                  <p class="gestion-ayuda">Van incluidos y el cliente no puede quitarlos.</p>
+                  <div class="gestion-grupo" data-especialistas></div>
+                </fieldset>
+                <Casilla nombre="activo" etiqueta="Activo" detalle="Si lo desactivas, deja de ofrecerse al reservar." />
+                <div><Boton tipo="submit" data-envio>Guardar servicio</Boton></div>
+              </form>
+            </Panel>
+          </div>
+        </div>
+      </template>
+      <template data-casilla-especialista><Casilla nombre="especialistas_por_defecto" etiqueta=" " valor="" /></template>
+    </>
+  )}
+
+  {vista === 'especialista' && (
+    <template data-estado="datos">
+      <div class="gestion-rejilla">
+        <Panel codigo="E1" titulo="Especialista">
+          <dl class="gestion-datos">
+            <div><dt>Nombre</dt><dd data-campo="nombre"></dd></div>
+          </dl>
+        </Panel>
+        <div class="gestion-lateral">
+          <Panel codigo="E2" titulo="Tarifa" variante="lateral">
+            <form novalidate method="post" class="gestion-formulario" data-formulario="especialista">
+              <Aviso titulo={aviso} />
+              <div class="gestion-fila-campos">
+                <Campo nombre="monto_fijo" etiqueta="Monto fijo (S/)" ayuda="Se cobra una vez por reserva." obligatorio {...ayudaImporte} />
+                <Campo nombre="monto_variable" etiqueta="Monto variable (S/)" ayuda="Se cobra por cada hora o media hora de la reserva, según la unidad." obligatorio {...ayudaImporte} />
+              </div>
+              <fieldset class="gestion-grupo">
+                <legend>Unidad</legend>
+                <Casilla tipo="radio" nombre="unidad" valor="hora" etiqueta="Por hora" />
+                <Casilla tipo="radio" nombre="unidad" valor="lapso_30" etiqueta="Por media hora" />
+              </fieldset>
+              <Casilla nombre="activo" etiqueta="Activo" />
+              <div><Boton tipo="submit" data-envio>Guardar especialista</Boton></div>
+            </form>
+          </Panel>
+        </div>
+      </div>
+    </template>
+  )}
+
+  {vista === 'recargos' && (
+    <>
+      <template data-estado="datos">
+        <div class="gestion-rejilla">
+          <Panel codigo="R1" titulo="Recargos por horario">
+            <form novalidate method="post" class="gestion-formulario" data-formulario="recargos">
+              <p class="gestion-ayuda">Se aplica a la parte variable de cada media hora que cae en ese horario, nunca al monto fijo.</p>
+              <fieldset class="gestion-grupo">
+                <legend>Noche</legend>
+                <div class="gestion-fila-campos">
+                  <Campo tipo="number" nombre="noche_porcentaje" etiqueta="Recargo (%)" obligatorio min="0" step="0.01" />
+                  <Campo tipo="time" nombre="noche_desde" etiqueta="Desde" obligatorio step="1800" />
+                  <Campo tipo="time" nombre="noche_hasta" etiqueta="Hasta" obligatorio step="1800" />
+                </div>
+                <p class="gestion-ayuda">Puede pasar la medianoche: de 22:00 a 06:00.</p>
+              </fieldset>
+              <fieldset class="gestion-grupo">
+                <legend>Fin de semana</legend>
+                <Campo tipo="number" nombre="fin_de_semana_porcentaje" etiqueta="Recargo (%)" obligatorio min="0" step="0.01" />
+              </fieldset>
+              <fieldset class="gestion-grupo">
+                <legend>Feriado</legend>
+                <Campo tipo="number" nombre="feriado_porcentaje" etiqueta="Recargo (%)" obligatorio min="0" step="0.01" />
+              </fieldset>
+              <div><Boton tipo="submit" data-envio>Guardar recargos</Boton></div>
+            </form>
+          </Panel>
+          <div class="gestion-lateral">
+            <Panel codigo="R2" titulo="Feriados" variante="lateral">
+              <nav class="gestion-periodo" aria-label="Año de los feriados" data-anios>
+                <EtiquetaTecnica variante="filtro" texto="0000" href="#" />
+                <EtiquetaTecnica variante="filtro" texto="0000" href="#" />
+              </nav>
+              <p data-vacio="feriados" hidden></p>
+              <Tabla titulo="Feriados" columnas={['Fecha', 'Nombre', '']} variante="compacta" />
+              <form novalidate method="post" class="gestion-formulario" data-formulario="feriado">
+                <Campo tipo="date" nombre="feriado-fecha" etiqueta="Fecha" obligatorio />
+                <Campo nombre="feriado-nombre" etiqueta="Nombre" obligatorio />
+                <div><Boton tipo="submit" variante="secundario" data-envio>Añadir feriado</Boton></div>
+              </form>
+            </Panel>
+          </div>
+        </div>
+      </template>
+      <template data-fila-feriado>
+        <tr>
+          <th scope="row" data-fecha></th>
+          <td data-etiqueta="Nombre" data-nombre></td>
+          <td><Boton variante="secundario" data-envio data-quitar-feriado>Quitar feriado<span class="visualmente-oculto" data-objeto></span></Boton></td>
+        </tr>
+      </template>
+    </>
+  )}
+</bugalu-tarifas>
+
+<script>
+  // @ts-nocheck
+  import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { listarServicios, actualizarServicio, listarEspecialistas, actualizarEspecialista, obtenerRecargos, guardarRecargos, listarFeriados, crearFeriado, quitarFeriado } from '../servicios/catalogo.js';
+  import { leerImporte, mostrarImporte, soles, hoyLima, esFecha, diaMes, diaMesAnio } from '../servicios/formatos.js';
+  import { mostrarAviso, enfocarAviso, quitarError } from '../servicios/formulario.js';
+
+  const categorias = { grabacion: 'GRABACIÓN', ensayo: 'ENSAYO', live: 'LIVE', posproduccion: 'POSPRODUCCIÓN' };
+  const unidades = { hora: 'por hora', lapso_30: 'por media hora' };
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  const ERROR_IMPORTE = 'Escribe un importe de 0 o más, con hasta dos decimales, como 120,50.';
+  const ERROR_PORCENTAJE = 'Escribe un porcentaje de 0 o más.';
+
+  class BugaluTarifas extends IslaGestion {
+    avisosUrl = {
+      'servicio-actualizado': ['Servicio actualizado', 'El precio nuevo se aplica a las simulaciones y reservas desde ahora.'],
+      'especialista-actualizado': ['Especialista actualizado', 'El precio nuevo se aplica a las simulaciones y reservas desde ahora.'],
+    };
+
+    iniciar() {
+      this.registro = new URLSearchParams(location.search).get('id') ?? '';
+      this.noEncontrada = [this.vista === 'servicio' ? 'No encontramos este servicio.' : 'No encontramos este especialista.'];
+      this.addEventListener('click', (e) => {
+        const boton = e.target.closest('[data-quitar-feriado]');
+        if (boton) this.quitarElFeriado(boton);
+      });
+    }
+
+    alEnviar(formulario) {
+      const accion = formulario.dataset.formulario;
+      if (accion === 'servicio') this.guardarServicio(formulario);
+      else if (accion === 'especialista') this.guardarEspecialista(formulario);
+      else if (accion === 'recargos') this.guardarRecargos(formulario);
+      else this.anadirFeriado(formulario);
+    }
+
+    errorEnvio(error) {
+      if (error.estado === 404 && this.registro) this.sustituir('no-encontrada');
+      else if (error.estado === 409) this.errorCampo(this.querySelector('[name="feriado-fecha"]'), 'Ya hay un feriado en esa fecha.');
+      else if (error.estado === 422 && error.detalles?.campo && this.querySelector(`[name="${error.detalles.campo}"]`)) {
+        const entrada = this.querySelector(`[name="${error.detalles.campo}"]`);
+        this.errorCampo(entrada, entrada.type === 'text' ? ERROR_IMPORTE : ERROR_PORCENTAJE);
+      } else return false;
+      return true;
+    }
+
+    errorCampo(entrada, mensaje) {
+      this.validar([{ entrada, mensaje, texto: this.etiqueta(entrada) }]);
+    }
+
+    sello(tipo, texto) {
+      const nodo = this.querySelector(`template[data-sello="${tipo}"]`).content.cloneNode(true);
+      nodo.querySelector('.etiqueta > span:last-child').textContent = texto;
+      return nodo;
+    }
+
+    selloActivo = (activo) => this.sello(activo ? 'exito' : 'neutra', activo ? 'ACTIVO' : 'INACTIVO');
+
+    // Filas de una tabla desde una plantilla; `vacio` explica cuando no hay nada.
+    llenarTabla(clave, plantilla, registros, llenar) {
+      const vacio = this.querySelector(`[data-vacio="${clave}"]`);
+      const tabla = vacio.nextElementSibling;
+      vacio.hidden = registros.length > 0;
+      tabla.hidden = registros.length === 0;
+      const modelo = this.querySelector(`template[${plantilla}]`);
+      tabla.querySelector('tbody').replaceChildren(...registros.map((r) => {
+        const fila = modelo.content.cloneNode(true).firstElementChild;
+        llenar(fila, r);
+        return fila;
+      }));
+    }
+
+    // --- Lista ---
+
+    async lista() {
+      const [servicios, especialistas] = await Promise.all([listarServicios(), listarEspecialistas()]);
+      const nombres = new Map(especialistas.map((e) => [e.id, e.nombre]));
+      this.mostrar('datos');
+      this.llenarTabla('servicios', 'data-fila-servicio', servicios, (fila, s) => {
+        fila.querySelector('[data-nombre]').textContent = s.nombre;
+        fila.querySelector('[data-categoria]').append(this.sello('neutra', categorias[s.categoria] ?? String(s.categoria).toUpperCase()));
+        fila.querySelector('[data-ocupa]').textContent = s.ocupa_sala ? 'Sí' : 'No (va por proyecto)';
+        fila.querySelector('[data-tarifa]').textContent = soles(s.tarifa_hora);
+        fila.querySelector('[data-fijo]').textContent = soles(s.monto_fijo);
+        fila.querySelector('[data-defecto]').textContent = s.especialistas_por_defecto.map((id) => nombres.get(id)).filter(Boolean).join(', ') || '—';
+        fila.querySelector('[data-activo]').append(this.selloActivo(s.activo));
+        fila.querySelector('[data-editar]').href = `/app/tarifas/servicio?id=${encodeURIComponent(s.id)}`;
+        fila.querySelector('[data-objeto]').textContent = ` ${s.nombre}`;
+      });
+      this.llenarTabla('especialistas', 'data-fila-especialista', especialistas, (fila, e) => {
+        fila.querySelector('[data-nombre]').textContent = e.nombre;
+        fila.querySelector('[data-fijo]').textContent = soles(e.monto_fijo);
+        fila.querySelector('[data-variable]').textContent = soles(e.monto_variable);
+        fila.querySelector('[data-unidad]').textContent = unidades[e.unidad] ?? e.unidad;
+        fila.querySelector('[data-activo]').append(this.selloActivo(e.activo));
+        fila.querySelector('[data-editar]').href = `/app/tarifas/especialista?id=${encodeURIComponent(e.id)}`;
+        fila.querySelector('[data-objeto]').textContent = ` ${e.nombre}`;
+      });
+      return `${plural(servicios.length, 'servicio', 'servicios')} y ${plural(especialistas.length, 'especialista', 'especialistas')}`;
+    }
+
+    // --- Servicio ---
+
+    async servicio() {
+      const [servicios, especialistas] = await Promise.all([listarServicios(), listarEspecialistas()]);
+      const s = servicios.find((x) => x.id === this.registro);
+      if (!s) return this.mostrar('no-encontrada');
+      this.mostrar('datos');
+      this.querySelector('[data-campo="nombre"]').textContent = s.nombre;
+      this.querySelector('[data-campo="categoria"]').textContent = categorias[s.categoria] ?? s.categoria;
+      this.querySelector('[data-campo="ocupa_sala"]').textContent = s.ocupa_sala ? 'Sí' : 'No (va por proyecto)';
+      this.querySelector('[name="tarifa_hora"]').value = mostrarImporte(s.tarifa_hora);
+      this.querySelector('[name="monto_fijo"]').value = mostrarImporte(s.monto_fijo);
+      this.querySelector('[name="activo"]').checked = s.activo;
+      const modelo = this.querySelector('template[data-casilla-especialista]');
+      this.querySelector('[data-especialistas]').replaceChildren(...especialistas.map((e) => {
+        const casilla = modelo.content.cloneNode(true);
+        casilla.querySelector('.casilla-etiqueta').textContent = e.nombre;
+        const entrada = casilla.querySelector('input');
+        entrada.value = e.id;
+        entrada.checked = s.especialistas_por_defecto.includes(e.id);
+        return casilla;
+      }));
+      this.encabezado(`Tarifa por hora y quién va incluido en ${s.nombre}.`, s.nombre);
+      return `Servicio ${s.nombre}`;
+    }
+
+    // Lee importes del formulario: devuelve {valores, errores}.
+    importes(formulario, nombres) {
+      const valores = {};
+      const errores = [];
+      for (const nombre of nombres) {
+        const entrada = formulario.querySelector(`[name="${nombre}"]`);
+        quitarError(entrada);
+        valores[nombre] = leerImporte(entrada.value);
+        if (valores[nombre] === null) errores.push({ entrada, mensaje: ERROR_IMPORTE, texto: this.etiqueta(entrada) });
+      }
+      return { valores, errores };
+    }
+
+    guardarServicio(formulario) {
+      if (this.ocupado) return;
+      const { valores, errores } = this.importes(formulario, ['tarifa_hora', 'monto_fijo']);
+      if (!this.validar(errores)) return;
+      const cuerpo = {
+        ...valores,
+        activo: formulario.querySelector('[name="activo"]').checked,
+        especialistas_por_defecto: [...formulario.querySelectorAll('[name="especialistas_por_defecto"]:checked')].map((c) => c.value),
+      };
+      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => actualizarServicio(this.registro, cuerpo), () => location.assign('/app/tarifas?aviso=servicio-actualizado'));
+    }
+
+    // --- Especialista ---
+
+    async especialista() {
+      const e = (await listarEspecialistas()).find((x) => x.id === this.registro);
+      if (!e) return this.mostrar('no-encontrada');
+      this.mostrar('datos');
+      this.querySelector('[data-campo="nombre"]').textContent = e.nombre;
+      this.querySelector('[name="monto_fijo"]').value = mostrarImporte(e.monto_fijo);
+      this.querySelector('[name="monto_variable"]').value = mostrarImporte(e.monto_variable);
+      const unidad = this.querySelector(`[name="unidad"][value="${e.unidad === 'lapso_30' ? 'lapso_30' : 'hora'}"]`);
+      unidad.checked = true;
+      this.querySelector('[name="activo"]').checked = e.activo;
+      this.encabezado(`Cuánto suma ${e.nombre} a cada reserva.`, e.nombre);
+      return `Especialista ${e.nombre}`;
+    }
+
+    guardarEspecialista(formulario) {
+      if (this.ocupado) return;
+      const { valores, errores } = this.importes(formulario, ['monto_fijo', 'monto_variable']);
+      if (!this.validar(errores)) return;
+      const cuerpo = { ...valores, unidad: formulario.querySelector('[name="unidad"]:checked').value, activo: formulario.querySelector('[name="activo"]').checked };
+      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => actualizarEspecialista(this.registro, cuerpo), () => location.assign('/app/tarifas?aviso=especialista-actualizado'));
+    }
+
+    // --- Recargos y feriados ---
+
+    get anio() {
+      const pedido = new URLSearchParams(location.search).get('anio');
+      return /^\d{4}$/.test(pedido ?? '') && pedido >= 2000 && pedido <= 2100 ? pedido : hoyLima().slice(0, 4);
+    }
+
+    async recargos() {
+      const [r, feriados] = await Promise.all([obtenerRecargos(), listarFeriados(this.anio)]);
+      this.mostrar('datos');
+      const poner = (nombre, valor) => (this.querySelector(`[name="${nombre}"]`).value = valor);
+      poner('noche_porcentaje', r.noche.porcentaje);
+      poner('noche_desde', r.noche.desde);
+      poner('noche_hasta', r.noche.hasta);
+      poner('fin_de_semana_porcentaje', r.fin_de_semana.porcentaje);
+      poner('feriado_porcentaje', r.feriado.porcentaje);
+      const anio = Number(this.anio);
+      const [anterior, siguiente] = this.querySelectorAll('[data-anios] a');
+      anterior.href = `/app/tarifas/recargos?anio=${anio - 1}`;
+      anterior.querySelector('span').textContent = String(anio - 1);
+      siguiente.href = `/app/tarifas/recargos?anio=${anio + 1}`;
+      siguiente.querySelector('span').textContent = String(anio + 1);
+      this.querySelector('.panel-lateral .panel-titulo').append(` ${anio}`);
+      this.pintarFeriados(feriados);
+      return `Recargos y ${plural(feriados.length, 'feriado', 'feriados')} de ${anio}`;
+    }
+
+    pintarFeriados(feriados) {
+      this.querySelector('[data-vacio="feriados"]').textContent = `No hay feriados en ${this.anio}.`;
+      this.querySelector('[data-vacio="feriados"]').nextElementSibling.querySelector('caption').textContent = `Feriados ${this.anio}`;
+      this.llenarTabla('feriados', 'data-fila-feriado', [...feriados].sort((a, b) => a.fecha.localeCompare(b.fecha)), (fila, f) => {
+        fila.querySelector('[data-fecha]').textContent = diaMesAnio(f.fecha);
+        fila.querySelector('[data-nombre]').textContent = f.nombre;
+        fila.querySelector('[data-quitar-feriado]').dataset.fecha = f.fecha;
+        fila.querySelector('[data-objeto]').textContent = ` del ${diaMes(f.fecha)}`;
+      });
+    }
+
+    guardarRecargos(formulario) {
+      if (this.ocupado) return;
+      const campo = (nombre) => formulario.querySelector(`[name="${nombre}"]`);
+      const errores = [];
+      const porcentaje = (nombre) => {
+        const entrada = campo(nombre);
+        quitarError(entrada);
+        const valor = leerImporte(entrada.value);
+        if (valor === null) errores.push({ entrada, mensaje: ERROR_PORCENTAJE, texto: `${entrada.closest('fieldset').querySelector('legend').textContent} · ${this.etiqueta(entrada)}` });
+        return valor;
+      };
+      const hora = (nombre) => {
+        const entrada = campo(nombre);
+        quitarError(entrada);
+        if (!entrada.value) errores.push({ entrada, mensaje: 'Elige la hora.', texto: `Noche · ${this.etiqueta(entrada)}` });
+        return entrada.value;
+      };
+      const cuerpo = {
+        noche: { porcentaje: porcentaje('noche_porcentaje'), desde: hora('noche_desde'), hasta: hora('noche_hasta') },
+        fin_de_semana: { porcentaje: porcentaje('fin_de_semana_porcentaje') },
+        feriado: { porcentaje: porcentaje('feriado_porcentaje') },
+      };
+      if (!this.validar(errores)) return;
+      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => guardarRecargos(cuerpo), () => this.avisar('Recargos guardados.'));
+    }
+
+    avisar(titulo) {
+      enfocarAviso(mostrarAviso(this, 'exito', titulo));
+    }
+
+    async recargarFeriados(aviso) {
+      this.pintarFeriados(await listarFeriados(this.anio));
+      this.avisar(aviso);
+    }
+
+    anadirFeriado(formulario) {
+      if (this.ocupado) return;
+      const fecha = formulario.querySelector('[name="feriado-fecha"]');
+      const nombre = formulario.querySelector('[name="feriado-nombre"]');
+      [fecha, nombre].forEach(quitarError);
+      const errores = [];
+      if (!esFecha(fecha.value)) errores.push({ entrada: fecha, mensaje: 'Elige la fecha.', texto: 'Fecha' });
+      if (!nombre.value.trim()) errores.push({ entrada: nombre, mensaje: 'Escribe el nombre del feriado.', texto: 'Nombre' });
+      if (!this.validar(errores)) return;
+      this.enviar(formulario.querySelector('[data-envio]'), 'Añadiendo…', () => crearFeriado({ fecha: fecha.value, nombre: nombre.value.trim() }), async () => {
+        await this.recargarFeriados('Feriado añadido.');
+        fecha.value = '';
+        nombre.value = '';
+      });
+    }
+
+    quitarElFeriado(boton) {
+      this.enviar(boton, 'Quitando…', () => quitarFeriado(boton.dataset.fecha), () => this.recargarFeriados('Feriado quitado.'));
+    }
+  }
+
+  if (!customElements.get('bugalu-tarifas')) customElements.define('bugalu-tarifas', BugaluTarifas);
+</script>
+
+<style>
+  .tarifas {
+    display: block;
+  }
+  .tarifas :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+</style>

@@ -1,0 +1,491 @@
+---
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Casilla from '../componentes/Casilla.astro';
+import Tabla from '../componentes/Tabla.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+
+interface Props {
+  vista: 'semana' | 'parametros';
+}
+const { vista } = Astro.props;
+// Panel de la vista mientras carga o falla (codigos y titulos de la spec RF-03-franjas).
+const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : { codigo: 'P1', titulo: 'Plazo para pagar' };
+---
+
+<EstilosGestion />
+
+<!-- Un bloque por estado (estados-sistema): la isla clona el que toca. Sin JS, el noscript oculta la carga y avisa. -->
+<bugalu-franjas class="franjas" data-gestion vista={vista}>
+  <div data-avisos></div>
+  <!-- Region viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  <div data-salida><Panel {...principal} cargando /></div>
+
+  <EstadosIsla principal={principal} />
+
+  {vista === 'semana' && (
+    <>
+      <template data-estado="datos">
+        <nav class="gestion-periodo" aria-label="Semana" data-periodo>
+          <EtiquetaTecnica variante="filtro" texto="Semana anterior" href="#" />
+          <p class="gestion-periodo-titulo" data-titulo-semana></p>
+          <EtiquetaTecnica variante="filtro" texto="Semana siguiente" href="#" />
+          <EtiquetaTecnica variante="filtro" texto="Esta semana" href="#" />
+        </nav>
+        <div class="gestion-campo-sala" data-sala hidden>
+          <Campo tipo="selector" nombre="sala" etiqueta="Sala" />
+        </div>
+        <div class="gestion-rejilla">
+          <div class="gestion-principal">
+            <Panel codigo="F1" titulo="Publicadas">
+              <div data-f1-vacio hidden>
+                <p class="gestion-vacio-titulo">No hay franjas publicadas esta semana</p>
+                <p data-propuesta>Abajo tienes una propuesta: edítala y publícala.</p>
+              </div>
+              <Tabla titulo="Franjas publicadas" columnas={['Día', 'Horario', 'Reservas', '']} />
+            </Panel>
+            <Panel codigo="F2" titulo="Publicar franjas">
+              <form novalidate method="post" class="gestion-formulario" data-formulario="publicar">
+                <div data-nota="plantilla" hidden><Aviso variante="informacion" titulo="Te proponemos la última semana publicada. Cambia lo que haga falta antes de publicar." /></div>
+                <div data-nota="sin-sugerencia" hidden><Aviso variante="informacion" titulo="No hay una semana anterior que copiar. Añade las franjas de cada día." /></div>
+                <p class="gestion-ayuda" data-nota="publicada" hidden>Para abrir horas extra, añade franjas y publícalas.</p>
+                <div class="gestion-formulario" data-dias></div>
+                <div><Boton tipo="submit" data-envio>Publicar franjas</Boton></div>
+              </form>
+            </Panel>
+          </div>
+          <div class="gestion-lateral">
+            <Panel codigo="F3" titulo="Cierres" variante="lateral">
+              <p data-f3-vacio hidden>No hay cierres esta semana.</p>
+              <Tabla titulo="Cierres de la semana" columnas={['Fecha', 'Horario', 'Motivo', '']} variante="compacta" />
+              <form novalidate method="post" class="gestion-formulario franjas-cierre" data-formulario="cierre">
+                <Campo tipo="date" nombre="cierre-fecha" etiqueta="Fecha" obligatorio />
+                <Casilla nombre="todo-el-dia" etiqueta="Todo el día" marcada />
+                <div class="gestion-fila-campos" data-horas hidden>
+                  <Campo tipo="time" nombre="cierre-desde" etiqueta="Desde" step="1800" />
+                  <Campo tipo="time" nombre="cierre-hasta" etiqueta="Hasta" step="1800" />
+                </div>
+                <Campo nombre="cierre-motivo" etiqueta="Motivo" ayuda="p. ej. Feriado o Mantenimiento. Lo verán los clientes." obligatorio />
+                <div><Boton tipo="submit" variante="secundario" data-envio>Registrar cierre</Boton></div>
+              </form>
+            </Panel>
+          </div>
+        </div>
+      </template>
+
+      <template data-fila-publicada>
+        <tr>
+          <th scope="row" data-dia></th>
+          <td data-etiqueta="Horario" data-horario></td>
+          <td data-etiqueta="Reservas" data-reservas></td>
+          <td>
+            <Boton variante="peligro" data-envio data-retirar>Retirar franja<span class="visualmente-oculto" data-objeto></span></Boton>
+            <span class="gestion-motivo" data-motivo hidden>Tiene reservas vigentes</span>
+          </td>
+        </tr>
+      </template>
+
+      <template data-fila-cierre>
+        <tr>
+          <th scope="row" data-fecha></th>
+          <td data-etiqueta="Horario" data-horario></td>
+          <td data-etiqueta="Motivo" data-motivo-cierre></td>
+          <td><Boton variante="secundario" data-envio data-quitar-cierre>Quitar cierre<span class="visualmente-oculto" data-objeto></span></Boton></td>
+        </tr>
+      </template>
+
+      <template data-dia>
+        <fieldset class="gestion-grupo franjas-dia" data-dia-editor>
+          <legend data-leyenda></legend>
+          <div class="franjas-filas" data-filas></div>
+          <div><Boton variante="secundario" data-anadir>Añadir franja<span class="visualmente-oculto" data-objeto></span></Boton></div>
+        </fieldset>
+      </template>
+
+      <template data-fila-edicion>
+        <div class="franja" role="group">
+          <Campo tipo="time" nombre="desde" etiqueta="Desde" step="1800" />
+          <Campo tipo="time" nombre="hasta" etiqueta="Hasta" step="1800" />
+          <Boton variante="secundario" icono="x" data-quitar aria-label="Quitar franja" />
+        </div>
+      </template>
+    </>
+  )}
+
+  {vista === 'parametros' && (
+    <template data-estado="datos">
+      <form novalidate method="post" class="gestion-formulario" data-formulario="parametros">
+        <div class="gestion-rejilla gestion-rejilla-simple">
+          <Panel codigo="P1" titulo="Plazo para pagar">
+            <div class="gestion-formulario">
+              <Campo tipo="number" nombre="dias_limite_pago" etiqueta="Días antes del inicio" ayuda="Si reserva con más de estos días, puede pagar hasta este número de días antes de la sesión." obligatorio min="1" step="1" inputmode="numeric" />
+              <Campo tipo="number" nombre="horas_limite_pago" etiqueta="Horas desde la solicitud" ayuda="Si reserva con menos días, tiene estas horas para pagar." obligatorio min="1" step="1" inputmode="numeric" />
+            </div>
+          </Panel>
+          <Panel codigo="P2" titulo="Anticipación">
+            <div class="gestion-formulario">
+              <Campo tipo="number" nombre="anticipacion_minima_horas" etiqueta="Anticipación mínima (horas)" ayuda="Lo más tarde que se puede reservar antes del inicio." obligatorio min="1" step="1" inputmode="numeric" />
+              <Campo tipo="number" nombre="anticipacion_maxima_semanas" etiqueta="Anticipación máxima (semanas)" ayuda="Lo más lejos que se puede reservar." obligatorio min="1" step="1" inputmode="numeric" />
+            </div>
+          </Panel>
+        </div>
+        <div><Boton tipo="submit" data-envio>Guardar parámetros</Boton></div>
+      </form>
+    </template>
+  )}
+</bugalu-franjas>
+
+<script>
+  // @ts-nocheck
+  import { IslaGestion, hacerUnico } from '../servicios/isla-gestion.js';
+  import { listarSalas, obtenerDisponibilidad, obtenerSugerencia, publicarFranjas, retirarFranja, registrarCierre, quitarCierre, obtenerParametros, guardarParametros } from '../servicios/franjas.js';
+  import { hoyLima, fechaDe, horaDe, instante, sumarDias, lunesDe, semanaDe, rangoSemana, diaCorto, diaLargo, diaMes, nombreDia } from '../servicios/formatos.js';
+  import { mostrarAviso, enfocarAviso, limpiarAvisos, quitarError } from '../servicios/formulario.js';
+
+  const minutos = (hora) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5));
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  const horario = (inicio, fin) => `${horaDe(inicio)}–${horaDe(fin)}`;
+  const esDiaCompleto = (c) => horaDe(c.inicio) === '00:00' && (Date.parse(c.fin) - Date.parse(c.inicio)) % 864e5 === 0;
+  // HASTA 00:00 es la medianoche del dia siguiente.
+  const finEnMinutos = (hasta) => minutos(hasta) || 1440;
+  const finInstante = (fecha, hasta) => (finEnMinutos(hasta) === 1440 ? instante(sumarDias(fecha, 1), '00:00') : instante(fecha, hasta));
+  const PARAMETROS = ['dias_limite_pago', 'horas_limite_pago', 'anticipacion_minima_horas', 'anticipacion_maxima_semanas'];
+
+  class BugaluFranjas extends IslaGestion {
+    contador = 0;
+    sala = null;
+    lunes = '';
+    sujeto = 'Esa franja';
+    noEncontrada = ['No encontramos esto', 'Actualizamos la semana.'];
+
+    iniciar() {
+      this.addEventListener('click', (e) => {
+        const boton = e.target.closest('button');
+        if (!boton || boton.getAttribute('aria-disabled') === 'true') return;
+        if (boton.matches('[data-anadir]')) this.anadirFila(boton.closest('fieldset'));
+        else if (boton.matches('[data-quitar]')) this.quitarFila(boton.closest('.franja'));
+        else if (boton.matches('[data-retirar]')) this.retirar(boton);
+        else if (boton.matches('[data-quitar-cierre]')) this.eliminarCierre(boton);
+      });
+      this.addEventListener('input', (e) => e.target.closest('.franja') && this.etiquetarQuitar(e.target.closest('.franja')));
+      this.addEventListener('change', (e) => {
+        if (e.target.name === 'todo-el-dia') this.querySelector('[data-horas]').hidden = e.target.checked;
+        if (e.target.name === 'sala') location.assign(this.enlace(this.lunes, e.target.value));
+      });
+    }
+
+    alEnviar(formulario) {
+      const accion = formulario.dataset.formulario;
+      if (accion === 'publicar') this.publicar(formulario);
+      else if (accion === 'cierre') this.cerrar(formulario);
+      else this.guardar(formulario);
+    }
+
+    // Resultado de un envio con exito: recarga la vista y avisa con el foco en el aviso.
+    async terminado(titulo, texto) {
+      await this.cargar();
+      enfocarAviso(mostrarAviso(this, 'exito', titulo, texto));
+    }
+
+    errorEnvio(error) {
+      const aviso = (variante, titulo, texto, extra) => enfocarAviso(mostrarAviso(this, variante, titulo, texto, extra));
+      if (error.codigo === 'franja_solapada') aviso('error', 'Una de las franjas se cruza con otra ya publicada', 'Revisa las horas y vuelve a publicar.');
+      else if (error.codigo === 'franja_con_reservas') aviso('error', 'Esta franja tiene reservas vigentes', 'Cancélalas o espera a que terminen antes de retirarla.');
+      else if (error.codigo === 'cierre_con_reservas') {
+        const reservas = error.detalles?.reservas ?? [];
+        aviso('error', `No puedes cerrar ese horario: tiene ${plural(reservas.length, 'reserva vigente', 'reservas vigentes')}`, 'Resuélvelas antes de cerrarlo.', {
+          enlaces: reservas.map((r) => ({ texto: `${r.folio} · ${diaMes(fechaDe(r.inicio))}, ${horaDe(r.inicio)} · ${r.cliente}`, href: `/app/reservas/detalle?id=${encodeURIComponent(r.id)}` })),
+        });
+      } else if (error.estado === 404) {
+        this.cargar().then(() => aviso('informacion', `${this.sujeto} ya no existe`, 'Actualizamos la semana.'));
+      } else if (error.estado === 422 && error.detalles?.campo) {
+        const entrada = this.querySelector(`[name="${error.detalles.campo}"]`);
+        if (!entrada) return false;
+        this.validar([{ entrada, mensaje: 'Escribe un número entero mayor que 0.', texto: this.etiqueta(entrada) }]);
+      } else return false;
+      return true;
+    }
+
+    // --- Semana ---
+
+    enlace(lunes, sala = this.sala?.id) {
+      const consulta = new URLSearchParams({ semana: semanaDe(lunes), ...(this.salas?.length > 1 && { sala }) });
+      return `/app/franjas?${consulta}`;
+    }
+
+    async semana() {
+      const parametro = new URLSearchParams(location.search).get('semana');
+      const actual = lunesDe(semanaDe(hoyLima()));
+      let lunes = lunesDe(parametro) ?? actual;
+      const invalida = () => mostrarAviso(this, 'informacion', 'La semana del enlace no es válida', 'Te mostramos esta semana.');
+      if (parametro !== null && !lunesDe(parametro)) invalida();
+
+      this.salas = await listarSalas();
+      const pedida = new URLSearchParams(location.search).get('sala');
+      this.sala = this.salas.find((s) => s.id === pedida) ?? this.salas[0];
+      const pedir = (l) => obtenerDisponibilidad(this.sala.id, instante(l, '00:00'), instante(sumarDias(l, 7), '00:00'));
+      let disponibilidad;
+      try {
+        disponibilidad = await pedir(lunes);
+      } catch (error) {
+        if (error.estado !== 422 || lunes === actual) throw error;
+        invalida();
+        lunes = actual;
+        disponibilidad = await pedir(lunes);
+      }
+      this.lunes = lunes;
+      const franjas = [...disponibilidad.franjas].sort((a, b) => a.inicio.localeCompare(b.inicio));
+      const sugerencia = franjas.length ? [] : await obtenerSugerencia(this.sala.id, semanaDe(lunes));
+
+      this.mostrar('datos');
+      this.pintarPeriodo(lunes);
+      this.pintarPublicadas(franjas, disponibilidad.ocupados ?? [], sugerencia.length > 0);
+      this.pintarEditor(lunes, franjas, sugerencia);
+      this.pintarCierres(disponibilidad.cierres ?? []);
+      return `${plural(franjas.length, 'franja publicada', 'franjas publicadas')} esta semana`;
+    }
+
+    pintarPeriodo(lunes) {
+      const [anterior, siguiente, hoy] = this.querySelectorAll('[data-periodo] a');
+      anterior.href = this.enlace(sumarDias(lunes, -7));
+      siguiente.href = this.enlace(sumarDias(lunes, 7));
+      hoy.href = '/app/franjas';
+      this.querySelector('[data-titulo-semana]').textContent = rangoSemana(lunes);
+      if (this.salas.length > 1) {
+        const selector = this.querySelector('[data-sala] select');
+        selector.replaceChildren(...this.salas.map((s) => new Option(s.nombre, s.id, false, s.id === this.sala.id)));
+        this.querySelector('[data-sala]').hidden = false;
+      }
+    }
+
+    pintarPublicadas(franjas, ocupados, hayPropuesta) {
+      this.querySelector('[data-f1-vacio]').hidden = franjas.length > 0;
+      if (!hayPropuesta) this.querySelector('[data-propuesta]').remove();
+      const plantilla = this.querySelector('template[data-fila-publicada]');
+      const tabla = this.querySelector('[data-f1-vacio]').nextElementSibling;
+      tabla.hidden = franjas.length === 0;
+      tabla.querySelector('tbody').replaceChildren(
+        ...franjas.map((f, i) => {
+          const fila = plantilla.content.cloneNode(true).firstElementChild;
+          const reservas = ocupados.filter((o) => Date.parse(o.inicio) < Date.parse(f.fin) && Date.parse(o.fin) > Date.parse(f.inicio)).length;
+          const fecha = fechaDe(f.inicio);
+          fila.querySelector('[data-dia]').textContent = diaCorto(fecha);
+          fila.querySelector('[data-horario]').textContent = horario(f.inicio, f.fin);
+          fila.querySelector('[data-reservas]').textContent = reservas ? plural(reservas, 'reserva', 'reservas') : '—';
+          const boton = fila.querySelector('[data-retirar]');
+          boton.dataset.id = f.id;
+          fila.querySelector('[data-objeto]').textContent = ` del ${nombreDia(fecha)} ${Number(fecha.slice(8))} de ${horaDe(f.inicio)} a ${horaDe(f.fin)}`;
+          if (reservas) {
+            const motivo = fila.querySelector('[data-motivo]');
+            motivo.id = `motivo-franja-${i}`;
+            motivo.hidden = false;
+            boton.setAttribute('aria-disabled', 'true');
+            boton.setAttribute('aria-describedby', motivo.id);
+          } else fila.querySelector('[data-motivo]').remove();
+          return fila;
+        }),
+      );
+    }
+
+    pintarCierres(cierres) {
+      this.querySelector('[data-f3-vacio]').hidden = cierres.length > 0;
+      const tabla = this.querySelector('[data-f3-vacio]').nextElementSibling;
+      tabla.hidden = cierres.length === 0;
+      const plantilla = this.querySelector('template[data-fila-cierre]');
+      tabla.querySelector('tbody').replaceChildren(
+        ...[...cierres].sort((a, b) => a.inicio.localeCompare(b.inicio)).map((c) => {
+          const fila = plantilla.content.cloneNode(true).firstElementChild;
+          const dia = diaMes(fechaDe(c.inicio));
+          fila.querySelector('[data-fecha]').textContent = dia;
+          fila.querySelector('[data-horario]').textContent = esDiaCompleto(c) ? 'Todo el día' : horario(c.inicio, c.fin);
+          fila.querySelector('[data-motivo-cierre]').textContent = c.motivo;
+          fila.querySelector('[data-quitar-cierre]').dataset.id = c.id;
+          fila.querySelector('[data-objeto]').textContent = ` del ${dia}`;
+          return fila;
+        }),
+      );
+    }
+
+    // --- Editor de franjas: un fieldset por dia, filas DESDE / HASTA ---
+
+    pintarEditor(lunes, franjas, sugerencia) {
+      const plantilla = this.querySelector('template[data-dia]');
+      const dias = Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i));
+      this.querySelector('[data-dias]').replaceChildren(
+        ...dias.map((fecha) => {
+          const dia = plantilla.content.cloneNode(true).firstElementChild;
+          dia.dataset.fecha = fecha;
+          dia.querySelector('legend').textContent = diaLargo(fecha);
+          dia.querySelector('[data-objeto]').textContent = ` al ${nombreDia(fecha)}`;
+          return dia;
+        }),
+      );
+      if (franjas.length) this.querySelector('[data-nota="publicada"]').hidden = false;
+      else this.querySelector(`[data-nota="${sugerencia.length ? 'plantilla' : 'sin-sugerencia'}"]`).hidden = false;
+      for (const s of sugerencia) {
+        const dia = this.querySelector(`fieldset[data-fecha="${fechaDe(s.inicio)}"]`);
+        if (dia) this.anadirFila(dia, horaDe(s.inicio), horaDe(s.fin), false);
+      }
+    }
+
+    anadirFila(dia, desde = '', hasta = '', enfocar = true) {
+      const fila = this.querySelector('template[data-fila-edicion]').content.cloneNode(true);
+      hacerUnico(fila, `f${++this.contador}`);
+      const grupo = fila.firstElementChild;
+      grupo.setAttribute('aria-label', `Franja del ${nombreDia(dia.dataset.fecha)}`);
+      grupo.querySelector('[name="desde"]').value = desde;
+      grupo.querySelector('[name="hasta"]').value = hasta;
+      dia.querySelector('[data-filas]').append(fila);
+      this.etiquetarQuitar(grupo);
+      if (enfocar) grupo.querySelector('[name="desde"]').focus();
+    }
+
+    quitarFila(fila) {
+      const dia = fila.closest('fieldset');
+      fila.remove();
+      dia.querySelector('[data-anadir]').focus();
+    }
+
+    etiquetarQuitar(fila) {
+      const desde = fila.querySelector('[name="desde"]').value;
+      const hasta = fila.querySelector('[name="hasta"]').value;
+      const dia = nombreDia(fila.closest('fieldset').dataset.fecha);
+      fila.querySelector('[data-quitar]').setAttribute('aria-label', desde && hasta ? `Quitar franja de ${desde} a ${hasta} del ${dia}` : `Quitar franja del ${dia}`);
+    }
+
+    // Valida las filas (por fila, un solo error) y publica solo las completas.
+    publicar(formulario) {
+      if (this.ocupado) return;
+      const errores = [];
+      const franjas = [];
+      for (const dia of formulario.querySelectorAll('fieldset[data-fecha]')) {
+        const leyenda = dia.querySelector('legend').textContent;
+        const filas = [...dia.querySelectorAll('.franja')].map((f) => ({ desde: f.querySelector('[name="desde"]'), hasta: f.querySelector('[name="hasta"]') })).filter((f) => f.desde.value || f.hasta.value);
+        const validas = [];
+        const fallo = (entrada, mensaje, campo) => errores.push({ entrada, mensaje, texto: `${leyenda} · ${campo}` });
+        for (const f of filas) {
+          [f.desde, f.hasta].forEach(quitarError);
+          const { value: d } = f.desde;
+          const { value: h } = f.hasta;
+          if (!d) fallo(f.desde, 'Elige la hora de inicio.', 'Desde');
+          else if (!h) fallo(f.hasta, 'Elige la hora de fin.', 'Hasta');
+          else if (minutos(d) % 30) fallo(f.desde, 'Usa horas en punto o y media.', 'Desde');
+          else if (minutos(h) % 30) fallo(f.hasta, 'Usa horas en punto o y media.', 'Hasta');
+          else if (finEnMinutos(h) <= minutos(d)) fallo(f.hasta, 'La hora de fin debe ser posterior a la de inicio.', 'Hasta');
+          else validas.push({ ...f, ini: minutos(d), fin: finEnMinutos(h), d, h });
+        }
+        // Cruces del mismo dia: se marcan las dos filas que se pisan.
+        const marcadas = new Set();
+        validas.forEach((a, i) => validas.slice(i + 1).forEach((b) => {
+          if (a.ini >= b.fin || b.ini >= a.fin) return;
+          for (const [x, y] of [[a, b], [b, a]]) {
+            if (marcadas.has(x)) continue;
+            marcadas.add(x);
+            fallo(x.desde, `Se cruza con la franja de ${y.d}–${y.h} del mismo día.`, 'Desde');
+          }
+        }));
+        validas.forEach((f) => franjas.push({ inicio: instante(dia.dataset.fecha, f.d), fin: finInstante(dia.dataset.fecha, f.h) }));
+      }
+      if (!this.validar(errores, ['franja', 'franjas'])) return;
+      if (!franjas.length) return enfocarAviso(mostrarAviso(this, 'error', 'Añade al menos una franja', 'Pon las horas de inicio y de fin de cada día que abras.'));
+      this.enviar(formulario.querySelector('[data-envio]'), 'Publicando…', () => publicarFranjas(this.sala.id, franjas), () => this.terminado('Franjas publicadas', 'Ya se ven en el calendario.'));
+    }
+
+    retirar(boton) {
+      this.sujeto = 'Esa franja';
+      this.enviar(boton, 'Retirando…', () => retirarFranja(boton.dataset.id), () => this.terminado('Franja retirada.'));
+    }
+
+    // --- Cierres ---
+
+    cerrar(formulario) {
+      if (this.ocupado) return;
+      const campo = (nombre) => formulario.querySelector(`[name="${nombre}"]`);
+      const [fecha, desde, hasta, motivo] = ['cierre-fecha', 'cierre-desde', 'cierre-hasta', 'cierre-motivo'].map(campo);
+      const todo = campo('todo-el-dia').checked;
+      [fecha, desde, hasta, motivo].forEach(quitarError);
+      const errores = [];
+      if (!fecha.value) errores.push({ entrada: fecha, mensaje: 'Elige la fecha.', texto: 'Fecha' });
+      if (!todo && !desde.value) errores.push({ entrada: desde, mensaje: 'Elige la hora de inicio.', texto: 'Desde' });
+      else if (!todo && !hasta.value) errores.push({ entrada: hasta, mensaje: 'Elige la hora de fin.', texto: 'Hasta' });
+      else if (!todo && (minutos(desde.value) % 30 || minutos(hasta.value) % 30)) errores.push({ entrada: minutos(desde.value) % 30 ? desde : hasta, mensaje: 'Usa horas en punto o y media.', texto: 'Horas' });
+      else if (!todo && finEnMinutos(hasta.value) <= minutos(desde.value)) errores.push({ entrada: hasta, mensaje: 'La hora de fin debe ser posterior a la de inicio.', texto: 'Hasta' });
+      if (!motivo.value.trim()) errores.push({ entrada: motivo, mensaje: 'Escribe el motivo; lo verán los clientes en el calendario.', texto: 'Motivo' });
+      if (!this.validar(errores)) return;
+      const cuerpo = {
+        id_sala: this.sala.id,
+        inicio: instante(fecha.value, todo ? '00:00' : desde.value),
+        fin: todo ? instante(sumarDias(fecha.value, 1), '00:00') : finInstante(fecha.value, hasta.value),
+        motivo: motivo.value.trim(),
+      };
+      this.enviar(formulario.querySelector('[data-envio]'), 'Registrando…', () => registrarCierre(cuerpo), () => this.terminado('Cierre registrado.'));
+    }
+
+    eliminarCierre(boton) {
+      this.sujeto = 'Ese cierre';
+      this.enviar(boton, 'Quitando…', () => quitarCierre(boton.dataset.id), () => this.terminado('Cierre quitado.'));
+    }
+
+    // --- Parametros ---
+
+    async parametros() {
+      const datos = await obtenerParametros();
+      this.mostrar('datos');
+      this.llenarParametros(datos);
+      return 'Parámetros de reserva';
+    }
+
+    llenarParametros(datos) {
+      PARAMETROS.forEach((nombre) => (this.querySelector(`[name="${nombre}"]`).value = datos[nombre]));
+    }
+
+    guardar(formulario) {
+      if (this.ocupado) return;
+      const campos = PARAMETROS.map((nombre) => formulario.querySelector(`[name="${nombre}"]`));
+      campos.forEach(quitarError);
+      const errores = campos.filter((c) => !/^\d+$/.test(c.value.trim()) || Number(c.value) < 1).map((entrada) => ({ entrada, mensaje: 'Escribe un número entero mayor que 0.', texto: this.etiqueta(entrada) }));
+      if (!this.validar(errores)) return;
+      const cuerpo = Object.fromEntries(campos.map((c) => [c.name, Number(c.value)]));
+      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => guardarParametros(cuerpo), (datos) => {
+        this.llenarParametros(datos ?? cuerpo);
+        limpiarAvisos(this);
+        enfocarAviso(mostrarAviso(this, 'exito', 'Parámetros guardados', 'La anticipación ya vale en el calendario; los plazos de pago, en las reservas nuevas.'));
+      });
+    }
+  }
+
+  if (!customElements.get('bugalu-franjas')) customElements.define('bugalu-franjas', BugaluFranjas);
+</script>
+
+<style>
+  .franjas {
+    display: block;
+  }
+  .franjas :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  .franjas :global(.franja) {
+    display: grid;
+    gap: var(--espacio-3);
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+  }
+  .franjas :global(.franjas-filas) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+  }
+  .franjas :global(.franjas-dia) {
+    padding-block-end: var(--espacio-4);
+    border-block-end: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+  }
+  .franjas :global(.gestion-campo-sala) {
+    margin-block-end: var(--espacio-4);
+    max-inline-size: var(--medida-columna-lateral);
+  }
+</style>

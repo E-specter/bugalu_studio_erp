@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Tarifas from '../../../islas/Tarifas.astro';
+---
+
+<LayoutApp titulo="Recargos y feriados">
+  <EncabezadoPantalla
+    titulo="Recargos y feriados"
+    indice="[A5] CATÁLOGO / TARIFAS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Tarifas', href: '/app/tarifas' }, { etiqueta: 'Recargos' }]}
+    descripcion="Porcentaje extra por horario y días feriados del año."
+  />
+  <Tarifas vista="recargos" />
+</LayoutApp>

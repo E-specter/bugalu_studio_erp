@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Calendario from '../../../islas/Calendario.astro';
+---
+
+<LayoutApp titulo="Agenda de sala">
+  <EncabezadoPantalla
+    titulo="Agenda de sala"
+    indice="[R1] SALA / AGENDA"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Agenda' }]}
+    descripcion="Reservas y horas libres de la sala. Abre una reserva para ver su detalle."
+  />
+  <Calendario modo="personal" />
+</LayoutApp>

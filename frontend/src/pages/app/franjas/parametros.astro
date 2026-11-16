@@ -1,0 +1,18 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Boton from '../../../componentes/Boton.astro';
+import Franjas from '../../../islas/Franjas.astro';
+---
+
+<LayoutApp titulo="Parámetros de reserva">
+  <EncabezadoPantalla
+    titulo="Parámetros de reserva"
+    indice="[A4] SALA / PARÁMETROS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Franjas', href: '/app/franjas' }, { etiqueta: 'Parámetros' }]}
+    descripcion="Cuánto tiempo tiene el cliente para pagar y con cuánta anticipación puede reservar."
+  >
+    <Boton slot="acciones" variante="secundario" href="/app/franjas">Volver a franjas</Boton>
+  </EncabezadoPantalla>
+  <Franjas vista="parametros" />
+</LayoutApp>

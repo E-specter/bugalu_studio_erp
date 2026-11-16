@@ -12,7 +12,8 @@ const { destinos, actual, etiqueta = 'Principal', class: clase } = Astro.props a
 
 <nav aria-label={etiqueta} class:list={['tactil', clase]}>
   <ul class="tactil-lista">
-    {destinos.slice(0, 5).map((destino) => (
+    {/* Máximo cinco visibles: los destinos con `solo` nacen ocultos y no cuentan. */}
+    {destinos.slice(0, 5 + destinos.filter((d) => d.solo).length).map((destino) => (
       <li hidden={destino.solo ? true : undefined} data-solo={destino.solo}>
         <a href={destino.href} class:list={['tactil-destino', destino.href === actual && 'tactil-actual']} aria-current={destino.href === actual ? 'page' : undefined}>
           <Icono nombre={destino.icono} tamano="md" />

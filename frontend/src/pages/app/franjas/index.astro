@@ -1,0 +1,18 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Boton from '../../../componentes/Boton.astro';
+import Franjas from '../../../islas/Franjas.astro';
+---
+
+<LayoutApp titulo="Franjas de sala">
+  <EncabezadoPantalla
+    titulo="Franjas de sala"
+    indice="[A3] SALA / FRANJAS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Franjas' }]}
+    descripcion="Publica cuándo se puede reservar la sala, semana a semana, y cierra días u horas."
+  >
+    <Boton slot="acciones" variante="secundario" href="/app/franjas/parametros">Parámetros de reserva</Boton>
+  </EncabezadoPantalla>
+  <Franjas vista="semana" />
+</LayoutApp>

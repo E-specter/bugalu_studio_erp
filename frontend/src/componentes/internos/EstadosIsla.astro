@@ -1,0 +1,50 @@
+---
+// Pieza interna (no es del catalogo): los estados comunes de las islas de gestion (servicios/isla-gestion.js) y su noscript.
+import Panel from '../Panel.astro';
+import Aviso from '../Aviso.astro';
+import Boton from '../Boton.astro';
+import PlantillasFormulario from './PlantillasFormulario.astro';
+
+interface Props {
+  principal: { codigo?: string; titulo: string };
+  noEncontrada?: { etiqueta: string; href: string };
+}
+const { principal, noEncontrada } = Astro.props;
+---
+
+<template data-estado="cargando"><Panel {...principal} cargando /></template>
+
+<template data-estado="no-autenticado">
+  <Panel {...principal}><Aviso variante="aviso" titulo=" " texto=" " accion={{ etiqueta: 'Ir al acceso interno', href: '/acceso/interno' }} /></Panel>
+</template>
+
+<template data-estado="sin-permiso">
+  <Panel codigo="[403]" titulo="Sin permiso"><Aviso variante="error" titulo=" " texto=" " accion={{ etiqueta: 'Volver al inicio', href: '/app/' }} /></Panel>
+</template>
+
+<template data-estado="error">
+  <Panel {...principal}>
+    <Aviso variante="error" titulo=" " texto=" ">
+      <div class="reintentar"><Boton variante="secundario" data-reintentar>Reintentar</Boton></div>
+    </Aviso>
+  </Panel>
+</template>
+
+{noEncontrada && (
+  <template data-estado="no-encontrada">
+    <Panel {...principal}><Aviso variante="informacion" titulo=" " texto=" " accion={noEncontrada} /></Panel>
+  </template>
+)}
+
+<PlantillasFormulario />
+
+<noscript>
+  <style is:inline>[data-salida] { display: none; }</style>
+  <Panel {...principal}><Aviso variante="informacion" titulo="Esta sección necesita JavaScript" texto="Actívalo en tu navegador y recarga la página." /></Panel>
+</noscript>
+
+<style>
+  .reintentar {
+    margin-block-start: var(--espacio-2);
+  }
+</style>
