@@ -2,19 +2,23 @@
 interface Props {
   titulo: string;
   columnas: string[];
-  variante?: 'directorio' | 'compacta';
+  variante?: 'directorio' | 'compacta' | 'partidas';
+  numericas?: number[];
 }
-const { titulo, columnas, variante = 'directorio', class: clase } = Astro.props as Props & { class?: string };
+const { titulo, columnas, variante = 'directorio', numericas = [], class: clase } = Astro.props as Props & { class?: string };
+const partidas = variante === 'partidas';
 ---
 
+<!-- Partidas: sigue siendo tabla en movil (sin tarjetas), cabecera visible y pie <tfoot> por la ranura `pie`. Columnas numericas (indice en `numericas`) a la derecha; en las filas, la celda lleva class="tabla-num". -->
 <!-- Las filas (<tr>) entran por la ranura; en cada celda, data-etiqueta da el rotulo de la tarjeta en movil. Columna "" = acciones. -->
 <div class:list={['tabla', `tabla-${variante}`, clase]}>
   <table>
     <caption class="visualmente-oculto">{titulo}</caption>
-    <thead class="tabla-cabecera visualmente-oculto">
-      <tr>{columnas.map((c) => <th scope="col">{c || <span class="visualmente-oculto">Acciones</span>}</th>)}</tr>
+    <thead class:list={['tabla-cabecera', !partidas && 'visualmente-oculto']}>
+      <tr>{columnas.map((c, i) => <th scope="col" class:list={[numericas.includes(i) && 'tabla-num']}>{c || <span class="visualmente-oculto">Acciones</span>}</th>)}</tr>
     </thead>
     <tbody><slot /></tbody>
+    {partidas && <tfoot><slot name="pie" /></tfoot>}
   </table>
 </div>
 
@@ -29,7 +33,7 @@ const { titulo, columnas, variante = 'directorio', class: clase } = Astro.props 
     text-align: start;
   }
   /* Movil: cabecera solo para lectores (clase global); cada celda lleva su rotulo. */
-  .tabla :global(tr) {
+  .tabla:not(.tabla-partidas) :global(tr) {
     display: block;
     padding: var(--espacio-4);
     border-block-end: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
@@ -37,8 +41,8 @@ const { titulo, columnas, variante = 'directorio', class: clase } = Astro.props 
   .tabla :global(tbody tr:last-child) {
     border-block-end: 0;
   }
-  .tabla :global(th[scope='row']),
-  .tabla :global(td) {
+  .tabla:not(.tabla-partidas) :global(th[scope='row']),
+  .tabla:not(.tabla-partidas) :global(td) {
     display: grid;
     gap: var(--espacio-1);
     justify-items: start;
@@ -48,6 +52,10 @@ const { titulo, columnas, variante = 'directorio', class: clase } = Astro.props 
     text-align: start;
     vertical-align: top;
     overflow-wrap: anywhere;
+  }
+  .tabla :global(th.tabla-num),
+  .tabla :global(td.tabla-num) {
+    font-variant-numeric: tabular-nums;
   }
   .tabla :global(td[data-etiqueta]:not([data-etiqueta=''])::before) {
     content: attr(data-etiqueta);
@@ -60,7 +68,56 @@ const { titulo, columnas, variante = 'directorio', class: clase } = Astro.props 
     padding: var(--espacio-3);
   }
 
+  /* Partidas: presentacion de tabla desde el movil. */
+  .tabla-partidas :global(th),
+  .tabla-partidas :global(td) {
+    padding: var(--espacio-3);
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+  .tabla-partidas :global(tbody th[scope='row']),
+  .tabla-partidas :global(tbody td) {
+    font-weight: var(--fuente-peso-regular);
+    color: var(--color-texto-principal);
+    text-align: start;
+  }
+  .tabla-partidas :global(tbody tr) {
+    border-block-end: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+  }
+  .tabla-partidas thead :global(th) {
+    background: var(--color-fondo-invertido);
+    color: var(--color-texto-invertido);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    font-weight: var(--fuente-peso-medio);
+    text-transform: uppercase;
+    text-align: start;
+  }
+  .tabla-partidas thead :global(th.tabla-num),
+  .tabla-partidas :global(th.tabla-num),
+  .tabla-partidas :global(td.tabla-num) {
+    text-align: end;
+  }
+  .tabla-partidas tfoot :global(tr:first-child > *) {
+    border-block-start: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+  }
+  .tabla-partidas tfoot :global(th),
+  .tabla-partidas tfoot :global(td) {
+    font-weight: var(--fuente-peso-titulo);
+    color: var(--color-texto-principal);
+    text-align: start;
+  }
+  .tabla-partidas tfoot :global(td.tabla-num) {
+    text-align: end;
+  }
+
   @media (min-width: 64em) { /* punto-quiebre-escritorio */
+    .tabla-directorio thead :global(th.tabla-num),
+    .tabla-compacta thead :global(th.tabla-num),
+    .tabla-directorio :global(td.tabla-num),
+    .tabla-compacta :global(td.tabla-num) {
+      text-align: end;
+    }
     .tabla-cabecera {
       position: static;
       margin: 0;

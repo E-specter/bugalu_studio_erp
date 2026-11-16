@@ -1,0 +1,146 @@
+---
+import Icono from './internos/Icono.astro';
+
+interface Paso {
+  nombre: string;
+  href?: string;
+  estado?: 'hecho' | 'pendiente' | 'revisar';
+}
+interface Props {
+  pasos: Paso[];
+  actual: number; // 1..n
+  etiqueta: string;
+}
+const { pasos, actual, etiqueta, class: clase } = Astro.props as Props & { class?: string };
+const nombreActual = pasos[actual - 1]?.nombre ?? '';
+const numero = (i: number) => String(i + 1).padStart(2, '0');
+const lectura = { hecho: 'HECHO', pendiente: 'PENDIENTE', revisar: 'REVISAR' };
+---
+
+<!-- Horizontal desde escritorio (lista con enlaces en los pasos HECHO con pagina); Compacta debajo (texto + barra). La isla solo cambia `href` y `data-estado`/lectura. -->
+<nav class:list={['pasos', clase]} aria-label={etiqueta}>
+  <ol class="pasos-lista">
+    {pasos.map((p, i) => {
+      const estado = i + 1 === actual ? 'actual' : (p.estado ?? (i + 1 < actual ? 'hecho' : 'pendiente'));
+      const texto = estado === 'actual' ? 'ACTUAL' : lectura[estado];
+      const Contenido = p.href && (estado === 'hecho' || estado === 'revisar') ? 'a' : 'span';
+      return (
+        <li data-paso={p.nombre.toLowerCase()} data-estado={estado} aria-current={estado === 'actual' ? 'step' : undefined}>
+          <Contenido class="pasos-paso" href={Contenido === 'a' ? p.href : undefined}>
+            <span class="pasos-fila">
+              <span class="pasos-numero">{numero(i)}</span>
+              <span class="pasos-lectura" data-lectura>
+                <span class="pasos-icono" aria-hidden="true">{estado === 'hecho' && <Icono nombre="check" />}</span>{texto}
+              </span>
+            </span>
+            <span class="pasos-nombre">{p.nombre}</span>
+          </Contenido>
+        </li>
+      );
+    })}
+  </ol>
+  <div class="pasos-compacta">
+    <p class="pasos-compacta-texto">PASO {actual} DE {pasos.length} · {nombreActual}</p>
+    <progress class="pasos-barra" value={actual} max={pasos.length} aria-label={`Paso ${actual} de ${pasos.length}`}>{actual} de {pasos.length}</progress>
+  </div>
+</nav>
+
+<style>
+  .pasos {
+    margin-block: var(--espacio-5);
+  }
+  .pasos-lista {
+    display: none;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    gap: var(--espacio-2);
+  }
+  .pasos-lista li {
+    flex: 1 1 0;
+    min-inline-size: 0;
+    display: flex;
+  }
+  .pasos-paso {
+    display: grid;
+    flex: 1;
+    gap: var(--espacio-1);
+    box-sizing: border-box;
+    padding: var(--espacio-3);
+    border: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+    color: var(--color-texto-secundario);
+    text-decoration: none;
+    background: var(--color-fondo-superficie);
+  }
+  .pasos-fila {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--espacio-2);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    line-height: var(--fuente-interlineado-interfaz);
+    text-transform: uppercase;
+  }
+  .pasos-lectura {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--espacio-1);
+  }
+  .pasos-icono:empty {
+    display: none;
+  }
+  .pasos-nombre {
+    font-size: var(--fuente-tamano-base);
+  }
+  [data-estado='hecho'] .pasos-paso,
+  [data-estado='revisar'] .pasos-paso {
+    color: var(--color-texto-principal);
+  }
+  a.pasos-paso:hover {
+    background: var(--color-fondo-claro);
+  }
+  [data-estado='actual'] .pasos-paso {
+    background: var(--color-fondo-destacado);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    color: var(--color-texto-principal);
+  }
+  [data-estado='revisar'] .pasos-lectura {
+    color: var(--color-texto-alerta);
+  }
+  .pasos-compacta {
+    display: grid;
+    gap: var(--espacio-2);
+  }
+  .pasos-compacta-texto {
+    margin: 0;
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+    color: var(--color-texto-principal);
+  }
+  .pasos-barra {
+    inline-size: 100%;
+    block-size: var(--medida-progreso);
+    appearance: none;
+    border: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+    background: var(--color-fondo-superficie);
+    accent-color: var(--color-fondo-invertido);
+  }
+  .pasos-barra::-webkit-progress-bar {
+    background: var(--color-fondo-superficie);
+  }
+  .pasos-barra::-webkit-progress-value {
+    background: var(--color-fondo-invertido);
+  }
+  .pasos-barra::-moz-progress-bar {
+    background: var(--color-fondo-invertido);
+  }
+  @media (min-width: 64em) { /* punto-quiebre-escritorio */
+    .pasos-lista {
+      display: flex;
+    }
+    .pasos-compacta {
+      display: none;
+    }
+  }
+</style>

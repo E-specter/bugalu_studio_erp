@@ -5,6 +5,7 @@ import Boton from '../componentes/Boton.astro';
 import Campo from '../componentes/Campo.astro';
 import Casilla from '../componentes/Casilla.astro';
 import Tabla from '../componentes/Tabla.astro';
+import Pasos from '../componentes/Pasos.astro';
 import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
 import IndicadorEstado from '../componentes/IndicadorEstado.astro';
 import EncabezadoPantalla from '../componentes/EncabezadoPantalla.astro';
@@ -21,36 +22,33 @@ const meta = {
   confirmar: { n: 4, titulo: 'Confirma tu reserva', descripcion: 'Revisa todo antes de confirmar.' },
   listo: { n: 5, titulo: 'Reserva registrada', descripcion: 'Tu horario queda apartado mientras pagas el anticipo.' },
 }[paso];
-const etapas = ['Horario', 'Servicio', 'Cuenta', 'Confirmar', 'Listo'];
+// HECHO enlaza al paso (la isla pone la consulta); la cuenta no tiene pagina y en Listo no se vuelve atras.
+const rutaPaso: Record<string, string> = { Horario: '/reservar/', Servicio: '/reservar/servicio/', Confirmar: '/reservar/confirmar/' };
+const etapas = ['Horario', 'Servicio', 'Cuenta', 'Confirmar', 'Listo'].map((nombre) => ({ nombre, href: paso === 'listo' ? undefined : rutaPaso[nombre] }));
 const enFlujo = paso !== 'listo';
+const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestran todo
 ---
 
 <!-- Un bloque por estado (estados-sistema): el servidor pinta cada <template> y la isla clona el que toca. Sin JS, el noscript explica que hace falta. -->
 <bugalu-reserva class="reserva" paso={paso}>
   <EncabezadoPantalla variante="flujo" indice={`PASO 0${meta.n} / 05`} titulo={meta.titulo} descripcion={meta.descripcion} />
-  <nav aria-label="Pasos">
-    <ol class="res-pasos">
-      {etapas.map((etapa, i) => (
-        <li data-paso={etapa.toLowerCase()} aria-current={i + 1 === meta.n ? 'step' : undefined}>
-          <span class="res-paso-num">0{i + 1}</span> {etapa} <span class="res-paso-estado">{i + 1 < meta.n ? 'HECHO' : ''}</span>
-        </li>
-      ))}
-    </ol>
-  </nav>
+  <Pasos pasos={etapas} actual={meta.n} etiqueta="Progreso de la reserva" />
   <div data-avisos></div>
   <!-- Región viva estable: anuncia el total al terminar cada simulacion. -->
   <p class="visualmente-oculto" role="status" data-anuncio></p>
-  <noscript>
-    <Aviso variante="informacion" titulo="Para reservar necesitas JavaScript. Actívalo en tu navegador y recarga la página." />
-  </noscript>
+  {paso !== 'horario' && (
+    <noscript>
+      <Aviso variante="informacion" titulo="Para reservar necesitas JavaScript. Actívalo en tu navegador y recarga la página." />
+    </noscript>
+  )}
 
-  <div class:list={['res-rejilla', !enFlujo && 'res-rejilla-sola']}>
+  <div class:list={['res-rejilla', !conLateral && 'res-rejilla-sola']}>
     <div class="res-principal">
       {paso === 'horario' && (
         <>
           <Calendario modo="reserva" />
           <div data-cuerpo hidden>
-            <Panel codigo="02" titulo="Tiempo de sala">
+            <Panel titulo="Tiempo de sala">
               <Campo tipo="selector" nombre="duracion" etiqueta="Duración" ayuda="Elige primero la hora de inicio." disabled><option>—</option></Campo>
             </Panel>
             <div class="res-acciones"><Boton tamano="grande" icono="arrow-right" data-continuar>Continuar</Boton></div>
@@ -110,7 +108,7 @@ const enFlujo = paso !== 'listo';
       )}
     </div>
 
-    {enFlujo && (
+    {conLateral && (
       <aside class="res-lateral" data-cuerpo-lateral hidden>
         <Panel titulo="Tu reserva" variante="lateral">
           <EtiquetaTecnica texto="SIN CONFIRMAR" />
@@ -123,6 +121,7 @@ const enFlujo = paso !== 'listo';
   <template data-plantilla="aviso">
     <Aviso variante="error" titulo=" " accion={{ etiqueta: ' ', href: '#' }} />
   </template>
+  <template data-plantilla="aviso-exito"><Aviso variante="exito" titulo=" " /></template>
   <template data-plantilla="servicio"><Casilla tipo="radio" nombre="servicio" valor="" etiqueta=" " detalle=" " /></template>
   <template data-plantilla="especialista"><Casilla nombre="especialista" valor="" etiqueta=" " detalle=" " /></template>
   <template data-plantilla="cargando"><Panel titulo="Cargando" cargando /></template>
@@ -137,7 +136,7 @@ const enFlujo = paso !== 'listo';
   <template data-plantilla="precio-calculando"><p class="res-ayuda">Calculando precio…</p></template>
   <template data-plantilla="precio-vacio"><p class="res-ayuda">Elige un servicio para ver el precio.</p></template>
   <template data-plantilla="precio">
-    <Tabla titulo="Partidas" columnas={['Concepto', 'Cantidad', 'Importe']} variante="compacta" />
+    <Tabla titulo="Partidas" columnas={['Concepto', 'Cantidad', 'Importe']} variante="partidas" numericas={[1, 2]} />
     <Aviso variante="informacion" titulo="Esta simulación no tiene valor de cotización. El precio de tu reserva se calcula al confirmarla, con las mismas tarifas." />
   </template>
   <template data-plantilla="precio-error">
@@ -173,22 +172,6 @@ const enFlujo = paso !== 'listo';
 
 <style is:global>
   bugalu-reserva { display: block; }
-  bugalu-reserva .res-pasos {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--espacio-2) var(--espacio-5);
-    margin: var(--espacio-5) 0;
-    padding: 0;
-    list-style: none;
-    font-family: var(--fuente-familia-tecnica);
-    font-size: var(--fuente-tamano-micro);
-    line-height: var(--fuente-interlineado-interfaz);
-    text-transform: uppercase;
-    color: var(--color-texto-principal);
-  }
-  bugalu-reserva .res-pasos li { padding-block: var(--espacio-1); border-block-end: var(--borde-grosor-grueso) solid transparent; }
-  bugalu-reserva .res-pasos li[aria-current='step'] { border-block-end-color: var(--color-borde-fuerte); font-weight: var(--fuente-peso-medio); }
-  bugalu-reserva .res-paso-estado { margin-inline-start: var(--espacio-1); }
   bugalu-reserva .res-rejilla { display: grid; gap: var(--espacio-6); grid-template-columns: minmax(0, 1fr); align-items: start; }
   bugalu-reserva .res-principal, bugalu-reserva .res-bloques { display: grid; gap: var(--espacio-5); min-inline-size: 0; }
   bugalu-reserva [data-cuerpo] { display: grid; gap: var(--espacio-5); }
@@ -217,7 +200,9 @@ const enFlujo = paso !== 'listo';
   bugalu-reserva .res-enlace { color: var(--color-texto-principal); }
   bugalu-reserva .res-siguientes { margin: 0; padding-inline-start: var(--espacio-5); display: grid; gap: var(--espacio-2); }
   bugalu-reserva [data-precio] > * + * { margin-block-start: var(--espacio-4); }
-  bugalu-reserva .res-total th, bugalu-reserva .res-total td { font-weight: var(--fuente-peso-medio); }
+  bugalu-reserva [data-avisos]:not(:empty) { margin-block-end: var(--espacio-5); }
+  bugalu-reserva [data-listo] { display: grid; gap: var(--espacio-5); }
+  bugalu-reserva .res-lateral .etiqueta { display: flex; inline-size: fit-content; margin-block-end: var(--espacio-3); }
   @media (min-width: 37.5em) { /* punto-quiebre-tableta */
     bugalu-reserva .res-acciones { flex-direction: row; align-items: center; flex-wrap: wrap; }
   }
@@ -231,7 +216,7 @@ const enFlujo = paso !== 'listo';
   import { listarSalas, crearReserva, obtenerReserva } from '../servicios/reservas.js';
   import { listarServicios, listarEspecialistas, simular } from '../servicios/catalogo.js';
   import { ErrorApi } from '../servicios/api.js';
-  import { soles, fechaDe, horaDe, instante, nombreDia, diaMes } from '../servicios/formatos.js';
+  import { soles, fechaDe, horaDe, instante, nombreDia, diaMes, duracionReserva, pintarPartidas } from '../servicios/formatos.js';
 
   const RUTAS: Record<string, string> = { horario: '/reservar/', servicio: '/reservar/servicio/', confirmar: '/reservar/confirmar/' };
   const DESCRIPCION: Record<string, string> = {
@@ -240,8 +225,7 @@ const enFlujo = paso !== 'listo';
     live: 'Sesión en vivo grabada en sala.',
   };
   const UNIDAD: Record<string, string> = { hora: 'por hora', lapso_30: 'por media hora' };
-  const NOMBRE_RECARGO: Record<string, string> = { noche: 'de noche', fin_de_semana: 'de fin de semana', feriado: 'de feriado' };
-  const dur = (min: number) => (min < 60 ? `${min} min` : `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}`);
+  const dur = duracionReserva;
   const sumar = (iso: string, min: number) => {
     const d = new Date(Date.parse(iso) + min * 6e4).toISOString();
     return instante(fechaDe(d), horaDe(d));
@@ -279,6 +263,8 @@ const enFlujo = paso !== 'listo';
       this.q('[data-cuerpo]')!.hidden = false;
       const lateral = this.q('[data-cuerpo-lateral]');
       if (lateral) lateral.hidden = false;
+      this.enlazarPasos();
+      this.bienvenida();
       this.q('.res-acciones [data-anterior]')?.setAttribute('href', this.url(this.paso === 'confirmar' ? 'servicio' : 'horario'));
       // Salas para el nombre del resumen (el calendario trae las suyas); un fallo no bloquea el paso.
       this.salas = await listarSalas().catch(() => []);
@@ -374,15 +360,32 @@ const enFlujo = paso !== 'listo';
     }
     revisar(...pasos: string[]) {
       for (const paso of pasos) {
-        const estado = this.q(`.res-pasos [data-paso="${paso}"] .res-paso-estado`);
-        if (estado) estado.textContent = 'REVISAR';
+        const item = this.q(`.pasos [data-paso="${paso}"]`);
+        const lectura = item?.querySelector('[data-lectura]');
+        if (!item || !lectura) continue;
+        item.dataset.estado = 'revisar';
+        lectura.querySelector('.pasos-icono')?.replaceChildren();
+        lectura.lastChild!.textContent = 'REVISAR';
       }
+    }
+    // HECHO enlaza al paso con la consulta de la URL (lo elegido viaja ahi).
+    enlazarPasos() {
+      for (const paso of ['horario', 'servicio', 'confirmar']) this.q<HTMLAnchorElement>(`.pasos [data-paso="${paso}"] a`)?.setAttribute('href', this.url(paso));
+    }
+    bienvenida() {
+      const url = new URL(location.href);
+      if (url.searchParams.get('aviso') !== 'cuenta-creada') return;
+      url.searchParams.delete('aviso');
+      history.replaceState(null, '', url);
+      if (this.paso !== 'confirmar') return;
+      const nodo = this.plantilla('aviso-exito');
+      nodo.querySelector('.aviso-titulo')!.textContent = 'Cuenta creada. Revisa tu reserva y confírmala.';
+      this.q('[data-avisos]')!.replaceChildren(nodo);
     }
 
     // --- Resumen persistente ---
 
     resumen() {
-      const lista = this.q('[data-resumen]') ?? this.q('[data-revision]');
       const e = this.e;
       const sala = this.salas.find((s) => s.id === e.sala) ?? (e.sala ? null : this.salas[0]);
       const servicio = this.servicios.find((s) => s.id === e.servicio);
@@ -401,7 +404,7 @@ const enFlujo = paso !== 'listo';
         if (!destino) continue;
         destino.replaceChildren(
           ...filas
-            .filter(([etiqueta]) => destino === lista || etiqueta !== 'Total')
+            .filter(([etiqueta]) => destino.hasAttribute('data-resumen') || !['Total', 'Anticipo 50 %'].includes(etiqueta))
             .map(([etiqueta, valor, cambiar]) => {
               const fila = document.createElement('div');
               const dt = document.createElement('dt');
@@ -607,29 +610,7 @@ const enFlujo = paso !== 'listo';
     }
     tablaPrecio() {
       const nodo = this.plantilla('precio');
-      const cuerpo = nodo.querySelector('tbody')!;
-      const fila = (concepto: string, cantidad: string, importe: string, clase = '') => {
-        const tr = document.createElement('tr');
-        tr.className = clase;
-        const th = document.createElement('th');
-        th.scope = 'row';
-        th.textContent = concepto;
-        const c = document.createElement('td');
-        c.dataset.etiqueta = 'Cantidad';
-        c.textContent = cantidad;
-        const i = document.createElement('td');
-        i.dataset.etiqueta = 'Importe';
-        i.textContent = importe;
-        tr.append(th, c, i);
-        cuerpo.append(tr);
-      };
-      for (const l of this.sim.lineas) {
-        const cantidad = l.unidad === 'fijo' ? '1' : l.unidad === 'hora' ? `${l.cantidad} h` : l.unidad === 'lapso_30' ? `${l.cantidad} × 30 min` : String(l.cantidad);
-        fila(l.concepto, cantidad, soles(l.monto));
-      }
-      for (const r of this.sim.recargos) fila(`Recargo ${NOMBRE_RECARGO[r.tipo] ?? r.tipo} · ${r.bloques} ${r.bloques === 1 ? 'bloque' : 'bloques'} de 30 min`, '', soles(r.monto));
-      fila('Total', '', soles(this.sim.total), 'res-total');
-      fila('Anticipo 50 %', '', soles(this.sim.anticipo), 'res-total');
+      pintarPartidas(nodo.querySelector('.tabla')!, this.sim);
       return nodo;
     }
     errorPrecio(error: unknown) {
@@ -664,7 +645,11 @@ const enFlujo = paso !== 'listo';
     async continuar() {
       if (this.paso === 'horario') {
         if (!this.e.inicio) {
-          const celda = this.q<HTMLElement>('bugalu-calendario button[data-inicio][tabindex="0"]') ?? this.q<HTMLElement>('bugalu-calendario button[data-inicio]');
+          // El foco va a un control visible: en movil la tabla esta oculta y el dia sin abrir solo muestra su <summary>.
+          const visible = (e: HTMLElement) => e.offsetParent !== null;
+          const botones = [...this.querySelectorAll<HTMLElement>('bugalu-calendario button[data-inicio]')].filter((b) => visible(b) && !b.closest('details:not([open])'));
+          const resumen = [...this.querySelectorAll<HTMLElement>('bugalu-calendario summary')].find((x) => visible(x) && /libres/.test(x.textContent ?? '') && !/Sin horas libres/.test(x.textContent ?? ''));
+          const celda = botones.find((b) => b.getAttribute('tabindex') === '0') ?? botones[0] ?? resumen;
           return this.aviso('Elige una hora de inicio en el calendario.', undefined, celda);
         }
         const sala = new URLSearchParams(location.search).get('sala') ?? (await listarSalas().catch(() => []))[0]?.id;
@@ -761,10 +746,9 @@ const enFlujo = paso !== 'listo';
         return salida.replaceChildren(this.plantilla('listo-sin-datos'));
       }
       const nodo = this.plantilla('listo');
-      nodo.querySelector('.panel-titulo')!.textContent = `L1 Reserva ${reserva.folio}`;
+      nodo.querySelector('.panel-titulo')!.lastChild!.textContent = ` Reserva ${reserva.folio}`;
       nodo.querySelector('[data-datos-listo]')!.replaceChildren(
         ...[
-          ['Folio', reserva.folio],
           ['Fecha', `${nombreDia(fechaDe(reserva.inicio))} ${diaMes(fechaDe(reserva.inicio))}`],
           ['Horario', `${horaDe(reserva.inicio)} – ${horaDe(reserva.fin)}`],
           ['Sala', reserva.sala],

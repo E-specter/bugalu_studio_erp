@@ -117,8 +117,8 @@ test.describe('01 Horario', () => {
     test('explica qué hace falta', async ({ page }) => {
       await page.goto('/reservar/');
       // Playwright ignora el texto de <noscript>: se comprueba en el HTML y en lo que se ve.
-      expect(await page.content()).toContain('Para reservar necesitas JavaScript. Actívalo en tu navegador y recarga la página.');
-      await expect(page.locator('bugalu-reserva > noscript .aviso-titulo')).toBeVisible();
+      expect(await page.content()).toContain('El calendario necesita JavaScript. Actívalo en tu navegador y recarga la página.');
+      await expect(page.locator('bugalu-calendario noscript .aviso-titulo')).toBeVisible();
       await expect(page.locator('bugalu-reserva [data-cuerpo]')).toBeHidden();
       await page.screenshot({ path: 'pruebas/capturas/reservar-sin-js.png', fullPage: true });
     });
@@ -149,7 +149,7 @@ test.describe('02 Servicio', () => {
     await expect(incluido).toBeChecked();
     const precio = page.getByRole('region', { name: 'Precio simulado' });
     await expect(precio.getByRole('cell', { name: 'S/ 240,00' })).toBeVisible();
-    await expect(precio).toContainText('Recargo de noche · 2 bloques de 30 min');
+    await expect(precio).toContainText('Recargo de noche');
     await expect(precio.getByRole('row', { name: /Total.*S\/ 290,00/i })).toBeVisible();
     await expect(precio.getByRole('row', { name: /Anticipo 50 %.*S\/ 145,00/i })).toBeVisible();
     await expect(precio).toContainText('Esta simulación no tiene valor de cotización.');
@@ -182,6 +182,8 @@ test.describe('02 Servicio', () => {
     const envios = await montar(page);
     await page.goto(PASO2);
     await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
+    await page.keyboard.press('Tab'); // primero los pasos: HECHO es enlace
+    await expect(pasos(page).getByRole('link', { name: /Horario/ })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('radio', { name: /Grabación/ })).toBeFocused();
     await page.keyboard.press('Space');
@@ -340,7 +342,7 @@ test.describe('04 Confirmar y 05 Listo', () => {
     await page.goto(PASO4);
     await expect(total(page)).toBeVisible();
     await page.getByRole('button', { name: 'Confirmar reserva' }).click();
-    await expect(page.getByRole('navigation', { name: 'Pasos' })).toContainText('REVISAR');
+    await expect(page.getByRole('navigation', { name: 'Progreso de la reserva' })).toContainText('REVISAR');
     await page.screenshot({ path: 'pruebas/capturas/reservar-04-error-409-1440.png', fullPage: true });
   });
 
@@ -398,4 +400,177 @@ test('sinToken: una consulta pública con sesión caducada se repite sin token',
   await page.goto(PASO2);
   await expect(page.getByRole('group', { name: 'Servicio' }).getByRole('radio')).toHaveCount(2);
   expect(cabeceras).toEqual([true, false]);
+});
+
+// --- TAREA-RF04-7: correcciones de la revisión visual (B3, B4, N2 a N8) ---
+const SIM_LARGA = { ...SIM, lineas: [{ concepto: 'Grabación', cantidad: '2.5', unidad: 'hora', monto: '300.00' }, { concepto: 'Productor', cantidad: '5', unidad: 'lapso_30', monto: '75.00' }, SIM.lineas[1]] };
+const pasos = (page) => page.getByRole('navigation', { name: 'Progreso de la reserva' });
+const token = (page, v) => page.evaluate((x) => { const s = document.createElement('i'); s.style.color = `var(${x})`; document.body.append(s); const c = getComputedStyle(s).color; s.remove(); return c; }, v);
+
+test.describe('B3 partidas', () => {
+  test('cantidad como duración de reserva, recargo con su nombre, pie en tfoot y cifras a la derecha', async ({ page }) => {
+    await montar(page, { sim: (r) => r.fulfill(json(200, SIM_LARGA)) });
+    await page.goto(`${PASO2}&servicio=s1`);
+    const tabla = page.getByRole('table', { name: 'Partidas' });
+    await expect(tabla.getByRole('row', { name: /^Grabación/ })).toContainText('2 h 30 min');
+    await expect(tabla.getByRole('row', { name: /^Productor/ })).toContainText('5 × 30 min');
+    await expect(tabla.getByRole('row', { name: /monto fijo/ }).getByRole('cell').first()).toHaveText('1');
+    const recargo = tabla.getByRole('row', { name: /^Recargo de noche/ });
+    await expect(recargo.getByRole('rowheader')).toHaveText('Recargo de noche');
+    await expect(recargo).toContainText('2 × 30 min');
+    await expect(tabla.locator('tfoot tr')).toHaveCount(2);
+    await expect(tabla.locator('tfoot')).toContainText('Total');
+    await expect(tabla.locator('tfoot')).toContainText('Anticipo 50 %');
+    await expect(tabla.locator('tbody tr', { hasText: 'Total' })).toHaveCount(0);
+    const estilo = (loc) => loc.evaluate((e) => { const c = getComputedStyle(e); return { a: c.textAlign, n: c.fontVariantNumeric, p: c.fontWeight }; });
+    const importe = await estilo(tabla.locator('tbody tr').first().locator('td').last());
+    expect(['right', 'end']).toContain(importe.a);
+    expect(importe.n).toContain('tabular-nums');
+    expect(['right', 'end']).toContain((await estilo(tabla.locator('thead th').last())).a);
+    expect(Number((await estilo(tabla.locator('tfoot th').first())).p)).toBeGreaterThanOrEqual(700);
+  });
+
+  test('a 390 sigue siendo tabla, sin tarjetas', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await montar(page);
+    await page.goto(`${PASO2}&servicio=s1`);
+    const tabla = page.getByRole('table', { name: 'Partidas' });
+    await expect(tabla.locator('tbody tr').first()).toBeVisible();
+    expect(await tabla.locator('tbody tr').first().evaluate((e) => getComputedStyle(e).display)).toBe('table-row');
+    await expect(tabla.locator('thead th').first()).toBeVisible();
+    expect(await tabla.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
+  });
+});
+
+test.describe('B4 pasos', () => {
+  test('1440: HECHO enlaza al paso con la consulta, CUENTA es texto, actual y pendiente', async ({ page }) => {
+    await montar(page);
+    await page.goto(PASO4);
+    await expect(total(page)).toBeVisible();
+    const nav = pasos(page);
+    await expect(nav.getByRole('listitem')).toHaveCount(5);
+    const horario = nav.getByRole('link', { name: /Horario/ });
+    await expect(horario).toHaveAttribute('href', `/reservar/?inicio=${encodeURIComponent(INI)}&duracion=120&sala=sala-1&servicio=s1`);
+    await expect(horario).toContainText('HECHO');
+    await expect(horario.locator('svg')).toHaveCount(1);
+    await expect(nav.getByRole('link', { name: /Servicio/ })).toHaveAttribute('href', /^\/reservar\/servicio\/\?.*servicio=s1/);
+    await expect(nav.getByRole('link')).toHaveCount(2);
+    await expect(nav.getByRole('listitem').filter({ hasText: 'Cuenta' })).toContainText('HECHO');
+    await expect(nav.locator('[aria-current="step"]')).toContainText('Confirmar');
+    const listo = nav.getByRole('listitem').filter({ hasText: 'Listo' });
+    await expect(listo).toContainText('PENDIENTE');
+    expect(await listo.locator('.pasos-paso').evaluate((e) => getComputedStyle(e).color)).toBe(await token(page, '--color-texto-secundario'));
+  });
+
+  test('REVISAR va en color de alerta y el paso sigue siendo enlace', async ({ page }) => {
+    await montar(page, { crear: (r) => r.fulfill(errorApi(409, 'tramo_no_disponible')) });
+    await page.goto(PASO4);
+    await expect(total(page)).toBeVisible();
+    await page.getByRole('button', { name: 'Confirmar reserva' }).click();
+    const item = pasos(page).getByRole('listitem').filter({ hasText: 'REVISAR' });
+    await expect(item).toHaveCount(1);
+    await expect(item.getByRole('link', { name: /Horario/ })).toBeVisible();
+    expect(await item.locator('[data-lectura]').evaluate((e) => getComputedStyle(e).color)).toBe(await token(page, '--color-texto-alerta'));
+  });
+
+  test('390: Compacta con "PASO 4 DE 5" y barra de progreso; la lista horizontal se oculta', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await montar(page);
+    await page.goto(PASO4);
+    await expect(total(page)).toBeVisible();
+    const nav = pasos(page);
+    await expect(nav).toContainText('PASO 4 DE 5 · Confirmar');
+    await expect(nav.getByRole('progressbar')).toHaveAttribute('value', '4');
+    await expect(nav.getByRole('listitem')).toHaveCount(0); // display: none en móvil
+  });
+
+  test('en Listo los pasos no llevan enlaces', async ({ page }) => {
+    await montar(page);
+    await page.goto(`/reservar/listo/?id=${R1}`);
+    await expect(page.getByText('RSV-0013').first()).toBeVisible();
+    await expect(pasos(page).getByRole('link')).toHaveCount(0);
+  });
+});
+
+test.describe('N2 a N8', () => {
+  test('N3: L1 conserva su código y no hay fila FOLIO', async ({ page }) => {
+    await montar(page);
+    await page.goto(`/reservar/listo/?id=${R1}`);
+    const panel = page.getByRole('region', { name: /Reserva RSV-0013/ });
+    await expect(panel.locator('.panel-codigo')).toHaveText('L1');
+    await expect(panel.locator('.panel-titulo')).toContainText('Reserva RSV-0013');
+    await expect(panel.locator('dt', { hasText: 'Folio' })).toHaveCount(0);
+  });
+
+  test('N2: hueco entre los bloques de Listo y entre la etiqueta y SALA', async ({ page }) => {
+    await montar(page);
+    await page.goto(`/reservar/listo/?id=${R1}`);
+    await expect(page.getByText('RSV-0013').first()).toBeVisible();
+    const g = await page.locator('[data-listo]').evaluate((e) => ({ d: getComputedStyle(e).display, g: getComputedStyle(e).rowGap }));
+    expect(g).toEqual({ d: 'grid', g: '20px' });
+    await page.goto(PASO2);
+    const lateral = page.getByRole('region', { name: 'Tu reserva' });
+    await expect(lateral).toBeVisible();
+    const [etiqueta, sala] = await Promise.all([lateral.locator('.etiqueta').boundingBox(), lateral.locator('dt', { hasText: 'Sala' }).boundingBox()]);
+    expect(sala.y - (etiqueta.y + etiqueta.height)).toBeGreaterThanOrEqual(12);
+  });
+
+  test('N2: el aviso no toca la rejilla', async ({ page }) => {
+    await montar(page, { crear: (r) => r.fulfill(errorApi(503, 'x')) });
+    await page.goto(PASO4);
+    await expect(total(page)).toBeVisible();
+    await page.getByRole('button', { name: 'Confirmar reserva' }).click();
+    const [a, r] = await Promise.all([aviso(page).boundingBox(), page.locator('.res-rejilla').boundingBox()]);
+    expect(r.y - (a.y + a.height)).toBeGreaterThanOrEqual(20);
+  });
+
+  test('N4: el panel de tiempo de sala no lleva código', async ({ page }) => {
+    await montar(page, { sesion: false });
+    await page.goto('/reservar/?fecha=2026-11-16');
+    await expect(page.locator('bugalu-reserva .panel-titulo', { hasText: 'Tiempo de sala' })).toBeAttached();
+    await expect(page.locator('bugalu-reserva .panel-codigo')).toHaveCount(0);
+  });
+
+  test('N5: en 04 no hay resumen lateral y R1 no repite importes', async ({ page }) => {
+    await montar(page);
+    await page.goto(PASO4);
+    await expect(total(page)).toBeVisible();
+    await expect(page.locator('bugalu-reserva aside')).toHaveCount(0);
+    const r1 = page.getByRole('region', { name: 'Tu reserva' });
+    await expect(r1).toBeVisible();
+    await expect(r1).not.toContainText('Anticipo');
+    await expect(r1).not.toContainText('Total');
+  });
+
+  test('N6: a 390 el aviso de "Elige una hora" mueve el foco a un control visible del calendario', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await montar(page, { sesion: false });
+    await page.goto('/reservar/?fecha=2026-11-16');
+    await expect(page.locator('bugalu-calendario summary').first()).toBeVisible();
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await expect(aviso(page)).toContainText('Elige una hora de inicio en el calendario.');
+    const foco = await page.evaluate(() => { const e = document.activeElement; return { dentro: !!e.closest('bugalu-calendario'), visible: e.offsetParent !== null, tag: e.tagName }; });
+    expect(foco.dentro && foco.visible && ['BUTTON', 'SUMMARY'].includes(foco.tag)).toBe(true);
+  });
+
+  test('N8: tras registrarse, el paso 04 da la bienvenida y quita el parámetro', async ({ page }) => {
+    await montar(page);
+    await page.goto(`${PASO4}&aviso=cuenta-creada`);
+    await expect(total(page)).toBeVisible();
+    await expect(page.locator('bugalu-reserva [data-avisos] [role="status"]')).toContainText('Cuenta creada. Revisa tu reserva y confírmala.');
+    expect(new URL(page.url()).searchParams.has('aviso')).toBe(false);
+    await sinViolaciones(page);
+  });
+
+  test.describe('N7 sin JavaScript', () => {
+    test.use({ javaScriptEnabled: false });
+    test('en el horario solo se pinta el aviso del calendario', async ({ page }) => {
+      await page.goto('/reservar/');
+      const html = await page.content();
+      expect(html).toContain('El calendario necesita JavaScript');
+      expect(html).not.toContain('Para reservar necesitas JavaScript');
+      await page.goto('/reservar/servicio/');
+      expect(await page.content()).toContain('Para reservar necesitas JavaScript');
+    });
+  });
 });

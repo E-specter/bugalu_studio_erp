@@ -42,10 +42,12 @@ export const diaCorto = (fecha) => { const p = partes(fecha); return `${p.dia.sl
 export const diaLargo = (fecha) => { const p = partes(fecha); return `${p.dia} ${p.numero} ${p.mes}`.toUpperCase(); }; // LUNES 16 NOV
 export const diaMes = (fecha) => { const p = partes(fecha); return `${p.numero} ${p.mes}`; }; // 25 dic
 export const diaMesAnio = (fecha) => `${diaMes(fecha)} ${partes(fecha).anio}`; // 25 dic 2026
+// "SEMANA DEL 16 AL 22 NOV 2026"; si cruza mes o año, cada extremo lleva lo suyo ("28 DIC 2026 AL 3 ENE 2027").
 export function rangoSemana(lunes) {
   const a = partes(lunes);
   const b = partes(sumarDias(lunes, 6));
-  return `SEMANA DEL ${a.numero}${a.mes === b.mes ? '' : ` ${a.mes}`} AL ${b.numero} ${b.mes} ${b.anio}`.toUpperCase();
+  const desde = a.anio === b.anio ? `${a.numero}${a.mes === b.mes ? '' : ` ${a.mes}`}` : `${a.numero} ${a.mes} ${a.anio}`;
+  return `SEMANA DEL ${desde} AL ${b.numero} ${b.mes} ${b.anio}`.toUpperCase();
 }
 
 // --- Importes: el campo acepta coma o punto; a la API va "125.50" ---
@@ -61,3 +63,36 @@ export function leerImporte(texto) {
 export const mostrarImporte = (monto) => (leerImporte(monto) ?? String(monto ?? '')).replace('.', ',');
 // "120.00" -> "S/ 120,00".
 export const soles = (monto) => `S/ ${mostrarImporte(monto)}`;
+
+// --- Partidas de precio (reservar y mis reservas comparten este formato) ---
+const RECARGOS = { noche: 'Recargo de noche', fin_de_semana: 'Recargo de fin de semana', feriado: 'Recargo de feriado' };
+// 150 -> "2 h 30 min", 30 -> "30 min", 120 -> "2 h".
+export const duracionReserva = (min) => [Math.floor(min / 60) && `${Math.floor(min / 60)} h`, min % 60 && `${min % 60} min`].filter(Boolean).join(' ') || '0 min';
+const cantidadPartida = (cantidad, unidad) =>
+  unidad === 'hora' ? duracionReserva(Math.round(Number(cantidad) * 60))
+  : unidad === 'lapso_30' ? `${Number(cantidad)} × 30 min`
+  : unidad === 'fijo' ? '1'
+  : String(Number(cantidad));
+// Simulacion -> { filas: [[concepto, cantidad, importe]], pie: [[etiqueta, importe]] }; solo formatea, nunca suma.
+export function partidasPrecio(precio) {
+  return {
+    filas: [
+      ...precio.lineas.map((l) => [l.concepto, cantidadPartida(l.cantidad, l.unidad), soles(l.monto)]),
+      ...precio.recargos.map((r) => [RECARGOS[r.tipo] ?? 'Recargo', `${r.bloques} × 30 min`, soles(r.monto)]),
+    ],
+    pie: [['Total', soles(precio.total)], ['Anticipo 50 %', soles(precio.anticipo)]],
+  };
+}
+// Pinta las partidas en una <Tabla variante="partidas"> ya renderizada (<tbody> y <tfoot>).
+export function pintarPartidas(tabla, precio) {
+  const { filas, pie } = partidasPrecio(precio);
+  const celda = (etiqueta, texto) => {
+    const td = Object.assign(document.createElement('td'), { textContent: texto, className: 'tabla-num' });
+    td.dataset.etiqueta = etiqueta;
+    return td;
+  };
+  const th = (texto, extra = {}) => Object.assign(document.createElement('th'), { scope: 'row', textContent: texto, ...extra });
+  const fila = (...nodos) => { const tr = document.createElement('tr'); tr.append(...nodos); return tr; };
+  tabla.querySelector('tbody').replaceChildren(...filas.map(([c, q, i]) => fila(th(c), celda('Cantidad', q), celda('Importe', i))));
+  tabla.querySelector('tfoot').replaceChildren(...pie.map(([e, i]) => fila(th(e, { colSpan: 2 }), celda('Importe', i))));
+}

@@ -20,6 +20,7 @@ import CabeceraApp from '../componentes/CabeceraApp.astro';
 import NavegacionLateral from '../componentes/NavegacionLateral.astro';
 import NavegacionTactil from '../componentes/NavegacionTactil.astro';
 import Tabla from '../componentes/Tabla.astro';
+import Pasos from '../componentes/Pasos.astro';
 
 const destinos = [
   { etiqueta: 'Inicio', href: '/app/', icono: 'house' as const },
@@ -262,6 +263,29 @@ const destinos = [
         <td><Boton variante="secundario" href="#">Cambiar rol<span class="visualmente-oculto"> de Luis Mora</span></Boton></td>
       </tr>
     </Tabla>
+    <h3>Partidas</h3>
+    <Tabla titulo="Partidas de ejemplo" columnas={['Concepto', 'Cantidad', 'Importe']} variante="partidas" numericas={[1, 2]}>
+      <tr><th scope="row">Grabación</th><td class="tabla-num" data-etiqueta="Cantidad">2 h 30 min</td><td class="tabla-num" data-etiqueta="Importe">S/ 300,00</td></tr>
+      <tr><th scope="row">Recargo de noche</th><td class="tabla-num" data-etiqueta="Cantidad">2 × 30 min</td><td class="tabla-num" data-etiqueta="Importe">S/ 20,00</td></tr>
+      <Fragment slot="pie">
+        <tr><th scope="row" colspan="2">Total</th><td class="tabla-num">S/ 320,00</td></tr>
+        <tr><th scope="row" colspan="2">Anticipo 50 %</th><td class="tabla-num">S/ 160,00</td></tr>
+      </Fragment>
+    </Tabla>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-pasos">
+    <h2 id="g-pasos">Pasos</h2>
+    <Pasos
+      etiqueta="Progreso de la reserva, ejemplo"
+      actual={3}
+      pasos={[{ nombre: 'Horario', href: '#h' }, { nombre: 'Servicio', href: '#s' }, { nombre: 'Confirmar' }, { nombre: 'Listo' }]}
+    />
+    <Pasos
+      etiqueta="Progreso con paso por revisar, ejemplo"
+      actual={3}
+      pasos={[{ nombre: 'Horario', href: '#h', estado: 'revisar' }, { nombre: 'Servicio', href: '#s' }, { nombre: 'Confirmar' }, { nombre: 'Listo' }]}
+    />
   </section>
 
   <script>

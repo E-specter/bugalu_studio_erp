@@ -54,7 +54,7 @@ const filtros = [
       <template data-estado="datos">
         <Panel titulo="Reservas">
           <p class="reservas-total" data-total></p>
-          <Tabla titulo="Reservas" columnas={['Reserva', 'Fecha', 'Estado', 'Total', 'Pago', '']} />
+          <Tabla titulo="Reservas" columnas={['Reserva', 'Fecha', 'Estado', 'Total', 'Pago', '']} numericas={[3]} />
         </Panel>
       </template>
       <template data-fila>
@@ -62,11 +62,10 @@ const filtros = [
           <th scope="row"><span class="reservas-folio" data-folio></span><span class="gestion-motivo" data-servicio></span></th>
           <td data-etiqueta="Fecha"><span data-fecha></span><span class="gestion-motivo" data-horario></span></td>
           <td data-etiqueta="Estado"><EtiquetaTecnica texto="Estado" /><span class="gestion-motivo" data-motivo hidden></span></td>
-          <td data-etiqueta="Total" class="reservas-importe" data-total-fila></td>
+          <td data-etiqueta="Total" class="tabla-num" data-total-fila></td>
           <td data-etiqueta="Pago">
             <span data-limite>—</span>
             <span class="gestion-motivo" data-plazo hidden></span>
-            <span class="gestion-motivo" data-caduca>Sin pago registrado, caduca y el horario se libera.</span>
           </td>
           <td><Boton variante="secundario" href="#" data-accion>Ver reserva<span class="visualmente-oculto" data-objeto></span></Boton></td>
         </tr>
@@ -81,26 +80,6 @@ const filtros = [
       </template>
       <template data-estado="datos">
         <div class="gestion-rejilla">
-          <div class="gestion-principal">
-            <Panel codigo="D1" titulo="Reserva">
-              <dl class="gestion-datos">
-                <div><dt>Estado</dt><dd><EtiquetaTecnica texto="Estado" /></dd></div>
-                <div><dt>Fecha y horario</dt><dd data-campo="horario"></dd></div>
-                <div><dt>Duración</dt><dd data-campo="duracion"></dd></div>
-                <div><dt>Servicio</dt><dd data-campo="servicio"></dd></div>
-                <div data-fila="especialistas"><dt>Especialistas</dt><dd data-campo="especialistas"></dd></div>
-                <div><dt>Sala</dt><dd data-campo="sala"></dd></div>
-                <div data-fila="cliente"><dt>Cliente</dt><dd data-campo="cliente"></dd></div>
-              </dl>
-            </Panel>
-            <Panel codigo="D2" titulo="Precio">
-              <div data-precio><Tabla titulo="Desglose del precio" columnas={['Concepto', 'Cantidad', 'Importe']} /></div>
-              <p class="gestion-ayuda reservas-nota-precio">Precio calculado al reservar.</p>
-            </Panel>
-            <Panel codigo="D3" titulo="Cuotas">
-              <div data-cuotas><Tabla titulo="Cuotas" columnas={['Cuota', 'Importe', 'Estado']} /></div>
-            </Panel>
-          </div>
           <div class="gestion-lateral">
             <div data-estado-reserva class="reservas-estado">
               <IndicadorEstado variante="barra" texto=" " dato=" " />
@@ -119,19 +98,32 @@ const filtros = [
               </Panel>
             </div>
           </div>
+          <div class="gestion-principal">
+            <Panel codigo="D1" titulo="Reserva">
+              <dl class="gestion-datos">
+                <div><dt>Estado</dt><dd><EtiquetaTecnica texto="Estado" /></dd></div>
+                <div><dt>Fecha y horario</dt><dd data-campo="horario"></dd></div>
+                <div><dt>Duración</dt><dd data-campo="duracion"></dd></div>
+                <div><dt>Servicio</dt><dd data-campo="servicio"></dd></div>
+                <div data-fila="especialistas"><dt>Especialistas</dt><dd data-campo="especialistas"></dd></div>
+                <div><dt>Sala</dt><dd data-campo="sala"></dd></div>
+                <div data-fila="cliente"><dt>Cliente</dt><dd data-campo="cliente"></dd></div>
+              </dl>
+            </Panel>
+            <Panel codigo="D2" titulo="Precio">
+              <div data-precio><Tabla titulo="Desglose del precio" columnas={['Concepto', 'Cantidad', 'Importe']} variante="partidas" numericas={[1, 2]} /></div>
+              <p class="gestion-ayuda reservas-nota-precio">Precio calculado al reservar.</p>
+            </Panel>
+            <Panel codigo="D3" titulo="Cuotas">
+              <div data-cuotas><Tabla titulo="Cuotas" columnas={['Cuota', 'Importe', 'Estado']} variante="partidas" numericas={[1]} /></div>
+            </Panel>
+          </div>
         </div>
-      </template>
-      <template data-fila-precio>
-        <tr>
-          <th scope="row" data-concepto></th>
-          <td data-etiqueta="Cantidad" data-cantidad></td>
-          <td data-etiqueta="Importe" class="reservas-importe" data-importe></td>
-        </tr>
       </template>
       <template data-fila-cuota>
         <tr>
           <th scope="row" data-concepto></th>
-          <td data-etiqueta="Importe" class="reservas-importe" data-importe></td>
+          <td data-etiqueta="Importe" class="tabla-num" data-importe></td>
           <td data-etiqueta="Estado"><EtiquetaTecnica texto="Estado" /></td>
         </tr>
       </template>
@@ -144,7 +136,7 @@ const filtros = [
   import { IslaGestion } from '../servicios/isla-gestion.js';
   import { listarMisReservas, obtenerReserva, cancelarReserva } from '../servicios/reservas.js';
   import { obtenerPerfil } from '../servicios/api.js';
-  import { fechaDe, horaDe, diaMes, diaMesAnio, soles } from '../servicios/formatos.js';
+  import { fechaDe, horaDe, diaMes, diaMesAnio, soles, pintarPartidas } from '../servicios/formatos.js';
   import { mostrarAviso, enfocarAviso, llenarAviso } from '../servicios/formulario.js';
 
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -155,7 +147,6 @@ const filtros = [
   const PROXIMAS = ['pre_reservada', 'confirmada', 'en_curso'];
   const HITOS = { al_reservar: 'Al reservar', al_terminar: 'Al terminar la sesión', al_encargar: 'Al encargar', al_aprobar_version: 'Al aprobar la versión' };
   const CUOTAS = { pendiente: ['Pendiente', 'neutra'], pagada: ['Pagada', 'exito'] };
-  const RECARGOS = { noche: 'Recargo de noche', fin_de_semana: 'Recargo de fin de semana', feriado: 'Recargo de feriado' };
 
   const nombre = (v) => v?.nombre ?? v;
   const absoluta = (iso) => `${diaMes(fechaDe(iso))}, ${horaDe(iso)}`;
@@ -294,7 +285,6 @@ const filtros = [
       const limite = raiz.querySelector('[data-limite]');
       limite.textContent = ms === null ? '—' : ms <= 0 ? 'Venció sin pago' : `Antes del ${absoluta(r.vence_pago)}`;
       oculto(raiz.querySelector('[data-plazo]'), ms > 0 ? faltan(ms) : null);
-      if (!(ms > 0)) raiz.querySelector('[data-caduca]')?.remove(); // quitado, no oculto: tampoco lo lee nadie
     }
 
     // Cada minuto: recalcula sin anunciar; anuncia solo al cruzar 1 h, 15 min o el vencimiento.
@@ -325,7 +315,9 @@ const filtros = [
       this.mostrar('datos');
       this.pintar(validar(r));
       this.encabezado(`${nombre(r.servicio)} · ${fecha(r)}, ${horario(r)}`, r.folio);
-      document.querySelector('.encabezado-titulo').textContent = `Reserva ${r.folio}`;
+      // El folio no se parte en dos lineas.
+      const folio = Object.assign(document.createElement('span'), { className: 'reservas-folio-titulo', textContent: r.folio });
+      document.querySelector('.encabezado-titulo').replaceChildren('Reserva ', folio);
       if (this.rol && this.rol !== 'cliente') {
         const enlace = document.querySelector('.encabezado-ruta a[href="/app/reservas/"]');
         if (enlace) Object.assign(enlace, { textContent: 'Agenda', href: '/app/agenda/' });
@@ -365,13 +357,7 @@ const filtros = [
       campo('especialistas', (r.especialistas ?? []).map(nombre).join(', '));
       campo('cliente', r.cliente && nombre(r.cliente));
       const p = r.precio;
-      const unidades = { hora: (c) => `${c} h`, lapso_30: (c) => `${c} × 30 min`, fijo: (c) => c };
-      this.llenarFilas('[data-precio]', 'data-fila-precio', [
-        ...p.lineas.map((l) => [l.concepto, soles(l.monto), (unidades[l.unidad] ?? ((c) => c))(String(+l.cantidad).replace('.', ','))]),
-        ...p.recargos.map((c) => [RECARGOS[c.tipo] ?? 'Recargo', soles(c.monto), `${c.bloques} × 30 min`]),
-        ['Total', soles(p.total), ''],
-        ['Anticipo 50 %', soles(p.anticipo), ''],
-      ]);
+      pintarPartidas(this.querySelector('[data-precio] .tabla'), p);
       const total = Number(p.total);
       this.llenarFilas('[data-cuotas]', 'data-fila-cuota', r.cuotas.map((c) => [
         `${HITOS[c.hito] ?? c.hito}${total > 0 ? ` · ${Math.round((Number(c.monto) / total) * 100)} %` : ''}`,
@@ -511,8 +497,20 @@ const filtros = [
     font-family: var(--fuente-familia-tecnica);
     font-weight: var(--fuente-peso-medio);
   }
-  .reservas-importe {
-    font-variant-numeric: tabular-nums;
+  .reservas :global(.reservas-folio-titulo),
+  :global(.reservas-folio-titulo) {
+    white-space: nowrap;
+  }
+  /* El lateral (lo que toca y cancelar) va antes en el DOM: debajo del escritorio queda arriba; en escritorio, a la derecha. */
+  @media (min-width: 64em) { /* punto-quiebre-escritorio */
+    .reservas :global(.gestion-principal) {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .reservas :global(.gestion-lateral) {
+      grid-column: 2;
+      grid-row: 1;
+    }
   }
   .reservas-accion {
     margin-block-start: var(--espacio-3);

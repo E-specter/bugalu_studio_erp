@@ -74,7 +74,7 @@ for (const t of tamanos) {
     await expect(filas.nth(1)).toContainText('S/ 415,00');
     await expect(filas.nth(1)).toContainText(/Antes del \d{1,2} \w{3}, \d{2}:\d{2}/);
     await expect(filas.nth(1)).toContainText('faltan 2 d 3 h');
-    await expect(filas.nth(1)).toContainText('Sin pago registrado, caduca y el horario se libera.');
+    await expect(filas.nth(1)).not.toContainText('Sin pago registrado');
     await expect(filas.nth(2)).toContainText('RES-0003');
     await expect(filas.nth(2)).toContainText('Confirmada');
     await expect(filas.nth(2)).not.toContainText('caduca');
@@ -227,7 +227,7 @@ for (const t of tamanos) {
     const precio = page.getByRole('table', { name: 'Desglose del precio' });
     await expect(precio.getByRole('row')).toHaveCount(1 + 3 + 1 + 2); // cabecera, líneas, recargo, total y anticipo
     await expect(precio).toContainText('Sala de grabación');
-    await expect(precio).toContainText('2,5 h');
+    await expect(precio).toContainText('2 h 30 min');
     await expect(precio).toContainText('5 × 30 min');
     await expect(precio).toContainText('Recargo de noche');
     await expect(precio).toContainText('2 × 30 min');
@@ -452,4 +452,79 @@ test('detalle: la carga se ve con aria-busy y no deja violaciones', async ({ pag
   await page.screenshot({ path: 'pruebas/capturas/reservas-detalle-carga.png', fullPage: true });
   soltar();
   await expect(page.locator('dl')).toContainText('Luis Mora');
+});
+
+// --- TAREA-RF04-7: correcciones de la revisión visual (B3, N11, N13, N14) ---
+test.describe('B3 partidas en el detalle', () => {
+  test('mismo formato que reservar: tfoot, cifras a la derecha y recargo con su nombre', async ({ page }) => {
+    await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva()));
+    await ver(page);
+    const precio = page.getByRole('table', { name: 'Desglose del precio' });
+    await expect(precio.locator('tfoot tr')).toHaveCount(2);
+    await expect(precio.locator('tfoot')).toContainText('Total');
+    await expect(precio.locator('tfoot')).toContainText('Anticipo 50 %');
+    await expect(precio.locator('tbody tr', { hasText: 'Total' })).toHaveCount(0);
+    await expect(precio.getByRole('row', { name: /^Sala de grabación/ })).toContainText('2 h 30 min');
+    await expect(precio.getByRole('row', { name: /^Recargo de noche/ })).toContainText('2 × 30 min');
+    const e = await precio.locator('tbody tr').first().locator('td').last().evaluate((x) => ({ a: getComputedStyle(x).textAlign, n: getComputedStyle(x).fontVariantNumeric }));
+    expect(['right', 'end']).toContain(e.a);
+    expect(e.n).toContain('tabular-nums');
+    expect(['right', 'end']).toContain(await precio.locator('thead th').last().evaluate((x) => getComputedStyle(x).textAlign));
+  });
+
+  test('a 390 el desglose y las cuotas siguen siendo tabla', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva()));
+    await ver(page);
+    for (const nombre of ['Desglose del precio', 'Cuotas']) {
+      const tabla = page.getByRole('table', { name: nombre });
+      await expect(tabla.locator('tbody tr').first()).toBeVisible();
+      expect(await tabla.locator('tbody tr').first().evaluate((x) => getComputedStyle(x).display)).toBe('table-row');
+    }
+  });
+});
+
+test('N11: la columna TOTAL de la lista va a la derecha con cifras tabulares', async ({ page }) => {
+  await simular(page, 'GET', '/reservas/mias', json(200, LISTA));
+  await page.goto('/app/reservas/');
+  const celda = page.getByRole('row').nth(1).getByRole('cell', { name: 'S/ 415,00' });
+  const e = await celda.evaluate((x) => ({ a: getComputedStyle(x).textAlign, n: getComputedStyle(x).fontVariantNumeric }));
+  expect(['right', 'end']).toContain(e.a);
+  expect(e.n).toContain('tabular-nums');
+  expect(['right', 'end']).toContain(await page.getByRole('columnheader', { name: 'Total' }).evaluate((x) => getComputedStyle(x).textAlign));
+});
+
+test.describe('N13 orden móvil del detalle', () => {
+  test('a 390 lo que toca y cancelar van antes que los datos; el folio no se parte', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva()));
+    await ver(page);
+    const barra = page.locator('[data-estado-reserva]');
+    await expect(barra).toBeVisible();
+    const [b, d1, cancelar] = await Promise.all([barra.boundingBox(), page.locator('.panel', { hasText: 'D1' }).first().boundingBox(), page.getByRole('button', { name: 'Cancelar reserva', exact: true }).boundingBox()]);
+    expect(b.y).toBeLessThan(d1.y);
+    expect(cancelar.y).toBeLessThan(d1.y);
+    expect(cancelar.y).toBeLessThan(1000);
+    const folio = page.getByRole('heading', { level: 1 }).getByText('RES-0001');
+    expect(await folio.evaluate((e) => getComputedStyle(e).whiteSpace)).toBe('nowrap');
+  });
+
+  test('a 1440 el lateral sigue a la derecha', async ({ page }) => {
+    await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva()));
+    await ver(page);
+    const [p, l] = await Promise.all([page.locator('.gestion-principal').boundingBox(), page.locator('.gestion-lateral').boundingBox()]);
+    expect(l.x).toBeGreaterThan(p.x + p.width - 1);
+  });
+});
+
+test('N14: "Volver a la reserva" devuelve el foco a "Cancelar reserva"', async ({ page }) => {
+  await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva()));
+  await ver(page);
+  const abrir = page.getByRole('button', { name: 'Cancelar reserva', exact: true });
+  await abrir.click();
+  await expect(page.getByRole('heading', { name: /Cancelar reserva RES-0001/ })).toBeFocused();
+  await page.getByRole('button', { name: 'Volver a la reserva' }).click();
+  await expect(page.getByRole('region', { name: /Cancelar reserva RES-0001/ })).toBeHidden();
+  await expect(abrir).toBeVisible();
+  await expect(abrir).toBeFocused();
 });
