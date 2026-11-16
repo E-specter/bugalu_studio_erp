@@ -24,7 +24,7 @@ Usuario, 2026-11-16 (respuestas a las preguntas de RF-03/04):
 | Precio | Por hora según el servicio, **con recargo por horario** (noche, fin de semana, feriados). Se suman **especialistas** con tarifa propia: **monto fijo + monto variable por lapso** (p. ej. 25 × lapsos + 30). El ingeniero de sonido viene incluido por defecto, con tarifa editable. Otros: ejecutante, especialista audiovisual, productor o arreglista |
 | Anticipación | Mínimo 2 horas antes del inicio; máximo 8 semanas. Ajustables |
 | Duración | De 30 min a 8 horas por reserva, en múltiplos de 30 min. Varios días = varias reservas |
-| Caducidad (cierra D-06) | Sin pago, la reserva se mantiene **hasta 3 días antes del inicio** si se reservó con más de 3 días; si no, **1 hora desde la solicitud**. Ajuste de leader (2026-11-16, [RN-18](../../02-dominio/reglas-negocio.md)): vence lo más tarde entre ambos momentos y nunca después del inicio, para que el cliente tenga siempre al menos esa hora. Se detiene al **registrar un pago con captura**. Si el Administrador lo rechaza, el cliente tiene **1 hora más** para subir otro. Si vence, se cancela por caducidad y el tramo se libera. Los dos plazos son **ajustables** |
+| Caducidad (cierra D-06) | Sin pago, la reserva se mantiene **hasta 3 días antes del inicio** si se reservó con más de 3 días; si no, **1 hora desde la solicitud**. Ajuste confirmado por el usuario (2026-11-16, [RN-18](../../02-dominio/reglas-negocio.md)): vence lo más tarde entre ambos momentos y nunca después del inicio, para que el cliente tenga siempre al menos esa hora. Se detiene al **registrar un pago con captura**. Si el Administrador lo rechaza, el cliente tiene **1 hora más** para subir otro. Si vence, se cancela por caducidad y el tramo se libera. Los dos plazos son **ajustables** |
 | Calendario | Vista **semanal** por defecto y **mensual** con la misma información: cada día muestra en texto cuántas horas libres tiene y abre su semana |
 | Visibilidad | Visitante y cliente ven libre u ocupado, nunca quién reservó; el cliente ve sus reservas; personal y Administrador ven todas con cliente y servicio |
 | Avisos | Correo al reservar (con la fecha límite de pago) y al caducar |
@@ -32,6 +32,13 @@ Usuario, 2026-11-16 (respuestas a las preguntas de RF-03/04):
 | Acceso social | Genérico: lista configurable de proveedores de Supabase Auth; se activan **Google y Meta (Facebook)** para artistas y clientes ([ADR-008](ADR-008-acceso-y-roles-v1.md)) |
 
 **Modelo de precio (confirmado por el usuario, 2026-11-16):** **cada componente de la reserva** (el servicio y cada especialista) tiene una **parte variable** por tiempo, con su unidad (hora o lapso de 30 min) y sujeta a recargo por horario, y una **parte fija** que se cobra siempre, una vez por reserva (0 si no tiene). El recargo es un porcentaje por tipo de horario sobre la parte variable de los bloques que caen en ese horario, nunca sobre la fija. Los montos los carga el Administrador. Sin casilla de condiciones al reservar hasta que el estudio tenga el texto legal.
+
+**Confirmaciones del usuario (2026-11-16) a decisiones tomadas durante la implementación:**
+1. Si en un bloque coinciden varios recargos, se aplica el mayor (en empate, feriado y luego fin de semana), no la suma ([RF-02](../../03-requerimientos/RF-02.md)).
+2. Mientras D-11 siga abierta, tampoco el Administrador cancela una reserva con pagos (409 `tiene_pagos`).
+3. Plazo de pago (RN-18): vence lo más tarde entre inicio − días e instante de la reserva + horas, nunca después del inicio.
+4. Personal y Administrador también pueden reservar para sí mismos.
+5. El ensayo exige una reserva previa de otro servicio `Confirmada`, `En curso` o `Finalizada` (la asesoría se suma con RF-15).
 
 ## Parte técnica (leader)
 
