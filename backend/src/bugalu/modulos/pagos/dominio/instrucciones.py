@@ -23,7 +23,9 @@ class Instruccion:
 
 def _texto(valor: str, maximo: int) -> str:
     valor = valor.replace("\r\n", "\n").replace("\r", "\n").strip()
-    if len(valor) > maximo or _CONTROLES.search(valor):
+    if _CONTROLES.search(valor):
+        raise DatosInvalidos("El texto tiene un caracter no admitido.", {"campo": "texto"})
+    if len(valor) > maximo:
         raise DatosInvalidos(f"El texto admite hasta {maximo} caracteres.", {"campo": "texto"})
     return valor
 

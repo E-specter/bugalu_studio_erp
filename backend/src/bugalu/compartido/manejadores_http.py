@@ -48,9 +48,10 @@ def registrar_manejadores(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def _http(_: Request, error: StarletteHTTPException) -> JSONResponse:
-        if (
-            error.status_code == 400
-        ):  # Starlette: cuerpo JSON o multipart ilegible (UTF-8 roto, etc.)
+        # Starlette lanza 400 por cuerpo JSON o multipart ilegible (UTF-8 roto) y por los limites
+        # de multipart (demasiados campos o archivos, parte > 1 MB). Nada de src/ lanza
+        # HTTPException(400) y ErrorDeNegocio tiene su propio manejador: aqui solo llega Starlette.
+        if error.status_code == 400:
             return respuesta_de_error(
                 422, "datos_invalidos", "Datos invalidos: cuerpo.", detalles={"campo": "cuerpo"}
             )

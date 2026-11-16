@@ -138,15 +138,23 @@ async def test_cuerpo_json_con_utf8_invalido_es_422(
     cliente_a: UsuarioDePrueba,
     administrador: UsuarioDePrueba,
     cuota_de: Cuota,
+    sql: Ejecutar,
 ) -> None:
     id_pago = await _pago(cliente, cliente_a, cuota_de)
+    contacto = sql("select texto from public.contacto_estudio")
     cabeceras = {**con(administrador), "Content-Type": "application/json"}
     r = await cliente.post(
         f"{PAGOS}/{id_pago}/rechazar", content=b'{"motivo": "a\xffb"}', headers=cabeceras
     )
     assert r.status_code == 422, r.text
+    assert codigo(r) == "datos_invalidos"
     r = await cliente.put(CONTACTO, content=b'{"texto": "a\xffb"}', headers=cabeceras)
     assert r.status_code == 422, r.text
+    assert codigo(r) == "datos_invalidos"
+    assert sql("select estado from public.comprobante_pago where id = %s", UUID(id_pago)) == [
+        ("pendiente_validacion",)
+    ]
+    assert sql("select texto from public.contacto_estudio") == contacto
 
 
 @pytest.mark.parametrize("valor", CODIFICABLES)
@@ -228,4 +236,5 @@ async def test_multipart_con_utf8_invalido_o_sustituto_es_422(
     cuerpo, cabeceras = _multipart(partes)
     r = await cliente.post(PAGOS, content=cuerpo, headers={**con(cliente_a), **cabeceras})
     assert r.status_code == 422, r.text
+    assert codigo(r) == "datos_invalidos"
     assert sql("select count(*) from public.comprobante_pago")[0][0] == 0
