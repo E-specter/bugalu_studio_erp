@@ -211,11 +211,23 @@ class ServicioReserva(BaseModel):
     categoria: str
 
 
+class PagoDeCuota(BaseModel):
+    id: UUID
+    estado: str
+    metodo: str
+    monto: Decimal
+    numero_operacion: str
+    motivo_rechazo: str | None
+    registrado_en: datetime
+
+
 class Cuota(BaseModel):
     id: UUID
     hito: str
     monto: Decimal
     estado: str
+    pagable: bool
+    pagos: list[PagoDeCuota]
 
 
 class Reserva(BaseModel):
@@ -231,6 +243,7 @@ class Reserva(BaseModel):
     especialistas: list[Referencia]
     precio: Simulacion
     cuotas: list[Cuota]
+    pago_por_validar: bool
     vence_pago: datetime | None
     cliente: Referencia | None = None
 
@@ -251,7 +264,21 @@ class Reserva(BaseModel):
             servicio=ServicioReserva(**vars(r.servicio)),
             especialistas=[Referencia(id=e.id, nombre=e.nombre) for e in r.especialistas],
             precio=Simulacion.model_validate(r.precio),
-            cuotas=[Cuota(**vars(c)) for c in r.cuotas],
+            cuotas=[
+                Cuota(
+                    **{
+                        **vars(c),
+                        "pagos": [
+                            PagoDeCuota(
+                                **{**vars(p), "registrado_en": p.registrado_en.astimezone(LIMA)}
+                            )
+                            for p in c.pagos
+                        ],
+                    }
+                )
+                for c in r.cuotas
+            ],
+            pago_por_validar=r.pago_por_validar,
             vence_pago=lima(r.vence_pago),
             **(
                 {"cliente": Referencia(id=r.cliente.id, nombre=r.cliente.nombre)}

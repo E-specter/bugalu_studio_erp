@@ -1,6 +1,6 @@
 """Reglas de una reserva de sala (RN-02, RN-12, RN-13, RN-17, RN-18): funciones puras."""
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Protocol
@@ -12,6 +12,7 @@ from bugalu.compartido.errores import (
     FueraDeFranja,
 )
 from bugalu.modulos.reservas.dominio.disponibilidad import LIMA, PASO, Limites
+from bugalu.modulos.reservas.dominio.modelos import PagoCuota
 
 MAXIMA_DURACION = timedelta(hours=8)
 
@@ -72,3 +73,19 @@ def calcular_vence_pago(ahora: datetime, inicio: datetime, dias: int, horas: int
 def cuotas_de(total: Decimal, anticipo: Decimal) -> list[tuple[str, Decimal]]:
     """RN-13: `al_reservar` es el anticipo de la simulacion y `al_terminar` el resto."""
     return [("al_reservar", anticipo), ("al_terminar", total - anticipo)]
+
+
+def estado_de_cuota(estado_base: str, pagos: Iterable[PagoCuota]) -> str:
+    """`pendiente` | `en_validacion` | `pagada` (ADR-010): un pago en validacion pasa a la cuota."""
+    if estado_base == "pagada":
+        return "pagada"
+    return (
+        "en_validacion" if any(p.estado == "pendiente_validacion" for p in pagos) else "pendiente"
+    )
+
+
+def cuota_pagable(estado_cuota: str, hito: str, estado_reserva: str) -> bool:
+    """CA-02: pendiente, reserva no cancelada y `al_terminar` solo desde que se confirma."""
+    if estado_cuota != "pendiente" or estado_reserva == "cancelada":
+        return False
+    return hito != "al_terminar" or estado_reserva in ("confirmada", "en_curso", "finalizada")

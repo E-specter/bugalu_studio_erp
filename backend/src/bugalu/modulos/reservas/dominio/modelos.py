@@ -56,11 +56,24 @@ class ServicioReservado:
 
 
 @dataclass(frozen=True)
+class PagoCuota:
+    id: UUID
+    estado: str
+    metodo: str
+    monto: Decimal
+    numero_operacion: str
+    motivo_rechazo: str | None
+    registrado_en: datetime
+
+
+@dataclass(frozen=True)
 class CuotaReserva:
     id: UUID
     hito: str
     monto: Decimal
-    estado: str
+    estado: str  # pendiente | en_validacion | pagada
+    pagable: bool
+    pagos: tuple[PagoCuota, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -82,6 +95,10 @@ class Reserva:
     vence_pago: datetime | None
     id_cliente: UUID
     cliente: Referencia | None = None  # solo para personal y administrador
+
+    @property
+    def pago_por_validar(self) -> bool:
+        return any(c.estado == "en_validacion" for c in self.cuotas)
 
 
 @dataclass(frozen=True)

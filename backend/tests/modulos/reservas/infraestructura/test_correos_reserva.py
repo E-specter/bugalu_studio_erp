@@ -62,6 +62,7 @@ async def test_la_reserva_creada_llega_con_folio_y_fecha_limite(
     assert r.json()["folio"] in correo["Text"]
     assert "Fecha límite de pago" in correo["Text"] and "caducará" in correo["Text"]
     assert "10 de marzo de 2027" in correo["Text"]
+    assert "Datos para pagar" in correo["Text"]  # metodos activos de la semilla
     assert sql("select enviada_en is not null from public.notificacion") == [(True,)]
 
 

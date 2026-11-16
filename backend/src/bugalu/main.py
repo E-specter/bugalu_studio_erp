@@ -15,6 +15,7 @@ from bugalu.modulos.notificaciones.infraestructura.entrada.ejecucion import (
     enviar_una_vez,
     repetir,
 )
+from bugalu.modulos.pagos.infraestructura.entrada.http.limite import LimitePagos
 from bugalu.modulos.pagos.infraestructura.entrada.http.router import router as router_pagos
 from bugalu.modulos.reservas.infraestructura.entrada.http.router import router as router_reservas
 
@@ -49,6 +50,7 @@ def crear_app() -> FastAPI:
         lifespan=_ciclo_de_vida,
         responses={422: {"model": RespuestaError, "description": "Datos invalidos"}},
     )
+    app.add_middleware(LimitePagos)  # antes de CORS: la respuesta 413 conserva sus cabeceras
     if origenes := obtener_configuracion().lista_origenes_permitidos:
         app.add_middleware(
             CORSMiddleware,

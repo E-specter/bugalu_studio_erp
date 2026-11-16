@@ -9,9 +9,15 @@ from bugalu.modulos.notificaciones.dominio.puertos import Pendiente
 
 
 class LotePostgres:
-    def __init__(self, conexion: AsyncConnection, pendientes: list[Pendiente]) -> None:
+    def __init__(
+        self,
+        conexion: AsyncConnection,
+        pendientes: list[Pendiente],
+        instrucciones: list[tuple[str, str]],
+    ) -> None:
         self._conexion = conexion
         self.pendientes = pendientes
+        self.instrucciones = instrucciones
 
     async def marcar_enviada(self, id_: UUID) -> None:
         await self._conexion.execute(
@@ -40,4 +46,13 @@ class BandejaPostgres:
                 "limit %s for update skip locked",
                 (max_intentos, limite),
             )
-            yield LotePostgres(conexion, [Pendiente(*fila) for fila in await cursor.fetchall()])
+            pendientes = [Pendiente(*fila) for fila in await cursor.fetchall()]
+            instrucciones: list[tuple[str, str]] = []
+            if any(p.tipo == "reserva_creada" for p in pendientes):
+                cursor = await conexion.execute(
+                    "select metodo, texto from public.instruccion_pago where activo "
+                    "order by array_position(array['transferencia', 'yape', 'plin', 'tarjeta'], "
+                    "metodo)"
+                )
+                instrucciones = [(m, t) for m, t in await cursor.fetchall()]
+            yield LotePostgres(conexion, pendientes, instrucciones)

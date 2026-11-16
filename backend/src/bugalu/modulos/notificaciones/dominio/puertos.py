@@ -23,6 +23,7 @@ class EnviadorCorreo(Protocol):
 
 class Lote(Protocol):
     pendientes: list[Pendiente]
+    instrucciones: list[tuple[str, str]]  # (metodo, texto) activos, para `reserva_creada`
 
     async def marcar_enviada(self, id_: UUID) -> None: ...
 

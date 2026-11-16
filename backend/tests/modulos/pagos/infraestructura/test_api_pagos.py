@@ -382,3 +382,20 @@ async def test_openapi_declara_respuesta_error_en_cada_codigo(app: FastAPI) -> N
             assert respuestas[c]["content"]["application/json"]["schema"]["$ref"].endswith(
                 "RespuestaError"
             ), (ruta, c)
+
+
+async def test_un_cuerpo_gigante_es_413_antes_de_leer_el_formulario(
+    cliente: AsyncClient, cliente_a: UsuarioDePrueba
+) -> None:
+    # Si se parseara el multipart, este cuerpo sin formato valido daria 422.
+    cabeceras = {**con(cliente_a), "Content-Type": "multipart/form-data; boundary=x"}
+    r = await cliente.post(PAGOS, content=b"0" * (LIMITE_BYTES + 200_000), headers=cabeceras)
+    assert (r.status_code, codigo(r)) == (413, "archivo_muy_grande")
+
+
+async def test_un_content_length_falso_y_enorme_es_413_sin_leer_el_cuerpo(
+    cliente: AsyncClient, cliente_a: UsuarioDePrueba
+) -> None:
+    cabeceras = {**con(cliente_a), "Content-Length": str(10 * LIMITE_BYTES)}
+    r = await cliente.post(PAGOS, content=b"x", headers=cabeceras)
+    assert (r.status_code, codigo(r)) == (413, "archivo_muy_grande")

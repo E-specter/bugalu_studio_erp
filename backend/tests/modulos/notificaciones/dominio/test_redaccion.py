@@ -67,3 +67,50 @@ def test_correo_rechaza_saltos_de_linea_en_cabeceras(campo: str) -> None:
     valores[campo] = "x\r\nBcc: otro@b.pe"
     with pytest.raises(ValueError, match="salto de linea"):
         Correo(**valores)
+
+
+REGISTRADO = {
+    "folio": "BG-0042",
+    "cliente": "Ana Torres",
+    "hito": "al_reservar",
+    "monto": 25,
+    "monto_cuota": 25.0,
+    "metodo": "yape",
+    "numero_operacion": "AB-1234",
+}
+
+
+def test_pago_registrado_lleva_folio_cliente_cuota_monto_metodo_y_operacion() -> None:
+    asunto, cuerpo = redactar("pago_registrado", REGISTRADO)
+    assert "BG-0042" in asunto
+    for esperado in ("BG-0042", "Ana Torres", "al reservar", "S/ 25,00", "yape", "AB-1234"):
+        assert esperado in cuerpo
+    assert "coincide con la cuota" in cuerpo
+
+
+def test_pago_registrado_avisa_cuando_el_monto_no_coincide() -> None:
+    _, cuerpo = redactar("pago_registrado", {**REGISTRADO, "monto": 30})
+    assert "NO coincide" in cuerpo and "S/ 30,00" in cuerpo and "S/ 25,00" in cuerpo
+
+
+def test_pago_aprobado_confirma_la_reserva_solo_si_corresponde() -> None:
+    datos = {"folio": "BG-0042", "hito": "al_reservar", "monto": 1250, "reserva_confirmada": True}
+    asunto, cuerpo = redactar("pago_aprobado", datos)
+    assert "BG-0042" in asunto and formatear_soles(Decimal(1250)) in cuerpo
+    assert "tu reserva está confirmada" in cuerpo
+    _, sin = redactar("pago_aprobado", {**datos, "reserva_confirmada": False})
+    assert "confirmada" not in sin
+
+
+def test_pago_rechazado_trae_el_motivo_y_que_puede_registrar_otro_pago() -> None:
+    datos = {"folio": "BG-0042", "hito": "al_terminar", "monto": 25, "motivo": "Monto errado"}
+    asunto, cuerpo = redactar("pago_rechazado", datos)
+    assert "BG-0042" in asunto and "Monto errado" in cuerpo
+    assert "otro pago" in cuerpo
+
+
+def test_reserva_creada_agrega_los_datos_para_pagar_de_los_metodos_activos() -> None:
+    _, cuerpo = redactar("reserva_creada", CREADA, [("yape", "Yape al 999 111 222")])
+    assert "Datos para pagar" in cuerpo and "Yape al 999 111 222" in cuerpo
+    _, sin = redactar("reserva_creada", CREADA, [])
+    assert "Datos para pagar" not in sin

@@ -20,8 +20,6 @@ class Configuracion(BaseSettings):
     timeout_pool_segundos: float = 5
     # Clave publicable (`apikey`) de Supabase: Auth en las pruebas y Storage en la API.
     clave_publicable_supabase: str
-    # Solo pruebas: clave de servicio local para borrar los objetos de Storage; nunca en `src/`.
-    clave_servicio_supabase_pruebas: str = ""
     # Origenes del frontend, separados por comas. Vacio = sin CORS.
     origenes_permitidos: str = ""
     # Correo saliente (ADR-009): en local, el SMTP de Mailpit del stack (supabase/config.toml).

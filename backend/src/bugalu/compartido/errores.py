@@ -154,3 +154,7 @@ class CuotaNoPagable(Conflicto):
 
 class OperacionDuplicada(Conflicto):
     codigo = "operacion_duplicada"
+
+
+class PagoYaValidado(Conflicto):
+    codigo = "pago_ya_validado"

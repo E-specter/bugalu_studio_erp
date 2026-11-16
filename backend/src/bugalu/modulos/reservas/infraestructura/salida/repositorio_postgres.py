@@ -21,12 +21,14 @@ from bugalu.modulos.reservas.dominio.modelos import (
     CuotaReserva,
     Franja,
     NuevaReserva,
+    PagoCuota,
     Referencia,
     Reserva,
     ReservaVisible,
     Sala,
     ServicioReservado,
 )
+from bugalu.modulos.reservas.dominio.reserva import cuota_pagable, estado_de_cuota
 
 _TOPE_SUGERENCIA = 300
 _RESERVA = (
@@ -238,14 +240,35 @@ class RepositorioReservasPostgres:
         )
         ids = [f[0] for f in filas]
         cuotas: dict[UUID, list[CuotaReserva]] = {}
+        pagos: dict[UUID, list[PagoCuota]] = {}
         especialistas: dict[UUID, list[Referencia]] = {}
         if ids:
+            for f in await self._filas(  # la RLS deja ver solo los pagos propios (o todos al admin)
+                "select id_cuota, id, estado, metodo, monto, numero_operacion, motivo_rechazo, "
+                "registrado_en from public.comprobante_pago "
+                "where id_cuota in (select id from public.cuota where id_reserva = any(%s)) "
+                "order by registrado_en, id",
+                (ids,),
+            ):
+                pagos.setdefault(f[0], []).append(PagoCuota(*f[1:]))
+            estados = {f[0]: f[2] for f in filas}
             for f in await self._filas(
                 "select id, id_reserva, hito, monto, estado from public.cuota "
                 "where id_reserva = any(%s) order by hito",
                 (ids,),
             ):
-                cuotas.setdefault(f[1], []).append(CuotaReserva(f[0], f[2], f[3], f[4]))
+                de_la_cuota = pagos.get(f[0], [])
+                estado = estado_de_cuota(f[4], de_la_cuota)
+                cuotas.setdefault(f[1], []).append(
+                    CuotaReserva(
+                        f[0],
+                        f[2],
+                        f[3],
+                        estado,
+                        cuota_pagable(estado, f[2], estados[f[1]]),
+                        tuple(de_la_cuota),
+                    )
+                )
             for f in await self._filas(
                 "select re.id_reserva, e.id, e.nombre from public.reserva_especialista re "
                 "join public.especialista e on e.id = re.id_especialista "

@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
-from pydantic import BaseModel, SerializerFunctionWrapHandler, model_serializer
+from pydantic import BaseModel, ConfigDict, Field, SerializerFunctionWrapHandler, model_serializer
 
+from bugalu.compartido.esquemas import TextoLargo
 from bugalu.modulos.pagos.dominio import modelos
+from bugalu.modulos.pagos.dominio.instrucciones import Instruccion
 from bugalu.modulos.reservas.dominio.disponibilidad import LIMA
 
 
@@ -79,3 +81,32 @@ class Captura(BaseModel):
     url: str
     expira_en: datetime
     tipo: str
+
+
+class Rechazo(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    motivo: Annotated[TextoLargo, Field(max_length=300)]
+
+
+class InstruccionPago(BaseModel):
+    metodo: str
+    texto: str
+    activo: bool
+
+    @classmethod
+    def desde_dominio(cls, i: Instruccion) -> InstruccionPago:
+        return cls(metodo=i.metodo, texto=i.texto, activo=i.activo)
+
+
+class InstruccionEntrada(BaseModel):
+    """Sin limites aqui: el dominio los valida y responde con `detalles.campo` simple."""
+
+    model_config = ConfigDict(extra="forbid")
+    metodo: str
+    texto: str
+    activo: bool
+
+
+class Contacto(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    texto: str

@@ -1,8 +1,11 @@
+import os
 from collections.abc import Callable, Iterator
+from pathlib import Path
 from uuid import UUID, uuid4
 
 import httpx
 import pytest
+from dotenv import dotenv_values
 
 from bugalu.compartido.configuracion import Configuracion
 from tests.modulos.reservas.infraestructura.conftest import (  # noqa: F401 - fixtures compartidas
@@ -17,6 +20,18 @@ from tests.modulos.reservas.infraestructura.conftest import (  # noqa: F401 - fi
     sala,
     sql,
 )
+
+_ENV = Path(__file__).parents[4] / ".env"
+
+
+def _clave_de_servicio() -> str:
+    """Solo pruebas: la clave de servicio local; `src/` no la conoce (entorno, o backend/.env)."""
+    clave = os.environ.get("CLAVE_SERVICIO_SUPABASE_PRUEBAS") or dotenv_values(_ENV).get(
+        "CLAVE_SERVICIO_SUPABASE_PRUEBAS"
+    )
+    assert clave, "Falta CLAVE_SERVICIO_SUPABASE_PRUEBAS en el entorno o en backend/.env"
+    return clave
+
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"contenido-de-prueba" * 10
 PDF = b"%PDF-1.7\n" + b"contenido-de-prueba" * 10
@@ -43,7 +58,7 @@ def pagos_limpios(
         r = httpx.request(
             "DELETE",
             f"{configuracion.url_supabase}/storage/v1/object/comprobantes",
-            headers={"Authorization": f"Bearer {configuracion.clave_servicio_supabase_pruebas}"},
+            headers={"Authorization": f"Bearer {_clave_de_servicio()}"},
             json={"prefixes": rutas},
         )
         r.raise_for_status()
@@ -71,6 +86,11 @@ def cuota_de(sql: Ejecutar, reservar: Callable[..., str]) -> Callable[..., str]:
             f"2027-05-{dia:02d}T10:00:00-05:00",
             f"2027-05-{dia:02d}T12:00:00-05:00",
             estado,
+        )
+        sql(  # la lectura de la reserva exige un precio valido
+            "update public.reserva set precio = %s::jsonb where id = %s",
+            '{"lineas": [], "recargos": [], "total": "50", "anticipo": "25"}',
+            UUID(id_reserva),
         )
         return str(
             sql(

@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from uuid import uuid4
 
 import pytest
 
@@ -10,9 +11,12 @@ from bugalu.compartido.errores import (
     FueraDeFranja,
 )
 from bugalu.modulos.reservas.dominio.disponibilidad import Limites, Tramo
+from bugalu.modulos.reservas.dominio.modelos import PagoCuota
 from bugalu.modulos.reservas.dominio.reserva import (
     calcular_vence_pago,
+    cuota_pagable,
     cuotas_de,
+    estado_de_cuota,
     exigir_anticipacion,
     exigir_duracion,
     franja_que_contiene,
@@ -114,3 +118,36 @@ def test_las_cuotas_suman_el_total_con_el_anticipo_primero() -> None:
         ("al_terminar", Decimal("50.00")),
     ]
     assert sum(m for _, m in cuotas_de(Decimal("33.33"), Decimal("16.67"))) == Decimal("33.33")
+
+
+def _pago(estado: str) -> PagoCuota:
+    return PagoCuota(uuid4(), estado, "yape", Decimal("25"), "AB-1234", None, t(1, 9))
+
+
+@pytest.mark.parametrize(
+    ("base", "pagos", "esperado"),
+    [
+        ("pendiente", [], "pendiente"),
+        ("pendiente", ["rechazado"], "pendiente"),
+        ("pendiente", ["rechazado", "pendiente_validacion"], "en_validacion"),
+        ("pagada", ["aprobado"], "pagada"),
+    ],
+)
+def test_estado_de_la_cuota(base: str, pagos: list[str], esperado: str) -> None:
+    assert estado_de_cuota(base, [_pago(p) for p in pagos]) == esperado
+
+
+@pytest.mark.parametrize(
+    ("estado", "hito", "reserva", "esperado"),
+    [
+        ("pendiente", "al_reservar", "pre_reservada", True),
+        ("pendiente", "al_reservar", "cancelada", False),
+        ("pendiente", "al_terminar", "pre_reservada", False),
+        ("pendiente", "al_terminar", "confirmada", True),
+        ("pendiente", "al_terminar", "finalizada", True),
+        ("en_validacion", "al_reservar", "confirmada", False),
+        ("pagada", "al_terminar", "confirmada", False),
+    ],
+)
+def test_cuota_pagable(estado: str, hito: str, reserva: str, esperado: bool) -> None:
+    assert cuota_pagable(estado, hito, reserva) is esperado

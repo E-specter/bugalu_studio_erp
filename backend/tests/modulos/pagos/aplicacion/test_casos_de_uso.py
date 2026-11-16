@@ -14,6 +14,11 @@ from bugalu.compartido.errores import (
 from bugalu.modulos.pagos.aplicacion.obtener_captura.caso_de_uso import ObtenerCaptura
 from bugalu.modulos.pagos.aplicacion.obtener_pago.caso_de_uso import ObtenerPago
 from bugalu.modulos.pagos.aplicacion.registrar_pago.caso_de_uso import RegistrarPago
+from bugalu.modulos.pagos.aplicacion.validar_pago.caso_de_uso import (
+    AprobarPago,
+    ListarPagos,
+    RechazarPago,
+)
 from bugalu.modulos.pagos.dominio.captura import LIMITE_BYTES
 from bugalu.modulos.pagos.dominio.modelos import Pago
 from tests.modulos.pagos.aplicacion.falsos import AlmacenFalso, PagosFalso
@@ -84,3 +89,19 @@ async def test_captura_devuelve_url_firmada_de_300_segundos_y_el_tipo() -> None:
     assert captura.url.endswith("?ttl=300")
     assert (captura.expira_en - ahora).total_seconds() == 300
     assert captura.tipo == "imagen"
+
+
+async def test_solo_el_administrador_lista_y_el_cliente_no_llega_al_repositorio() -> None:
+    with pytest.raises(SinPermiso):
+        await ListarPagos(PagosFalso()).ejecutar("pendiente_validacion")
+    repo = PagosFalso(administrador=True)
+    pago = await registrar(repo, AlmacenFalso())
+    assert await ListarPagos(repo).ejecutar("pendiente_validacion") == [repo.pagos[pago.id]]
+
+
+async def test_aprobar_y_rechazar_devuelven_el_pago_ya_validado() -> None:
+    repo = PagosFalso(administrador=True)
+    uno, dos = await registrar(repo, AlmacenFalso()), await registrar(repo, AlmacenFalso())
+    assert (await AprobarPago(repo).ejecutar(uno.id)).estado == "aprobado"
+    rechazado = await RechazarPago(repo).ejecutar(dos.id, "monto errado")
+    assert (rechazado.estado, rechazado.motivo_rechazo) == ("rechazado", "monto errado")

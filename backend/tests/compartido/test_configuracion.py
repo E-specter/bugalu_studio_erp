@@ -29,3 +29,9 @@ def test_sin_clave_publicable_falla_con_un_mensaje_claro(monkeypatch: pytest.Mon
     monkeypatch.setenv("URL_SUPABASE", "http://127.0.0.1:45621")
     with pytest.raises(RuntimeError, match="CLAVE_PUBLICABLE_SUPABASE"):
         obtener_configuracion()
+
+
+def test_src_no_conoce_la_clave_de_servicio() -> None:
+    from bugalu.compartido.configuracion import Configuracion
+
+    assert not any("servicio" in campo for campo in Configuracion.model_fields)

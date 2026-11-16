@@ -17,7 +17,7 @@ async def enviar_pendientes(bandeja: Bandeja, enviador: EnviadorCorreo, limite: 
     async with bandeja.tomar(limite, MAX_INTENTOS) as lote:
         for p in lote.pendientes:
             try:
-                asunto, cuerpo = redactar(p.tipo, p.datos)
+                asunto, cuerpo = redactar(p.tipo, p.datos, lote.instrucciones)
                 await enviador.enviar(Correo(p.destinatario, asunto, cuerpo))
             except Exception as error:  # noqa: BLE001 - un fallo de correo nunca tumba el lote
                 # Solo el tipo: el mensaje del servidor SMTP podria traer datos sensibles.

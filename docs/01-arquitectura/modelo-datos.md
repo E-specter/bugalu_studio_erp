@@ -59,6 +59,8 @@ Las capturas van al bucket privado `comprobantes` ([ADR-003](../00-proyecto/deci
 
 **Migración `20261127100000_rf05_formato_operacion_y_contacto`:** `comprobante_pago.numero_operacion` añade `check (numero_operacion ~ '^[A-Za-z0-9-]{4,40}$')`; tabla `contacto_estudio` de una sola fila (`id boolean` fijo en `true`, `texto` ≤ 500, vacío por defecto; leen los autenticados, solo el Administrador actualiza `texto`); `public.existe_pago(id)` (`security definer`, solo `authenticated`) distingue 403 de 404 sin devolver datos.
 
+**Migración `20261128100000_rf05_correo_datos_para_pagar`:** `bugalu_api` (la bandeja de correos, sin `set local role`) recibe `select` y una política de lectura sobre `instruccion_pago`, para agregar los métodos activos al correo de `reserva_creada`; no lee `comprobante_pago` ni `contacto_estudio`.
+
 ## Proyectos y entregables
 
 | Tabla | Campos clave | Relaciones |

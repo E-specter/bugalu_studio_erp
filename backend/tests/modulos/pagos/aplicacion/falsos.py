@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID
@@ -45,6 +46,19 @@ class PagosFalso:
 
     async def existe_pago(self, id_pago: UUID) -> bool:
         return id_pago in self.pagos or id_pago in self.ocultos
+
+    async def listar_pagos(self, estado: str) -> list[Pago]:
+        return [p for p in self.pagos.values() if p.estado == estado]
+
+    async def aprobar_pago(self, id_pago: UUID) -> None:
+        self.eventos.append("aprobar")
+        self.pagos[id_pago] = replace(self.pagos[id_pago], estado="aprobado")
+
+    async def rechazar_pago(self, id_pago: UUID, motivo: str) -> None:
+        self.eventos.append("rechazar")
+        self.pagos[id_pago] = replace(
+            self.pagos[id_pago], estado="rechazado", motivo_rechazo=motivo
+        )
 
 
 class AlmacenFalso:

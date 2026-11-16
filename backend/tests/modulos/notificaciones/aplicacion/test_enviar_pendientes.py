@@ -12,6 +12,7 @@ DATOS = {"folio": "BG-1", "inicio": "2027-03-10T15:00:00+00:00", "fin": "2027-03
 class LoteFalso:
     def __init__(self, pendientes: list[Pendiente]) -> None:
         self.pendientes = pendientes
+        self.instrucciones: list[tuple[str, str]] = []
         self.enviadas: list[UUID] = []
         self.fallos: dict[UUID, str] = {}
 
