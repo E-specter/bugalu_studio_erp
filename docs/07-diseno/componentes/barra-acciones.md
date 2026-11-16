@@ -26,7 +26,7 @@ Solo cuando el formulario o el paso cierra con **dos o más** acciones (anterior
 | Flujo | Anterior + nota + continuar |
 | Formulario | Cancelar (secundario) + guardar (primario) |
 | Decisión | Rechazar (peligro) + aprobar (primario): validación de pagos, aprobación de versión |
-| Móvil | Botones a ancho completo, apilados; el principal arriba |
+| Móvil | Botones a ancho completo, apilados; el principal arriba. También a cualquier ancho dentro de un [panel](panel.md) Lateral (decisión de la revisión visual de pagos: dos botones grandes no caben en fila y su texto se partía) |
 
 ## Estados
 
@@ -47,4 +47,4 @@ Al final de [formularios](../patrones/formularios.md) y de cada paso del [flujo 
 
 ## Código
 
-`frontend/src/componentes/BarraAcciones.astro`, props `variante`, `nota`; ranuras `secundaria` y `principal`.
+`frontend/src/componentes/BarraAcciones.astro`, props `variante` (`flujo|formulario|decision`), `nota`; ranuras `secundaria` y `principal`. Móvil no es prop: la da el punto de quiebre (`punto-quiebre-tableta`) o el panel Lateral.

@@ -44,18 +44,18 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Navegación lateral | [navegacion-lateral](navegacion-lateral.md) | `componentes/NavegacionLateral.astro` | Implementado |
 | Navegación táctil | [navegacion-tactil](navegacion-tactil.md) | `componentes/NavegacionTactil.astro` | Implementado |
 | Pasos | [pasos](pasos.md) | `componentes/Pasos.astro` | Implementado |
-| Barra de acciones | [barra-acciones](barra-acciones.md) | `componentes/BarraAcciones.astro` | Implementado |
+| Barra de acciones | [barra-acciones](barra-acciones.md) | `componentes/BarraAcciones.astro` | Implementado (Flujo, Formulario, Decisión y Móvil) |
 | Resumen persistente | [resumen-persistente](resumen-persistente.md) | `componentes/ResumenPersistente.astro` | Borrador |
 | Tabla | [tabla](tabla.md) | `componentes/Tabla.astro` | Implementado |
 | Tarjeta de proyecto | [tarjeta-proyecto](tarjeta-proyecto.md) | `componentes/TarjetaProyecto.astro` | Borrador |
 | Lista de eventos | [lista-eventos](lista-eventos.md) | `componentes/ListaEventos.astro` | Borrador |
-| Archivo | [archivo](archivo.md) | `componentes/Archivo.astro` | Borrador |
+| Archivo | [archivo](archivo.md) | `componentes/Archivo.astro` | Implementado (Adjunto y Lectura; Descarga entra con RF-12) |
 | Tarjeta de versión | [tarjeta-version](tarjeta-version.md) | `componentes/TarjetaVersion.astro` | Borrador |
 | Comentario | [comentario](comentario.md) | `componentes/Comentario.astro` | Borrador |
 | Marco de registro | [marco-registro](marco-registro.md) | `componentes/MarcoRegistro.astro` | Implementado |
 | Calendario | [calendario](calendario.md) | isla `<bugalu-calendario>` | Implementado |
 | Reproductor | [reproductor](reproductor.md) | isla `<bugalu-reproductor>` | Borrador |
-| Carga de archivos | [carga-archivos](carga-archivos.md) | isla `<bugalu-carga-archivos>` | Borrador |
+| Carga de archivos | [carga-archivos](carga-archivos.md) | isla `<bugalu-carga-archivos>` | Implementado (Captura de pago; audio y referencias entran con su RF) |
 
 Rutas relativas a `frontend/src/`. Islas en `islas/<Nombre>.astro`.
 

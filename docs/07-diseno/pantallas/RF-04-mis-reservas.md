@@ -55,7 +55,7 @@ depende_de: [RF-04, RF-05, RF-06, ADR-009, ADR-010, estados-reserva, diseno-brie
 - Principal: panel `D1 RESERVA {folio}` (`<dl>`: estado, fecha y horario, servicio, especialistas, sala; cliente para el personal) → panel `D2 PRECIO` (tabla Partidas + "Precio calculado al reservar.") → panel `D3 CUOTAS` (tabla Partidas).
 - Lateral: [indicador de estado](../componentes/indicador-estado.md) Barra con lo que toca según el estado (tabla Estados) → "Registrar pago" si hay una cuota `pagable` (la primera por hito) → si se puede cancelar, [botón](../componentes/boton.md) Peligro "Cancelar reserva", que abre la confirmación.
 - "Registrar pago" es Primario cuando la cuota toca ya (`al_reservar`; `al_terminar` con la reserva `Finalizada`) y Secundario "Adelantar el pago del resto" cuando es opcional (`al_terminar` en `Confirmada` o `En curso`). Solo para el dueño.
-- Cancelar se muestra al dueño solo en `Pre-reservada` **sin pagos**; con pagos, en su lugar, el párrafo "Ya registraste un pago, así que la cancelación la gestiona el estudio. Escríbele y te dirá qué pasa con tu pago." Al Administrador, en `Pre-reservada` y `Confirmada`, con o sin pagos. El personal no lo ve.
+- Cancelar se muestra al dueño solo en `Pre-reservada` **sin pagos**; con pagos, en su lugar, el párrafo "Ya registraste un pago, así que la cancelación la gestiona el estudio. Escríbele y te dirá qué pasa con tu pago." y, debajo, el contacto del estudio (`GET /contacto-estudio`, tal cual; vacío → sin línea). Ni el Administrador ni el dueño sin pagos ven ese párrafo: o hay "Cancelar reserva" o hay párrafo, nunca los dos. Al Administrador, en `Pre-reservada` y `Confirmada`, con o sin pagos. El personal no lo ve.
 
 ### Cancelar
 
@@ -107,5 +107,4 @@ Consecuencias del Administrador con pagos: "El horario se libera al momento. La 
 
 ## Pendientes
 
-- **leader:** canal de contacto del estudio para "escríbele" (cliente con pagos que quiere cancelar); hoy no hay dato que mostrar.
 - **dev-backend:** qué pasa con un pago en validación de una reserva que el Administrador cancela (propuesta: queda en la lista de pagos y se puede rechazar con motivo "reserva cancelada"; aprobarlo no reabre la reserva).

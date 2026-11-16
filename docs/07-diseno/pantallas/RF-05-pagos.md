@@ -29,17 +29,18 @@ depende_de: [RF-05, ADR-010, RN-04, RN-18, RN-22, diseno-brief, patron-estructur
 |---|---|---|
 | Pagos | `GET /pagos?estado=` → `[Pago]` | Total "3 pagos por validar" / "12 pagos aprobados" |
 | Reserva y cuota | `reserva.folio`, `cuota.hito` | Folio en `fuente-familia-tecnica` (celda principal) con la cuota debajo ("Al reservar") |
-| Cliente | `cliente.nombre` | Tal cual; `null` → "Sin nombre" (`color-texto-secundario`) |
+| Cliente | `cliente.nombre` | Tal cual; `null` → "Sin nombre" (solo cambia a `color-texto-secundario`; mismo tamaño que un nombre) |
 | Método | `metodo` | Transferencia · Yape · Plin · Tarjeta |
 | Monto | `monto`, `monto_coincide`, `cuota.monto` | `S/ 225,00` a la derecha; si no coincide, debajo [etiqueta](../componentes/etiqueta-tecnica.md) Alerta NO COINCIDE |
-| Operación | `numero_operacion` | `fuente-familia-tecnica` |
+| Operación | `numero_operacion` | `fuente-familia-tecnica`, también en V2 |
 | Registrado / validado | `registrado_en`, `validado_en` | Relativa < 7 días con absoluta en `title`; si no, `D MMM, HH:mm` |
 | Estado del pago | `estado` | EN VALIDACIÓN (Aviso) · APROBADO (Éxito) · RECHAZADO (Alerta) + `motivo_rechazo` |
 | Pago a revisar | `GET /pagos/{id}` | — |
-| Captura | `GET /pagos/{id}/captura` → `{url, expira_en}` | Imagen: `<img>` al ancho del panel, alto natural. PDF: [archivo](../componentes/archivo.md) Lectura (`file`) + enlace "Abrir comprobante en PDF" |
+| Captura | `GET /pagos/{id}/captura` → `{url, expira_en}` | Imagen: `<img>` al ancho del panel, alto natural. PDF: [archivo](../componentes/archivo.md) Lectura (`file`) con nombre `comprobante.pdf` y metadato "PDF" → enlace "Abrir comprobante.pdf (pestaña nueva)" |
 | Reserva del pago | `reserva.{folio, inicio, estado}` | Folio enlazado a `/app/reservas/detalle?id=`; `D MMM AAAA, HH:mm`; etiqueta de estado de reserva |
 | Aprobar / rechazar | `POST /pagos/{id}/aprobar` · `POST /pagos/{id}/rechazar {motivo}` → 200 `Pago` | Motivo: [campo](../componentes/campo.md) Área, 1–300 caracteres (`maxlength="300"`) |
 | Datos para pagar | `GET /instrucciones-pago` (al Administrador, los cuatro) · `PUT /instrucciones-pago [{metodo, texto, activo}]` | Por método: Área DATOS PARA PAGAR + [casilla](../componentes/casilla.md) ACTIVO |
+| Contacto del estudio | `GET /contacto-estudio` · `PUT /contacto-estudio {texto}` ([RF-05](../../03-requerimientos/RF-05.md)) | Área MENSAJE DE CONTACTO, ≤ 500 (`maxlength="500"`); el cliente lo ve tal cual al cancelar con pagos y sin métodos activos |
 
 ## Composición
 
@@ -52,7 +53,7 @@ depende_de: [RF-05, ADR-010, RN-04, RN-18, RN-22, diseno-brief, patron-estructur
 | Revisar | Principal | panel `V2 PAGO` | `<dl>`: MÉTODO, MONTO (+ NO COINCIDE y "La cuota es de S/ 225,00."), NÚMERO DE OPERACIÓN, REGISTRADO, CLIENTE |
 | Revisar | Lateral | panel Lateral `V3 RESERVA` | `<dl>`: RESERVA (folio enlazado), SESIÓN, ESTADO, CUOTA (hito e importe) |
 | Revisar | Lateral | panel Lateral `V4 DECISIÓN` | Párrafo de consecuencias → [barra de acciones](../componentes/barra-acciones.md) Decisión: Peligro "Rechazar pago" + Primario "Aprobar pago" |
-| Datos | Principal | `<form>` · panel `D1 DATOS PARA PAGAR` | Un `<fieldset>` por método (TRANSFERENCIA BANCARIA, YAPE, PLIN, TARJETA): Área + casilla "Activo: los clientes pueden pagar así" → Primario "Guardar datos para pagar" (una acción: sin barra) |
+| Datos | Principal | `<form>` · panel `D1 DATOS PARA PAGAR` | Ayuda de los cuatro métodos una sola vez, bajo el título del panel. Un `<fieldset>` por método (TRANSFERENCIA BANCARIA, YAPE, PLIN, TARJETA) y uno más, CONTACTO DEL ESTUDIO, con Área MENSAJE DE CONTACTO. La `<legend>` manda sobre la etiqueta del campo: `fuente-familia-titulo`, `fuente-peso-titulo`, `fuente-tamano-base`; entre grupos, regla `borde-grosor-fino` y `espacio-5`. Método: Área + casilla "Activo: los clientes pueden pagar así" → Primario "Guardar datos para pagar" (una acción: sin barra) |
 
 **Rechazar** sigue la decisión de cancelar en [mis reservas](RF-04-mis-reservas.md#cancelar): V4 se sustituye por `RECHAZAR PAGO DE {folio}` con MOTIVO DEL RECHAZO (Área), "Motivos frecuentes" (tres [botones](../componentes/boton.md) Secundario que escriben el texto en el área y le pasan el foco: "El monto no coincide" · "Operación no encontrada" · "Captura ilegible"), consecuencias y la barra: "Volver" (Secundario) + Peligro "Rechazar pago" (sin Primario: la única salida adelante es rechazar). El motivo obligatorio es la confirmación ([formularios](../patrones/formularios.md#prevención-de-errores)).
 
@@ -60,14 +61,14 @@ depende_de: [RF-05, ADR-010, RN-04, RN-18, RN-22, diseno-brief, patron-estructur
 
 **Captura caducada:** la URL dura pocos minutos. Al pasar `expira_en`, o si la imagen no carga, V1 muestra "La vista de la captura caducó." + Secundario "Cargar captura de nuevo" (pide otra URL) y oculta "Abrir en una pestaña nueva".
 
-Patrones: [tablas y tableros](../patrones/tablas-y-tableros.md), [formularios](../patrones/formularios.md). Adaptabilidad: < `punto-quiebre-escritorio`, la tabla pasa a tarjetas y los laterales van **después** del principal (primero se mira la captura, luego se decide); la barra Decisión pasa a Móvil. Sin búsqueda ni paginación: el contrato no las ofrece.
+Patrones: [tablas y tableros](../patrones/tablas-y-tableros.md), [formularios](../patrones/formularios.md). Adaptabilidad: < `punto-quiebre-escritorio`, la tabla pasa a tarjetas y los laterales van **después** del principal (primero se mira la captura, luego se decide). La barra de V4 usa la variante Móvil a cualquier ancho: en un panel Lateral dos botones grandes no caben en fila ([barra de acciones](../componentes/barra-acciones.md#variantes)). Los folios no se parten (`white-space: nowrap`) en títulos y descripciones. Sin búsqueda ni paginación: el contrato no las ofrece.
 
 ## Estados
 
 | Vista | Vacío | Carga | Error al cargar | Éxito |
 |---|---|---|---|---|
 | Lista | Por validar: "No hay pagos por validar" + "Cuando un cliente registre un pago, aparecerá aquí." Sin acción. Aprobados / rechazados: "Aún no hay pagos aprobados." / "… rechazados." + "Ver pagos por validar" (Secundario) | Panel "Cargando…", `aria-busy` | Aviso Error en el panel + "Reintentar" | `pago-aprobado` "Pago aprobado. La cuota quedó pagada y avisamos al cliente." · `reserva-confirmada` "Pago aprobado. La reserva quedó confirmada y avisamos al cliente." · `pago-rechazado` "Pago rechazado. Avisamos al cliente con el motivo." · `datos-actualizados` "Datos para pagar guardados. Los clientes ya ven los nuevos." |
-| Revisar | — | Ídem | 404: `[404] PAGO NO ENCONTRADO` + "Volver a pagos". Captura 503: en V1, aviso Error "No pudimos cargar la captura." + "Reintentar"; la decisión sigue disponible (puede comprobar la operación en el banco) | Vuelve a la lista |
+| Revisar | — | Ídem | 404: panel `[404] PAGO NO ENCONTRADO` con aviso Información "No encontramos este pago." + "Volver a pagos" (como el 404 de [mis reservas](RF-04-mis-reservas.md#estados) y de [registrar pago](RF-05-registrar-pago.md#estados)); vale también para un `id` que no es UUID. Captura 503: en V1, aviso Error "No pudimos cargar la captura." + "Reintentar"; la decisión sigue disponible (puede comprobar la operación en el banco) | Vuelve a la lista |
 | Revisar, ya validado | V4 se sustituye por [indicador](../componentes/indicador-estado.md) Barra: Correcto "APROBADO" + `validado_en` · Problema "RECHAZADO" + `validado_en` y el motivo debajo | — | — | — |
 | Datos | — | Ídem | Ídem | Vuelve a la lista |
 
@@ -91,7 +92,7 @@ Permisos: solo `administrador`; personal y clientes no ven PAGOS y, por URL, ven
 | Revisar | Inicio / Pagos / {folio} | REVISAR PAGO | {cliente} · {cuota} de la reserva {folio} |
 | Datos | Inicio / Pagos / Datos para pagar · `[A7] COBROS / DATOS PARA PAGAR` | DATOS PARA PAGAR | Lo que ven los clientes al pagar y en el correo de su reserva. |
 
-Consecuencias en V4: "Al aprobar, la cuota queda pagada{, la reserva se confirma} y avisamos al cliente. No se puede deshacer." (el inciso solo si es `al_reservar` de una `Pre-reservada`). Al rechazar: "La cuota sigue pendiente y el cliente verá el motivo. Si la reserva está pre-reservada, vuelve a tener al menos 1 hora para pagar." Ayudas: motivo "El cliente lo verá en su reserva y en el correo. Di qué corregir."; datos "Banco, cuenta, CCI, número de Yape o Plin y titular. Se muestra tal cual escribas." Columnas: RESERVA · CLIENTE · MÉTODO · MONTO · OPERACIÓN · REGISTRADO / VALIDADO. Captura: `alt="Captura del comprobante de {cliente}, {método}, {monto}"`.
+Consecuencias en V4: "Al aprobar, la cuota queda pagada{, la reserva se confirma} y avisamos al cliente. No se puede deshacer." (el inciso solo si es `al_reservar` de una `Pre-reservada`). Al rechazar: "La cuota sigue pendiente y el cliente verá el motivo. Si la reserva está pre-reservada, vuelve a tener al menos 1 hora para pagar." Ayudas: motivo "El cliente lo verá en su reserva y en el correo. Di qué corregir."; datos (una vez, en D1) "Banco, cuenta, CCI, número de Yape o Plin y titular. Se muestra tal cual escribas."; contacto "Dónde escribirte cuando el cliente no puede pagar o cancelar por su cuenta. Hasta 500 caracteres." (error: "El contacto admite hasta 500 caracteres."). Éxito de `datos-actualizados`: también cubre el contacto Columnas: RESERVA · CLIENTE · MÉTODO · MONTO · OPERACIÓN · REGISTRADO / VALIDADO. Captura: `alt="Captura del comprobante de {cliente}, {método}, {monto}"`.
 
 ## Accesibilidad
 

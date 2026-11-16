@@ -13,7 +13,7 @@ depende_de: [diseno-tokens, comp-navegacion-lateral]
 
 1. Barra de ancho completo, alto `medida-nav-tactil`, fondo `color-fondo-superficie`, regla inferior `borde-grosor-base` `color-borde-fuerte`.
 2. Destinos en partes iguales: icono `medida-icono-md` sobre etiqueta (`fuente-familia-tecnica`, `fuente-tamano-micro`, mayúsculas).
-3. Contador opcional (mismas reglas que en la [navegación lateral](navegacion-lateral.md#anatomía): solo pendientes que piden acción): [etiqueta](etiqueta-tecnica.md) Alerta con el número, a la derecha del icono en su misma fila, hueco `espacio-1`; nunca sobre la etiqueta de texto. Hasta "99+" cabe en 64 px.
+3. Contador opcional (mismas reglas que en la [navegación lateral](navegacion-lateral.md#anatomía): solo pendientes que piden acción): [etiqueta](etiqueta-tecnica.md) Alerta con el número, a la derecha del icono en su misma fila, hueco `espacio-1`; nunca sobre la etiqueta de texto. Hasta "99+" cabe en 64 px. La fila del icono mide `medida-icono-md` de alto aunque lleve contador (la etiqueta desborda centrada): así la etiqueta de texto queda a la misma altura en todos los destinos.
 
 Máximo cinco destinos; el resto va al menú de la [cabecera](cabecera-app.md). Etiqueta de una palabra y **≤ 9 caracteres** ("ENTREGAS", no "ENTREGABLES"): a 320 px cada destino mide 64 px y una palabra más larga se parte. La misma etiqueta se usa en la [navegación lateral](navegacion-lateral.md). Si el plural pasa de 9, se elige otro sustantivo en plural, nunca el singular: un destino que lista muchas cosas no se rotula como una ("ACCESOS", no "SOLICITUD"); la ruta del [encabezado](encabezado-pantalla.md) usa la misma palabra.
 
@@ -40,7 +40,7 @@ Solo < `punto-quiebre-escritorio`. Parte de [estructura de app](../patrones/estr
 - `<nav aria-label="Principal">` con enlaces y `aria-current="page"`.
 - Cada destino mide al menos `medida-control-tactil` de alto (la barra mide `medida-nav-tactil`).
 - Etiqueta siempre visible: no hay destinos de solo icono.
-- El contador se lee con contexto, igual que en la lateral: `<span class="visualmente-oculto">pendientes:</span> 3`.
+- El contador se lee con contexto y después de la etiqueta, igual que en la [lateral](navegacion-lateral.md#accesibilidad): el texto oculto va tras `.tactil-etiqueta`, no dentro de la fila del icono ("Pagos 2 pagos por validar").
 
 ## Código
 

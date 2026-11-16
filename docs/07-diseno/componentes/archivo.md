@@ -13,7 +13,7 @@ depende_de: [diseno-tokens, comp-etiqueta-tecnica]
 
 1. Contenedor: `color-fondo-superficie`, `borde-grosor-base`, relleno `espacio-4`.
 2. Icono de tipo (`audio-waveform` para audio, `image` para captura de pago, `file` para otros y PDF), `medida-icono-sm`. Una imagen adjunta antes de enviar muestra en su lugar la miniatura: cuadro de `medida-miniatura`, `object-fit: contain` sobre `color-fondo-claro`, `borde-grosor-fino`.
-3. Nombre del archivo: `fuente-familia-tecnica`, `fuente-tamano-base` (`CYBERNETIC_MIX_V3.wav`); corte con elipsis en medio si es largo, nombre completo en `title`.
+3. Nombre del archivo: `fuente-familia-tecnica`, `fuente-tamano-base` (`CYBERNETIC_MIX_V3.wav`); si es largo se parte en líneas (`overflow-wrap: anywhere`): se lee entero y no desborda; nunca se recorta. Decisión de la revisión visual de pagos: la elipsis en medio pedía JS y escondía justo lo que distingue dos capturas.
 4. Metadato: formato, tamaño, duración, integridad (`fuente-tamano-micro`, `color-texto-secundario`).
 5. [Etiqueta](etiqueta-tecnica.md) de formato o estado y acción (descargar, quitar).
 
@@ -41,7 +41,7 @@ Resultado de [carga-archivos](carga-archivos.md); dentro de [tarjeta-version](ta
 
 - Enlace de descarga con `download` y texto completo: "Descargar CYBERNETIC_MIX_V3 en WAV (54 MB)".
 - Botón quitar: `aria-label="Quitar <nombre>"`.
-- Miniatura: `alt="Vista previa de <nombre>"`. Enlace a pestaña nueva: lo dice su texto ("Abrir comprobante en PDF (pestaña nueva)").
+- Miniatura: `alt="Vista previa de <nombre>"`. Enlace a pestaña nueva: "Abrir {nombre}" + "(pestaña nueva)" visualmente oculto ("Abrir comprobante.pdf (pestaña nueva)"); por eso `nombre` es el nombre de un archivo, en minúsculas, no una frase.
 
 ## Código
 

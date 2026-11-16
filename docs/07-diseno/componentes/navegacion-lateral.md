@@ -58,7 +58,7 @@ Solo ≥ `punto-quiebre-escritorio`; por debajo la sustituye [navegacion-tactil]
 ## Accesibilidad
 
 - `<nav aria-label="Principal">` con `<ul>` de enlaces; el actual con `aria-current="page"`.
-- El contador del metadato se lee con contexto: `<span class="visualmente-oculto">pendientes:</span> 3`.
+- El contador se lee con contexto y **después** de la etiqueta del destino: la cifra visible es `aria-hidden` y un texto visualmente oculto dice lo que cuenta ("Pagos 2 pagos por validar"; "más de 99 pagos por validar"). El nombre accesible empieza por la etiqueta visible (WCAG 2.5.3).
 
 ## Código
 
