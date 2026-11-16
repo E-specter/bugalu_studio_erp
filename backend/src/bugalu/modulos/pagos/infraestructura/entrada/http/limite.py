@@ -13,6 +13,9 @@ LIMITE_PETICION = LIMITE_BYTES + 64 * 1024
 class LimitePagos:
     """Sin `Content-Length` (chunked) pasa: el limite de lectura de la captura sigue vigente."""
 
+    # shortcut: sin `Content-Length` (chunked) el multipart se vuelca a disco antes del 413; en
+    # produccion el servidor o proxy debe limitar el tamano del cuerpo (ver montaje-local.md).
+
     def __init__(self, app: ASGIApp) -> None:
         self._app = app
 
