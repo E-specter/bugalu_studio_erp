@@ -103,8 +103,8 @@ Tras cambiar `config.toml`, reinicia Auth (`npx supabase stop` y `npx supabase s
 - **Auth responde 429 `over_email_send_rate_limit`:** se alcanzó `email_sent` o el límite del panel.
 - **Avisos del backend:** un envío fallido suma `intentos` y guarda el tipo de error. Tras 5 intentos no se reintenta. Consúltalo con la conexión de administración: `select id, intentos, error from public.notificacion where enviada_en is null;`. El registro de la API muestra `envio de correos fallido` si falla la tarea entera.
 
-## Calendario (pendiente)
+## Calendario
 
-La conexión con Google Calendar se documentará cuando el estudio decida qué sincronizar (ADR-011).
+La conexión con Google Calendar y Meet (RF-19), sus implicancias y el procedimiento propuesto están en [calendario-google](calendario-google.md). Ojo: cambiar la contraseña de la cuenta revoca las contraseñas de aplicación del SMTP.
 
 Fuentes: [Google, contraseñas de aplicación](https://support.google.com/accounts/answer/185833) · [Gmail, límites de envío](https://support.google.com/mail/answer/22839) · [Gmail, IMAP y SMTP](https://developers.google.com/workspace/gmail/imap/imap-smtp) · [Gmail, enviar correo como](https://support.google.com/mail/answer/22370) · [Supabase, SMTP propio](https://supabase.com/docs/guides/auth/auth-smtp) · [Supabase, config del CLI](https://supabase.com/docs/guides/local-development/cli/config) (consultadas el 2026-11-16).
