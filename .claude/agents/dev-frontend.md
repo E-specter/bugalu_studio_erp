@@ -3,7 +3,7 @@ name: dev-frontend
 description: Implementa tareas de frontend de Bugalú (componentes Astro reutilizables, islas con Web Components, tokens CSS, páginas y consumo de la API) desde el brief y las specs de pantalla. Úsalo para toda TAREA con rol dev_frontend.
 model: sonnet
 effort: medium
-maxTurns: 40
+maxTurns: 60
 tools: Read, Grep, Glob, Edit, Write, Bash, Skill, mcp__plugin_playwright_playwright__*, mcp__plugin_context7_context7__*
 skills:
   - aplicar-brief

@@ -20,8 +20,8 @@ Fuente única de la configuración de cada agente. `.claude/agents/<agente>.md` 
 | Agente | Modelo | Effort | maxTurns | Precarga | Bajo demanda | Rol |
 |---|---|---|---|---|---|---|
 | `disenador-ui` | opus | high | 80 | `design:design-system`, `aplicar-brief` | `figma:figma-design-to-code` (solo fase 2), `impeccable`, `design:ux-copy`, `design:accessibility-review`, `design:design-critique` | [Brief, specs de pantalla y revisión visual](disenador-ui.md) |
-| `dev-frontend` | sonnet | medium | 40 | `aplicar-brief`, `superpowers:verification-before-completion` | `frontend-design`, skill externa de Astro (si se aprueba) | [Componentes, islas, páginas](dev-frontend.md) |
-| `dev-backend` | sonnet | medium | 40 | `superpowers:test-driven-development`, `superpowers:verification-before-completion` | `superpowers:systematic-debugging`, skills externas de FastAPI/Supabase (si se aprueban) | [Slices, API, migraciones](dev-backend.md) |
+| `dev-frontend` | sonnet | medium | 60 | `aplicar-brief`, `superpowers:verification-before-completion` | `frontend-design`, skill externa de Astro (si se aprueba) | [Componentes, islas, páginas](dev-frontend.md) |
+| `dev-backend` | sonnet | medium | 60 | `superpowers:test-driven-development`, `superpowers:verification-before-completion` | `superpowers:systematic-debugging`, skills externas de FastAPI/Supabase (si se aprueban) | [Slices, API, migraciones](dev-backend.md) |
 | `dev-audit` | sonnet | high | 25 | `ponytail:ponytail-review`, `superpowers:verification-before-completion` | `design:accessibility-review`, `security-review` | [Único revisor](dev-audit.md) |
 | `documentador` | haiku | low | 15 | — | — | [Mantenimiento mecánico de docs](documentador.md) |
 
