@@ -28,7 +28,17 @@ def _cuerpo(ruta: str, campo: str, valor: str) -> dict[str, str]:
     return {**BASE.get(ruta.rsplit("/", 1)[-1], {}), campo: valor}
 
 
-@pytest.mark.parametrize("valor", ["a\u0000b", "a\x07b", "a\x1fb", "a\x7fb"])
+@pytest.mark.parametrize("valor", [
+        "a\u0000b",
+        "a\x07b",
+        "a\x1fb",
+        "a\x7fb",
+        "a\x85b",
+        "a\x9fb",
+        "a b",
+        "a b",
+    ],
+)
 @pytest.mark.parametrize(("metodo", "ruta", "campo", "_largo"), CAMPOS)
 async def test_texto_con_nul_o_control_es_422(
     cliente: AsyncClient,
@@ -62,3 +72,15 @@ async def test_los_textos_largos_admiten_saltos_de_linea_y_tabuladores(
     )
     assert r.status_code == 201
     assert r.json()["mensaje"] == "linea 1\n\tlinea 2"
+
+
+async def test_los_textos_largos_aceptan_crlf_y_lo_normalizan(
+    cliente: AsyncClient, crear_usuario: Callable[[], UsuarioDePrueba]
+) -> None:
+    r = await cliente.post(
+        "/api/v1/solicitudes-acceso",
+        headers={"Authorization": f"Bearer {crear_usuario().token}"},
+        json={"especialidad": "mezcla", "mensaje": "linea 1\r\nlinea 2"},
+    )
+    assert r.status_code == 201
+    assert r.json()["mensaje"] == "linea 1\nlinea 2"
