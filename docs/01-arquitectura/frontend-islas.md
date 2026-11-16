@@ -35,8 +35,8 @@ frontend/
 |---|---|
 | Calendario de sala: reserva y agenda (`<bugalu-calendario>`) | [RF-02](../03-requerimientos/RF-02.md), [RF-03](../03-requerimientos/RF-03.md), [RF-04](../03-requerimientos/RF-04.md) |
 | Agenda de asesoría | [RF-15](../03-requerimientos/RF-15.md) |
-| Registro de pago con captura | [RF-05](../03-requerimientos/RF-05.md), [RF-11](../03-requerimientos/RF-11.md) |
-| Validación de pagos (Administrador) | [RF-05](../03-requerimientos/RF-05.md) |
+| Registro de pago con captura (`<bugalu-pago>`, [spec](../07-diseno/pantallas/RF-05-registrar-pago.md)) | [RF-05](../03-requerimientos/RF-05.md), [RF-11](../03-requerimientos/RF-11.md) |
+| Pagos por validar, ficha del pago y datos para pagar del Administrador (`<bugalu-pagos vista="lista\|revisar\|datos">`, [spec](../07-diseno/pantallas/RF-05-pagos.md)) | [RF-05](../03-requerimientos/RF-05.md) |
 | Contraseña: mostrar u ocultar y medidor de robustez (`<bugalu-contrasena>`) | [RF-01](../03-requerimientos/RF-01.md) |
 | Acceso: iniciar sesión, registrarse, solicitar acceso interno, recuperar y restablecer (`<bugalu-acceso>`) | [RF-01](../03-requerimientos/RF-01.md) |
 | Estado de la solicitud de acceso interno (`<bugalu-solicitud>`) | [RF-01](../03-requerimientos/RF-01.md) |
@@ -47,5 +47,7 @@ frontend/
 | Bandeja de solicitudes y usuarios del Administrador (`<bugalu-solicitudes>`) | [RF-01](../03-requerimientos/RF-01.md) |
 | Perfil propio, editable (`<bugalu-perfil>`) | [RF-01](../03-requerimientos/RF-01.md) |
 | Aviso descartable (`<bugalu-aviso>`) | Transversal ([aviso](../07-diseno/componentes/aviso.md)) |
-| Carga de entregables y capturas (`<bugalu-carga-archivos>`) | [RF-09](../03-requerimientos/RF-09.md) |
+| Carga de entregables y capturas (`<bugalu-carga-archivos>`; primero la variante `captura`, dentro de `<bugalu-pago>`) | [RF-05](../03-requerimientos/RF-05.md), [RF-09](../03-requerimientos/RF-09.md) |
 | Reproductor con forma de onda y comentarios por timestamp (`<bugalu-reproductor>`) | [RF-10](../03-requerimientos/RF-10.md) |
+
+El contador de PAGOS de la navegación no es isla: lo pinta el script de `LayoutApp` que ya carga el perfil ([navegación lateral](../07-diseno/componentes/navegacion-lateral.md#variantes)).

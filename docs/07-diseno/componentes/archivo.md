@@ -12,7 +12,7 @@ depende_de: [diseno-tokens, comp-etiqueta-tecnica]
 ## Anatomía
 
 1. Contenedor: `color-fondo-superficie`, `borde-grosor-base`, relleno `espacio-4`.
-2. Icono de tipo (`audio-waveform` para audio, `image` para captura de pago, `file` para otros), `medida-icono-sm`.
+2. Icono de tipo (`audio-waveform` para audio, `image` para captura de pago, `file` para otros y PDF), `medida-icono-sm`. Una imagen adjunta antes de enviar muestra en su lugar la miniatura: cuadro de `medida-miniatura`, `object-fit: contain` sobre `color-fondo-claro`, `borde-grosor-fino`.
 3. Nombre del archivo: `fuente-familia-tecnica`, `fuente-tamano-base` (`CYBERNETIC_MIX_V3.wav`); corte con elipsis en medio si es largo, nombre completo en `title`.
 4. Metadato: formato, tamaño, duración, integridad (`fuente-tamano-micro`, `color-texto-secundario`).
 5. [Etiqueta](etiqueta-tecnica.md) de formato o estado y acción (descargar, quitar).
@@ -23,7 +23,7 @@ depende_de: [diseno-tokens, comp-etiqueta-tecnica]
 |---|---|---|
 | Adjunto | Quitar (`x`) | Referencias del brief, captura de pago antes de enviar |
 | Descarga | Descargar (`download`) por formato (WAV, MP3, FLAC) | Máster definitivo ([RF-12](../../03-requerimientos/RF-12.md)) |
-| Lectura | Ninguna | Historial |
+| Lectura | Ninguna, o enlace "Abrir {nombre}" (`external-link`, pestaña nueva) | Historial; comprobante PDF en la [ficha del pago](../pantallas/RF-05-pagos.md) |
 
 ## Estados
 
@@ -31,7 +31,7 @@ Las acciones cumplen los [estados comunes](README.md#estados-comunes). Descarga 
 
 ## Tokens
 
-`color-fondo-superficie`, `color-texto-secundario`, `borde-grosor-base`, `espacio-4`, `medida-icono-sm`, `fuente-familia-tecnica`, `fuente-tamano-base`, `fuente-tamano-micro`.
+`color-fondo-superficie`, `color-fondo-claro`, `color-texto-secundario`, `borde-grosor-base`, `borde-grosor-fino`, `espacio-4`, `medida-icono-sm`, `medida-miniatura`, `fuente-familia-tecnica`, `fuente-tamano-base`, `fuente-tamano-micro`.
 
 ## Relaciones
 
@@ -41,6 +41,7 @@ Resultado de [carga-archivos](carga-archivos.md); dentro de [tarjeta-version](ta
 
 - Enlace de descarga con `download` y texto completo: "Descargar CYBERNETIC_MIX_V3 en WAV (54 MB)".
 - Botón quitar: `aria-label="Quitar <nombre>"`.
+- Miniatura: `alt="Vista previa de <nombre>"`. Enlace a pestaña nueva: lo dice su texto ("Abrir comprobante en PDF (pestaña nueva)").
 
 ## Código
 

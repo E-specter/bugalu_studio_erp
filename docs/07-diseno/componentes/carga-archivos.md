@@ -21,8 +21,17 @@ depende_de: [diseno-tokens, comp-barra-progreso, arq-frontend-islas]
 | Variante | Acepta | Uso |
 |---|---|---|
 | Entregable de audio | WAV; validación técnica completa; historial en [lista de eventos](lista-eventos.md) Terminal | [RF-09](../../03-requerimientos/RF-09.md) |
-| Captura de pago | Imagen (JPG, PNG) o PDF; miniatura en vez de onda; sin validación técnica | [RF-05](../../03-requerimientos/RF-05.md), [RF-11](../../03-requerimientos/RF-11.md) |
+| Captura de pago | Imagen (JPG, PNG) o PDF, un archivo de hasta 5 MB; miniatura en vez de onda; sin validación técnica. Ver abajo | [RF-05](../../03-requerimientos/RF-05.md), [RF-11](../../03-requerimientos/RF-11.md) |
 | Referencias | Audio o enlace; varios archivos | Brief de proyecto |
+
+### Captura de pago
+
+Primera variante que se implementa ([registrar pago](../pantallas/RF-05-registrar-pago.md)); las demás entran con su RF. Decisión del brief para no construir lo que no usa:
+
+- **El archivo viaja con el formulario**, no por su cuenta: la isla envuelve un `<input type="file" name="captura" accept="image/jpeg,image/png,application/pdf">` real dentro del `<form>` de la pantalla, que lo envía en su `multipart/form-data`. Sin atributo `endpoint` ni subida previa.
+- **Sin zona de soltar ni barra de progreso:** un solo archivo pequeño que en móvil se elige de la galería. La subida es el envío del formulario: su estado es el Carga del Primario (y el texto de más de 10 s de [estados del sistema](../patrones/estados-sistema.md#carga)).
+- Anatomía: etiqueta y ayuda del [campo](campo.md) → botón Secundario "Seleccionar archivo" (`upload`) → al elegir, [archivo](archivo.md) Adjunto (miniatura si es imagen, `file` si es PDF; metadato "PNG · 1,2 MB") con "Quitar"; quitar devuelve el foco a "Seleccionar archivo".
+- Validación en el navegador como primera capa (la del servidor, por la firma, manda): tamaño > 5 MB y tipo fuera de `accept` → error del campo con [estados comunes](README.md#estados-comunes) Error y el texto de la pantalla.
 
 ## Estados
 
@@ -53,4 +62,4 @@ Usa [barra-progreso](barra-progreso.md), [indicador-estado](indicador-estado.md)
 
 ## Código
 
-Isla `frontend/src/islas/CargaArchivos.astro` que registra `<bugalu-carga-archivos>`; atributos `variante`, `accept`, `max-mb`, `endpoint`.
+Isla `frontend/src/islas/CargaArchivos.astro` que registra `<bugalu-carga-archivos>`; atributos `variante` (`captura|audio|referencias`), `accept`, `max-mb`, `nombre` (el `name` del input), `endpoint` (solo audio y referencias).

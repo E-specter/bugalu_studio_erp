@@ -2,14 +2,14 @@
 id: pantalla-rf-03-calendario
 titulo: Pantalla — Calendario de sala (público, cliente y personal)
 estado: borrador
-depende_de: [RF-03, RF-04, ADR-009, diseno-brief, patron-estructura-app, patron-estados-sistema, patron-tablas-y-tableros, comp-calendario, comp-tabla, comp-aviso, comp-etiqueta-tecnica]
+depende_de: [RF-03, RF-04, RF-06, ADR-009, ADR-010, diseno-brief, patron-estructura-app, patron-estados-sistema, patron-tablas-y-tableros, comp-calendario, comp-tabla, comp-aviso, comp-etiqueta-tecnica]
 ---
 
 # Calendario de sala
 
 | Campo | Valor |
 |---|---|
-| Requerimiento | [RF-03](../../03-requerimientos/RF-03.md): CA-05, CA-06, CA-08, CA-09; [RF-04](../../03-requerimientos/RF-04.md): CA-08 |
+| Requerimiento | [RF-03](../../03-requerimientos/RF-03.md): CA-05, CA-06, CA-08, CA-09; [RF-04](../../03-requerimientos/RF-04.md): CA-08; [RF-06](../../03-requerimientos/RF-06.md): CA-05 |
 | Actores | Visitante y Artista/Cliente (`/reservar`); Personal interno y Administrador (`/app/agenda`) |
 | Estructura | Flujo en `/reservar` (paso 01 de [reservar](RF-04-reservar.md)); App en `/app/agenda` ([estructura de app](../patrones/estructura-app.md)) |
 | Ruta | `/reservar` y `/app/agenda`. URL: `vista` (`semana` por defecto, `mes`; `lista` solo en la agenda), `fecha` (`AAAA-MM-DD`), `sala` (solo si hay más de una) |
@@ -36,8 +36,8 @@ Esta spec fija el bloque del calendario en los dos contextos. El resto del paso 
 | Horas libres por día | `dias[].{fecha, minutos_libres}` | [Duración de reserva](../patrones/estructura-app.md#formato-de-datos) + "libres": "3 h 30 min libres"; 0 → "Sin horas libres" |
 | Horas libres del periodo | Suma de `dias[].minutos_libres` | Solo en el anuncio |
 | Tus reservas (cliente) | `GET /reservas/mias`, casadas con `ocupados[].propia` por `inicio` | TU RESERVA + `folio` |
-| Detalle (personal) | `ocupados[].detalle.{id_reserva, cliente, servicio, estado}` | Cliente tal cual; servicio; [etiqueta](../componentes/etiqueta-tecnica.md) según [estados de reserva](../../02-dominio/estados-reserva.md) |
-| Lista (personal) | `GET /reservas?desde=&hasta=` → `[Reserva]` | `folio`, `inicio`–`fin` (`D MMM, HH:mm`–`HH:mm`), `cliente`, `servicio`, `estado` |
+| Detalle (personal) | `ocupados[].detalle.{id_reserva, cliente, servicio, estado, pago_por_validar}` | Cliente tal cual; servicio; [etiqueta](../componentes/etiqueta-tecnica.md) según [estados de reserva](../../02-dominio/estados-reserva.md) (PRE-RESERVADA, CONFIRMADA, EN CURSO, FINALIZADA). Con `pago_por_validar`, en lugar de la etiqueta de estado: Aviso PAGO POR VALIDAR (RN-23: la `Pre-reservada` no caduca ni avanza) |
+| Lista (personal) | `GET /reservas?desde=&hasta=` → `[Reserva]` | `folio`, `inicio`–`fin` (`D MMM, HH:mm`–`HH:mm`), `cliente`, `servicio`, `estado`. En ESTADO, debajo de la etiqueta: PAGO POR VALIDAR (Aviso) si `pago_por_validar`; "Resto: S/ 225,00" si la cuota `al_terminar` sigue `pendiente` en `En curso` o `Finalizada` |
 
 ## Composición
 
@@ -90,4 +90,5 @@ Tras "Reintentar", el foco va al título del panel. Permisos: el visitante y el 
 ## Pendientes
 
 - **leader / dev-backend:** `Disponibilidad` no dice desde y hasta cuándo se puede reservar. Proponemos `limites: {desde, hasta}` para marcar NO RESERVABLE por anticipación en cada media hora. Sin él, solo se marca lo pasado y el 422 de `POST /reservas` cubre el resto.
+- **dev-backend:** `ocupados[].detalle` no trae `pago_por_validar` ([RF-06](../../03-requerimientos/RF-06.md) CA-05 lo pide en la agenda); propuesta: añadirlo. Sin él, la cuadrícula no lo marca y solo lo muestra LISTA. El saldo no va en la cuadrícula (no cabe): está en LISTA y en el detalle.
 - **leader:** destinos de navegación nuevos: AGENDA (`calendar`) para personal y Administrador; registrar el modo `personal` y la vista `lista` de `<bugalu-calendario>` en [frontend-islas](../../01-arquitectura/frontend-islas.md).
