@@ -31,7 +31,7 @@ Usuario, 2026-11-16 (respuestas a las preguntas de RF-03/04):
 | Cancelación | El cliente cancela su reserva **sin costo mientras no haya registrado ningún pago**; con anticipo pagado sigue D-11 |
 | Acceso social | Genérico: lista configurable de proveedores de Supabase Auth; se activan **Google y Meta (Facebook)** para artistas y clientes ([ADR-008](ADR-008-acceso-y-roles-v1.md)) |
 
-**Supuestos de leader, a confirmar con el estudio al cargar tarifas:** cada tarifa declara su unidad (hora o lapso de 30 min); el monto fijo se cobra una vez por reserva; el recargo es un porcentaje por tipo de horario que se aplica a la parte variable de los bloques que caen en ese horario (sala y especialistas), nunca al fijo. Los montos los carga el Administrador.
+**Modelo de precio (confirmado por el usuario, 2026-11-16):** **cada componente de la reserva** (el servicio y cada especialista) tiene una **parte variable** por tiempo, con su unidad (hora o lapso de 30 min) y sujeta a recargo por horario, y una **parte fija** que se cobra siempre, una vez por reserva (0 si no tiene). El recargo es un porcentaje por tipo de horario sobre la parte variable de los bloques que caen en ese horario, nunca sobre la fija. Los montos los carga el Administrador. Sin casilla de condiciones al reservar hasta que el estudio tenga el texto legal.
 
 ## Parte técnica (leader)
 
