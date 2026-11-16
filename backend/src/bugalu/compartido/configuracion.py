@@ -22,6 +22,12 @@ class Configuracion(BaseSettings):
     clave_publicable_supabase: str = ""
     # Origenes del frontend, separados por comas. Vacio = sin CORS.
     origenes_permitidos: str = ""
+    # Correo saliente (ADR-009): en local, el SMTP de Mailpit del stack (supabase/config.toml).
+    smtp_host: str = "127.0.0.1"
+    smtp_puerto: int = 45625
+    correo_remitente: str = "no-responder@bugalu.pe"
+    # Segundos entre envios de la bandeja de correos; 0 desactiva la tarea periodica.
+    intervalo_envio_correos: int = 30
 
     @property
     def lista_origenes_permitidos(self) -> list[str]:

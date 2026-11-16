@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -10,6 +11,10 @@ from bugalu.compartido.esquemas import RespuestaError
 from bugalu.compartido.manejadores_http import registrar_manejadores
 from bugalu.modulos.catalogo.infraestructura.entrada.http.router import router as router_catalogo
 from bugalu.modulos.identidad.infraestructura.entrada.http.router import router as router_identidad
+from bugalu.modulos.notificaciones.infraestructura.entrada.ejecucion import (
+    enviar_una_vez,
+    repetir,
+)
 from bugalu.modulos.reservas.infraestructura.entrada.http.router import router as router_reservas
 
 
@@ -20,7 +25,20 @@ async def _ciclo_de_vida(app: FastAPI) -> AsyncIterator[None]:
         configuracion.url_base_datos, configuracion.timeout_pool_segundos
     ) as pool:
         app.state.pool = pool
-        yield
+        tarea = None
+        if configuracion.intervalo_envio_correos > 0:
+            tarea = asyncio.create_task(
+                repetir(
+                    lambda: enviar_una_vez(pool, configuracion),
+                    configuracion.intervalo_envio_correos,
+                )
+            )
+        try:
+            yield
+        finally:
+            if tarea:
+                tarea.cancel()
+                await asyncio.gather(tarea, return_exceptions=True)
 
 
 def crear_app() -> FastAPI:

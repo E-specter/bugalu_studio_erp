@@ -60,6 +60,7 @@ def _entorno_aislado(
     request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
 ) -> Iterator[None]:
     """Las pruebas unitarias no dependen de backend/.env: el entorno gana a ese archivo."""
+    monkeypatch.setenv("INTERVALO_ENVIO_CORREOS", "0")  # sin tarea periodica en las pruebas
     if request.node.get_closest_marker("integracion") is None:
         monkeypatch.setenv("URL_BASE_DATOS", "postgresql://u:p@127.0.0.1:1/db")
         monkeypatch.setenv("URL_SUPABASE", "http://127.0.0.1:45621")

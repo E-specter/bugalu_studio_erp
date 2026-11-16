@@ -39,6 +39,9 @@ Variables de `backend/.env` (`.env` está ignorado por git):
 | `CLAVE_PUBLICABLE_SUPABASE` | `PUBLISHABLE_KEY`; solo la usan las pruebas de integración |
 | `EXIGIR_INTEGRACION` | Solo pruebas, opcional. `EXIGIR_INTEGRACION=1` (CI) convierte el salto de las pruebas de integración, cuando no hay stack o `.env`, en fallo. Sin ella se saltan con el motivo. Las pruebas unitarias no dependen de `backend/.env` |
 | `ORIGENES_PERMITIDOS` | Orígenes del frontend, separados por comas (`http://localhost:4321`). Vacío = sin CORS: el navegador bloquea las llamadas del frontend |
+| `SMTP_HOST` / `SMTP_PUERTO` | Servidor de correo de la bandeja `notificacion`. En local, Mailpit: `127.0.0.1` y `45625` (`[local_smtp] smtp_port` en `supabase/config.toml`); los correos se ven en `http://127.0.0.1:45624`. Sin STARTTLS ni credenciales (el proveedor real sigue en D-07) |
+| `CORREO_REMITENTE` | Remitente de los avisos de reserva |
+| `INTERVALO_ENVIO_CORREOS` | Segundos entre envíos de la tarea periódica de la API (por defecto 30; `0` la desactiva, como en las pruebas). Para enviar una vez a mano: `uv run python -m bugalu.herramientas.enviar_correos` |
 
 **Auth (RF-01, `supabase/config.toml`):** contraseña de 8+ caracteres con minúscula, mayúscula, número y símbolo. Tras cambiar `config.toml`: `npx supabase stop` y `npx supabase start`. Las pruebas de integración y cualquier alta usan contraseñas que lo cumplan (p. ej. `Clave-Segura-123`).
 
