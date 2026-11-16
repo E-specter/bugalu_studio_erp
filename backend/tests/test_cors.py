@@ -42,3 +42,18 @@ async def test_preflight_desde_origen_no_permitido(monkeypatch: pytest.MonkeyPat
 async def test_sin_origenes_no_hay_cors(monkeypatch: pytest.MonkeyPatch) -> None:
     r = await _preflight(monkeypatch, "", PERMITIDO)
     assert "access-control-allow-origin" not in r.headers
+
+
+async def test_preflight_permite_put_para_los_recargos(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ORIGENES_PERMITIDOS", PERMITIDO)
+    obtener_configuracion.cache_clear()
+    try:
+        app = crear_app()
+    finally:
+        obtener_configuracion.cache_clear()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as cliente:
+        r = await cliente.options(
+            "/api/v1/recargos",
+            headers={"Origin": PERMITIDO, "Access-Control-Request-Method": "PUT"},
+        )
+    assert r.status_code == 200 and "PUT" in r.headers["access-control-allow-methods"]

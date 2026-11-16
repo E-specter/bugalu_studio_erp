@@ -24,3 +24,11 @@ async def transaccion_con_identidad(
             "select set_config('request.jwt.claims', %s, true)", (json.dumps(claims),)
         )
         yield conexion
+
+
+@asynccontextmanager
+async def transaccion_publica(pool: AsyncConnectionPool) -> AsyncIterator[AsyncConnection]:
+    """Transaccion de un visitante sin sesion: rol `anon`, sin identidad."""
+    async with pool.connection() as conexion, conexion.transaction():
+        await conexion.execute("set local role anon")
+        yield conexion

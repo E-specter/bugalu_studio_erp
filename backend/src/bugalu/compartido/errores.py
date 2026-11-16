@@ -52,3 +52,20 @@ class VerificacionNoValida(Conflicto):
 class CampoNoPermitido(ErrorDeNegocio):
     codigo = "campo_no_permitido"
     estado_http = 422
+
+
+class DatosInvalidos(ErrorDeNegocio):
+    codigo = "datos_invalidos"
+    estado_http = 422
+
+
+class TramoInvalido(DatosInvalidos):
+    codigo = "tramo_invalido"
+
+
+class ServicioNoReservable(DatosInvalidos):
+    codigo = "servicio_no_reservable"
+
+
+class FeriadoRepetido(Conflicto):
+    codigo = "feriado_repetido"

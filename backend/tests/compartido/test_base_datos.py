@@ -4,7 +4,7 @@ import psycopg
 import pytest
 from psycopg_pool import AsyncConnectionPool
 
-from bugalu.compartido.base_datos import transaccion_con_identidad
+from bugalu.compartido.base_datos import transaccion_con_identidad, transaccion_publica
 from tests.conftest import UsuarioDePrueba
 
 pytestmark = pytest.mark.integracion
@@ -80,3 +80,19 @@ async def test_bugalu_api_no_lee_usuario_sin_asumir_authenticated(
     async with pool.connection() as conexion:
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
             await conexion.execute("select 1 from public.usuario")
+
+
+async def test_la_transaccion_publica_asume_anon_sin_identidad_y_vuelve_limpia(
+    pool: AsyncConnectionPool,
+) -> None:
+    async with transaccion_publica(pool) as conexion:
+        cursor = await conexion.execute(
+            "select current_user, auth.uid(), count(*) from public.servicio"
+        )
+        usuario, uid, servicios = await cursor.fetchone()  # type: ignore[misc]
+        assert (usuario, uid) == ("anon", None) and servicios > 0
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            await conexion.execute("select 1 from public.usuario")
+    async with pool.connection() as conexion:
+        cursor = await conexion.execute("select current_user")
+        assert await cursor.fetchone() == ("bugalu_api",)
