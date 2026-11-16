@@ -132,7 +132,7 @@ test('N2: el PDF se abre como "Abrir comprobante.pdf"', async ({ page }) => {
     id: PAGO, estado: 'pendiente_validacion', metodo: 'yape', monto: '225.00', numero_operacion: 'ABC123', motivo_rechazo: null, registrado_en: '2026-11-15T12:00:00Z', validado_en: null, monto_coincide: true,
     cuota: { id: 'c1', hito: 'al_reservar', monto: '225.00' }, reserva: { id: 'r1', folio: 'R-2026-00042', inicio: '2026-11-20T15:00:00Z', estado: 'pre_reservada' }, cliente: { id: 'u9', nombre: 'Ana Pérez' },
   }));
-  await simular(page, 'GET', `/pagos/${PAGO}/captura`, json(200, { url: 'http://captura.prueba/c.pdf', expira_en: '2026-11-15T15:10:00Z', tipo: 'pdf' }));
+  await simular(page, 'GET', `/pagos/${PAGO}/captura`, json(200, { url: 'http://supabase.prueba/c.pdf', expira_en: '2026-11-15T15:10:00Z', tipo: 'pdf' }));
   await page.clock.setFixedTime(AHORA);
   await page.goto(`/app/pagos/revisar?id=${PAGO}`);
   await expect(page.getByRole('link', { name: /Abrir comprobante\.pdf/ })).toBeVisible();

@@ -149,9 +149,9 @@ test('captura: más de 5 MB y tipos no admitidos se avisan antes de enviar', asy
   await page.goto(URL);
   const entrada = page.getByLabel(/Captura del comprobante/);
   await entrada.setInputFiles(archivo('grande.png', 'image/png', Buffer.alloc(6 * 1024 * 1024)));
-  await expect(page.getByText('La captura pesa 6 MB. Sube una de hasta 5 MB.')).toBeVisible();
+  await expect(page.getByText('La captura pesa 6 MB. Sube una de hasta 5 MB.').last()).toBeVisible();
   await entrada.setInputFiles(archivo('nota.txt', 'text/plain', Buffer.from('hola')));
-  await expect(page.getByText('Sube la captura en JPG, PNG o PDF.')).toBeVisible();
+  await expect(page.getByText('Sube la captura en JPG, PNG o PDF.').last()).toBeVisible();
   await entrada.setInputFiles(archivo());
   await expect(page.getByText('Sube la captura en JPG')).toHaveCount(0);
   await expect(page.locator('.archivo')).toContainText('voucher.png');
@@ -167,6 +167,7 @@ test('captura: miniatura de imagen, nombre de PDF y quitar devuelve el foco', as
   await page.getByRole('button', { name: 'Quitar voucher.png' }).click();
   await expect(page.locator('.archivo')).toHaveCount(0);
   await expect(entrada).toBeFocused();
+  await expect(page.locator('bugalu-carga-archivos [role="status"]')).toHaveText('Quitaste voucher.png. Elige otro archivo.');
   await entrada.setInputFiles(archivo('voucher.pdf', 'application/pdf', Buffer.from('%PDF-1.4')));
   await expect(page.locator('.archivo-miniatura')).toHaveCount(0);
   await expect(page.locator('.archivo')).toContainText('voucher.pdf');
@@ -440,4 +441,20 @@ test('zoom 200 % y letra grande: nada se desborda', async ({ page }) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});
+
+test('captura: al elegir, el foco pasa a Quitar y una region de estado anuncia el adjunto o el error', async ({ page }) => {
+  await preparar(page);
+  await page.goto(URL);
+  const estado = page.locator('bugalu-carga-archivos [role="status"]');
+  const entrada = page.getByLabel(/Captura del comprobante/);
+  await entrada.focus(); // elegir con el selector del sistema deja el foco en el input
+  await entrada.setInputFiles(archivo());
+  await expect(page.getByRole('button', { name: 'Quitar voucher.png' })).toBeFocused();
+  await expect(estado).toHaveText(/Adjuntaste voucher\.png \(PNG · \d+ KB\)/);
+  await page.getByRole('button', { name: 'Quitar voucher.png' }).click();
+  await entrada.setInputFiles(archivo('grande.png', 'image/png', Buffer.alloc(6 * 1024 * 1024)));
+  await expect(estado).toHaveText('La captura pesa 6 MB. Sube una de hasta 5 MB.');
+  await entrada.setInputFiles(archivo('nota.txt', 'text/plain', Buffer.from('hola')));
+  await expect(estado).toHaveText('Sube la captura en JPG, PNG o PDF.');
 });

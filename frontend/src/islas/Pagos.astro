@@ -396,9 +396,9 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
       };
       try {
         const c = await obtenerCaptura(this.registro);
-        // La URL firmada solo se usa si es http(s).
+        // La URL firmada solo se usa si es http(s) y del origen de Supabase (el backend firma con URL_SUPABASE).
         const url = new URL(c.url);
-        if (!/^https?:$/.test(url.protocol)) throw new Error('url');
+        if (!/^https?:$/.test(url.protocol) || url.origin !== new URL(import.meta.env.PUBLIC_URL_SUPABASE).origin) throw new Error('url');
         const pdf = (c.tipo ?? (/\.pdf$/i.test(url.pathname) ? 'pdf' : 'imagen')) === 'pdf';
         abrir.href = url.href;
         if (pdf) {
@@ -435,7 +435,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
 
     aprobar(boton) {
       const confirma = this.pago.cuota.hito === 'al_reservar';
-      this.enviar(boton, 'Aprobando…', () => aprobarPago(this.registro), (r) => this.terminar(confirma && r.reserva?.estado === 'confirmada' ? 'reserva-confirmada' : 'pago-aprobado'));
+      this.enviar(boton, 'Aprobando…', () => aprobarPago(this.registro), (r) => this.terminar(confirma && r.reserva?.estado === 'confirmada' ? 'reserva-confirmada' : 'pago-aprobado'), true);
     }
 
     rechazar(formulario) {
@@ -449,7 +449,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
         entrada.focus();
         return;
       }
-      this.enviar(formulario.querySelector('[type="submit"]'), 'Rechazando…', () => rechazarPago(this.registro, motivo), () => this.terminar('pago-rechazado'));
+      this.enviar(formulario.querySelector('[type="submit"]'), 'Rechazando…', () => rechazarPago(this.registro, motivo), () => this.terminar('pago-rechazado'), true);
     }
 
     // Avisa a la navegacion con el numero real de pagos por validar y vuelve a la lista.

@@ -22,8 +22,8 @@ async function base(page, { lista = POR_VALIDAR, aprobados = [], rechazados = []
     const estado = new URL(r.request().url()).searchParams.get('estado');
     return r.fulfill(json(200, estado === 'aprobado' ? aprobados : estado === 'rechazado' ? rechazados : lista));
   });
-  await page.route('http://captura.prueba/**', (r) => r.fulfill({ status: 200, contentType: 'image/png', body: PNG }));
-  const capturas = await simular(page, 'GET', `/pagos/${ID1}/captura`, captura ?? json(200, { url: 'http://captura.prueba/c.png', expira_en: '2026-11-15T15:10:00Z', tipo: 'imagen' }));
+  await page.route('http://supabase.prueba/**', (r) => r.fulfill({ status: 200, contentType: 'image/png', body: PNG }));
+  const capturas = await simular(page, 'GET', `/pagos/${ID1}/captura`, captura ?? json(200, { url: 'http://supabase.prueba/c.png', expira_en: '2026-11-15T15:10:00Z', tipo: 'imagen' }));
   await simular(page, 'GET', `/pagos/${ID1}`, typeof detalle === 'function' ? detalle : json(200, detalle));
   return { vistas, capturas };
 }
@@ -154,11 +154,11 @@ for (const t of tamanos) {
     await expect(page.locator('.encabezado-descripcion')).toHaveText('Ana Pérez · Al reservar de la reserva R-2026-00042');
     const img = page.getByRole('img', { name: 'Captura del comprobante de Ana Pérez, Yape, S/ 200,00' });
     await expect(img).toBeVisible();
-    await expect(img).toHaveAttribute('src', 'http://captura.prueba/c.png');
+    await expect(img).toHaveAttribute('src', 'http://supabase.prueba/c.png');
     const abrir = page.getByRole('link', { name: 'Abrir en una pestaña nueva' });
     await expect(abrir).toHaveAttribute('target', '_blank');
     await expect(abrir).toHaveAttribute('rel', /noopener/);
-    await expect(abrir).toHaveAttribute('href', 'http://captura.prueba/c.png');
+    await expect(abrir).toHaveAttribute('href', 'http://supabase.prueba/c.png');
     const pagoSec = page.getByRole('region', { name: /Pago$/ });
     await expect(pagoSec).toContainText('S/ 200,00');
     await expect(pagoSec).toContainText('NO COINCIDE');
@@ -282,10 +282,10 @@ for (const [estado, texto] of [['aprobado', 'APROBADO'], ['rechazado', 'RECHAZAD
 }
 
 test('revisar: captura PDF con enlace a pestaña nueva', async ({ page }) => {
-  await base(page, { captura: json(200, { url: 'http://captura.prueba/c.pdf', expira_en: '2026-11-15T15:10:00Z', tipo: 'pdf' }) });
+  await base(page, { captura: json(200, { url: 'http://supabase.prueba/c.pdf', expira_en: '2026-11-15T15:10:00Z', tipo: 'pdf' }) });
   await page.goto(REVISAR);
   const enlace = page.getByRole('link', { name: /Abrir comprobante\.pdf/ });
-  await expect(enlace).toHaveAttribute('href', 'http://captura.prueba/c.pdf');
+  await expect(enlace).toHaveAttribute('href', 'http://supabase.prueba/c.pdf');
   await expect(enlace).toHaveAttribute('target', '_blank');
   await expect(page.getByRole('img', { name: /Captura del comprobante/ })).toHaveCount(0);
   await sinViolaciones(page);
@@ -293,7 +293,7 @@ test('revisar: captura PDF con enlace a pestaña nueva', async ({ page }) => {
 
 test('revisar: la captura caducada se pide de nuevo', async ({ page }) => {
   let n = 0;
-  await base(page, { captura: (r) => r.fulfill(json(200, { url: 'http://captura.prueba/c.png', expira_en: ++n === 1 ? '2026-11-15T15:00:01Z' : '2026-11-15T15:10:00Z', tipo: 'imagen' })) });
+  await base(page, { captura: (r) => r.fulfill(json(200, { url: 'http://supabase.prueba/c.png', expira_en: ++n === 1 ? '2026-11-15T15:00:01Z' : '2026-11-15T15:10:00Z', tipo: 'imagen' })) });
   await page.goto(REVISAR);
   await expect(page.getByText('La vista de la captura caducó.')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Abrir en una pestaña nueva' })).toHaveCount(0);
@@ -488,4 +488,30 @@ test('navegacion: personal no ve PAGOS ni pide la lista', async ({ page }) => {
   await page.goto('/app/');
   await expect(page.locator('.lateral-destino:visible')).toHaveCount(2);
   expect(vistas).toHaveLength(0);
+});
+
+test('revisar: una URL de captura que no es del origen de Supabase no se usa ni se pide', async ({ page }) => {
+  const ajenas = [];
+  page.on('request', (r) => /evil\.example/.test(r.url()) && ajenas.push(r.url()));
+  for (const url of ['javascript:alert(1)', 'https://evil.example/x.png', 'https://evil.example/x.pdf']) {
+    await base(page, { captura: json(200, { url, expira_en: '2026-11-15T15:10:00Z', tipo: url.endsWith('pdf') ? 'pdf' : 'imagen' }) });
+    await page.goto(REVISAR);
+    await expect(page.getByText('No pudimos cargar la captura.')).toBeVisible();
+    await expect(page.getByRole('img', { name: /Captura del comprobante/ })).toHaveCount(0);
+    await expect(page.locator('[data-abrir]')).toBeHidden();
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+  }
+  expect(ajenas).toEqual([]);
+});
+
+test('revisar: aprobar mantiene el boton deshabilitado hasta navegar', async ({ page }) => {
+  await base(page);
+  await simular(page, 'POST', `/pagos/${ID1}/aprobar`, json(200, pago({ estado: 'aprobado' })));
+  // terminar() espera el contador antes de navegar: se retiene para observar el boton en ese intervalo.
+  await page.route((u) => u.href.startsWith(`${API}/pagos`) && new URL(u).pathname.endsWith("/pagos"), async (r) => { await new Promise((f) => setTimeout(f, 1500)); await r.fulfill(json(200, [])); });
+  await page.goto(REVISAR);
+  const boton = page.getByRole('button', { name: /Aprobar|Aprobando/ });
+  await boton.click();
+  await page.waitForTimeout(300);
+  await expect(boton).toBeDisabled();
 });

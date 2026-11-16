@@ -140,8 +140,8 @@ export class IslaGestion extends HTMLElement {
     this.querySelectorAll('[data-envio]:not([aria-disabled="true"])').forEach((b) => (b.disabled = si));
   }
 
-  // `accion` llama a la API; `alExito(resultado)` recarga o navega. Los errores 401/403 sustituyen la vista; los demas, `errorEnvio` o aviso.
-  async enviar(boton, carga, accion, alExito) {
+  // `accion` llama a la API; `alExito(resultado)` recarga o navega (`navega`: true si siempre navega). Los errores 401/403 sustituyen la vista; los demas, `errorEnvio` o aviso.
+  async enviar(boton, carga, accion, alExito, navega = false) {
     if (this.ocupado) return;
     const original = boton.innerHTML;
     this.bloquear(true);
@@ -162,10 +162,12 @@ export class IslaGestion extends HTMLElement {
       enfocarAviso(mostrarAviso(this, 'error', ...(error.estado === 422 && error.mensaje ? [error.mensaje] : mensajeError(error))));
       return;
     }
-    soltar();
+    // Con `navega`, el boton sigue bloqueado hasta salir de la pantalla (evita un segundo envio); solo se suelta si falla.
+    if (!navega) soltar();
     try {
       await alExito(resultado);
     } catch (error) {
+      if (navega) soltar();
       this.fallo(error);
       this.anunciar();
     }

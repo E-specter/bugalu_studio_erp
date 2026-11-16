@@ -322,7 +322,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
       datos.append('captura', carga.archivo, carga.archivo.name);
       this.enviar(this.querySelector('[data-registrar]'), 'Registrando pago…', () => registrarPago(datos), () => {
         location.assign(`${this.urlReserva()}&aviso=pago-registrado`);
-      });
+      }, true);
     }
 
     entradas() {

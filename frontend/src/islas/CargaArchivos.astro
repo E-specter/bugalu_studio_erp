@@ -38,7 +38,10 @@ const { etiqueta, ayuda, nombre = 'captura', id = `carga-${nombre}`, accept = 'i
       this.adjunto = document.createElement('div');
       this.adjunto.hidden = true;
       this.entrada.classList.add('carga-entrada', 'visualmente-oculto');
-      this.entrada.after(this.boton, this.adjunto);
+      // Region estable: anuncia el adjunto, el error o el retiro (el input oculto no lo hace por si solo).
+      this.estado = Object.assign(document.createElement('div'), { className: 'visualmente-oculto' });
+      this.estado.setAttribute('role', 'status');
+      this.entrada.after(this.boton, this.adjunto, this.estado);
       this.entrada.addEventListener('change', () => this.cambiar());
       this.adjunto.addEventListener('click', (e) => e.target.closest('.archivo-accion') && this.quitar());
     }
@@ -57,8 +60,9 @@ const { etiqueta, ayuda, nombre = 'captura', id = `carga-${nombre}`, accept = 'i
       return null;
     }
 
-    cambiar() {
+    cambiar(quitado = null) {
       const f = this.archivo;
+      const enfocado = document.activeElement === this.entrada;
       URL.revokeObjectURL(this.vista ?? '');
       this.vista = null;
       this.adjunto.replaceChildren();
@@ -76,7 +80,9 @@ const { etiqueta, ayuda, nombre = 'captura', id = `carga-${nombre}`, accept = 'i
           nodo.querySelector('.archivo-visual').replaceChildren(img);
         }
         this.adjunto.append(nodo);
-      }
+        this.estado.textContent = this.error() ?? `Adjuntaste ${f.name} (${nodo.querySelector('.archivo-metadato').textContent})`;
+        if (enfocado) nodo.querySelector('.archivo-accion').focus();
+      } else this.estado.textContent = quitado ? `Quitaste ${quitado}. Elige otro archivo.` : '';
       // Con adjunto, el input sigue en el formulario pero no es parada de teclado: el control es "Quitar".
       if (f) this.entrada.tabIndex = -1;
       else this.entrada.removeAttribute('tabindex');
@@ -84,8 +90,9 @@ const { etiqueta, ayuda, nombre = 'captura', id = `carga-${nombre}`, accept = 'i
     }
 
     quitar() {
+      const nombre = this.archivo?.name;
       this.entrada.value = '';
-      this.cambiar();
+      this.cambiar(nombre);
       this.entrada.focus();
     }
   }
