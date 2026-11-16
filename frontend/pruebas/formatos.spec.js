@@ -1,6 +1,6 @@
 // Formatos compartidos (sin navegador): título de semana (N9) y partidas de precio (B3).
 import { test, expect } from '@playwright/test';
-import { rangoSemana, duracionReserva, partidasPrecio } from '../src/servicios/formatos.js';
+import { rangoSemana, duracionReserva, partidasPrecio, soles } from '../src/servicios/formatos.js';
 
 test('rangoSemana: dentro de un mes, entre meses y entre años', () => {
   expect(rangoSemana('2026-11-16')).toBe('SEMANA DEL 16 AL 22 NOV 2026');
@@ -26,4 +26,10 @@ test('partidasPrecio: un solo formato para reservar y mis reservas', () => {
     ['Recargo de noche', '2 × 30 min', 'S/ 20,00'],
   ]);
   expect(pie).toEqual([['Total', 'S/ 365,00'], ['Anticipo 50 %', 'S/ 182,50']]);
+});
+
+test('soles: miles con espacio no separable y coma decimal; el campo no agrupa', () => {
+  expect(soles('1250.00')).toBe('S/ 1 250,00');
+  expect(soles('1234567.5')).toBe('S/ 1 234 567,50');
+  expect(soles('120.00')).toBe('S/ 120,00');
 });

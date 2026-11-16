@@ -205,11 +205,11 @@ for (const t of tamanos) {
     const { feriados } = await base(page);
     await page.goto('/app/tarifas/recargos?anio=2026');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Recargos y feriados');
-    await expect(grupo(page, 'Noche').getByLabel('Recargo (%)')).toHaveValue('25.00');
+    await expect(grupo(page, 'Noche').getByLabel('Recargo (%)')).toHaveValue('25');
     await expect(grupo(page, 'Noche').getByLabel('Desde')).toHaveValue('22:00');
     await expect(grupo(page, 'Noche').getByLabel('Hasta')).toHaveValue('06:00');
-    await expect(grupo(page, 'Fin de semana').getByLabel('Recargo (%)')).toHaveValue('10.00');
-    await expect(grupo(page, 'Feriado').getByLabel('Recargo (%)')).toHaveValue('50.00');
+    await expect(grupo(page, 'Fin de semana').getByLabel('Recargo (%)')).toHaveValue('10');
+    await expect(grupo(page, 'Feriado').getByLabel('Recargo (%)')).toHaveValue('50');
     await expect(page.getByText('Puede pasar la medianoche: de 22:00 a 06:00.')).toBeVisible();
     await expect(page.getByText('Se aplica a la parte variable de cada media hora que cae en ese horario, nunca al monto fijo.').first()).toBeVisible();
     expect(feriados[0].url.searchParams.get('anio')).toBe('2026');
@@ -334,4 +334,32 @@ test.describe('sin JavaScript', () => {
       if (ruta.endsWith('s') || ruta.endsWith('franjas')) await page.screenshot({ path: 'pruebas/capturas/tarifas-sin-js-1440.png', fullPage: true });
     });
   }
+});
+
+// --- Revision visual TAREA-RF04-6 ---
+test('N11: importes de las tablas Directorio a la derecha con tabular-nums, cabecera incluida (1440)', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await base(page);
+  await page.goto('/app/tarifas');
+  const tabla = page.getByRole('table', { name: 'Servicios' });
+  const filas = tabla.getByRole('row');
+  await expect(filas).toHaveCount(3);
+  for (const celda of [tabla.getByRole('columnheader', { name: 'Tarifa por hora' }), filas.nth(1).getByRole('cell').nth(2), filas.nth(1).getByRole('cell').nth(3)]) {
+    expect(await celda.evaluate((e) => getComputedStyle(e).textAlign)).toMatch(/right|end/);
+    expect(await celda.evaluate((e) => getComputedStyle(e).fontVariantNumeric)).toContain('tabular-nums');
+  }
+  const esp = page.getByRole('table', { name: 'Especialistas' });
+  expect(await esp.getByRole('row').nth(1).getByRole('cell').nth(0).evaluate((e) => getComputedStyle(e).textAlign)).toMatch(/right|end/);
+  expect(await esp.getByRole('columnheader', { name: 'Monto variable' }).evaluate((e) => getComputedStyle(e).textAlign)).toMatch(/right|end/);
+});
+
+test('N12 y B2: porcentajes sin decimales y feriados como tarjetas en el lateral (1440)', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await base(page);
+  await page.goto('/app/tarifas/recargos?anio=2026');
+  await expect(grupo(page, 'Noche').getByLabel('Recargo (%)')).toHaveValue('25');
+  await expect(grupo(page, 'Fin de semana').getByLabel('Recargo (%)')).toHaveValue('10');
+  await expect(grupo(page, 'Feriado').getByLabel('Recargo (%)')).toHaveValue('50');
+  const fila = page.getByRole('table', { name: 'Feriados 2026' }).getByRole('row').nth(1);
+  expect(await fila.evaluate((e) => getComputedStyle(e).display)).toBe('block');
 });

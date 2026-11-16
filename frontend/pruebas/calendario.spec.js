@@ -477,3 +477,24 @@ test.describe('navegacion por rol', () => {
     await expect(page.locator('.lateral-destino:visible')).toHaveCount(6);
   });
 });
+
+// --- Revision visual TAREA-RF04-6, B1: lo que va dentro de la celda ocupada lleva fondo opaco, nunca sobre las rayas ---
+for (const [modo, rol, selector] of [['reserva', null, '.cal-celda[data-estado="ocupado"] > .etiqueta'], ['personal', 'personal', '.cal-celda[data-estado="ocupado"] > .cal-enlace']]) {
+  test(`ocupado (${modo}): el texto va sobre fondo opaco de color-fondo-superficie con relleno espacio-1`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await montar(page, { rol });
+    await page.goto(rol ? '/app/agenda/?vista=semana&fecha=2026-11-16' : SEMANA);
+    const interior = page.locator(`bugalu-calendario ${selector}`).first();
+    await expect(interior).toBeVisible();
+    const esperado = await page.evaluate(() => {
+      const s = Object.assign(document.createElement('div'), { style: 'background:var(--color-fondo-superficie);padding:var(--espacio-1)' });
+      document.body.append(s);
+      const c = getComputedStyle(s);
+      const r = { fondo: c.backgroundColor, relleno: c.paddingTop };
+      s.remove();
+      return r;
+    });
+    const real = await interior.evaluate((e) => ({ fondo: getComputedStyle(e).backgroundColor, relleno: getComputedStyle(e).paddingTop }));
+    expect(real).toEqual(esperado);
+  });
+}

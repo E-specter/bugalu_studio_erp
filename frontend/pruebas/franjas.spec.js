@@ -389,3 +389,50 @@ test('parametros: 403 al guardar sustituye la vista', async ({ page }) => {
   await page.getByRole('button', { name: 'Guardar parámetros' }).click();
   await expect(page.getByRole('main')).toContainText('Esta sección es solo para el Administrador.');
 });
+
+// --- Revision visual TAREA-RF04-6 ---
+test('B2: en el panel lateral la tabla es tarjeta a 1440 y los botones no se parten', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await base(page);
+  await page.goto(`/app/franjas?semana=${SEMANA}`);
+  const tabla = f3(page).getByRole('table', { name: 'Cierres de la semana' });
+  await expect(tabla.getByRole('row').nth(1)).toBeVisible();
+  expect(await tabla.getByRole('row').nth(1).evaluate((e) => getComputedStyle(e).display)).toBe('block');
+  const quitar = f3(page).getByRole('button', { name: /Quitar cierre/ });
+  const altura = await quitar.evaluate((e) => e.getBoundingClientRect().height);
+  const linea = await quitar.evaluate((e) => parseFloat(getComputedStyle(e).lineHeight) || 24);
+  expect(altura).toBeLessThan(linea * 3); // una o dos lineas, nunca letra a letra
+  const motivo = f3(page).getByText('Mantenimiento', { exact: true });
+  expect(await motivo.evaluate((e) => { const r = document.createRange(); r.selectNodeContents(e); return r.getClientRects().length; })).toBe(1); // una sola linea, sin partir la palabra
+});
+
+test('N10: el boton con aria-disabled se ve deshabilitado', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await base(page);
+  await page.goto(`/app/franjas?semana=${SEMANA}`);
+  const b = page.getByRole('button', { name: 'Retirar franja del miércoles 18 de 10:00 a 14:00' });
+  await expect(b).toHaveAttribute('aria-disabled', 'true');
+  const token = await page.evaluate(() => { const s = Object.assign(document.createElement('div'), { style: 'opacity:var(--efecto-opacidad-capa)' }); document.body.append(s); const o = getComputedStyle(s).opacity; s.remove(); return o; });
+  expect(await b.evaluate((e) => getComputedStyle(e).opacity)).toBe(token);
+  expect(await b.evaluate((e) => getComputedStyle(e).cursor)).toBe('not-allowed');
+});
+
+for (const tm of tamanos) {
+  test(`N9: barra de periodo como la del calendario a ${tm.nombre}`, async ({ page }) => {
+    await page.setViewportSize({ width: tm.ancho, height: tm.alto });
+    await base(page);
+    await page.goto(`/app/franjas?semana=${SEMANA}`);
+    const barra = page.getByRole('navigation', { name: 'Semana' });
+    const titulo = page.getByText('SEMANA DEL 16 AL 22 NOV 2026');
+    const [ant, hoy, sig] = ['Semana anterior', 'Esta semana', 'Semana siguiente'].map((n) => barra.getByRole('link', { name: n }));
+    const [t, a, h, s] = await Promise.all([titulo, ant, hoy, sig].map((l) => l.boundingBox()));
+    expect(t.y + t.height).toBeLessThanOrEqual(a.y + 1); // titulo encima
+    if (tm.ancho > 1000) {
+      expect(a.x).toBeLessThan(h.x);
+      expect(h.x).toBeLessThan(s.x);
+    }
+    const tactil = await page.evaluate(() => { const e = Object.assign(document.createElement('div'), { style: 'block-size:var(--medida-control-tactil)' }); document.body.append(e); const v = e.getBoundingClientRect().height; e.remove(); return v; });
+    for (const c of [a, h, s]) expect(c.height).toBeGreaterThanOrEqual(tactil - 0.5);
+    await page.screenshot({ path: `pruebas/capturas/franjas-semana-periodo-${tm.nombre}.png`, fullPage: true });
+  });
+}

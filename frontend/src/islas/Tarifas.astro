@@ -42,14 +42,14 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
               <p class="gestion-vacio-titulo">Aún no hay servicios cargados.</p>
               <p>Se cargan con la base de datos inicial; avisa al equipo técnico.</p>
             </div>
-            <Tabla titulo="Servicios" columnas={['Servicio', 'Categoría', 'Ocupa sala', 'Tarifa por hora', 'Monto fijo', 'Por defecto', 'Estado', '']} />
+            <Tabla titulo="Servicios" columnas={['Servicio', 'Categoría', 'Ocupa sala', 'Tarifa por hora', 'Monto fijo', 'Por defecto', 'Estado', '']} numericas={[3, 4]} />
           </Panel>
           <Panel codigo="T2" titulo="Especialistas">
             <div data-vacio="especialistas" hidden>
               <p class="gestion-vacio-titulo">Aún no hay especialistas cargados.</p>
               <p>Se cargan con la base de datos inicial; avisa al equipo técnico.</p>
             </div>
-            <Tabla titulo="Especialistas" columnas={['Especialista', 'Monto fijo', 'Monto variable', 'Unidad', 'Estado', '']} />
+            <Tabla titulo="Especialistas" columnas={['Especialista', 'Monto fijo', 'Monto variable', 'Unidad', 'Estado', '']} numericas={[1, 2]} />
           </Panel>
         </div>
       </template>
@@ -58,8 +58,8 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
           <th scope="row" data-nombre></th>
           <td data-etiqueta="Categoría" data-categoria></td>
           <td data-etiqueta="Ocupa sala" data-ocupa></td>
-          <td data-etiqueta="Tarifa por hora" data-tarifa></td>
-          <td data-etiqueta="Monto fijo" data-fijo></td>
+          <td class="tabla-num" data-etiqueta="Tarifa por hora" data-tarifa></td>
+          <td class="tabla-num" data-etiqueta="Monto fijo" data-fijo></td>
           <td data-etiqueta="Por defecto" data-defecto></td>
           <td data-etiqueta="Estado" data-activo></td>
           <td><Boton variante="secundario" href="#" data-editar>Editar<span class="visualmente-oculto" data-objeto></span></Boton></td>
@@ -68,8 +68,8 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       <template data-fila-especialista>
         <tr>
           <th scope="row" data-nombre></th>
-          <td data-etiqueta="Monto fijo" data-fijo></td>
-          <td data-etiqueta="Monto variable" data-variable></td>
+          <td class="tabla-num" data-etiqueta="Monto fijo" data-fijo></td>
+          <td class="tabla-num" data-etiqueta="Monto variable" data-variable></td>
           <td data-etiqueta="Unidad" data-unidad></td>
           <td data-etiqueta="Estado" data-activo></td>
           <td><Boton variante="secundario" href="#" data-editar>Editar<span class="visualmente-oculto" data-objeto></span></Boton></td>
@@ -383,11 +383,11 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       const [r, feriados] = await Promise.all([obtenerRecargos(), listarFeriados(this.anio)]);
       this.mostrar('datos');
       const poner = (nombre, valor) => (this.querySelector(`[name="${nombre}"]`).value = valor);
-      poner('noche_porcentaje', r.noche.porcentaje);
+      poner('noche_porcentaje', Number(r.noche.porcentaje));
       poner('noche_desde', r.noche.desde);
       poner('noche_hasta', r.noche.hasta);
-      poner('fin_de_semana_porcentaje', r.fin_de_semana.porcentaje);
-      poner('feriado_porcentaje', r.feriado.porcentaje);
+      poner('fin_de_semana_porcentaje', Number(r.fin_de_semana.porcentaje));
+      poner('feriado_porcentaje', Number(r.feriado.porcentaje));
       const anio = Number(this.anio);
       const [anterior, siguiente] = this.querySelectorAll('[data-anios] a');
       anterior.href = `/app/tarifas/recargos?anio=${anio - 1}`;

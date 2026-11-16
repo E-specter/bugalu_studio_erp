@@ -1029,6 +1029,10 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
     border: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
     text-align: center;
   }
+  .calendario :global(.cal-celda[data-estado='ocupado'] > :is(.etiqueta, .cal-enlace)) {
+    background: var(--color-fondo-superficie);
+    padding: var(--espacio-1);
+  }
   .calendario :global(.cal-celda[data-estado='propio']) {
     background: var(--color-fondo-destacado);
     border: var(--borde-grosor-base) solid var(--color-borde-fuerte);

@@ -57,7 +57,7 @@ const partidas = variante === 'partidas';
   .tabla :global(td.tabla-num) {
     font-variant-numeric: tabular-nums;
   }
-  .tabla :global(td[data-etiqueta]:not([data-etiqueta=''])::before) {
+  .tabla :global(td[data-etiqueta]:not([data-etiqueta='']):not(:empty)::before) {
     content: attr(data-etiqueta);
     color: var(--color-texto-secundario);
     font-family: var(--fuente-familia-tecnica);
@@ -137,20 +137,21 @@ const partidas = variante === 'partidas';
       text-transform: uppercase;
       text-align: start;
     }
-    .tabla :global(tr) {
+    /* Misma especificidad que las reglas de tarjeta de arriba (`:not(.tabla-partidas)`), si no, nunca ganan. */
+    .tabla:not(.tabla-partidas) :global(tr) {
       display: table-row;
       padding: 0;
     }
-    .tabla :global(th[scope='row']),
-    .tabla :global(td) {
+    .tabla:not(.tabla-partidas) :global(th[scope='row']),
+    .tabla:not(.tabla-partidas) :global(td) {
       display: table-cell;
       padding: var(--espacio-4);
     }
-    .tabla-compacta :global(th[scope='row']),
-    .tabla-compacta :global(td) {
+    .tabla-compacta:not(.tabla-partidas) :global(th[scope='row']),
+    .tabla-compacta:not(.tabla-partidas) :global(td) {
       padding: var(--espacio-3);
     }
-    .tabla :global(td[data-etiqueta]:not([data-etiqueta=''])::before) {
+    .tabla :global(td[data-etiqueta]:not([data-etiqueta='']):not(:empty)::before) {
       content: none;
     }
     .tabla :global(tbody tr) {

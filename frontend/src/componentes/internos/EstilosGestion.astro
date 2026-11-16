@@ -27,6 +27,29 @@
       grid-template-columns: minmax(0, 1fr);
     }
   }
+  /* B2: en un panel Lateral la tabla es siempre tarjeta, también en escritorio (tabla.md, adaptabilidad): a ese ancho las columnas parten palabras. */
+  @media (min-width: 64em) { /* punto-quiebre-escritorio: deshace el paso a tabla de Tabla.astro */
+    .gestion-lateral .tabla:not(.tabla-partidas) tr {
+      display: block;
+      padding: var(--espacio-3);
+    }
+    .gestion-lateral .tabla:not(.tabla-partidas) :is(th[scope='row'], td) {
+      display: grid;
+      padding: var(--espacio-1) 0;
+    }
+    .gestion-lateral .tabla td[data-etiqueta]:not([data-etiqueta='']):not(:empty)::before {
+      content: attr(data-etiqueta);
+    }
+    .gestion-lateral .tabla .tabla-cabecera {
+      position: absolute;
+      inline-size: var(--borde-grosor-fino);
+      block-size: var(--borde-grosor-fino);
+      margin: calc(-1 * var(--borde-grosor-fino));
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
   .gestion-formulario {
     display: flex;
     flex-direction: column;
@@ -92,12 +115,22 @@
     color: var(--color-texto-principal);
     font-weight: var(--fuente-peso-titulo);
   }
+  /* Barra de periodo como la del calendario: título encima; debajo anterior, hoy y siguiente a medida-control-tactil. */
   .gestion-periodo {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: var(--espacio-2);
+    margin-block-end: var(--espacio-4);
+  }
+  .gestion-periodo-enlaces {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--espacio-2) var(--espacio-4);
-    margin-block-end: var(--espacio-4);
+    gap: var(--espacio-2);
+  }
+  .gestion-periodo-enlaces .etiqueta {
+    min-block-size: var(--medida-control-tactil);
   }
   .gestion-periodo-titulo {
     margin: 0;

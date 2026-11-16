@@ -46,4 +46,8 @@ const { titulo } = Astro.props;
   .saltar:focus {
     transform: none;
   }
+  /* El título que recibe el foco por programa (paso cargado, panel abierto) no dibuja anillo; los avisos enfocados lo conservan (estados comunes). */
+  :is(h1, h2)[tabindex='-1']:focus {
+    outline: none;
+  }
 </style>

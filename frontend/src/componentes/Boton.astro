@@ -71,18 +71,19 @@ const atributos = href ? { href } : { type: tipo, disabled: cargando || Boolean(
   }
 
   @media (hover: hover) {
-    .boton-primario:not(:disabled):hover,
-    .boton-secundario:not(:disabled):hover {
+    .boton-primario:not(:disabled):not([aria-disabled='true']):hover,
+    .boton-secundario:not(:disabled):not([aria-disabled='true']):hover {
       background: var(--color-fondo-alerta);
       color: var(--color-texto-sobre-alerta);
     }
-    .boton-peligro:not(:disabled):hover {
+    .boton-peligro:not(:disabled):not([aria-disabled='true']):hover {
       background: var(--color-fondo-peligro);
       color: var(--color-texto-invertido);
     }
   }
 
-  .boton:disabled {
+  .boton:disabled,
+  .boton[aria-disabled='true'] {
     opacity: var(--efecto-opacidad-capa);
     box-shadow: none;
     cursor: not-allowed;

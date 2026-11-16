@@ -120,3 +120,13 @@ test('escritorio: la regla de la navegación lateral llega al pie', async ({ pag
   const pie = await page.locator('.lateral').evaluate((e) => e.getBoundingClientRect().bottom);
   expect(pie).toBeGreaterThanOrEqual(900 - 1);
 });
+
+// Revision visual TAREA-RF04-6, N1: los h1 y h2 con foco por programa no dibujan anillo; los avisos enfocados lo conservan.
+test('foco por programa: sin anillo en h1 y h2 con tabindex -1, con anillo en el aviso enfocado', async ({ page }) => {
+  await page.goto('/catalogo');
+  await page.keyboard.press('Tab'); // modalidad de teclado: el foco programatico muestra :focus-visible
+  const estilo = (sel) => page.evaluate((s) => { const e = document.querySelector(s); e.tabIndex = -1; e.focus(); return getComputedStyle(e).outlineStyle; }, sel);
+  expect(await estilo('h1')).toBe('none');
+  expect(await estilo('h2')).toBe('none');
+  expect(await estilo('.aviso')).toBe('solid');
+});

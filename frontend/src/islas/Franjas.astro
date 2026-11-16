@@ -6,6 +6,7 @@ import Campo from '../componentes/Campo.astro';
 import Casilla from '../componentes/Casilla.astro';
 import Tabla from '../componentes/Tabla.astro';
 import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import Icono from '../componentes/internos/Icono.astro';
 import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
 import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
 
@@ -31,12 +32,14 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
   {vista === 'semana' && (
     <>
       <template data-estado="datos">
-        <nav class="gestion-periodo" aria-label="Semana" data-periodo>
-          <EtiquetaTecnica variante="filtro" texto="Semana anterior" href="#" />
+        <div class="gestion-periodo">
           <p class="gestion-periodo-titulo" data-titulo-semana></p>
-          <EtiquetaTecnica variante="filtro" texto="Semana siguiente" href="#" />
-          <EtiquetaTecnica variante="filtro" texto="Esta semana" href="#" />
-        </nav>
+          <nav class="gestion-periodo-enlaces" aria-label="Semana" data-periodo>
+            <EtiquetaTecnica texto="Semana anterior" href="#" />
+            <EtiquetaTecnica texto="Esta semana" href="#" />
+            <EtiquetaTecnica texto="Semana siguiente" href="#" />
+          </nav>
+        </div>
         <div class="gestion-campo-sala" data-sala hidden>
           <Campo tipo="selector" nombre="sala" etiqueta="Sala" />
         </div>
@@ -77,6 +80,9 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
           </div>
         </div>
       </template>
+
+      <template data-icono="chevron-left"><Icono nombre="chevron-left" /></template>
+      <template data-icono="chevron-right"><Icono nombre="chevron-right" /></template>
 
       <template data-fila-publicada>
         <tr>
@@ -251,7 +257,10 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
     }
 
     pintarPeriodo(lunes) {
-      const [anterior, siguiente, hoy] = this.querySelectorAll('[data-periodo] a');
+      const [anterior, hoy, siguiente] = this.querySelectorAll('[data-periodo] a');
+      const icono = (nombre) => this.querySelector(`template[data-icono="${nombre}"]`).content.firstElementChild.cloneNode(true);
+      anterior.prepend(icono('chevron-left'));
+      siguiente.append(icono('chevron-right'));
       anterior.href = this.enlace(sumarDias(lunes, -7));
       siguiente.href = this.enlace(sumarDias(lunes, 7));
       hoy.href = '/app/franjas';

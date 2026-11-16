@@ -61,8 +61,11 @@ export function leerImporte(texto) {
 }
 // "125.5" -> "125,50" (para el campo).
 export const mostrarImporte = (monto) => (leerImporte(monto) ?? String(monto ?? '')).replace('.', ',');
-// "120.00" -> "S/ 120,00".
-export const soles = (monto) => `S/ ${mostrarImporte(monto)}`;
+// "1250.00" -> "S/ 1 250,00" (miles con espacio no separable); el campo usa mostrarImporte, sin agrupar.
+export const soles = (monto) => {
+  const [entero, decimales] = mostrarImporte(monto).split(',');
+  return `S/ ${entero.replace(/\B(?=(\d{3})+$)/g, ' ')}${decimales === undefined ? '' : `,${decimales}`}`;
+};
 
 // --- Partidas de precio (reservar y mis reservas comparten este formato) ---
 const RECARGOS = { noche: 'Recargo de noche', fin_de_semana: 'Recargo de fin de semana', feriado: 'Recargo de feriado' };
