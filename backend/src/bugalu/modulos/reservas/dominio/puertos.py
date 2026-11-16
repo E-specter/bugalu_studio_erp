@@ -111,6 +111,6 @@ class RepositorioReservas(Protocol):
 
     async def listar_en_rango(self, desde: datetime, hasta: datetime) -> list[Reserva]: ...
 
-    async def cancelar_reserva(self, id_reserva: UUID) -> None:
-        """NoEncontrado, SinPermiso, NoCancelable o TienePagos."""
+    async def cancelar_reserva(self, id_reserva: UUID, nota: str | None = None) -> None:
+        """NoEncontrado, SinPermiso, NoCancelable, TienePagos, NotaRequerida o DatosInvalidos."""
         ...

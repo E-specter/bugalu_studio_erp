@@ -118,6 +118,10 @@ class TienePagos(Conflicto):
     codigo = "tiene_pagos"
 
 
+class NotaRequerida(DatosInvalidos):
+    codigo = "nota_requerida"
+
+
 class NoCancelable(Conflicto):
     codigo = "no_cancelable"
 

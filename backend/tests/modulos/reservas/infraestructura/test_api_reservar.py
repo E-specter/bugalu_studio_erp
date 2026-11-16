@@ -511,7 +511,7 @@ async def test_nadie_cancela_la_reserva_ajena_y_la_fila_queda_intacta(
     assert sql("select * from public.reserva where id = %s", id_) == antes
 
 
-async def test_con_pagos_el_cliente_y_el_administrador_reciben_tiene_pagos(
+async def test_con_pagos_el_cliente_recibe_tiene_pagos_y_el_administrador_exige_nota(
     cliente: AsyncClient,
     dia: str,
     sala: str,
@@ -525,9 +525,15 @@ async def test_con_pagos_el_cliente_y_el_administrador_reciben_tiene_pagos(
         "update public.cuota set estado = 'pagada' where id_reserva = %s and hito = 'al_reservar'",
         id_,
     )
-    for quien in (cliente_a, administrador):
-        r = await cliente.post(f"{RESERVAS}/{id_}/cancelar", headers=con(quien))
-        assert r.status_code == 409 and codigo(r) == "tiene_pagos"
+    r = await cliente.post(f"{RESERVAS}/{id_}/cancelar", headers=con(cliente_a))
+    assert r.status_code == 409 and codigo(r) == "tiene_pagos"
+    r = await cliente.post(
+        f"{RESERVAS}/{id_}/cancelar", json={"nota": "reembolso"}, headers=con(cliente_a)
+    )
+    assert r.status_code == 409 and codigo(r) == "tiene_pagos"
+    r = await cliente.post(f"{RESERVAS}/{id_}/cancelar", headers=con(administrador))
+    assert r.status_code == 422 and codigo(r) == "nota_requerida"
+    assert r.json()["error"]["detalles"] == {"campo": "nota"}
     assert sql("select estado from public.reserva where id = %s", id_) == [("pre_reservada",)]
 
 

@@ -7,9 +7,11 @@ from psycopg import AsyncConnection, errors
 from psycopg.types.json import Jsonb
 
 from bugalu.compartido.errores import (
+    DatosInvalidos,
     FranjaSolapada,
     NoCancelable,
     NoEncontrado,
+    NotaRequerida,
     SinPermiso,
     TienePagos,
     TramoNoDisponible,
@@ -33,7 +35,9 @@ from bugalu.modulos.reservas.dominio.reserva import cuota_pagable, estado_de_cuo
 _TOPE_SUGERENCIA = 300
 _RESERVA = (
     "select r.id, r.folio, r.estado, r.motivo_cancelacion, r.inicio, r.fin, r.fin_buffer, "
-    "r.precio, r.vence_pago, r.id_cliente, sa.id, sa.nombre, se.id, se.nombre, se.categoria "
+    "r.precio, r.vence_pago, r.id_cliente, sa.id, sa.nombre, se.id, se.nombre, se.categoria, "
+    "case when r.id_cliente = (select auth.uid()) or public.es_administrador() "
+    "then r.nota_cancelacion end, public.hay_pago_por_validar(r.id) "
     "from public.reserva r join public.sala_tecnica sa on sa.id = r.id_sala "
     "join public.servicio se on se.id = r.id_servicio "
 )
@@ -106,7 +110,8 @@ class RepositorioReservasPostgres:
         self, id_sala: UUID, desde: datetime, hasta: datetime
     ) -> list[ReservaVisible]:
         filas = await self._filas(
-            "select r.id, r.folio, r.id_cliente, s.nombre, r.estado, r.inicio, r.fin_buffer "
+            "select r.id, r.folio, r.id_cliente, s.nombre, r.estado, r.inicio, r.fin_buffer, "
+            "public.hay_pago_por_validar(r.id) "
             "from public.reserva r join public.servicio s on s.id = r.id_servicio "
             "where r.id_sala = %s and r.estado <> 'cancelada' "
             "and r.inicio < %s and r.fin_buffer > %s order by r.inicio",
@@ -290,6 +295,8 @@ class RepositorioReservasPostgres:
                 id_cliente=f[9],
                 sala=Referencia(f[10], f[11]),
                 servicio=ServicioReservado(f[12], f[13], f[14]),
+                nota_cancelacion=f[15],
+                en_validacion=f[16],
                 especialistas=tuple(especialistas.get(f[0], [])),
                 cuotas=tuple(cuotas.get(f[0], [])),
             )
@@ -309,9 +316,11 @@ class RepositorioReservasPostgres:
     async def listar_en_rango(self, desde: datetime, hasta: datetime) -> list[Reserva]:
         return await self._reservas("r.inicio < %s and r.fin_buffer > %s", (hasta, desde))
 
-    async def cancelar_reserva(self, id_reserva: UUID) -> None:
+    async def cancelar_reserva(self, id_reserva: UUID, nota: str | None = None) -> None:
         try:
-            await self._conexion.execute("select public.cancelar_reserva(%s)", (id_reserva,))
+            await self._conexion.execute(
+                "select public.cancelar_reserva(%s, %s)", (id_reserva, nota)
+            )
         except errors.NoDataFound:
             raise NoEncontrado("No existe la reserva.") from None
         except errors.InsufficientPrivilege:
@@ -319,4 +328,12 @@ class RepositorioReservasPostgres:
         except errors.RaiseException as error:
             if error.diag.message_primary == "tiene_pagos":
                 raise TienePagos("La reserva ya tiene pagos registrados.") from None
+            if error.diag.message_primary == "nota_requerida":
+                raise NotaRequerida(
+                    "Indica una nota sobre el reembolso.", {"campo": "nota"}
+                ) from None
             raise NoCancelable("La reserva ya no se puede cancelar.") from None
+        except errors.InvalidParameterValue:
+            raise DatosInvalidos(
+                "La nota debe tener de 1 a 300 caracteres.", {"campo": "nota"}
+            ) from None

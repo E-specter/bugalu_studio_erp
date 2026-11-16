@@ -40,6 +40,7 @@ class ReservaVisible:
     estado: str
     inicio: datetime
     fin_buffer: datetime
+    pago_por_validar: bool = False  # solo lo llena la base para personal y administrador
 
 
 @dataclass(frozen=True)
@@ -95,10 +96,12 @@ class Reserva:
     vence_pago: datetime | None
     id_cliente: UUID
     cliente: Referencia | None = None  # solo para personal y administrador
+    nota_cancelacion: str | None = None  # solo el dueno y el administrador la reciben
+    en_validacion: bool = False  # dato de la base: el personal no ve los pagos, solo si hay uno
 
     @property
     def pago_por_validar(self) -> bool:
-        return any(c.estado == "en_validacion" for c in self.cuotas)
+        return self.en_validacion or any(c.estado == "en_validacion" for c in self.cuotas)
 
 
 @dataclass(frozen=True)

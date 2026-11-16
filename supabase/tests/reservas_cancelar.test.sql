@@ -30,7 +30,7 @@ where se.nombre = 'Ensayo';
 insert into public.cuota (id_reserva, hito, monto, estado)
 select id, 'al_reservar', 25, 'pagada' from public.reserva where inicio = '2027-05-02 10:00-05';
 
-select has_function('public', 'cancelar_reserva', array['uuid'], 'existe cancelar_reserva');
+select has_function('public', 'cancelar_reserva', array['uuid', 'text'], 'existe cancelar_reserva');
 select has_function('public', 'existe_reserva', array['uuid'], 'existe existe_reserva');
 select has_function('public', 'plazos_pago', 'existe plazos_pago');
 select has_function('public', 'encolar_aviso_reserva', array['uuid'], 'existe encolar_aviso_reserva');
@@ -91,7 +91,7 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 select throws_ok($$select public.cancelar_reserva(current_setting('prueba.id_ad')::uuid)$$, '42501', null, 'el personal no cancela');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ad","role":"authenticated"}', true);
 select lives_ok($$select public.cancelar_reserva(current_setting('prueba.id_ad')::uuid)$$, 'el administrador cancela la de otro');
-select throws_ok($$select public.cancelar_reserva((select id from public.reserva where inicio = '2027-05-02 10:00-05'))$$, 'P0001', 'tiene_pagos', 'el administrador tambien recibe tiene_pagos');
+select throws_ok($$select public.cancelar_reserva((select id from public.reserva where inicio = '2027-05-02 10:00-05'))$$, 'P0001', 'nota_requerida', 'el administrador con pagos necesita nota (D-11 v1)');
 reset role;
 select is((select estado || '/' || motivo_cancelacion from public.reserva where inicio = '2027-05-06 10:00-05'), 'cancelada/administrador', 'motivo administrador');
 

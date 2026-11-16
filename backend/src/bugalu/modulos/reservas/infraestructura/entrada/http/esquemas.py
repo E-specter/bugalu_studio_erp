@@ -72,6 +72,7 @@ class Detalle(BaseModel):
     cliente: str | None
     servicio: str
     estado: str
+    pago_por_validar: bool
 
 
 class Ocupado(BaseModel):
@@ -113,6 +114,7 @@ class Disponibilidad(BaseModel):
                         cliente=o.cliente,
                         servicio=o.reserva.servicio,
                         estado=o.reserva.estado,
+                        pago_por_validar=o.reserva.pago_por_validar,
                     )
                     if o.reserva
                     else None,
@@ -188,6 +190,20 @@ class CambiosParametros(BaseModel):
         return valor
 
 
+class Cancelacion(BaseModel):
+    """Nota del reembolso: obligatoria para el administrador si hay pagos (lo decide la base)."""
+
+    model_config = ConfigDict(extra="forbid")
+    nota: Annotated[TextoLargo, Field(max_length=300)] | None = None
+
+    @field_validator("nota", mode="before")
+    @classmethod
+    def _sin_nulo(cls, valor: object) -> object:
+        if valor is None:
+            raise ValueError("El campo no admite nulo.")
+        return valor
+
+
 class NuevaReserva(BaseModel):
     """El cliente nunca envia precios, estado ni cuotas: `extra` prohibido."""
 
@@ -246,6 +262,7 @@ class Reserva(BaseModel):
     pago_por_validar: bool
     vence_pago: datetime | None
     cliente: Referencia | None = None
+    nota_cancelacion: str | None = None
 
     @classmethod
     def desde_dominio(cls, r: modelos.Reserva) -> Reserva:
@@ -279,6 +296,7 @@ class Reserva(BaseModel):
                 for c in r.cuotas
             ],
             pago_por_validar=r.pago_por_validar,
+            nota_cancelacion=r.nota_cancelacion,
             vence_pago=lima(r.vence_pago),
             **(
                 {"cliente": Referencia(id=r.cliente.id, nombre=r.cliente.nombre)}

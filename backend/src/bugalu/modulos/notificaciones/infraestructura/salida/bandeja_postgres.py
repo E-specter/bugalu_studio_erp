@@ -7,6 +7,8 @@ from psycopg_pool import AsyncConnectionPool
 
 from bugalu.modulos.notificaciones.dominio.puertos import Pendiente
 
+_CON_DATOS_PARA_PAGAR = ("reserva_creada", "reserva_finalizada_saldo")
+
 
 class LotePostgres:
     def __init__(
@@ -48,7 +50,7 @@ class BandejaPostgres:
             )
             pendientes = [Pendiente(*fila) for fila in await cursor.fetchall()]
             instrucciones: list[tuple[str, str]] = []
-            if any(p.tipo == "reserva_creada" for p in pendientes):
+            if any(p.tipo in _CON_DATOS_PARA_PAGAR for p in pendientes):
                 cursor = await conexion.execute(
                     "select metodo, texto from public.instruccion_pago where activo "
                     "order by array_position(array['transferencia', 'yape', 'plin', 'tarjeta'], "

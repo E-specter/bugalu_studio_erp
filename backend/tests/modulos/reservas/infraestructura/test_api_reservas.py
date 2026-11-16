@@ -100,6 +100,7 @@ async def test_personal_y_administrador_ven_el_detalle_de_cada_reserva(
             "cliente": "Ana Torres",
             "servicio": "Ensayo",
             "estado": "confirmada",
+            "pago_por_validar": False,
         }
 
 

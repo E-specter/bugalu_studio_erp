@@ -28,6 +28,7 @@ from bugalu.modulos.reservas.aplicacion.sugerir_franjas.caso_de_uso import Suger
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo as TramoDominio
 from bugalu.modulos.reservas.infraestructura.entrada.http.esquemas import (
     CambiosParametros,
+    Cancelacion,
     Cierre,
     Disponibilidad,
     Franja,
@@ -280,10 +281,14 @@ async def obtener_reserva(request: Request, claims: Claims, id_reserva: UUID) ->
     "/reservas/{id_reserva}/cancelar",
     response_model=Reserva,
     response_model_exclude_unset=True,
-    summary="Cancela sin costo mientras no haya pagos (dueno o administrador)",
+    summary="Cancela: el dueno sin pagos; el administrador tambien, con nota si hay pagos",
     responses=_respuestas(401, 403, 404, 409, 422),
 )
-async def cancelar_reserva(request: Request, claims: Claims, id_reserva: UUID) -> Reserva:
+async def cancelar_reserva(
+    request: Request, claims: Claims, id_reserva: UUID, cuerpo: Cancelacion | None = None
+) -> Reserva:
     async with transaccion_con_identidad(_pool(request), claims) as conexion:
-        reserva = await CancelarReserva(RepositorioReservasPostgres(conexion)).ejecutar(id_reserva)
+        reserva = await CancelarReserva(RepositorioReservasPostgres(conexion)).ejecutar(
+            id_reserva, cuerpo.nota if cuerpo else None
+        )
     return Reserva.desde_dominio(reserva)

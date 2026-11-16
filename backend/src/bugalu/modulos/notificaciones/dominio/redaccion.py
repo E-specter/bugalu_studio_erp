@@ -110,11 +110,45 @@ def _pago_rechazado(datos: dict[str, Any]) -> tuple[str, str]:
     )
 
 
+def _reserva_finalizada_saldo(
+    datos: dict[str, Any], instrucciones: Instrucciones = ()
+) -> tuple[str, str]:
+    return (
+        f"Saldo pendiente de la reserva {datos['folio']}",
+        f"Tu sesión de la reserva {datos['folio']} ({_horario(datos)}, hora de Lima) terminó.\n\n"
+        f"Queda un saldo pendiente de {_soles(datos['saldo'])}. "
+        "Puedes pagarlo y registrar tu pago desde el detalle de tu reserva.\n"
+        + _datos_para_pagar(instrucciones),
+    )
+
+
+def _reserva_cancelada_estudio(datos: dict[str, Any]) -> tuple[str, str]:
+    nota = f"\nNota del estudio: {datos['nota']}\n" if datos.get("nota") else ""
+    return (
+        f"Reserva {datos['folio']} cancelada por el estudio",
+        f"El estudio canceló tu reserva {datos['folio']} "
+        f"({_horario(datos)}, hora de Lima).\n{nota}",
+    )
+
+
+def _reserva_cancelada_cliente(datos: dict[str, Any]) -> tuple[str, str]:
+    cliente = datos["cliente"] or "sin nombre"
+    return (
+        f"Reserva {datos['folio']} cancelada por el cliente",
+        f"El cliente canceló la reserva {datos['folio']}.\n\n"
+        f"Cliente: {cliente}\n"
+        f"Fecha y hora: {_horario(datos)} (hora de Lima)\n"
+        "El horario quedó libre.\n",
+    )
+
+
 _REDACTORES: dict[str, Callable[[dict[str, Any]], tuple[str, str]]] = {
     "reserva_caducada": _reserva_caducada,
     "pago_registrado": _pago_registrado,
     "pago_aprobado": _pago_aprobado,
     "pago_rechazado": _pago_rechazado,
+    "reserva_cancelada_estudio": _reserva_cancelada_estudio,
+    "reserva_cancelada_cliente": _reserva_cancelada_cliente,
 }
 
 
@@ -124,6 +158,8 @@ def redactar(
     """Devuelve (asunto, cuerpo) del tipo de notificacion."""
     if tipo == "reserva_creada":
         return _reserva_creada(datos, instrucciones)
+    if tipo == "reserva_finalizada_saldo":
+        return _reserva_finalizada_saldo(datos, instrucciones)
     if tipo not in _REDACTORES:
         raise ValueError(f"tipo de notificacion desconocido: {tipo}")
     return _REDACTORES[tipo](datos)

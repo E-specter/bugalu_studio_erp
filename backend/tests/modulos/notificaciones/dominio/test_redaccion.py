@@ -114,3 +114,51 @@ def test_reserva_creada_agrega_los_datos_para_pagar_de_los_metodos_activos() -> 
     assert "Datos para pagar" in cuerpo and "Yape al 999 111 222" in cuerpo
     _, sin = redactar("reserva_creada", CREADA, [])
     assert "Datos para pagar" not in sin
+
+
+MIL_DOSCIENTOS = formatear_soles(Decimal(1250))  # separador de miles propio del formato
+FINALIZADA = {
+    "folio": "BG-0042",
+    "inicio": CREADA["inicio"],
+    "fin": CREADA["fin"],
+    "saldo": 1250,
+}
+
+
+def test_reserva_finalizada_trae_el_saldo_y_los_datos_para_pagar_activos() -> None:
+    asunto, cuerpo = redactar(
+        "reserva_finalizada_saldo", FINALIZADA, [("yape", "Yape al 999 111 222")]
+    )
+    assert "BG-0042" in asunto and "saldo" in asunto.lower()
+    for esperado in ("BG-0042", MIL_DOSCIENTOS, "10:00", "Datos para pagar", "Yape al 999 111 222"):
+        assert esperado in cuerpo
+    _, sin = redactar("reserva_finalizada_saldo", FINALIZADA, [])
+    assert MIL_DOSCIENTOS in sin and "Datos para pagar" not in sin
+
+
+def test_reserva_cancelada_por_el_estudio_lleva_la_nota_solo_si_existe() -> None:
+    datos = {"folio": "BG-0042", "inicio": CREADA["inicio"], "fin": CREADA["fin"]}
+    asunto, cuerpo = redactar(
+        "reserva_cancelada_estudio", {**datos, "nota": "Reembolso de S/ 25 por yape"}
+    )
+    assert "BG-0042" in asunto and "cancel" in cuerpo.lower()
+    assert "Reembolso de S/ 25 por yape" in cuerpo and "10:00" in cuerpo
+    _, sin = redactar("reserva_cancelada_estudio", {**datos, "nota": None})
+    assert "Nota" not in sin
+
+
+def test_reserva_cancelada_por_el_cliente_avisa_a_administradores_con_folio_cliente_e_inicio() -> (
+    None
+):
+    datos = {
+        "folio": "BG-0042",
+        "cliente": "Ana Torres",
+        "inicio": CREADA["inicio"],
+        "fin": CREADA["fin"],
+    }
+    asunto, cuerpo = redactar("reserva_cancelada_cliente", datos)
+    assert "BG-0042" in asunto
+    for esperado in ("BG-0042", "Ana Torres", "miércoles 10 de marzo de 2027", "10:00"):
+        assert esperado in cuerpo
+    _, anonimo = redactar("reserva_cancelada_cliente", {**datos, "cliente": None})
+    assert "sin nombre" in anonimo
