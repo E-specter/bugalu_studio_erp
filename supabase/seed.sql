@@ -7,3 +7,6 @@ update public.instruccion_pago set activo = true, texto = case metodo
   when 'yape' then 'Yape al 999 999 999 - Bugalu Studio'
   when 'plin' then 'Plin al 999 999 999 - Bugalu Studio'
   else 'Tarjeta: paga en el POS del estudio e indica el numero del voucher' end;
+
+-- Contacto del estudio de ejemplo (RF-05); en produccion lo edita el administrador.
+update public.contacto_estudio set texto = 'Escribenos por WhatsApp al 999 999 999 o a hola@bugalu.pe';

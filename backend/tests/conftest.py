@@ -64,6 +64,7 @@ def _entorno_aislado(
     if request.node.get_closest_marker("integracion") is None:
         monkeypatch.setenv("URL_BASE_DATOS", "postgresql://u:p@127.0.0.1:1/db")
         monkeypatch.setenv("URL_SUPABASE", "http://127.0.0.1:45621")
+        monkeypatch.setenv("CLAVE_PUBLICABLE_SUPABASE", "sb_publishable_de_prueba")
         monkeypatch.setenv("ORIGENES_PERMITIDOS", "")
         obtener_configuracion.cache_clear()
     yield

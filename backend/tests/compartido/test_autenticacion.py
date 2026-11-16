@@ -18,6 +18,7 @@ from bugalu.compartido.autenticacion import (
     obtener_claims,
     obtener_claims_opcionales,
     obtener_resolutor_clave,
+    obtener_token,
 )
 from bugalu.compartido.configuracion import Configuracion, obtener_configuracion
 from bugalu.compartido.manejadores_http import registrar_manejadores
@@ -36,6 +37,10 @@ def app() -> Iterator[FastAPI]:
     @app.get("/protegido")
     def protegido(claims: Annotated[dict[str, Any], Depends(obtener_claims)]) -> dict[str, Any]:
         return claims
+
+    @app.get("/token")
+    def token(crudo: Annotated[str, Depends(obtener_token)]) -> dict[str, str]:
+        return {"token": crudo}
 
     @app.get("/opcional")
     def opcional(
@@ -255,3 +260,17 @@ async def test_claims_opcionales_con_token_invalido_es_401_no_visitante(
 ) -> None:
     r = await _opcional(app, token)
     assert r.status_code == 401 and r.json()["error"]["codigo"] == "no_autenticado"
+
+
+async def test_obtener_token_entrega_el_token_crudo_solo_si_los_claims_son_validos(
+    app: FastAPI,
+) -> None:
+    bueno = firmar()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as cliente:
+        r = await cliente.get("/token", headers={"Authorization": f"Bearer {bueno}"})
+        assert r.json() == {"token": bueno}
+        malo = await cliente.get(
+            "/token", headers={"Authorization": f"Bearer {con_cabecera('HS256')}"}
+        )
+        assert malo.status_code == 401
+        assert (await cliente.get("/token")).status_code == 401

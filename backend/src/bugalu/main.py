@@ -15,6 +15,7 @@ from bugalu.modulos.notificaciones.infraestructura.entrada.ejecucion import (
     enviar_una_vez,
     repetir,
 )
+from bugalu.modulos.pagos.infraestructura.entrada.http.router import router as router_pagos
 from bugalu.modulos.reservas.infraestructura.entrada.http.router import router as router_reservas
 
 
@@ -60,4 +61,5 @@ def crear_app() -> FastAPI:
     app.include_router(router_identidad, prefix="/api/v1")
     app.include_router(router_catalogo, prefix="/api/v1")
     app.include_router(router_reservas, prefix="/api/v1")
+    app.include_router(router_pagos, prefix="/api/v1")
     return app

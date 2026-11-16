@@ -82,3 +82,12 @@ def obtener_claims_opcionales(
     if credenciales is None:
         return None
     return obtener_claims(credenciales, resolutor, configuracion)
+
+
+def obtener_token(
+    _claims: Annotated[dict[str, Any], Depends(obtener_claims)],
+    credenciales: Annotated[HTTPAuthorizationCredentials | None, Depends(_esquema)],
+) -> str:
+    """Token crudo, ya verificado, para reenviarlo a Storage con la identidad del propio usuario."""
+    assert credenciales is not None  # obtener_claims ya exigio el token
+    return credenciales.credentials

@@ -18,8 +18,10 @@ class Configuracion(BaseSettings):
     url_base_datos_admin: str = ""
     # Espera maxima por una conexion libre del pool antes de responder 503.
     timeout_pool_segundos: float = 5
-    # Solo la usan las pruebas de integracion (alta de usuarios en Auth).
-    clave_publicable_supabase: str = ""
+    # Clave publicable (`apikey`) de Supabase: Auth en las pruebas y Storage en la API.
+    clave_publicable_supabase: str
+    # Solo pruebas: clave de servicio local para borrar los objetos de Storage; nunca en `src/`.
+    clave_servicio_supabase_pruebas: str = ""
     # Origenes del frontend, separados por comas. Vacio = sin CORS.
     origenes_permitidos: str = ""
     # Correo saliente (ADR-009): en local, el SMTP de Mailpit del stack (supabase/config.toml).

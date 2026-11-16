@@ -57,6 +57,8 @@ Las capturas van al bucket privado `comprobantes` ([ADR-003](../00-proyecto/deci
 
 **Storage `comprobantes`** (misma migración): el bucket limita a 5 MB (`5242880`) y a `image/jpeg`, `image/png`, `application/pdf`. Políticas en `storage.objects`: `authenticated` inserta solo bajo `<auth.uid()>/` y lee lo suyo (o todo si es administrador); sin política de update ni delete (el borrado directo por SQL lo bloquea además `storage.protect_delete`; para limpiar un archivo tras un registro fallido el backend usa la API de Storage con el token del usuario, y conviene comprobar con ella que la ausencia de política de delete no lo impide).
 
+**Migración `20261127100000_rf05_formato_operacion_y_contacto`:** `comprobante_pago.numero_operacion` añade `check (numero_operacion ~ '^[A-Za-z0-9-]{4,40}$')`; tabla `contacto_estudio` de una sola fila (`id boolean` fijo en `true`, `texto` ≤ 500, vacío por defecto; leen los autenticados, solo el Administrador actualiza `texto`); `public.existe_pago(id)` (`security definer`, solo `authenticated`) distingue 403 de 404 sin devolver datos.
+
 ## Proyectos y entregables
 
 | Tabla | Campos clave | Relaciones |

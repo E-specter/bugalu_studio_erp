@@ -36,7 +36,8 @@ Variables de `backend/.env` (`.env` está ignorado por git):
 | `URL_BASE_DATOS_ADMIN` | Solo pruebas: `DB_URL` de `npx supabase status` (superusuario `postgres`). Las fixtures la usan para borrar usuarios y subir roles; la API nunca |
 | `TIMEOUT_POOL_SEGUNDOS` | Opcional (5): espera por una conexión del pool; si vence, 503 `base_de_datos_no_disponible` |
 | `URL_SUPABASE` | Obligatoria. `API_URL` (puerto 45621); de ahí sale el JWKS con el que se verifican los JWT (espera máxima 5 s; si falla o no es JSON, 503 `autenticacion_no_disponible`) |
-| `CLAVE_PUBLICABLE_SUPABASE` | `PUBLISHABLE_KEY`; solo la usan las pruebas de integración |
+| `CLAVE_PUBLICABLE_SUPABASE` | `PUBLISHABLE_KEY`; **obligatoria**: la API la envía como `apikey` a Storage junto al token del usuario (RF-05) y las pruebas la usan para el alta de usuarios |
+| `CLAVE_SERVICIO_SUPABASE_PRUEBAS` | Solo pruebas: `SERVICE_ROLE_KEY` local. Las pruebas de pagos borran con ella, por la API de Storage, los objetos que crean; `src/` nunca la usa ni existe en producción |
 | `EXIGIR_INTEGRACION` | Solo pruebas, opcional. `EXIGIR_INTEGRACION=1` (CI) convierte el salto de las pruebas de integración, cuando no hay stack o `.env`, en fallo. Sin ella se saltan con el motivo. Las pruebas unitarias no dependen de `backend/.env` |
 | `ORIGENES_PERMITIDOS` | Orígenes del frontend, separados por comas (`http://localhost:4321`). Vacío = sin CORS: el navegador bloquea las llamadas del frontend |
 | `SMTP_HOST` / `SMTP_PUERTO` | Servidor de correo de la bandeja `notificacion`. En local, Mailpit: `127.0.0.1` y `45625` (`[local_smtp] smtp_port` en `supabase/config.toml`); los correos se ven en `http://127.0.0.1:45624`. Sin STARTTLS ni credenciales (el proveedor real sigue en D-07) |

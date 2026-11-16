@@ -120,3 +120,37 @@ class TienePagos(Conflicto):
 
 class NoCancelable(Conflicto):
     codigo = "no_cancelable"
+
+
+class AlmacenamientoNoDisponible(ErrorDeNegocio):
+    codigo = "almacenamiento_no_disponible"
+    estado_http = 503
+
+
+class ArchivoMuyGrande(ErrorDeNegocio):
+    codigo = "archivo_muy_grande"
+    estado_http = 413
+
+
+class FormatoNoAdmitido(DatosInvalidos):
+    codigo = "formato_no_admitido"
+
+
+class MetodoNoDisponible(DatosInvalidos):
+    codigo = "metodo_no_disponible"
+
+
+class PagoEnValidacion(Conflicto):
+    codigo = "pago_en_validacion"
+
+
+class CuotaPagada(Conflicto):
+    codigo = "cuota_pagada"
+
+
+class CuotaNoPagable(Conflicto):
+    codigo = "cuota_no_pagable"
+
+
+class OperacionDuplicada(Conflicto):
+    codigo = "operacion_duplicada"
