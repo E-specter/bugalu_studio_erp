@@ -35,7 +35,7 @@ Usuario, 2026-11-16 (respuestas a las preguntas de RF-03/04):
 
 **Confirmaciones del usuario (2026-11-16) a decisiones tomadas durante la implementación:**
 1. Si en un bloque coinciden varios recargos, se aplica el mayor (en empate, feriado y luego fin de semana), no la suma ([RF-02](../../03-requerimientos/RF-02.md)).
-2. Mientras D-11 siga abierta, tampoco el Administrador cancela una reserva con pagos (409 `tiene_pagos`).
+2. Mientras D-11 siga abierta, tampoco el Administrador cancela una reserva con pagos. **Sustituida** por [ADR-010](ADR-010-pagos-estados-y-cancelacion.md): el Administrador cancela con pagos dejando una nota del reembolso.
 3. Plazo de pago (RN-18): vence lo más tarde entre inicio − días e instante de la reserva + horas, nunca después del inicio.
 4. Personal y Administrador también pueden reservar para sí mismos.
 5. El ensayo exige una reserva previa de otro servicio `Confirmada`, `En curso` o `Finalizada` (la asesoría se suma con RF-15).
