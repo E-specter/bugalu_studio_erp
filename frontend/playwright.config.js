@@ -22,11 +22,11 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      // Segundo build con Google activo (PUBLIC_ACCESO_GOOGLE se lee al construir); en node_modules para no tocar .gitignore. Se sirve con un servidor propio porque astro preview no admite dos instancias.
+      // Segundo build con proveedores sociales (PUBLIC_ACCESO_PROVEEDORES se lee al construir); en node_modules para no tocar .gitignore. Se sirve con un servidor propio porque astro preview no admite dos instancias.
       command: 'npm run build -- --outDir node_modules/.cache/dist-google && node pruebas/servidor-estatico.mjs node_modules/.cache/dist-google 4322',
       url: 'http://localhost:4322',
       env: {
-        PUBLIC_ACCESO_GOOGLE: '1',
+        PUBLIC_ACCESO_PROVEEDORES: 'google,facebook,twitter',
         PUBLIC_URL_API: 'http://api.prueba',
         PUBLIC_URL_SUPABASE: 'http://supabase.prueba',
         PUBLIC_CLAVE_PUBLICABLE_SUPABASE: 'clave-publicable-de-prueba',

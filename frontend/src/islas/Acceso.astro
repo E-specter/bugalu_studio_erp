@@ -1,6 +1,7 @@
 ---
 import Campo from '../componentes/Campo.astro';
 import Boton from '../componentes/Boton.astro';
+import { PROVEEDORES, proveedoresDisponibles } from '../servicios/sesion.js';
 import Aviso from '../componentes/Aviso.astro';
 import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.astro';
 
@@ -19,8 +20,8 @@ const modos = {
   recuperar: { accion: 'Enviar enlace', carga: 'Enviando enlace…', enlace: 'Volver a iniciar sesión', href: '/acceso', inicio: true },
   restablecer: { accion: 'Guardar contraseña', carga: 'Guardando contraseña…', enlace: 'Volver a iniciar sesión', href: '/acceso', inicio: true },
 }[modo];
-// Solo el acceso de artistas ofrece Google, y solo si se construyó con PUBLIC_ACCESO_GOOGLE (CA-04).
-const google = Boolean(import.meta.env.PUBLIC_ACCESO_GOOGLE) && (modo === 'iniciar' || modo === 'registrar');
+// Solo el acceso de artistas ofrece proveedores, y solo los de PUBLIC_ACCESO_PROVEEDORES al construir (CA-04).
+const proveedores = modo === 'iniciar' || modo === 'registrar' ? proveedoresDisponibles : [];
 const contrasenaNueva = ['registrar', 'solicitar', 'restablecer'].includes(modo);
 const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar la contraseña necesita JavaScript' : 'El acceso necesita JavaScript';
 ---
@@ -62,12 +63,8 @@ const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar l
 
     <Boton tipo="submit" tamano="grande" data-principal data-carga={modos.carga}>{modos.accion}</Boton>
 
-    {google && (
-      <>
-        <p class="formulario-separador">O</p>
-        <Boton variante="secundario" tamano="grande" data-google>Continuar con Google</Boton>
-      </>
-    )}
+    {proveedores.length > 0 && <p class="formulario-separador">O</p>}
+    {proveedores.map((p) => <Boton variante="secundario" tamano="grande" data-proveedor={p}>Continuar con {PROVEEDORES[p]}</Boton>)}
 
     <p class="formulario-alterno">
       {modos.pregunta && <span>{modos.pregunta} </span>}
@@ -84,7 +81,7 @@ const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar l
 </bugalu-acceso>
 
 <script>
-  import { iniciarSesion, registrar, iniciarConGoogle, recuperarContrasena, fijarContrasena, esperarRecuperacion, recordarArea, rutaPropia, normalizarTelefono, ErrorAcceso } from '../servicios/sesion.js';
+  import { iniciarSesion, registrar, iniciarConProveedor, recuperarContrasena, fijarContrasena, esperarRecuperacion, recordarArea, rutaPropia, normalizarTelefono, ErrorAcceso } from '../servicios/sesion.js';
   import { obtenerPerfil } from '../servicios/api.js';
   import { enviarSolicitud } from '../servicios/solicitudes.js';
   import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, mostrarAvisoDeUrl } from '../servicios/formulario.js';
@@ -146,7 +143,7 @@ const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar l
         const entrada = e.target as HTMLInputElement;
         if (entrada.getAttribute('aria-invalid') === 'true') this.validarCampo(entrada);
       });
-      this.querySelector('[data-google]')?.addEventListener('click', () => this.conGoogle());
+      this.querySelectorAll<HTMLElement>('[data-proveedor]').forEach((b) => b.addEventListener('click', () => this.conProveedor(b.dataset.proveedor!)));
       this.addEventListener('click', (e) => {
         const destino = e.target as Element;
         if (destino.closest('[data-reintentar-perfil]')) this.alPerfil();
@@ -215,8 +212,7 @@ const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar l
       if (activo) boton.setAttribute('aria-busy', 'true');
       else boton.removeAttribute('aria-busy');
       boton.textContent = activo ? boton.dataset.carga! : boton.dataset.accion!;
-      const google = this.querySelector<HTMLButtonElement>('[data-google]');
-      if (google) google.disabled = activo;
+      this.querySelectorAll<HTMLButtonElement>('[data-proveedor]').forEach((b) => (b.disabled = activo));
     }
 
     ir(destino: string) {
@@ -377,11 +373,11 @@ const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar l
       }
     }
 
-    async conGoogle() {
+    async conProveedor(proveedor: string) {
       limpiarAvisos(this);
       this.cargando(true);
       try {
-        await iniciarConGoogle(this.volver ?? '/app/');
+        await iniciarConProveedor(proveedor, this.volver ?? '/app/');
       } catch (error) {
         this.fallo(error);
         this.cargando(false);

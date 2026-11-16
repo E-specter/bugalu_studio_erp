@@ -114,11 +114,16 @@ export async function registrar({ correo, contrasena, nombre, telefono, nombreAr
 
 export const iniciarSesion = ({ correo, contrasena }) => llamar(auth().signInWithPassword({ email: correo, password: contrasena }));
 
-// Solo si PUBLIC_ACCESO_GOOGLE esta definida al construir (CA-04); el acceso interno nunca la usa.
-export const googleDisponible = Boolean(import.meta.env.PUBLIC_ACCESO_GOOGLE);
-export async function iniciarConGoogle(destino = '/app/') {
-  if (!googleDisponible) throw new ErrorAcceso('desconocido');
-  await llamar(auth().signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + (rutaPropia(destino) ?? '/app/') } }));
+// Proveedores sociales (CA-04, ADR-009): lista de PUBLIC_ACCESO_PROVEEDORES al construir, filtrada por la lista cerrada; lo desconocido se ignora.
+// Para sumar uno: agregarlo aqui y su texto de boton en Acceso.astro. El acceso interno nunca los usa.
+/** @type {Record<string, string>} */
+export const PROVEEDORES = { google: 'Google', facebook: 'Facebook' };
+export const proveedoresDisponibles = [
+  ...new Set(String(import.meta.env.PUBLIC_ACCESO_PROVEEDORES ?? '').split(',').map((p) => p.trim().toLowerCase())),
+].filter((p) => Object.hasOwn(PROVEEDORES, p));
+export async function iniciarConProveedor(proveedor, destino = '/app/') {
+  if (!proveedoresDisponibles.includes(proveedor)) throw new ErrorAcceso('desconocido');
+  await llamar(auth().signInWithOAuth({ provider: proveedor, options: { redirectTo: location.origin + (rutaPropia(destino) ?? '/app/') } }));
 }
 
 // CA-05: la misma respuesta exista o no el correo. Solo fallan 429, 5xx, red y respuestas ajenas a la API (no dependen del correo).
