@@ -15,6 +15,7 @@ const disp = (extra = {}) => json(200, { limites: { desde: '2026-11-16T00:00:00-
 const PARAMETROS = { dias_limite_pago: 3, horas_limite_pago: 24, anticipacion_minima_horas: 2, anticipacion_maxima_semanas: 8 };
 
 async function base(page, { disponibilidad = disp(), sugerencia = json(200, []) } = {}) {
+  await page.clock.setFixedTime(new Date('2026-11-15T15:00:00Z')); // "hoy" fijo: el domingo 15 nov 2026
   await comoAdministrador(page);
   await simular(page, 'GET', '/salas', json(200, [SALA]));
   const vistasDisp = await simular(page, 'GET', '/disponibilidad', disponibilidad);

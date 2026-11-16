@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { API, json, errorApi, errorAuth, sesion, usuario, perfil, simularAuth, silenciarApi, sinViolaciones, vigilarConsola, tamanos } from './ayudas-acceso.js';
+import { ORIGEN } from './puertos.js';
 
 const rellenarIniciar = async (page, correo = 'ana@correo.com', clave = 'Secreta1!') => {
   await page.getByLabel('Correo', { exact: true }).fill(correo);
@@ -62,7 +63,7 @@ test.describe('acceso de artistas: iniciar sesion', () => {
       await rellenarIniciar(page);
       await page.getByRole('button', { name: 'Entrar al portal' }).click();
       await page.waitForURL('**/app/');
-      expect(new URL(page.url()).origin).toBe('http://localhost:4321');
+      expect(new URL(page.url()).origin).toBe(ORIGEN);
     });
   }
 

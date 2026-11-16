@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { SB, json, errorAuth, usuario, sesion, simularAuth, silenciarApi, sinViolaciones, vigilarConsola, tamanos } from './ayudas-acceso.js';
+import { ORIGEN } from './puertos.js';
 
 const EXITO = 'Si hay una cuenta con ese correo, te enviamos un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.';
 const HASH_RECUPERACION = '#access_token=token-recuperacion&expires_in=3600&refresh_token=refresco&token_type=bearer&type=recovery';
@@ -19,7 +20,7 @@ test.describe('recuperar: pedir el enlace (CA-05)', () => {
     await page.getByLabel('Correo', { exact: true }).fill('ana@correo.com');
     await page.getByRole('button', { name: 'Enviar enlace' }).click();
     await expect(page.locator('.aviso-exito')).toContainText(EXITO);
-    expect(new URL(urls[0]).searchParams.get('redirect_to')).toBe('http://localhost:4321/acceso/nueva-contrasena');
+    expect(new URL(urls[0]).searchParams.get('redirect_to')).toBe(`${ORIGEN}/acceso/nueva-contrasena`);
   });
 
   test('origen=interno: conserva el origen en la redireccion y en el enlace de vuelta', async ({ page }) => {
@@ -32,7 +33,7 @@ test.describe('recuperar: pedir el enlace (CA-05)', () => {
     await page.getByLabel('Correo', { exact: true }).fill('ana@correo.com');
     await page.getByRole('button', { name: 'Enviar enlace' }).click();
     await expect(page.locator('.aviso-exito')).toBeVisible();
-    expect(new URL(urls[0]).searchParams.get('redirect_to')).toBe('http://localhost:4321/acceso/nueva-contrasena?origen=interno');
+    expect(new URL(urls[0]).searchParams.get('redirect_to')).toBe(`${ORIGEN}/acceso/nueva-contrasena?origen=interno`);
     await sinViolaciones(page);
   });
 

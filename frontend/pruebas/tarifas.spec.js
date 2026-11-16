@@ -15,6 +15,7 @@ const RECARGOS = { noche: { porcentaje: '25.00', desde: '22:00', hasta: '06:00' 
 const FERIADOS = [{ fecha: '2026-12-25', nombre: 'Navidad' }, { fecha: '2026-12-08', nombre: 'Inmaculada Concepción' }];
 
 async function base(page, extra = {}) {
+  await page.clock.setFixedTime(new Date('2026-11-15T15:00:00Z')); // "hoy" fijo: el domingo 15 nov 2026
   await comoAdministrador(page);
   const vistas = {};
   vistas.servicios = await simular(page, 'GET', '/servicios', extra.servicios ?? json(200, SERVICIOS));

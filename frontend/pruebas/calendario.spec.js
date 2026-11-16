@@ -108,6 +108,17 @@ test('semana (reserva): elegir un inicio emite el evento, anuncia y marca aria-p
   await expect(libre(page, 'miércoles 18 de noviembre', '12:30')).toHaveAttribute('aria-pressed', 'false');
 });
 
+test('semana (reserva): axe con un inicio seleccionado, en escritorio y movil', async ({ page }) => {
+  for (const tm of tamanos) {
+    await page.setViewportSize({ width: tm.ancho, height: tm.alto });
+    await montar(page);
+    await page.goto(`${SEMANA}&inicio=${encodeURIComponent('2026-11-19T10:00:00-05:00')}&duracion=60`);
+    if (tm.ancho < 600) await page.getByText('JUE 19 NOV · 1 h 30 min libres').click();
+    await expect(page.locator('bugalu-calendario button[data-inicio][aria-pressed="true"]').locator('visible=true').first()).toBeVisible();
+    await sinViolaciones(page);
+  }
+});
+
 test('semana (reserva): inicio y duracion de la URL restauran la seleccion', async ({ page }) => {
   await montar(page);
   await page.goto(`${SEMANA}&inicio=${encodeURIComponent('2026-11-19T10:00:00-05:00')}&duracion=60`);

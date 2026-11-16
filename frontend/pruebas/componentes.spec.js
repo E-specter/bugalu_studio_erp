@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { ORIGEN } from './puertos.js';
 
 const etiquetasAxe = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 const anchos = [
@@ -179,7 +180,7 @@ test('isla de contraseña: botón accesible con JS y campo funcional sin JS', as
 
   const sinJs = await browser.newContext({ javaScriptEnabled: false });
   const paginaSinJs = await sinJs.newPage();
-  await paginaSinJs.goto('http://localhost:4321/catalogo');
+  await paginaSinJs.goto(`${ORIGEN}/catalogo`);
   await expect(paginaSinJs.getByRole('button', { name: /contraseña/ })).toHaveCount(0);
   await paginaSinJs.locator('#campo-cat-clave').fill('secreta');
   await expect(paginaSinJs.locator('#campo-cat-clave')).toHaveValue('secreta');

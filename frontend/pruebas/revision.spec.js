@@ -1,5 +1,6 @@
 // TAREA-404: ajustes de la revisión visual de la fase 4 (fichas actualizadas en 4701905).
 import { test, expect } from '@playwright/test';
+import { ORIGEN } from './puertos.js';
 
 const anchos = [
   { nombre: 'escritorio', width: 1440, height: 900 },
@@ -41,7 +42,7 @@ test('aviso descartable: sin JS no hay botón; con JS cierra y el foco va a #con
 
   const sinJs = await browser.newContext({ javaScriptEnabled: false });
   const paginaSinJs = await sinJs.newPage();
-  await paginaSinJs.goto('http://localhost:4321/catalogo');
+  await paginaSinJs.goto(`${ORIGEN}/catalogo`);
   await expect(paginaSinJs.getByText('Aviso descartable')).toBeVisible();
   await expect(paginaSinJs.getByRole('button', { name: 'Cerrar aviso' })).toHaveCount(0);
   await sinJs.close();

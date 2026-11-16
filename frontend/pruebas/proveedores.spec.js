@@ -1,9 +1,10 @@
-// Segundo servidor (puerto 4322) construido con PUBLIC_ACCESO_PROVEEDORES=google,facebook,twitter: se lee al construir (CA-04).
-// "twitter" no es un proveedor conocido y debe ignorarse. El build por defecto (4321) no define la lista: cubre la lista vacia.
+// Segundo servidor (segundo puerto) construido con PUBLIC_ACCESO_PROVEEDORES=google,facebook,twitter: se lee al construir (CA-04).
+// "twitter" no es un proveedor conocido y debe ignorarse. El build por defecto no define la lista: cubre la lista vacia.
 import { test, expect } from '@playwright/test';
 import { SB, silenciarApi, sinViolaciones } from './ayudas-acceso.js';
+import { ORIGEN, ORIGEN_PROVEEDORES } from './puertos.js';
 
-test.use({ baseURL: 'http://localhost:4322' });
+test.use({ baseURL: ORIGEN_PROVEEDORES });
 test.beforeEach(async ({ page }) => silenciarApi(page));
 
 const botones = (page) => page.locator('bugalu-acceso [data-proveedor]');
@@ -37,7 +38,7 @@ for (const [proveedor, nombre] of [['google', 'Google'], ['facebook', 'Facebook'
     await page.goto('/acceso?volver=/app/perfil');
     await page.getByRole('button', { name: `Continuar con ${nombre}` }).click();
     await expect.poll(() => destino?.searchParams.get('provider')).toBe(proveedor);
-    expect(destino.searchParams.get('redirect_to')).toBe('http://localhost:4322/app/perfil');
+    expect(destino.searchParams.get('redirect_to')).toBe(`${ORIGEN_PROVEEDORES}/app/perfil`);
   });
 }
 
@@ -46,11 +47,11 @@ test('un proveedor con volver malicioso redirige a /app/', async ({ page }) => {
   await page.route(`${SB}/authorize*`, (r) => ((destino = new URL(r.request().url())), r.fulfill({ status: 200, contentType: 'text/html', body: 'ok' })));
   await page.goto('/acceso?volver=' + encodeURIComponent('//evil.com'));
   await page.getByRole('button', { name: 'Continuar con Facebook' }).click();
-  await expect.poll(() => destino?.searchParams.get('redirect_to')).toBe('http://localhost:4322/app/');
+  await expect.poll(() => destino?.searchParams.get('redirect_to')).toBe(`${ORIGEN_PROVEEDORES}/app/`);
 });
 
 test('con la lista vacia (build por defecto) no hay botones ni separador', async ({ page }) => {
-  await page.goto('http://localhost:4321/acceso');
+  await page.goto(`${ORIGEN}/acceso`);
   await expect(botones(page)).toHaveCount(0);
   await expect(page.getByText('O', { exact: true })).toHaveCount(0);
 });

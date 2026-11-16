@@ -6,7 +6,8 @@ import { simular } from './ayudas-admin.js';
 const ID = '11111111-1111-4111-8111-111111111111';
 const ID2 = '22222222-2222-4222-8222-222222222222';
 const ID3 = '33333333-3333-4333-8333-333333333333';
-const dentroDe = (min) => new Date(Date.now() + min * 60e3).toISOString();
+const AHORA = new Date('2026-11-15T15:00:00Z'); // "hoy" fijo: el domingo 15 nov 2026, 10:00 en Lima
+const dentroDe = (min) => new Date(AHORA.getTime() + min * 60e3).toISOString();
 const SIMULACION = {
   lineas: [
     { concepto: 'Sala de grabación', cantidad: '2.50', unidad: 'hora', monto: '250.00' },
@@ -36,6 +37,7 @@ const LISTA = [
 const comoRol = (page, rol) => page.route(`${API}/perfil`, (r) => r.fulfill(perfil({ rol })));
 
 test.beforeEach(async ({ page }) => {
+  await page.clock.setFixedTime(AHORA);
   await conSesion(page);
   await silenciarApi(page);
   await comoRol(page, 'cliente');
@@ -142,7 +144,7 @@ test('lista: un filtro sin resultados ofrece el otro', async ({ page }) => {
 });
 
 test('lista: el plazo se recalcula cada minuto y solo se anuncia al cruzar un umbral', async ({ page }) => {
-  await page.clock.install({ time: Date.now() });
+  await page.clock.install({ time: AHORA });
   await simular(page, 'GET', '/reservas/mias', json(200, [reserva({ vence_pago: dentroDe(61.5) })]));
   await page.goto('/app/reservas/');
   const plazo = page.locator('[data-plazo]');

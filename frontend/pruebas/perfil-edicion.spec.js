@@ -1,6 +1,7 @@
 // RF-01 (CA-06, CA-09, CA-12, CA-13): perfil editable, verificacion del correo, cerrar sesion y navegacion por rol.
 import { test, expect } from '@playwright/test';
 import { API, SB, json, errorApi, perfil, conSesion, simularAuth, sinViolaciones, vigilarConsola, tamanos } from './ayudas-acceso.js';
+import { ORIGEN } from './puertos.js';
 
 // GET /perfil devuelve `datos`; PATCH y POST se delegan en `manejadores` y se registran en `llamadas`.
 async function montar(page, datos = {}, manejadores = {}) {
@@ -195,7 +196,7 @@ test.describe('verificacion del correo (punto 2)', () => {
     const otp = auth.find((l) => l.ruta === '/otp');
     expect(otp.cuerpo.email).toBe('ana@correo.com');
     expect(otp.cuerpo.create_user).toBe(false);
-    expect(redireccion).toBe('http://localhost:4321/app/perfil?verificar=1');
+    expect(redireccion).toBe(`${ORIGEN}/app/perfil?verificar=1`);
     await sinViolaciones(page);
   });
 

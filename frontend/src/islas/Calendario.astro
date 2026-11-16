@@ -360,7 +360,17 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
         });
       }
       if (!datos.franjas.length) return this.pintarVacio();
-      return this.pintar();
+      const anuncio = this.pintar();
+      this.avisarInicio();
+      return anuncio;
+    }
+
+    // Un inicio restaurado desde la URL emite el mismo evento que al elegirlo, para que Reserva limite la duración.
+    avisarInicio() {
+      const { inicio } = this.estado;
+      const ms = inicio ? Date.parse(inicio) : NaN;
+      if (this.modo !== 'reserva' || !(this.modelo.estadoDe(ms)?.e === 'libre')) return;
+      this.dispatchEvent(new CustomEvent('calendario-inicio', { bubbles: true, detail: { inicio, minutosMaximos: this.maximo(ms) } }));
     }
 
     sala: any = null;
@@ -600,7 +610,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
 
     botonLibre(c: any) {
       const { f, s } = c;
-      const sufijo = c.inicio ? 'libre' : c.tramo ? 'en tu selección' : 'libre';
+      const sufijo = c.inicio ? 'libre, inicio elegido' : c.tramo ? 'en tu selección' : 'libre';
       const contenido = c.inicio ? [this.pieza('icono-check'), 'INICIO'] : c.tramo ? (this.primeroDelTramo(c) ? ['TU SELECCIÓN'] : []) : ['LIBRE'];
       return h('button', {
         type: 'button', class: 'cal-boton', 'data-nav': '', 'data-dia': c.dia, 'data-min': c.min, 'data-inicio': new Date(s).toISOString(), 'data-ms': s,

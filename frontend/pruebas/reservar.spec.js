@@ -82,6 +82,14 @@ test.describe('01 Horario', () => {
     await expect(page.getByRole('combobox', { name: 'Duración' })).toHaveValue('90');
   });
 
+  test('al restaurar el inicio de la URL, la duración se limita a lo que cabe', async ({ page }) => {
+    await montar(page, { sesion: false });
+    await page.goto(`/reservar/?fecha=2026-11-16&inicio=${encodeURIComponent(INI)}&duracion=420`);
+    const duracion = page.getByRole('combobox', { name: 'Duración' });
+    expect(await duracion.locator('option').allTextContents()).toEqual(['30 min', '1 h', '1 h 30 min', '2 h', '2 h 30 min', '3 h', '3 h 30 min']);
+    await expect(duracion).toHaveValue('60');
+  });
+
   for (const tm of tamanos) {
     test(`axe en horario a ${tm.nombre}`, async ({ page }) => {
       await page.setViewportSize({ width: tm.ancho, height: tm.alto });
@@ -92,6 +100,15 @@ test.describe('01 Horario', () => {
       await expect(aviso(page)).toBeVisible();
       await sinViolaciones(page);
       await page.screenshot({ path: `pruebas/capturas/reservar-01-error-${tm.nombre}.png`, fullPage: true });
+    });
+
+    test(`axe en horario con un inicio seleccionado a ${tm.nombre}`, async ({ page }) => {
+      await page.setViewportSize({ width: tm.ancho, height: tm.alto });
+      await montar(page, { sesion: false });
+      await page.goto(`/reservar/?fecha=2026-11-16&inicio=${encodeURIComponent(INI)}&duracion=90`);
+      await expect(page.getByRole('combobox', { name: 'Duración' })).toBeEnabled();
+      await sinViolaciones(page);
+      await page.screenshot({ path: `pruebas/capturas/reservar-01-inicio-${tm.nombre}.png`, fullPage: true });
     });
   }
 
