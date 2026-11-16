@@ -33,7 +33,13 @@ async def test_422_usa_el_formato_unico_y_solo_nombra_el_campo(cliente: AsyncCli
     r = await cliente.get("/doble", params={"n": "secreto-no-numerico"})
     assert r.status_code == 422
     cuerpo = r.json()
-    assert cuerpo == {"error": {"codigo": "datos_invalidos", "mensaje": "Datos invalidos: n."}}
+    assert cuerpo == {
+        "error": {
+            "codigo": "datos_invalidos",
+            "mensaje": "Datos invalidos: n.",
+            "detalles": {"campo": "n"},
+        }
+    }
     assert "secreto-no-numerico" not in r.text
 
 
@@ -88,3 +94,24 @@ async def test_data_error_de_psycopg_es_422_sin_filtrar_detalles(cliente: AsyncC
     assert r.status_code == 422
     assert r.json() == {"error": {"codigo": "datos_invalidos", "mensaje": "Datos invalidos."}}
     assert "secreto-interno" not in r.text
+
+
+async def test_un_error_de_negocio_con_detalles_los_incluye_y_sin_ellos_no() -> None:
+    from bugalu.compartido.errores import Conflicto
+
+    app = FastAPI()
+    registrar_manejadores(app)
+
+    @app.get("/con")
+    def con() -> None:
+        raise Conflicto("Hay reservas.", detalles={"reservas": [{"folio": "R-1"}]})
+
+    @app.get("/sin")
+    def sin() -> None:
+        raise Conflicto("Choca.")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+        con_detalles = (await c.get("/con")).json()
+        sin_detalles = (await c.get("/sin")).json()
+    assert con_detalles["error"]["detalles"] == {"reservas": [{"folio": "R-1"}]}
+    assert "detalles" not in sin_detalles["error"]

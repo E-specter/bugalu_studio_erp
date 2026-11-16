@@ -1,13 +1,16 @@
 """Errores del kernel, sin dependencias de HTTP (formato de respuesta: manejadores_http)."""
 
+from typing import Any
+
 
 class ErrorDeNegocio(Exception):
     codigo = "error_de_negocio"
     estado_http = 400
 
-    def __init__(self, mensaje: str) -> None:
+    def __init__(self, mensaje: str, detalles: dict[str, Any] | None = None) -> None:
         super().__init__(mensaje)
         self.mensaje = mensaje
+        self.detalles = detalles  # serializable a JSON; la respuesta lo incluye solo si existe
 
 
 class NoAutenticado(ErrorDeNegocio):
@@ -69,3 +72,19 @@ class ServicioNoReservable(DatosInvalidos):
 
 class FeriadoRepetido(Conflicto):
     codigo = "feriado_repetido"
+
+
+class FranjaSolapada(Conflicto):
+    codigo = "franja_solapada"
+
+
+class FranjaConReservas(Conflicto):
+    codigo = "franja_con_reservas"
+
+
+class CierreConReservas(Conflicto):
+    codigo = "cierre_con_reservas"
+
+
+class RangoInvalido(DatosInvalidos):
+    codigo = "rango_invalido"

@@ -14,7 +14,11 @@ from fastapi import Depends, FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from bugalu.compartido import autenticacion
-from bugalu.compartido.autenticacion import obtener_claims, obtener_resolutor_clave
+from bugalu.compartido.autenticacion import (
+    obtener_claims,
+    obtener_claims_opcionales,
+    obtener_resolutor_clave,
+)
 from bugalu.compartido.configuracion import Configuracion, obtener_configuracion
 from bugalu.compartido.manejadores_http import registrar_manejadores
 
@@ -32,6 +36,12 @@ def app() -> Iterator[FastAPI]:
     @app.get("/protegido")
     def protegido(claims: Annotated[dict[str, Any], Depends(obtener_claims)]) -> dict[str, Any]:
         return claims
+
+    @app.get("/opcional")
+    def opcional(
+        claims: Annotated[dict[str, Any] | None, Depends(obtener_claims_opcionales)],
+    ) -> dict[str, Any]:
+        return {"claims": claims}
 
     app.dependency_overrides[obtener_resolutor_clave] = lambda: lambda _token: CLAVE.public_key()
     yield app
@@ -212,3 +222,36 @@ async def test_kid_ausente_del_jwks_bien_formado_sigue_siendo_401(app: FastAPI) 
     )
     r = await _pedir_con_jwks(app, cuerpo, token)
     assert r.status_code == 401 and r.headers["www-authenticate"] == "Bearer"
+
+
+async def _opcional(app: FastAPI, token: str | None) -> Any:
+    cabeceras = {"Authorization": f"Bearer {token}"} if token else {}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as cliente:
+        return await cliente.get("/opcional", headers=cabeceras)
+
+
+async def test_claims_opcionales_sin_token_es_visitante_y_con_token_valido_trae_los_claims(
+    app: FastAPI,
+) -> None:
+    assert (await _opcional(app, None)).json() == {"claims": None}
+    assert (await _opcional(app, firmar())).json()["claims"]["sub"] == SUB
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "no-es-un-jwt",
+        firmar(exp=time.time() - 10),
+        firmar(OTRA_CLAVE),
+        firmar(sub="no-es-uuid"),
+        con_cabecera("RS256"),
+        firmar_con("secreto-hmac-de-32-bytes-o-mas-1234", "HS256"),
+        firmar_con(None, "none"),
+    ],
+    ids=["basura", "caducado", "firma_ajena", "sub_no_uuid", "alg_rsa", "hs256", "none"],
+)
+async def test_claims_opcionales_con_token_invalido_es_401_no_visitante(
+    app: FastAPI, token: str
+) -> None:
+    r = await _opcional(app, token)
+    assert r.status_code == 401 and r.json()["error"]["codigo"] == "no_autenticado"

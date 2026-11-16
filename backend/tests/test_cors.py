@@ -57,3 +57,30 @@ async def test_preflight_permite_put_para_los_recargos(monkeypatch: pytest.Monke
             headers={"Origin": PERMITIDO, "Access-Control-Request-Method": "PUT"},
         )
     assert r.status_code == 200 and "PUT" in r.headers["access-control-allow-methods"]
+
+
+async def test_preflight_permite_delete_y_patch_de_franjas_cierres_y_parametros(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ORIGENES_PERMITIDOS", PERMITIDO)
+    obtener_configuracion.cache_clear()
+    try:
+        app = crear_app()
+    finally:
+        obtener_configuracion.cache_clear()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as cliente:
+        for ruta, metodo in (
+            ("/api/v1/franjas/x", "DELETE"),
+            ("/api/v1/cierres/x", "DELETE"),
+            ("/api/v1/parametros", "PATCH"),
+            ("/api/v1/franjas", "POST"),
+        ):
+            r = await cliente.options(
+                ruta,
+                headers={
+                    "Origin": PERMITIDO,
+                    "Access-Control-Request-Method": metodo,
+                    "Access-Control-Request-Headers": "Authorization, Content-Type",
+                },
+            )
+            assert r.status_code == 200 and metodo in r.headers["access-control-allow-methods"]

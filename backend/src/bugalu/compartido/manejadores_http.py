@@ -1,6 +1,7 @@
-"""Formato unico de error HTTP: {"error": {"codigo": str, "mensaje": str}}."""
+"""Formato unico de error HTTP: {"error": {"codigo": str, "mensaje": str, "detalles"?: dict}}."""
 
 from collections.abc import Mapping
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -17,13 +18,20 @@ _HTTP = {
 
 
 def respuesta_de_error(
-    estado: int, codigo: str, mensaje: str, cabeceras: Mapping[str, str] | None = None
+    estado: int,
+    codigo: str,
+    mensaje: str,
+    cabeceras: Mapping[str, str] | None = None,
+    detalles: dict[str, Any] | None = None,
 ) -> JSONResponse:
     cabeceras = dict(cabeceras or {})
     if estado == 401:
         cabeceras["WWW-Authenticate"] = "Bearer"
+    error: dict[str, Any] = {"codigo": codigo, "mensaje": mensaje}
+    if detalles:
+        error["detalles"] = detalles
     return JSONResponse(
-        {"error": {"codigo": codigo, "mensaje": mensaje}},
+        {"error": error},
         status_code=estado,
         headers=cabeceras or None,
     )
@@ -32,7 +40,9 @@ def respuesta_de_error(
 def registrar_manejadores(app: FastAPI) -> None:
     @app.exception_handler(ErrorDeNegocio)
     async def _(_: Request, error: ErrorDeNegocio) -> JSONResponse:
-        return respuesta_de_error(error.estado_http, error.codigo, error.mensaje)
+        return respuesta_de_error(
+            error.estado_http, error.codigo, error.mensaje, detalles=error.detalles
+        )
 
     @app.exception_handler(StarletteHTTPException)
     async def _http(_: Request, error: StarletteHTTPException) -> JSONResponse:
@@ -47,7 +57,12 @@ def registrar_manejadores(app: FastAPI) -> None:
         campos = dict.fromkeys(
             ".".join(str(p) for p in e["loc"][1:]) or "cuerpo" for e in error.errors()
         )
-        return respuesta_de_error(422, "datos_invalidos", f"Datos invalidos: {', '.join(campos)}.")
+        return respuesta_de_error(
+            422,
+            "datos_invalidos",
+            f"Datos invalidos: {', '.join(campos)}.",
+            detalles={"campo": next(iter(campos))},
+        )
 
     @app.exception_handler(OperationalError)
     async def _base_caida(_: Request, __: OperationalError) -> JSONResponse:

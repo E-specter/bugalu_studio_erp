@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 from pydantic import AfterValidator, BaseModel, StringConstraints
 
@@ -29,6 +29,7 @@ TextoLargo = Annotated[
 class DetalleError(BaseModel):
     codigo: str
     mensaje: str
+    detalles: dict[str, Any] | None = None
 
 
 class RespuestaError(BaseModel):

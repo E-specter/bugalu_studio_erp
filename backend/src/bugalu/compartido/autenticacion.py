@@ -70,3 +70,15 @@ def obtener_claims(
     except (jwt.PyJWTError, ValueError) as error:
         raise NoAutenticado("Token invalido o caducado.") from error
     return claims
+
+
+def obtener_claims_opcionales(
+    credenciales: Annotated[HTTPAuthorizationCredentials | None, Depends(_esquema)],
+    resolutor: Annotated[ResolutorClave, Depends(obtener_resolutor_clave)],
+    configuracion: Annotated[Configuracion, Depends(obtener_configuracion)],
+) -> dict[str, Any] | None:
+    """Endpoints publicos con mas detalle para quien tiene sesion: sin token es visitante; con un
+    token invalido es 401 (nunca se degrada en silencio a visitante)."""
+    if credenciales is None:
+        return None
+    return obtener_claims(credenciales, resolutor, configuracion)

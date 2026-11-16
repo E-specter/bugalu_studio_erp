@@ -10,6 +10,7 @@ from bugalu.compartido.esquemas import RespuestaError
 from bugalu.compartido.manejadores_http import registrar_manejadores
 from bugalu.modulos.catalogo.infraestructura.entrada.http.router import router as router_catalogo
 from bugalu.modulos.identidad.infraestructura.entrada.http.router import router as router_identidad
+from bugalu.modulos.reservas.infraestructura.entrada.http.router import router as router_reservas
 
 
 @asynccontextmanager
@@ -40,4 +41,5 @@ def crear_app() -> FastAPI:
     registrar_manejadores(app)
     app.include_router(router_identidad, prefix="/api/v1")
     app.include_router(router_catalogo, prefix="/api/v1")
+    app.include_router(router_reservas, prefix="/api/v1")
     return app
