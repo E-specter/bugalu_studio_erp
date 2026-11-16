@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-16
+
+- **RF-01 Autenticar usuario y gestionar perfil (implementado):** registro de artistas con medidor de robustez (8 caracteres con minúsculas, mayúsculas, números y símbolos, exigido por Supabase Auth), acceso de artistas e interno, recuperación de contraseña, verificación de correo propia antes del primer pago, solicitud de acceso del personal con aprobación del Administrador, gestión de roles con protección del último administrador (serializada), perfil editable y Google preparado para artistas (desactivado hasta tener credenciales). ADR-008 (D-10 fuera de la v1). 184 pruebas de backend, 88 pgTAP, 317 de Playwright y recorrido real de punta a punta (`npm run test:e2e:real`). Auditoría Opus aprobada tras corregir una carrera del último administrador y un 500 por byte NUL.
+
 ## 2026-11-15
 
 - **Auditoría del esqueleto (fase 6):** PostgREST deja de exponer `public` (el backend es el único camino a los datos) y el backend se conecta con el rol `bugalu_api` en lugar del superusuario (ampliación de ADR-007); formato de error único también para 404/405/422; ningún token, base caída ni JWKS roto devuelve 500; foco y anuncio al reintentar el perfil, nombres coherentes y objetivos táctiles; herramientas de escritura del conector de Supabase de claude.ai denegadas. 50 pruebas de backend, 23 pgTAP y 55 de Playwright.

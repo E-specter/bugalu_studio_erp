@@ -35,7 +35,7 @@ Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-15 →
 
 | RF | Título | Módulo | Estado |
 |---|---|---|---|
-| [RF-01](03-requerimientos/RF-01.md) | Autenticar usuario y gestionar perfil | `identidad` | borrador |
+| [RF-01](03-requerimientos/RF-01.md) | Autenticar usuario y gestionar perfil | `identidad` | implementado |
 | [RF-02](03-requerimientos/RF-02.md) | Simular precio y emitir cotización a medida | `catalogo` | borrador |
 | [RF-03](03-requerimientos/RF-03.md) | Publicar y consultar franjas de sala | `reservas` | borrador |
 | [RF-04](03-requerimientos/RF-04.md) | Registrar reserva de sala | `reservas` | borrador |
