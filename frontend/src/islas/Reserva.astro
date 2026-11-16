@@ -1,0 +1,798 @@
+---
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Casilla from '../componentes/Casilla.astro';
+import Tabla from '../componentes/Tabla.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import IndicadorEstado from '../componentes/IndicadorEstado.astro';
+import EncabezadoPantalla from '../componentes/EncabezadoPantalla.astro';
+import Calendario from './Calendario.astro';
+
+interface Props {
+  paso: 'horario' | 'servicio' | 'confirmar' | 'listo';
+}
+const { paso } = Astro.props;
+// Copy de la spec RF-04-reservar (tabla Copy). `n` es el paso de 5 (el 03 es la cuenta: sin sesion va al acceso).
+const meta = {
+  horario: { n: 1, titulo: 'Elige tu horario', descripcion: 'Elige el día, la hora de inicio y cuánto tiempo necesitas la sala.' },
+  servicio: { n: 2, titulo: 'Servicio y precio', descripcion: 'Elige qué vas a hacer y quién te acompaña. El precio se calcula al momento.' },
+  confirmar: { n: 4, titulo: 'Confirma tu reserva', descripcion: 'Revisa todo antes de confirmar.' },
+  listo: { n: 5, titulo: 'Reserva registrada', descripcion: 'Tu horario queda apartado mientras pagas el anticipo.' },
+}[paso];
+const etapas = ['Horario', 'Servicio', 'Cuenta', 'Confirmar', 'Listo'];
+const enFlujo = paso !== 'listo';
+---
+
+<!-- Un bloque por estado (estados-sistema): el servidor pinta cada <template> y la isla clona el que toca. Sin JS, el noscript explica que hace falta. -->
+<bugalu-reserva class="reserva" paso={paso}>
+  <EncabezadoPantalla variante="flujo" indice={`PASO 0${meta.n} / 05`} titulo={meta.titulo} descripcion={meta.descripcion} />
+  <nav aria-label="Pasos">
+    <ol class="res-pasos">
+      {etapas.map((etapa, i) => (
+        <li data-paso={etapa.toLowerCase()} aria-current={i + 1 === meta.n ? 'step' : undefined}>
+          <span class="res-paso-num">0{i + 1}</span> {etapa} <span class="res-paso-estado">{i + 1 < meta.n ? 'HECHO' : ''}</span>
+        </li>
+      ))}
+    </ol>
+  </nav>
+  <div data-avisos></div>
+  <!-- Región viva estable: anuncia el total al terminar cada simulacion. -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  <noscript>
+    <Aviso variante="informacion" titulo="Para reservar necesitas JavaScript. Actívalo en tu navegador y recarga la página." />
+  </noscript>
+
+  <div class:list={['res-rejilla', !enFlujo && 'res-rejilla-sola']}>
+    <div class="res-principal">
+      {paso === 'horario' && (
+        <>
+          <Calendario modo="reserva" />
+          <div data-cuerpo hidden>
+            <Panel codigo="02" titulo="Tiempo de sala">
+              <Campo tipo="selector" nombre="duracion" etiqueta="Duración" ayuda="Elige primero la hora de inicio." disabled><option>—</option></Campo>
+            </Panel>
+            <div class="res-acciones"><Boton tamano="grande" icono="arrow-right" data-continuar>Continuar</Boton></div>
+          </div>
+        </>
+      )}
+
+      {(paso === 'servicio' || paso === 'confirmar') && (
+        <div data-cuerpo hidden>
+          <div data-catalogo></div>
+          <div data-datos hidden class="res-bloques">
+            {paso === 'servicio' && (
+              <>
+                <fieldset class="res-grupo">
+                  <legend>Servicio</legend>
+                  <div data-lista-servicios class="res-lista"></div>
+                </fieldset>
+                <fieldset class="res-grupo">
+                  <legend>Especialistas</legend>
+                  <p class="res-ayuda">El ingeniero de sonido viene incluido.</p>
+                  <div data-lista-especialistas class="res-lista"></div>
+                </fieldset>
+              </>
+            )}
+            {paso === 'confirmar' && (
+              <Panel codigo="R1" titulo="Tu reserva">
+                <dl class="res-datos" data-revision></dl>
+              </Panel>
+            )}
+            <Panel codigo={paso === 'confirmar' ? 'R2' : undefined} titulo="Precio simulado">
+              <div data-precio></div>
+            </Panel>
+            {paso === 'confirmar' && (
+              <>
+                <Panel codigo="R3" titulo="Detalle">
+                  <Campo tipo="area" nombre="detalle" etiqueta="Qué necesitas (opcional)" ayuda="Cuéntanos qué vas a grabar o qué equipo necesitas." maxlength="500" rows="4" />
+                </Panel>
+                <Panel codigo="R4" titulo="Pago y cancelación">
+                  <p>Pagas el 50 % para confirmar y el resto al terminar la sesión. Tienes un plazo para pagar el anticipo; te lo decimos al confirmar y por correo. Si vence sin pago, la reserva se cancela y el horario se libera. Puedes cancelarla sin costo mientras no hayas registrado ningún pago.</p>
+                </Panel>
+              </>
+            )}
+            <div class="res-acciones">
+              <Boton variante="secundario" href="#" data-anterior>Anterior</Boton>
+              {paso === 'servicio' && <Boton icono="arrow-right" data-continuar>Continuar</Boton>}
+              {paso === 'confirmar' && <Boton data-confirmar>Confirmar reserva</Boton>}
+            </div>
+            {paso === 'confirmar' && <p class="res-ayuda" data-motivo hidden>Necesitamos mostrarte el precio antes de confirmar.</p>}
+          </div>
+        </div>
+      )}
+
+      {paso === 'listo' && (
+        <div data-cuerpo hidden>
+          <div data-listo></div>
+        </div>
+      )}
+    </div>
+
+    {enFlujo && (
+      <aside class="res-lateral" data-cuerpo-lateral hidden>
+        <Panel titulo="Tu reserva" variante="lateral">
+          <EtiquetaTecnica texto="SIN CONFIRMAR" />
+          <dl class="res-datos" data-resumen></dl>
+        </Panel>
+      </aside>
+    )}
+  </div>
+
+  <template data-plantilla="aviso">
+    <Aviso variante="error" titulo=" " accion={{ etiqueta: ' ', href: '#' }} />
+  </template>
+  <template data-plantilla="servicio"><Casilla tipo="radio" nombre="servicio" valor="" etiqueta=" " detalle=" " /></template>
+  <template data-plantilla="especialista"><Casilla nombre="especialista" valor="" etiqueta=" " detalle=" " /></template>
+  <template data-plantilla="cargando"><Panel titulo="Cargando" cargando /></template>
+  <template data-plantilla="catalogo-error">
+    <Aviso variante="error" titulo="No pudimos cargar los servicios." texto="Revisa tu conexión e inténtalo de nuevo.">
+      <div class="res-acciones"><Boton variante="secundario" data-reintentar-catalogo>Reintentar</Boton></div>
+    </Aviso>
+  </template>
+  <template data-plantilla="catalogo-vacio">
+    <Aviso variante="informacion" titulo="Ahora no hay servicios disponibles para reservar. Vuelve pronto." />
+  </template>
+  <template data-plantilla="precio-calculando"><p class="res-ayuda">Calculando precio…</p></template>
+  <template data-plantilla="precio-vacio"><p class="res-ayuda">Elige un servicio para ver el precio.</p></template>
+  <template data-plantilla="precio">
+    <Tabla titulo="Partidas" columnas={['Concepto', 'Cantidad', 'Importe']} variante="compacta" />
+    <Aviso variante="informacion" titulo="Esta simulación no tiene valor de cotización. El precio de tu reserva se calcula al confirmarla, con las mismas tarifas." />
+  </template>
+  <template data-plantilla="precio-error">
+    <Aviso variante="error" titulo=" " accion={{ etiqueta: ' ', href: '#' }}>
+      <div class="res-acciones"><Boton variante="secundario" data-reintentar-precio>Reintentar</Boton></div>
+    </Aviso>
+  </template>
+  <template data-plantilla="listo">
+    <Aviso variante="exito" titulo="Reserva registrada." />
+    <Panel codigo="L1" titulo="Reserva " variante="destacado">
+      <dl class="res-datos" data-datos-listo></dl>
+      <IndicadorEstado variante="barra" tono="pendiente" texto="PRE-RESERVADA" dato=" " activo />
+    </Panel>
+    <Panel titulo="Siguientes pasos">
+      <ol class="res-siguientes">
+        <li data-paso-1></li>
+        <li>Registra tu comprobante desde tu reserva.</li>
+        <li>Cuando lo validemos, tu reserva pasará a Confirmada.</li>
+      </ol>
+      <p class="res-ayuda" data-correo hidden></p>
+    </Panel>
+    <div class="res-acciones">
+      <Boton tamano="grande" href="/app/reservas/detalle?id=" data-ver>Ver mi reserva</Boton>
+      <a class="res-enlace" href="/reservar/">Reservar otro horario</a>
+    </div>
+  </template>
+  <template data-plantilla="listo-sin-datos">
+    <Aviso variante="exito" titulo="Reserva registrada." texto="No pudimos mostrar el detalle ahora. Lo encuentras en tus reservas.">
+      <div class="res-acciones"><Boton href="/app/reservas">Ver mis reservas</Boton></div>
+    </Aviso>
+  </template>
+</bugalu-reserva>
+
+<style is:global>
+  bugalu-reserva { display: block; }
+  bugalu-reserva .res-pasos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2) var(--espacio-5);
+    margin: var(--espacio-5) 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    line-height: var(--fuente-interlineado-interfaz);
+    text-transform: uppercase;
+    color: var(--color-texto-principal);
+  }
+  bugalu-reserva .res-pasos li { padding-block: var(--espacio-1); border-block-end: var(--borde-grosor-grueso) solid transparent; }
+  bugalu-reserva .res-pasos li[aria-current='step'] { border-block-end-color: var(--color-borde-fuerte); font-weight: var(--fuente-peso-medio); }
+  bugalu-reserva .res-paso-estado { margin-inline-start: var(--espacio-1); }
+  bugalu-reserva .res-rejilla { display: grid; gap: var(--espacio-6); grid-template-columns: minmax(0, 1fr); align-items: start; }
+  bugalu-reserva .res-principal, bugalu-reserva .res-bloques { display: grid; gap: var(--espacio-5); min-inline-size: 0; }
+  bugalu-reserva [data-cuerpo] { display: grid; gap: var(--espacio-5); }
+  bugalu-reserva [data-cuerpo][hidden], bugalu-reserva [hidden] { display: none; }
+  bugalu-reserva .res-rejilla-sola .res-principal { max-inline-size: var(--medida-linea-lectura); }
+  bugalu-reserva .res-grupo { margin: 0; padding: var(--espacio-5); border: var(--borde-grosor-base) solid var(--color-borde-fuerte); background: var(--color-fondo-superficie); min-inline-size: 0; }
+  bugalu-reserva .res-grupo legend {
+    padding-inline: var(--espacio-2);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+    color: var(--color-texto-principal);
+  }
+  bugalu-reserva .res-lista { display: grid; gap: var(--espacio-3); }
+  bugalu-reserva .res-ayuda { margin: 0; color: var(--color-texto-secundario); font-size: var(--fuente-tamano-pequeno); }
+  bugalu-reserva .res-datos { display: grid; gap: var(--espacio-3); margin: 0; }
+  bugalu-reserva .res-datos > div { display: grid; gap: var(--espacio-1); }
+  bugalu-reserva .res-datos dt {
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+    color: var(--color-texto-secundario);
+  }
+  bugalu-reserva .res-datos dd { margin: 0; color: var(--color-texto-principal); }
+  bugalu-reserva .res-acciones { display: flex; flex-direction: column; gap: var(--espacio-3); align-items: stretch; }
+  bugalu-reserva .res-enlace { color: var(--color-texto-principal); }
+  bugalu-reserva .res-siguientes { margin: 0; padding-inline-start: var(--espacio-5); display: grid; gap: var(--espacio-2); }
+  bugalu-reserva [data-precio] > * + * { margin-block-start: var(--espacio-4); }
+  bugalu-reserva .res-total th, bugalu-reserva .res-total td { font-weight: var(--fuente-peso-medio); }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    bugalu-reserva .res-acciones { flex-direction: row; align-items: center; flex-wrap: wrap; }
+  }
+  @media (min-width: 64em) { /* punto-quiebre-escritorio */
+    bugalu-reserva .res-rejilla:not(.res-rejilla-sola) { grid-template-columns: minmax(0, 1fr) var(--medida-columna-lateral); }
+  }
+</style>
+
+<script>
+  import { obtenerToken, obtenerCliente } from '../servicios/sesion.js';
+  import { listarSalas, crearReserva, obtenerReserva } from '../servicios/reservas.js';
+  import { listarServicios, listarEspecialistas, simular } from '../servicios/catalogo.js';
+  import { ErrorApi } from '../servicios/api.js';
+  import { soles, fechaDe, horaDe, instante, nombreDia, diaMes } from '../servicios/formatos.js';
+
+  const RUTAS: Record<string, string> = { horario: '/reservar/', servicio: '/reservar/servicio/', confirmar: '/reservar/confirmar/' };
+  const DESCRIPCION: Record<string, string> = {
+    grabacion: 'Graba voces, instrumentos o tu banda en vivo.',
+    ensayo: 'Ensaya en sala. Disponible si ya tienes una sesión confirmada con nosotros.',
+    live: 'Sesión en vivo grabada en sala.',
+  };
+  const UNIDAD: Record<string, string> = { hora: 'por hora', lapso_30: 'por media hora' };
+  const NOMBRE_RECARGO: Record<string, string> = { noche: 'de noche', fin_de_semana: 'de fin de semana', feriado: 'de feriado' };
+  const dur = (min: number) => (min < 60 ? `${min} min` : `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}`);
+  const sumar = (iso: string, min: number) => {
+    const d = new Date(Date.parse(iso) + min * 6e4).toISOString();
+    return instante(fechaDe(d), horaDe(d));
+  };
+  const fechaHora = (iso: string) => `${diaMes(fechaDe(iso))}, ${horaDe(iso)}`;
+  // "faltan 2 d 3 h" / "faltan 5 h 10 min" / "faltan 7 min" (plazo restante, estructura-app).
+  const faltan = (iso: string) => {
+    const min = Math.max(0, Math.floor((Date.parse(iso) - Date.now()) / 6e4));
+    const d = Math.floor(min / 1440);
+    const h = Math.floor((min % 1440) / 60);
+    return `faltan ${d ? `${d} d ${h} h` : h ? `${h} h ${min % 60} min` : `${min} min`}`;
+  };
+
+  class BugaluReserva extends HTMLElement {
+    paso = '';
+    e: any = { esp: [] };
+    max: number | null = null;
+    salas: any[] = [];
+    servicios: any[] = [];
+    especialistas: any[] = [];
+    sim: any = null;
+    simEstado = 'vacio';
+    ciclo = 0;
+    temporizador: any = null;
+    ultimoAnuncio = '';
+    enviando = false;
+
+    async connectedCallback() {
+      this.paso = this.getAttribute('paso')!;
+      this.leerUrl();
+      if (!(await this.guardar())) return;
+      this.addEventListener('click', (ev) => this.alPulsar(ev));
+      this.addEventListener('change', (ev) => this.alCambiar(ev));
+      this.addEventListener('calendario-inicio', (ev) => this.alElegirInicio((ev as CustomEvent).detail));
+      this.q('[data-cuerpo]')!.hidden = false;
+      const lateral = this.q('[data-cuerpo-lateral]');
+      if (lateral) lateral.hidden = false;
+      this.q('.res-acciones [data-anterior]')?.setAttribute('href', this.url(this.paso === 'confirmar' ? 'servicio' : 'horario'));
+      // Salas para el nombre del resumen (el calendario trae las suyas); un fallo no bloquea el paso.
+      this.salas = await listarSalas().catch(() => []);
+      if (this.paso === 'horario') this.iniciarHorario();
+      else if (this.paso === 'listo') await this.iniciarListo();
+      else await this.cargarCatalogo();
+      this.resumen();
+      if (this.paso === 'listo' || this.paso === 'horario') this.titulo().focus();
+    }
+
+    disconnectedCallback() {
+      clearTimeout(this.temporizador);
+    }
+
+    q<T extends HTMLElement = HTMLElement>(selector: string) {
+      return this.querySelector<T>(selector);
+    }
+    titulo() {
+      const h1 = this.q('h1')!;
+      h1.tabIndex = -1;
+      return h1;
+    }
+    plantilla(nombre: string) {
+      return (this.q<HTMLTemplateElement>(`template[data-plantilla="${nombre}"]`)!.content.cloneNode(true) as DocumentFragment);
+    }
+
+    // --- Estado en la URL (no hay borrador en el servidor) ---
+
+    leerUrl() {
+      const p = new URLSearchParams(location.search);
+      this.e = {
+        inicio: p.get('inicio'),
+        duracion: +(p.get('duracion') ?? 0) || 0,
+        sala: p.get('sala'),
+        servicio: p.get('servicio'),
+        esp: (p.get('esp') ?? '').split(',').filter(Boolean),
+        fecha: p.get('fecha'),
+        vista: p.get('vista'),
+        id: p.get('id'),
+      };
+    }
+    url(paso: string, extra: Record<string, string | null> = {}) {
+      const e = { ...this.e, ...extra };
+      const p = new URLSearchParams();
+      if (e.inicio) p.set('inicio', e.inicio);
+      if (e.duracion) p.set('duracion', String(e.duracion));
+      if (e.sala) p.set('sala', e.sala);
+      if (e.servicio) p.set('servicio', e.servicio);
+      if (e.esp?.length) p.set('esp', e.esp.join(','));
+      if (e.fecha) p.set('fecha', e.fecha);
+      if (e.vista) p.set('vista', e.vista);
+      const consulta = p.toString();
+      return `${RUTAS[paso]}${consulta ? `?${consulta}` : ''}`;
+    }
+    // Si a un paso le falta un dato de uno anterior, va al primer paso incompleto.
+    async guardar() {
+      const { inicio, duracion, servicio, id } = this.e;
+      const falta = this.paso === 'listo' ? !id : this.paso === 'servicio' ? !inicio || !duracion : this.paso === 'confirmar' ? !inicio || !duracion || !servicio : false;
+      if (falta) {
+        location.replace(this.paso === 'confirmar' && inicio && duracion ? this.url('servicio') : this.paso === 'listo' ? '/reservar/' : this.url('horario'));
+        return false;
+      }
+      if (this.paso === 'confirmar' && !(await obtenerToken())) {
+        location.replace(this.rutaAcceso('confirmar'));
+        return false;
+      }
+      return true;
+    }
+    rutaAcceso(destino: string) {
+      return `/acceso?${new URLSearchParams({ volver: this.url(destino) })}`;
+    }
+    guardarUrl() {
+      history.replaceState(null, '', this.url(this.paso));
+    }
+
+    // --- Avisos, foco y región viva ---
+
+    aviso(mensaje: string, enlace?: { etiqueta: string; href: string }, enfocar?: HTMLElement | null) {
+      const nodo = this.plantilla('aviso');
+      const caja = nodo.querySelector<HTMLElement>('.aviso')!;
+      caja.querySelector('.aviso-titulo')!.textContent = mensaje;
+      const accion = caja.querySelector<HTMLAnchorElement>('.aviso-accion')!;
+      if (enlace) {
+        accion.textContent = enlace.etiqueta;
+        accion.href = enlace.href;
+      } else accion.remove();
+      this.q('[data-avisos]')!.replaceChildren(nodo);
+      caja.tabIndex = -1;
+      (enfocar ?? caja).focus();
+    }
+    sinAviso() {
+      this.q('[data-avisos]')!.replaceChildren();
+    }
+    revisar(...pasos: string[]) {
+      for (const paso of pasos) {
+        const estado = this.q(`.res-pasos [data-paso="${paso}"] .res-paso-estado`);
+        if (estado) estado.textContent = 'REVISAR';
+      }
+    }
+
+    // --- Resumen persistente ---
+
+    resumen() {
+      const lista = this.q('[data-resumen]') ?? this.q('[data-revision]');
+      const e = this.e;
+      const sala = this.salas.find((s) => s.id === e.sala) ?? (e.sala ? null : this.salas[0]);
+      const servicio = this.servicios.find((s) => s.id === e.servicio);
+      const nombres = this.especialistasMarcados().map((x) => x.nombre);
+      const filas: [string, string, string?][] = [
+        ['Sala', sala?.nombre ?? '—'],
+        ['Fecha', e.inicio ? `${nombreDia(fechaDe(e.inicio))} ${diaMes(fechaDe(e.inicio))}` : '—'],
+        ['Horario', e.inicio && e.duracion ? `${horaDe(e.inicio)} – ${horaDe(sumar(e.inicio, e.duracion))}` : '—', 'horario'],
+        ['Duración', e.duracion ? dur(e.duracion) : '—', 'horario'],
+        ['Servicio', servicio?.nombre ?? '—', 'servicio'],
+        ['Especialistas', nombres.length ? nombres.join(', ') : '—', 'servicio'],
+      ];
+      if (this.sim && this.simEstado === 'ok') filas.push(['Total', soles(this.sim.total)], ['Anticipo 50 %', soles(this.sim.anticipo)]);
+      else if (this.paso === 'servicio' || this.paso === 'horario') filas.push(['Total', '—']);
+      for (const destino of [this.q('[data-resumen]'), this.q('[data-revision]')]) {
+        if (!destino) continue;
+        destino.replaceChildren(
+          ...filas
+            .filter(([etiqueta]) => destino === lista || etiqueta !== 'Total')
+            .map(([etiqueta, valor, cambiar]) => {
+              const fila = document.createElement('div');
+              const dt = document.createElement('dt');
+              dt.textContent = etiqueta;
+              const dd = document.createElement('dd');
+              dd.textContent = valor;
+              if (cambiar && destino.hasAttribute('data-revision')) {
+                const a = document.createElement('a');
+                a.href = this.url(cambiar);
+                a.textContent = ' Cambiar';
+                const oculto = document.createElement('span');
+                oculto.className = 'visualmente-oculto';
+                oculto.textContent = ` ${etiqueta.toLowerCase()}`;
+                a.append(oculto);
+                dd.append(' ', a);
+              }
+              fila.append(dt, dd);
+              return fila;
+            }),
+        );
+      }
+    }
+    especialistasMarcados() {
+      const defecto = this.servicios.find((s) => s.id === this.e.servicio)?.especialistas_por_defecto ?? [];
+      return this.especialistas.filter((x) => defecto.includes(x.id) || this.e.esp.includes(x.id));
+    }
+
+    // --- Eventos ---
+
+    alPulsar(ev: Event) {
+      const o = ev.target as Element;
+      if (o.closest('[data-continuar]')) return void this.continuar();
+      if (o.closest('[data-confirmar]')) return void this.confirmar();
+      if (o.closest('[data-reintentar-catalogo]')) return void this.cargarCatalogo();
+      if (o.closest('[data-reintentar-precio]')) return void this.calcular();
+      const casilla = o.closest<HTMLInputElement>('input[aria-disabled="true"]');
+      if (casilla) ev.preventDefault(); // el especialista incluido no se quita
+      const anterior = o.closest('[data-anterior]');
+      if (anterior && this.enviando) ev.preventDefault();
+    }
+    alCambiar(ev: Event) {
+      const o = ev.target as HTMLInputElement;
+      if (o.name === 'duracion') {
+        this.e.duracion = +o.value;
+        this.duracionAlCalendario(o.value);
+        this.guardarUrl();
+        this.resumen();
+      } else if (o.name === 'servicio') {
+        this.e.servicio = o.value;
+        const defecto = this.servicios.find((s) => s.id === o.value)?.especialistas_por_defecto ?? [];
+        this.e.esp = this.e.esp.filter((id: string) => !defecto.includes(id));
+        this.sinAviso();
+        this.pintarEspecialistas();
+        this.cambioPrecio();
+      } else if (o.name === 'especialista') {
+        this.e.esp = [...this.q('[data-lista-especialistas]')!.querySelectorAll<HTMLInputElement>('input:checked:not([aria-disabled])')].map((x) => x.value);
+        this.cambioPrecio();
+      }
+    }
+    cambioPrecio() {
+      this.guardarUrl();
+      this.resumen();
+      this.programar();
+    }
+
+    // --- 01 Horario ---
+
+    iniciarHorario() {
+      if (this.e.inicio) this.opcionesDuracion();
+    }
+    alElegirInicio(detalle: { inicio: string; minutosMaximos: number }) {
+      this.e.inicio = detalle.inicio;
+      this.max = detalle.minutosMaximos;
+      this.sinAviso();
+      this.opcionesDuracion();
+    }
+    // El calendario se repinta al cambiar `duracion`: se devuelve el foco a la celda que lo tenia (teclado).
+    duracionAlCalendario(valor: string) {
+      const cal = this.q('bugalu-calendario');
+      if (!cal || cal.getAttribute('duracion') === valor) return;
+      const inicio = (document.activeElement as HTMLElement | null)?.dataset?.inicio;
+      cal.setAttribute('duracion', valor);
+      if (!inicio) return;
+      [...cal.querySelectorAll<HTMLElement>('button[data-inicio]')].find((b) => b.dataset.inicio === inicio && b.offsetParent !== null)?.focus();
+    }
+    opcionesDuracion() {
+      const select = this.q<HTMLSelectElement>('select[name="duracion"]')!;
+      const tope = Math.min(this.max ?? 480, 480);
+      select.replaceChildren(...Array.from({ length: tope / 30 }, (_, i) => new Option(dur((i + 1) * 30), String((i + 1) * 30))));
+      const valor = this.e.duracion >= 30 && this.e.duracion <= tope && this.e.duracion % 30 === 0 ? this.e.duracion : tope >= 60 ? 60 : 30;
+      select.value = String(valor);
+      select.disabled = false;
+      this.e.duracion = valor;
+      this.duracionAlCalendario(String(valor));
+      const ayuda = this.q('#campo-duracion-ayuda');
+      if (ayuda) ayuda.textContent = `Desde las ${horaDe(this.e.inicio)} caben hasta ${dur(tope)}. Tras cada sesión la sala necesita 30 min de preparación.`;
+      const p = new URLSearchParams(location.search);
+      p.set('inicio', this.e.inicio);
+      p.set('duracion', String(valor));
+      history.replaceState(null, '', `${location.pathname}?${p}`);
+      this.resumen();
+    }
+
+    // --- 02 y 04: catálogo ---
+
+    async cargarCatalogo() {
+      const salida = this.q('[data-catalogo]')!;
+      this.q('[data-datos]')!.hidden = true;
+      salida.replaceChildren(this.plantilla('cargando'));
+      try {
+        const [servicios, especialistas] = await Promise.all([listarServicios(), listarEspecialistas()]);
+        this.servicios = servicios.filter((s: any) => s.ocupa_sala && s.activo);
+        this.especialistas = especialistas.filter((x: any) => x.activo);
+      } catch {
+        salida.replaceChildren(this.plantilla('catalogo-error'));
+        return;
+      }
+      if (!this.servicios.length) return void salida.replaceChildren(this.plantilla('catalogo-vacio'));
+      salida.replaceChildren();
+      this.q('[data-datos]')!.hidden = false;
+      if (this.paso === 'servicio') {
+        this.pintarServicios();
+        this.pintarEspecialistas();
+      }
+      if (this.paso === 'confirmar') this.q('[data-confirmar]')!.setAttribute('disabled', '');
+      this.resumen();
+      if (this.e.servicio) this.calcular();
+      else this.pintarPrecio('vacio');
+      if (this.paso !== 'listo' && this.paso !== 'horario' && !this.q('h1:focus')) this.titulo().focus();
+    }
+    pintarServicios() {
+      this.q('[data-lista-servicios]')!.replaceChildren(
+        ...this.servicios.map((s) => {
+          const nodo = this.plantilla('servicio');
+          const entrada = nodo.querySelector<HTMLInputElement>('input')!;
+          entrada.value = s.id;
+          entrada.checked = s.id === this.e.servicio;
+          nodo.querySelector('.casilla-etiqueta')!.textContent = s.nombre;
+          nodo.querySelector('.casilla-detalle')!.textContent = [DESCRIPCION[s.categoria], `${soles(s.tarifa_hora)} por hora`].filter(Boolean).join(' · ');
+          return nodo;
+        }),
+      );
+    }
+    pintarEspecialistas() {
+      const defecto = this.servicios.find((s) => s.id === this.e.servicio)?.especialistas_por_defecto ?? [];
+      this.q('[data-lista-especialistas]')!.replaceChildren(
+        ...this.especialistas.map((x) => {
+          const nodo = this.plantilla('especialista');
+          const entrada = nodo.querySelector<HTMLInputElement>('input')!;
+          const incluido = defecto.includes(x.id);
+          entrada.value = x.id;
+          entrada.checked = incluido || this.e.esp.includes(x.id);
+          if (incluido) entrada.setAttribute('aria-disabled', 'true');
+          const tarifa = `${Number(x.monto_fijo) ? `${soles(x.monto_fijo)} + ` : ''}${soles(x.monto_variable)} ${UNIDAD[x.unidad] ?? ''}`.trim();
+          nodo.querySelector('.casilla-etiqueta')!.textContent = x.nombre;
+          nodo.querySelector('.casilla-detalle')!.textContent = incluido ? `${tarifa} · Incluido con este servicio` : tarifa;
+          return nodo;
+        }),
+      );
+    }
+
+    // --- Simulación (el navegador nunca suma importes ni envía precios) ---
+
+    programar() {
+      clearTimeout(this.temporizador);
+      this.pintarPrecio('calculando');
+      this.temporizador = setTimeout(() => this.calcular(), 400);
+    }
+    async calcular() {
+      clearTimeout(this.temporizador);
+      const ciclo = ++this.ciclo;
+      this.pintarPrecio('calculando');
+      const { inicio, duracion, servicio, esp } = this.e;
+      try {
+        const sala = this.e.sala ?? this.salas[0]?.id;
+        const sim = await simular({ id_sala: sala, id_servicio: servicio, inicio, fin: sumar(inicio, duracion), especialistas: esp });
+        if (ciclo !== this.ciclo) return;
+        this.sim = sim;
+        this.pintarPrecio('ok');
+        const texto = `Total ${soles(sim.total)}, anticipo ${soles(sim.anticipo)}`;
+        if (texto !== this.ultimoAnuncio) this.q('[data-anuncio]')!.textContent = this.ultimoAnuncio = texto;
+      } catch (error) {
+        if (ciclo !== this.ciclo) return;
+        this.sim = null;
+        this.pintarPrecio('error', error);
+      }
+    }
+    pintarPrecio(estado: string, error?: unknown) {
+      this.simEstado = estado;
+      const salida = this.q('[data-precio]')!;
+      salida.setAttribute('aria-busy', String(estado === 'calculando'));
+      if (estado === 'calculando') salida.replaceChildren(this.plantilla('precio-calculando'));
+      else if (estado === 'vacio') salida.replaceChildren(this.plantilla('precio-vacio'));
+      else if (estado === 'ok') salida.replaceChildren(this.tablaPrecio());
+      else salida.replaceChildren(this.errorPrecio(error));
+      const confirmar = this.q('[data-confirmar]');
+      if (confirmar && !this.enviando) {
+        (confirmar as HTMLButtonElement).disabled = estado !== 'ok';
+        this.q('[data-motivo]')!.hidden = estado !== 'error';
+      }
+      if (estado !== 'calculando') this.resumen();
+      else if (estado === 'calculando') this.sim = null;
+    }
+    tablaPrecio() {
+      const nodo = this.plantilla('precio');
+      const cuerpo = nodo.querySelector('tbody')!;
+      const fila = (concepto: string, cantidad: string, importe: string, clase = '') => {
+        const tr = document.createElement('tr');
+        tr.className = clase;
+        const th = document.createElement('th');
+        th.scope = 'row';
+        th.textContent = concepto;
+        const c = document.createElement('td');
+        c.dataset.etiqueta = 'Cantidad';
+        c.textContent = cantidad;
+        const i = document.createElement('td');
+        i.dataset.etiqueta = 'Importe';
+        i.textContent = importe;
+        tr.append(th, c, i);
+        cuerpo.append(tr);
+      };
+      for (const l of this.sim.lineas) {
+        const cantidad = l.unidad === 'fijo' ? '1' : l.unidad === 'hora' ? `${l.cantidad} h` : l.unidad === 'lapso_30' ? `${l.cantidad} × 30 min` : String(l.cantidad);
+        fila(l.concepto, cantidad, soles(l.monto));
+      }
+      for (const r of this.sim.recargos) fila(`Recargo ${NOMBRE_RECARGO[r.tipo] ?? r.tipo} · ${r.bloques} ${r.bloques === 1 ? 'bloque' : 'bloques'} de 30 min`, '', soles(r.monto));
+      fila('Total', '', soles(this.sim.total), 'res-total');
+      fila('Anticipo 50 %', '', soles(this.sim.anticipo), 'res-total');
+      return nodo;
+    }
+    errorPrecio(error: unknown) {
+      const nodo = this.plantilla('precio-error');
+      const codigo = error instanceof ErrorApi ? error.codigo : '';
+      const estado = error instanceof ErrorApi ? error.estado : -1;
+      let texto = 'Algo salió mal al calcular el precio.';
+      let enlace: { etiqueta: string; href: string } | null = null;
+      if (codigo === 'tramo_invalido') [texto, enlace] = ['Ese horario ya no es válido. Vuelve a elegirlo.', this.enlaceHorario()];
+      else if (codigo === 'servicio_no_reservable') texto = 'Ese servicio no se reserva en sala. Elige otro.';
+      else if (estado === 422) texto = 'No pudimos calcular el precio con estos datos. Revisa tu elección.';
+      else if (estado === 503) texto = 'El servicio no responde. Inténtalo en unos minutos.';
+      else if (estado === 0) texto = 'Sin conexión. Revisa tu red.';
+      nodo.querySelector('.aviso-titulo')!.textContent = texto;
+      const accion = nodo.querySelector<HTMLAnchorElement>('.aviso-accion')!;
+      if (enlace) {
+        accion.textContent = enlace.etiqueta;
+        accion.href = enlace.href;
+        nodo.querySelector('[data-reintentar-precio]')!.remove();
+      } else {
+        accion.remove();
+        if (estado === 422) nodo.querySelector('[data-reintentar-precio]')!.remove();
+      }
+      return nodo;
+    }
+    enlaceHorario() {
+      return { etiqueta: 'Elegir otro horario', href: this.url('horario', { inicio: null, fecha: this.e.inicio ? fechaDe(this.e.inicio) : this.e.fecha }) };
+    }
+
+    // --- Continuar ---
+
+    async continuar() {
+      if (this.paso === 'horario') {
+        if (!this.e.inicio) {
+          const celda = this.q<HTMLElement>('bugalu-calendario button[data-inicio][tabindex="0"]') ?? this.q<HTMLElement>('bugalu-calendario button[data-inicio]');
+          return this.aviso('Elige una hora de inicio en el calendario.', undefined, celda);
+        }
+        const sala = new URLSearchParams(location.search).get('sala') ?? (await listarSalas().catch(() => []))[0]?.id;
+        if (!sala) return this.aviso('No pudimos cargar la sala. Inténtalo de nuevo.');
+        this.e.sala = sala;
+        location.href = this.url('servicio');
+      } else if (this.paso === 'servicio') {
+        if (!this.e.servicio) return this.aviso('Elige un servicio.', undefined, this.q<HTMLElement>('[data-lista-servicios] input'));
+        location.href = (await obtenerToken()) ? this.url('confirmar') : this.rutaAcceso('confirmar');
+      }
+    }
+
+    // --- 04 Confirmar ---
+
+    async confirmar() {
+      if (this.enviando || this.simEstado !== 'ok') return;
+      this.enviando = true;
+      this.sinAviso();
+      const boton = this.q<HTMLButtonElement>('[data-confirmar]')!;
+      const texto = boton.textContent;
+      boton.disabled = true;
+      boton.setAttribute('aria-busy', 'true');
+      boton.textContent = 'Confirmando…';
+      const anterior = this.q('[data-anterior]')!;
+      anterior.setAttribute('aria-disabled', 'true');
+      const detalle = this.q<HTMLTextAreaElement>('textarea[name="detalle"]')!.value.trim();
+      const { inicio, duracion, servicio, esp } = this.e;
+      try {
+        const reserva = await crearReserva({
+          id_sala: this.e.sala ?? this.salas[0]?.id,
+          id_servicio: servicio,
+          inicio,
+          fin: sumar(inicio, duracion),
+          especialistas: esp,
+          ...(detalle && { detalle }),
+        });
+        location.href = `/reservar/listo/?${new URLSearchParams({ id: reserva.id })}`;
+        return;
+      } catch (error) {
+        this.fallaAlConfirmar(error);
+      }
+      this.enviando = false;
+      boton.disabled = false;
+      boton.removeAttribute('aria-busy');
+      boton.textContent = texto;
+      anterior.removeAttribute('aria-disabled');
+    }
+    fallaAlConfirmar(error: unknown) {
+      const codigo = error instanceof ErrorApi ? error.codigo : '';
+      const estado = error instanceof ErrorApi ? error.estado : -1;
+      const horario = this.enlaceHorario();
+      const cambiarServicio = { etiqueta: 'Cambiar servicio', href: this.url('servicio') };
+      const franja: Record<string, string> = {
+        fuera_de_franja: 'Ese horario ya no está publicado.',
+        anticipacion_insuficiente: 'Ese horario empieza demasiado pronto para reservarlo.',
+        anticipacion_excesiva: 'Ese horario aún no se puede reservar: está demasiado lejos.',
+        duracion_invalida: 'La duración va de 30 min a 8 h, en bloques de 30 min.',
+      };
+      if (estado === 409 && codigo === 'tramo_no_disponible') {
+        this.revisar('horario');
+        return this.aviso('Alguien reservó ese horario hace un momento. Elige otro; lo demás se conserva.', horario);
+      }
+      if (estado === 403 && codigo === 'ensayo_no_disponible') {
+        this.revisar('servicio');
+        return this.aviso('El ensayo es para quien ya tiene una sesión confirmada con nosotros. Elige grabación o live session.', cambiarServicio);
+      }
+      if (estado === 422 && franja[codigo]) {
+        this.revisar('horario');
+        return this.aviso(franja[codigo], horario);
+      }
+      if (estado === 422 && codigo === 'servicio_no_reservable') {
+        this.revisar('servicio');
+        return this.aviso('Ese servicio no se reserva en sala. Elige otro.', cambiarServicio);
+      }
+      if (estado === 422) {
+        if ((error as ErrorApi).detalles?.campo === 'detalle') return this.aviso('El detalle no es válido. Máximo 500 caracteres.', undefined, this.q('textarea[name="detalle"]'));
+        this.revisar('horario', 'servicio');
+        return this.aviso('Algo en tu reserva no es válido. Revisa los pasos.');
+      }
+      if (estado === 401) return this.aviso('Tu sesión caducó. Inicia sesión para confirmar; tu elección se conserva.', { etiqueta: 'Iniciar sesión', href: `/acceso?${new URLSearchParams({ volver: this.url('confirmar') })}` });
+      if (estado === 503) return this.aviso('El servicio no responde. Tu reserva no se guardó; inténtalo en unos minutos.');
+      if (estado === 0) return this.aviso('Sin conexión. Tu reserva no se guardó; revisa tu red.');
+      this.aviso('Algo salió mal. Revisa en Mis reservas si se guardó antes de repetir.');
+    }
+
+    // --- 05 Listo ---
+
+    async iniciarListo() {
+      const salida = this.q('[data-listo]')!;
+      let reserva: any;
+      try {
+        reserva = await obtenerReserva(this.e.id);
+      } catch {
+        return salida.replaceChildren(this.plantilla('listo-sin-datos'));
+      }
+      const nodo = this.plantilla('listo');
+      nodo.querySelector('.panel-titulo')!.textContent = `L1 Reserva ${reserva.folio}`;
+      nodo.querySelector('[data-datos-listo]')!.replaceChildren(
+        ...[
+          ['Folio', reserva.folio],
+          ['Fecha', `${nombreDia(fechaDe(reserva.inicio))} ${diaMes(fechaDe(reserva.inicio))}`],
+          ['Horario', `${horaDe(reserva.inicio)} – ${horaDe(reserva.fin)}`],
+          ['Sala', reserva.sala],
+          ['Servicio', reserva.servicio],
+          ['Total', soles(reserva.precio.total)],
+          ['Anticipo 50 %', soles(reserva.precio.anticipo)],
+        ].map(([etiqueta, valor]) => {
+          const fila = document.createElement('div');
+          const dt = document.createElement('dt');
+          dt.textContent = etiqueta;
+          const dd = document.createElement('dd');
+          dd.textContent = valor;
+          fila.append(dt, dd);
+          return fila;
+        }),
+      );
+      nodo.querySelector('.indicador-dato')!.textContent = `${fechaHora(reserva.vence_pago)} · ${faltan(reserva.vence_pago)}`;
+      nodo.querySelector('[data-paso-1]')!.textContent = `Paga el anticipo de ${soles(reserva.precio.anticipo)} antes del ${fechaHora(reserva.vence_pago)}.`;
+      nodo.querySelector<HTMLAnchorElement>('[data-ver]')!.href = `/app/reservas/detalle?${new URLSearchParams({ id: reserva.id })}`;
+      const correo = (await obtenerCliente().auth.getSession().catch(() => null))?.data?.session?.user?.email;
+      const nota = nodo.querySelector<HTMLElement>('[data-correo]')!;
+      if (correo) {
+        nota.textContent = `Te enviamos estos datos a ${correo}.`;
+        nota.hidden = false;
+      }
+      salida.replaceChildren(nodo);
+    }
+  }
+
+  if (!customElements.get('bugalu-reserva')) customElements.define('bugalu-reserva', BugaluReserva);
+</script>

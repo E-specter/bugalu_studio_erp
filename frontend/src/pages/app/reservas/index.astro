@@ -1,0 +1,19 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Boton from '../../../componentes/Boton.astro';
+import Reservas from '../../../islas/Reservas.astro';
+---
+
+<LayoutApp titulo="Mis reservas">
+  <EncabezadoPantalla
+    titulo="Mis reservas"
+    indice="[P2] SALA / RESERVAS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Reservas' }]}
+    descripcion="Tus horarios en la sala, su estado y lo que falta pagar."
+  >
+    <!-- La isla lo quita si no hay reservas: el vacío ya trae su propio "Reservar sala". -->
+    <div slot="acciones" data-accion-encabezado><Boton href="/reservar/">Reservar sala</Boton></div>
+  </EncabezadoPantalla>
+  <Reservas vista="lista" />
+</LayoutApp>

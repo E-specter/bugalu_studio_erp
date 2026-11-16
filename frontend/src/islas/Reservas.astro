@@ -1,0 +1,539 @@
+---
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Tabla from '../componentes/Tabla.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import IndicadorEstado from '../componentes/IndicadorEstado.astro';
+import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+
+interface Props {
+  vista: 'lista' | 'detalle';
+}
+const { vista } = Astro.props;
+// Panel de la vista mientras carga o falla (spec RF-04-mis-reservas).
+const principal = vista === 'lista' ? { titulo: 'Reservas' } : { codigo: 'D1', titulo: 'Reserva' };
+const filtros = [
+  { clave: 'proximas', texto: 'Próximas', href: '/app/reservas/' },
+  { clave: 'historial', texto: 'Historial', href: '/app/reservas/?ver=historial' },
+];
+---
+
+<EstilosGestion />
+
+<!-- Un bloque por estado (estados-sistema): la isla clona el que toca. Sin JS, el noscript oculta la carga y avisa. -->
+<bugalu-reservas class="reservas" data-gestion vista={vista}>
+  <div data-avisos></div>
+  <!-- Región viva estable: anuncia la carga y los umbrales del plazo, nunca cada minuto. -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  {vista === 'lista' && <nav class="reservas-filtros" aria-label="Filtrar reservas" data-filtros hidden></nav>}
+  <div data-salida><Panel {...principal} cargando /></div>
+
+  <EstadosIsla principal={principal} />
+
+  {vista === 'lista' && (
+    <>
+      {filtros.flatMap((f) => [
+        <template data-filtro={f.clave} data-aplicado="no"><EtiquetaTecnica variante="filtro" texto={f.texto} href={f.href} /></template>,
+        <template data-filtro={f.clave} data-aplicado="si"><EtiquetaTecnica variante="filtro" texto={f.texto} href={f.href} aplicado /></template>,
+      ])}
+      <template data-estado="vacio">
+        <Panel titulo="Reservas">
+          <p class="gestion-vacio-titulo">Aún no tienes reservas</p>
+          <p>Elige un horario libre y reserva la sala en unos pasos.</p>
+          <div class="reservas-accion"><Boton href="/reservar/">Reservar sala</Boton></div>
+        </Panel>
+      </template>
+      <template data-estado="vacio-filtro">
+        <Panel titulo="Reservas">
+          <p class="gestion-vacio-titulo" data-vacio></p>
+          <div class="reservas-accion"><Boton variante="secundario" href="#" data-otro></Boton></div>
+        </Panel>
+      </template>
+      <template data-estado="datos">
+        <Panel titulo="Reservas">
+          <p class="reservas-total" data-total></p>
+          <Tabla titulo="Reservas" columnas={['Reserva', 'Fecha', 'Estado', 'Total', 'Pago', '']} />
+        </Panel>
+      </template>
+      <template data-fila>
+        <tr>
+          <th scope="row"><span class="reservas-folio" data-folio></span><span class="gestion-motivo" data-servicio></span></th>
+          <td data-etiqueta="Fecha"><span data-fecha></span><span class="gestion-motivo" data-horario></span></td>
+          <td data-etiqueta="Estado"><EtiquetaTecnica texto="Estado" /><span class="gestion-motivo" data-motivo hidden></span></td>
+          <td data-etiqueta="Total" class="reservas-importe" data-total-fila></td>
+          <td data-etiqueta="Pago">
+            <span data-limite>—</span>
+            <span class="gestion-motivo" data-plazo hidden></span>
+            <span class="gestion-motivo" data-caduca>Sin pago registrado, caduca y el horario se libera.</span>
+          </td>
+          <td><Boton variante="secundario" href="#" data-accion>Ver reserva<span class="visualmente-oculto" data-objeto></span></Boton></td>
+        </tr>
+      </template>
+    </>
+  )}
+
+  {vista === 'detalle' && (
+    <>
+      <template data-estado="no-encontrada">
+        <Panel codigo="[404]" titulo="Reserva no encontrada"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a mis reservas', href: '/app/reservas/' }} /></Panel>
+      </template>
+      <template data-estado="datos">
+        <div class="gestion-rejilla">
+          <div class="gestion-principal">
+            <Panel codigo="D1" titulo="Reserva">
+              <dl class="gestion-datos">
+                <div><dt>Estado</dt><dd><EtiquetaTecnica texto="Estado" /></dd></div>
+                <div><dt>Fecha y horario</dt><dd data-campo="horario"></dd></div>
+                <div><dt>Duración</dt><dd data-campo="duracion"></dd></div>
+                <div><dt>Servicio</dt><dd data-campo="servicio"></dd></div>
+                <div data-fila="especialistas"><dt>Especialistas</dt><dd data-campo="especialistas"></dd></div>
+                <div><dt>Sala</dt><dd data-campo="sala"></dd></div>
+                <div data-fila="cliente"><dt>Cliente</dt><dd data-campo="cliente"></dd></div>
+              </dl>
+            </Panel>
+            <Panel codigo="D2" titulo="Precio">
+              <div data-precio><Tabla titulo="Desglose del precio" columnas={['Concepto', 'Cantidad', 'Importe']} /></div>
+              <p class="gestion-ayuda reservas-nota-precio">Precio calculado al reservar.</p>
+            </Panel>
+            <Panel codigo="D3" titulo="Cuotas">
+              <div data-cuotas><Tabla titulo="Cuotas" columnas={['Cuota', 'Importe', 'Estado']} /></div>
+            </Panel>
+          </div>
+          <div class="gestion-lateral">
+            <div data-estado-reserva class="reservas-estado">
+              <IndicadorEstado variante="barra" texto=" " dato=" " />
+              <p class="reservas-nota" data-nota hidden></p>
+              <div data-menos-hora hidden><Aviso variante="aviso" titulo=" " texto=" " /></div>
+            </div>
+            <div data-abrir-cancelar hidden><Boton variante="peligro" data-abrir>Cancelar reserva</Boton></div>
+            <div data-confirmar hidden>
+              <Panel titulo="Cancelar reserva" variante="lateral" id="cancelar">
+                <p class="reservas-resumen" data-resumen></p>
+                <p data-consecuencia></p>
+                <div class="reservas-botones">
+                  <Boton variante="secundario" data-envio data-volver>Volver a la reserva</Boton>
+                  <Boton variante="peligro" data-envio data-cancelar>Cancelar reserva</Boton>
+                </div>
+              </Panel>
+            </div>
+          </div>
+        </div>
+      </template>
+      <template data-fila-precio>
+        <tr>
+          <th scope="row" data-concepto></th>
+          <td data-etiqueta="Cantidad" data-cantidad></td>
+          <td data-etiqueta="Importe" class="reservas-importe" data-importe></td>
+        </tr>
+      </template>
+      <template data-fila-cuota>
+        <tr>
+          <th scope="row" data-concepto></th>
+          <td data-etiqueta="Importe" class="reservas-importe" data-importe></td>
+          <td data-etiqueta="Estado"><EtiquetaTecnica texto="Estado" /></td>
+        </tr>
+      </template>
+    </>
+  )}
+</bugalu-reservas>
+
+<script>
+  // @ts-nocheck
+  import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { listarMisReservas, obtenerReserva, cancelarReserva } from '../servicios/reservas.js';
+  import { obtenerPerfil } from '../servicios/api.js';
+  import { fechaDe, horaDe, diaMes, diaMesAnio, soles } from '../servicios/formatos.js';
+  import { mostrarAviso, enfocarAviso, llenarAviso } from '../servicios/formulario.js';
+
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const MINUTO = 60e3;
+  const filtrosOrden = ['proximas', 'historial'];
+  // estado -> [texto, variante de la etiqueta]
+  const ESTADOS = { pre_reservada: ['Pre-reservada', 'aviso'], confirmada: ['Confirmada', 'exito'], en_curso: ['En curso', 'activa'], finalizada: ['Finalizada', 'exito'], cancelada: ['Cancelada', 'alerta'] };
+  const PROXIMAS = ['pre_reservada', 'confirmada', 'en_curso'];
+  const HITOS = { al_reservar: 'Al reservar', al_terminar: 'Al terminar la sesión', al_encargar: 'Al encargar', al_aprobar_version: 'Al aprobar la versión' };
+  const CUOTAS = { pendiente: ['Pendiente', 'neutra'], pagada: ['Pagada', 'exito'] };
+  const RECARGOS = { noche: 'Recargo de noche', fin_de_semana: 'Recargo de fin de semana', feriado: 'Recargo de feriado' };
+
+  const nombre = (v) => v?.nombre ?? v;
+  const absoluta = (iso) => `${diaMes(fechaDe(iso))}, ${horaDe(iso)}`;
+  const horario = (r) => `${horaDe(r.inicio)}–${horaDe(r.fin)}`;
+  const fecha = (r) => diaMesAnio(fechaDe(r.inicio));
+  const duracion = (r) => {
+    const min = Math.round((Date.parse(r.fin) - Date.parse(r.inicio)) / MINUTO);
+    return [Math.floor(min / 60) && `${Math.floor(min / 60)} h`, min % 60 && `${min % 60} min`].filter(Boolean).join(' ') || '0 min';
+  };
+  // "faltan 2 d 3 h" (>= 1 dia), "faltan 1 h 5 min", "faltan 59 min".
+  const faltan = (ms) => {
+    const min = Math.floor(ms / MINUTO);
+    const partes = min >= 1440 ? [[Math.floor(min / 1440), 'd'], [Math.floor((min % 1440) / 60), 'h']] : min >= 60 ? [[Math.floor(min / 60), 'h'], [min % 60, 'min']] : [[min, 'min']];
+    return `faltan ${partes.filter(([n]) => n).map(([n, u]) => `${n} ${u}`).join(' ')}`;
+  };
+  // Umbrales del plazo (0 = vencido): solo al cruzarlos se anuncia.
+  const umbral = (ms) => (ms <= 0 ? 0 : ms <= 15 * MINUTO ? 1 : ms <= 60 * MINUTO ? 2 : 3);
+  const anuncios = [(f) => `La reserva ${f} venció sin pago.`, (f) => `La reserva ${f} vence en menos de 15 min.`, (f) => `La reserva ${f} vence en menos de 1 h.`];
+
+  const resto = (r) => (r.estado === 'pre_reservada' && r.vence_pago ? Date.parse(r.vence_pago) - Date.now() : null);
+  // Una pre-reservada con el plazo vencido ya cuenta como caducada, aunque la API tarde en cancelarla.
+  const caducada = (r) => resto(r) !== null && resto(r) <= 0;
+  const estadoDe = (r) => (caducada(r) ? ['Caducada', 'alerta'] : ESTADOS[r.estado]);
+  const motivo = (r) => {
+    if (caducada(r)) return `Venció sin pago${r.vence_pago ? ` el ${absoluta(r.vence_pago)}` : ''}. El horario quedó libre.`;
+    if (r.estado !== 'cancelada') return null;
+    return { cliente: 'La cancelaste.', administrador: 'La canceló el estudio.' }[r.motivo_cancelacion] ?? `Caducó sin pago${r.vence_pago ? ` el ${absoluta(r.vence_pago)}` : ''}. El horario se liberó.`;
+  };
+
+  // Un dato fuera de la lista cerrada no se usa en plantillas: respuesta inesperada (cae en "Algo salió mal").
+  const validar = (r) => {
+    if (!r || typeof r !== 'object' || !Object.hasOwn(ESTADOS, r.estado)) throw new Error('respuesta_inesperada');
+    return r;
+  };
+
+  const poner = (etiqueta, [texto, variante]) => {
+    etiqueta.querySelector('span:last-child').textContent = texto;
+    etiqueta.className = etiqueta.className.replace(/etiqueta-(neutra|activa|invertida|exito|aviso|alerta)/, `etiqueta-${variante}`);
+  };
+  const oculto = (nodo, texto) => {
+    nodo.hidden = !texto;
+    nodo.textContent = texto ?? '';
+  };
+
+  class BugaluReservas extends IslaGestion {
+    noEncontrada = ['No encontramos esta reserva.', ''];
+    filas = [];
+    reserva = null;
+    rol = null;
+    temporizador = 0;
+
+    iniciar() {
+      this.addEventListener('click', (e) => {
+        if (e.target.closest('[data-abrir]')) this.abrir();
+        else if (e.target.closest('[data-volver]')) this.cerrar();
+        else if (e.target.closest('[data-cancelar]')) this.cancelar(e.target.closest('[data-cancelar]'));
+      });
+      this.addEventListener('keydown', (e) => e.key === 'Escape' && !this.ocupado && !this.querySelector('[data-confirmar]')?.hidden && this.cerrar());
+    }
+
+    disconnectedCallback() {
+      clearInterval(this.temporizador);
+    }
+
+    // 401 y 403 llevan el texto de esta pantalla y su propio enlace.
+    mostrar(estado) {
+      super.mostrar(estado);
+      const aviso = this.querySelector('[data-salida] .aviso');
+      if (estado === 'no-autenticado') {
+        llenarAviso(aviso, 'Tu sesión no es válida', 'Inicia sesión para ver tus reservas.');
+        const enlace = aviso.querySelector('.aviso-accion');
+        enlace.textContent = 'Ir al acceso';
+        enlace.href = `/acceso?${new URLSearchParams({ volver: location.pathname + location.search })}`;
+      } else if (estado === 'sin-permiso') {
+        aviso.querySelector('.aviso-titulo').textContent = this.vista === 'detalle' ? 'Esta reserva no es tuya.' : 'No tienes permiso para ver estas reservas.';
+        aviso.querySelector('.aviso-texto')?.remove();
+        const enlace = aviso.querySelector('.aviso-accion');
+        enlace.textContent = 'Volver a mis reservas';
+        enlace.href = '/app/reservas/';
+      }
+    }
+
+    // --- Lista ---
+
+    async lista() {
+      const ver = new URLSearchParams(location.search).get('ver') === 'historial' ? 'historial' : 'proximas';
+      const todas = (await listarMisReservas()).map(validar);
+      const encabezado = document.querySelector('[data-accion-encabezado]');
+      const nav = this.querySelector('[data-filtros]');
+      if (!todas.length) {
+        encabezado?.remove();
+        nav.hidden = true;
+        this.mostrar('vacio');
+        return 'Aún no tienes reservas';
+      }
+      nav.replaceChildren(...filtrosOrden.map((clave) => this.querySelector(`template[data-filtro="${clave}"][data-aplicado="${clave === ver ? 'si' : 'no'}"]`).content.cloneNode(true)));
+      nav.hidden = false;
+      const mias = todas.filter((r) => PROXIMAS.includes(r.estado) === (ver === 'proximas')).sort((a, b) => (ver === 'proximas' ? 1 : -1) * (Date.parse(a.inicio) - Date.parse(b.inicio)));
+      if (!mias.length) {
+        this.mostrar('vacio-filtro');
+        const proximas = ver === 'proximas';
+        this.querySelector('[data-vacio]').textContent = proximas ? 'No tienes reservas próximas.' : 'Aún no hay reservas en tu historial.';
+        const otro = this.querySelector('[data-otro]');
+        otro.textContent = proximas ? 'Ver historial' : 'Ver próximas';
+        otro.href = proximas ? '/app/reservas/?ver=historial' : '/app/reservas/';
+        return this.querySelector('[data-vacio]').textContent;
+      }
+      this.mostrar('datos');
+      const plantilla = this.querySelector('template[data-fila]');
+      this.filas = mias.map((r) => {
+        const raiz = plantilla.content.cloneNode(true).firstElementChild;
+        raiz.querySelector('[data-folio]').textContent = r.folio;
+        raiz.querySelector('[data-servicio]').textContent = nombre(r.servicio);
+        raiz.querySelector('[data-fecha]').textContent = fecha(r);
+        raiz.querySelector('[data-horario]').textContent = `${horario(r)} · ${duracion(r)}`;
+        raiz.querySelector('[data-total-fila]').textContent = soles(r.precio.total);
+        raiz.querySelector('[data-objeto]').textContent = ` ${r.folio}`;
+        raiz.querySelector('[data-accion]').href = `/app/reservas/detalle?id=${encodeURIComponent(r.id)}`;
+        const fila = { raiz, r, umbral: umbral(resto(r) ?? Infinity) };
+        this.pintarFila(fila);
+        return fila;
+      });
+      this.querySelector('tbody').replaceChildren(...this.filas.map((f) => f.raiz));
+      const n = mias.length;
+      this.querySelector('[data-total]').textContent = `${n} ${n === 1 ? 'reserva' : 'reservas'}`;
+      clearInterval(this.temporizador);
+      this.temporizador = setInterval(() => this.tic(), MINUTO);
+      const tipo = ver === 'proximas' ? ['próxima', 'próximas'] : ['en el historial', 'en el historial'];
+      return `${n} ${n === 1 ? 'reserva' : 'reservas'} ${tipo[n === 1 ? 0 : 1]}`;
+    }
+
+    pintarFila({ raiz, r }) {
+      poner(raiz.querySelector('.etiqueta'), estadoDe(r));
+      oculto(raiz.querySelector('[data-motivo]'), motivo(r));
+      const ms = resto(r);
+      const limite = raiz.querySelector('[data-limite]');
+      limite.textContent = ms === null ? '—' : ms <= 0 ? 'Venció sin pago' : `Antes del ${absoluta(r.vence_pago)}`;
+      oculto(raiz.querySelector('[data-plazo]'), ms > 0 ? faltan(ms) : null);
+      if (!(ms > 0)) raiz.querySelector('[data-caduca]')?.remove(); // quitado, no oculto: tampoco lo lee nadie
+    }
+
+    // Cada minuto: recalcula sin anunciar; anuncia solo al cruzar 1 h, 15 min o el vencimiento.
+    tic() {
+      const avisos = [];
+      for (const f of this.filas) {
+        this.pintarFila(f);
+        const u = umbral(resto(f.r) ?? Infinity);
+        if (u < f.umbral) avisos.push(anuncios[u](f.r.folio));
+        f.umbral = u;
+      }
+      if (avisos.length) this.querySelector('[data-anuncio]').textContent = avisos.join(' ');
+    }
+
+    // --- Detalle ---
+
+    async detalle() {
+      if (!UUID.test(new URLSearchParams(location.search).get('id') ?? '')) return this.mostrar('no-encontrada');
+      const id = new URLSearchParams(location.search).get('id');
+      let r, yo;
+      try {
+        [r, yo] = await Promise.all([obtenerReserva(id), obtenerPerfil().catch(() => null)]);
+      } catch (error) {
+        if (error.estado !== 404) throw error;
+        return this.mostrar('no-encontrada');
+      }
+      this.rol = yo?.rol ?? null;
+      this.mostrar('datos');
+      this.pintar(validar(r));
+      this.encabezado(`${nombre(r.servicio)} · ${fecha(r)}, ${horario(r)}`, r.folio);
+      document.querySelector('.encabezado-titulo').textContent = `Reserva ${r.folio}`;
+      if (this.rol && this.rol !== 'cliente') {
+        const enlace = document.querySelector('.encabezado-ruta a[href="/app/reservas/"]');
+        if (enlace) Object.assign(enlace, { textContent: 'Agenda', href: '/app/agenda/' });
+      }
+      clearInterval(this.temporizador);
+      this.temporizador = setInterval(() => this.ticDetalle(), MINUTO);
+      return `Reserva ${r.folio}, ${estadoDe(r)[0].toLowerCase()}`;
+    }
+
+    llenarFilas(contenedor, plantilla, filas) {
+      const molde = this.querySelector(`template[${plantilla}]`);
+      this.querySelector(`${contenedor} tbody`).replaceChildren(
+        ...filas.map(([concepto, importe, cantidad, estado]) => {
+          const fila = molde.content.cloneNode(true).firstElementChild;
+          fila.querySelector('[data-concepto]').textContent = concepto;
+          fila.querySelector('[data-importe]').textContent = importe;
+          if (cantidad !== undefined) fila.querySelector('[data-cantidad]').textContent = cantidad;
+          if (estado) poner(fila.querySelector('.etiqueta'), estado);
+          return fila;
+        }),
+      );
+    }
+
+    pintar(r) {
+      this.reserva = r;
+      // Lo que no viene quita su fila (y a la segunda pintada, tras cancelar, ya no esta).
+      const campo = (c, v) => {
+        const dd = this.querySelector(`[data-campo="${c}"]`);
+        if (v) dd.textContent = v;
+        else dd?.closest('[data-fila]')?.remove();
+      };
+      this.querySelector('[data-salida] .panel-titulo').lastChild.textContent = ` Reserva ${r.folio}`;
+      campo('horario', `${fecha(r)}, ${horario(r)}`);
+      campo('duracion', duracion(r));
+      campo('servicio', nombre(r.servicio));
+      campo('sala', nombre(r.sala));
+      campo('especialistas', (r.especialistas ?? []).map(nombre).join(', '));
+      campo('cliente', r.cliente && nombre(r.cliente));
+      const p = r.precio;
+      const unidades = { hora: (c) => `${c} h`, lapso_30: (c) => `${c} × 30 min`, fijo: (c) => c };
+      this.llenarFilas('[data-precio]', 'data-fila-precio', [
+        ...p.lineas.map((l) => [l.concepto, soles(l.monto), (unidades[l.unidad] ?? ((c) => c))(String(+l.cantidad).replace('.', ','))]),
+        ...p.recargos.map((c) => [RECARGOS[c.tipo] ?? 'Recargo', soles(c.monto), `${c.bloques} × 30 min`]),
+        ['Total', soles(p.total), ''],
+        ['Anticipo 50 %', soles(p.anticipo), ''],
+      ]);
+      const total = Number(p.total);
+      this.llenarFilas('[data-cuotas]', 'data-fila-cuota', r.cuotas.map((c) => [
+        `${HITOS[c.hito] ?? c.hito}${total > 0 ? ` · ${Math.round((Number(c.monto) / total) * 100)} %` : ''}`,
+        soles(c.monto),
+        undefined,
+        CUOTAS[c.estado] ?? [String(c.estado).replace(/_/g, ' ').replace(/^./, (x) => x.toUpperCase()), 'neutra'],
+      ]));
+      this.pintarEstado();
+    }
+
+    // Estado, barra de lo que toca y cancelar segun el estado actual (y el plazo, que corre).
+    pintarEstado() {
+      const r = this.reserva;
+      const ms = resto(r);
+      poner(this.querySelector('dl .etiqueta'), estadoDe(r));
+      let tono = 'neutro', texto = estadoDe(r)[0], dato = '';
+      if (ms > 0) [tono, texto, dato] = ['pendiente', `Paga el anticipo antes del ${absoluta(r.vence_pago)}`, faltan(ms)];
+      else if (caducada(r)) tono = 'problema';
+      else if (r.estado === 'confirmada') [tono, dato] = ['correcto', 'Pagas el resto al terminar la sesión.'];
+      else if (r.estado === 'finalizada') {
+        tono = 'correcto';
+        const resta = r.cuotas.find((c) => c.hito === 'al_terminar' && c.estado !== 'pagada');
+        if (resta) dato = `Falta pagar el resto: ${soles(resta.monto)}.`;
+      }
+      const barra = this.querySelector('[data-estado-reserva] .indicador');
+      barra.className = barra.className.replace(/indicador-(correcto|pendiente|problema|neutro)/, `indicador-${tono}`);
+      barra.querySelector('.indicador-texto').textContent = texto;
+      oculto(barra.querySelector('.indicador-dato'), dato);
+      oculto(this.querySelector('[data-nota]'), motivo(r));
+      const menos = this.querySelector('[data-menos-hora]');
+      menos.hidden = !(ms > 0 && ms < 60 * MINUTO);
+      if (!menos.hidden && !menos.dataset.listo) {
+        menos.dataset.listo = '1';
+        llenarAviso(menos.querySelector('.aviso'), `Tu reserva vence en ${Math.floor(ms / MINUTO)} min`, 'Si no registras el pago, se cancelará y el horario se liberará.');
+      }
+      // El dueño cancela solo pre-reservadas; el Administrador, tambien confirmadas; el personal no cancela.
+      const puede = !caducada(r) && ((this.rol === 'cliente' && r.estado === 'pre_reservada') || (this.rol === 'administrador' && ['pre_reservada', 'confirmada'].includes(r.estado)));
+      const abrir = this.querySelector('[data-abrir-cancelar]');
+      if (!puede) {
+        abrir?.remove();
+        this.querySelector('[data-confirmar]')?.remove();
+        return;
+      }
+      if (!abrir) return; // ya se vio que no se puede cancelar (409 tiene_pagos)
+      abrir.hidden = !this.querySelector('[data-confirmar]').hidden;
+      this.querySelector('[data-confirmar] .panel-titulo').lastChild.textContent = ` Cancelar reserva ${r.folio}`;
+      this.querySelector('[data-resumen]').textContent = `${nombre(r.servicio)} · ${fecha(r)}, ${horario(r)}`;
+      this.querySelector('[data-consecuencia]').textContent = `El horario se libera al momento${r.cliente ? '' : ' y no se te cobra nada'}. No se puede deshacer: si quieres ese horario otra vez, tendrás que reservarlo de nuevo si sigue libre.`;
+      this.querySelector('[data-cancelar]').textContent = `Cancelar reserva ${r.folio}`;
+    }
+
+    ticDetalle() {
+      if (!this.reserva || !this.querySelector('[data-estado-reserva]')) return;
+      const vencia = !caducada(this.reserva);
+      this.pintarEstado();
+      if (vencia && caducada(this.reserva)) this.querySelector('[data-anuncio]').textContent = `La reserva ${this.reserva.folio} venció sin pago.`;
+    }
+
+    // --- Cancelar: confirmacion en la misma pantalla, con foco y Escape ---
+
+    abrir() {
+      this.querySelector('[data-abrir-cancelar]').hidden = true;
+      this.querySelector('[data-confirmar]').hidden = false;
+      const titulo = this.querySelector('[data-confirmar] .panel-titulo');
+      titulo.tabIndex = -1;
+      titulo.focus();
+    }
+
+    cerrar() {
+      this.querySelector('[data-confirmar]').hidden = true;
+      this.querySelector('[data-abrir-cancelar]').hidden = false;
+      this.querySelector('[data-abrir]').focus();
+    }
+
+    cancelar(boton) {
+      const id = this.reserva.id;
+      this.enviar(boton, 'Cancelando…', () => cancelarReserva(id), (nueva) => {
+        this.querySelector('[data-confirmar]').hidden = true;
+        this.pintar(validar(nueva));
+        enfocarAviso(mostrarAviso(this, 'exito', 'Reserva cancelada', `El horario quedó libre${nueva.cliente ? '' : ' y no se te cobró nada'}.`));
+      });
+    }
+
+    errorEnvio(error) {
+      if (error.estado === 404) {
+        this.sustituir('no-encontrada');
+        return true;
+      }
+      if (error.estado !== 409) return false;
+      this.querySelector('[data-confirmar]').hidden = true;
+      if (error.codigo === 'tiene_pagos') {
+        this.querySelector('[data-abrir-cancelar]').remove();
+        enfocarAviso(mostrarAviso(this, 'error', 'Ya registraste un pago para esta reserva, así que no puedes cancelarla desde aquí. Escríbenos para revisar tu caso.'));
+      } else this.yaNoSePuede();
+      return true;
+    }
+
+    // 409 no_cancelable: se vuelve a leer la reserva para decir en que estado esta.
+    async yaNoSePuede() {
+      try {
+        this.pintar(validar(await obtenerReserva(this.reserva.id)));
+      } catch {}
+      const estado = estadoDe(this.reserva)[0].toLowerCase();
+      enfocarAviso(mostrarAviso(this, 'informacion', `Esta reserva ya no se puede cancelar: está ${estado}.`));
+    }
+  }
+
+  if (!customElements.get('bugalu-reservas')) customElements.define('bugalu-reservas', BugaluReservas);
+</script>
+
+<style>
+  .reservas {
+    display: block;
+  }
+  .reservas :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  .reservas-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+    margin-block-end: var(--espacio-4);
+  }
+  .reservas-filtros[hidden] {
+    display: none;
+  }
+  .reservas-total {
+    margin-block-end: var(--espacio-3);
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .reservas-folio {
+    display: block;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-weight: var(--fuente-peso-medio);
+  }
+  .reservas-importe {
+    font-variant-numeric: tabular-nums;
+  }
+  .reservas-accion {
+    margin-block-start: var(--espacio-3);
+  }
+  .reservas-estado {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+  }
+  .reservas-nota,
+  .reservas-resumen {
+    margin: 0;
+    color: var(--color-texto-cuerpo);
+  }
+  .reservas-nota-precio {
+    margin-block-start: var(--espacio-3);
+  }
+  .reservas-botones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-3);
+    margin-block-start: var(--espacio-4);
+  }
+</style>

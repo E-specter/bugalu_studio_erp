@@ -14,12 +14,17 @@ export class ErrorApi extends Error {
   }
 }
 
-// `cuerpo` (opcional) se envia como JSON.
-export async function pedir(ruta, { cuerpo, headers, ...opciones } = {}) {
+// `cuerpo` (opcional) se envia como JSON. `sinToken`: consulta publica; si el token (caducado o ajeno) recibe 401, se repite una vez sin token.
+export async function pedir(ruta, { cuerpo, headers, sinToken = false, ...opciones } = {}) {
   const token = await obtenerToken();
-  let respuesta;
+  let respuesta = await enviar(ruta, { cuerpo, headers, token, opciones });
+  if (respuesta.status === 401 && sinToken && token) respuesta = await enviar(ruta, { cuerpo, headers, token: null, opciones });
+  return leer(respuesta);
+}
+
+async function enviar(ruta, { cuerpo, headers, token, opciones }) {
   try {
-    respuesta = await fetch(base + ruta, {
+    return await fetch(base + ruta, {
       ...opciones,
       headers: {
         Accept: 'application/json',
@@ -33,6 +38,9 @@ export async function pedir(ruta, { cuerpo, headers, ...opciones } = {}) {
     // Red caida, DNS o CORS rechazado: el navegador no distingue las causas.
     throw new ErrorApi(0, 'sin_conexion', 'No hay conexión con el servidor.');
   }
+}
+
+async function leer(respuesta) {
   if (!respuesta.ok) {
     const { error } = await respuesta.json().catch(() => ({}));
     throw new ErrorApi(respuesta.status, error?.codigo ?? 'error_desconocido', error?.mensaje ?? 'El servidor devolvió un error.', error?.detalles);

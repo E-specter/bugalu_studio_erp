@@ -1,0 +1,16 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Reservas from '../../../islas/Reservas.astro';
+---
+
+<!-- El título, la ruta y la descripción reciben el folio y el horario cuando la isla carga la reserva. -->
+<LayoutApp titulo="Reserva">
+  <EncabezadoPantalla
+    titulo="Reserva"
+    indice="[P2] SALA / RESERVAS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Reservas', href: '/app/reservas/' }, { etiqueta: 'Reserva' }]}
+    descripcion="Estado, horario, precio y cuotas de tu reserva."
+  />
+  <Reservas vista="detalle" />
+</LayoutApp>
