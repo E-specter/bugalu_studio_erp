@@ -28,7 +28,7 @@ depende_de: []
 ## API
 
 - Rutas en plural (`/api/v1/reservas`); excepción: recursos del propio usuario autenticado, en singular (`/api/v1/perfil`).
-- Todo error, incluidos los propios de FastAPI (404, 405, 422), responde `{"error": {"codigo": "<snake_case>", "mensaje": "<texto para la persona>", "detalles": {…}}}`; `detalles` es opcional y solo lleva datos que la interfaz necesita (p. ej. las reservas afectadas de un 409). Códigos comunes: `no_autenticado` (401), `sin_permiso` (403), `no_encontrado` (404), `metodo_no_permitido` (405), `conflicto` (409), `datos_invalidos` (422), `autenticacion_no_disponible` y `base_de_datos_no_disponible` (503).
+- Todo error, incluidos los propios de FastAPI (404, 405, 422), responde `{"error": {"codigo": "<snake_case>", "mensaje": "<texto para la persona>", "detalles": {…}}}`; `detalles` es opcional y solo lleva datos que la interfaz necesita (p. ej. las reservas afectadas de un 409, o `{"campo": "<nombre>"}` con el primer campo que falla en un 422). Montos y porcentajes viajan como texto decimal (`"25.00"`). Códigos comunes: `no_autenticado` (401), `sin_permiso` (403), `no_encontrado` (404), `metodo_no_permitido` (405), `conflicto` (409), `datos_invalidos` (422), `autenticacion_no_disponible` y `base_de_datos_no_disponible` (503).
 - Fechas y horas: `timestamptz` en la base de datos; la API las envía en ISO 8601 con zona horaria; "día" y "semana" se interpretan en la hora de Lima (`America/Lima`); las semanas siguen ISO 8601 (`AAAA-Www`).
 
 ## Control de versiones
