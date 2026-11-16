@@ -431,7 +431,7 @@ const filtros = [
       const conPagos = tienePagos(r) || this.pagosConfirmados;
       const admin = this.rol === 'administrador';
       const puede = !caducada(r) && ((this.rol === 'cliente' && r.estado === 'pre_reservada' && !conPagos) || (admin && ['pre_reservada', 'confirmada'].includes(r.estado)));
-      const pide = this.rol === 'cliente' && r.estado === 'pre_reservada' && conPagos && !caducada(r);
+      const pide = this.rol === 'cliente' && ['pre_reservada', 'confirmada'].includes(r.estado) && conPagos && !caducada(r);
       this.querySelector('[data-pide-estudio]').hidden = !pide;
       if (pide) this.contacto();
       const abrir = this.querySelector('[data-abrir-cancelar]');

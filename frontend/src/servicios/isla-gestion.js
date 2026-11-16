@@ -40,6 +40,8 @@ export class IslaGestion extends HTMLElement {
       e.preventDefault();
       this.alEnviar(e.target);
     });
+    // Volver con "Atrás" restaura la página desde la caché con los botones en "…ando": se recarga la vista.
+    addEventListener('pageshow', (e) => e.persisted && this.ocupado && this.cargar());
     this.iniciar?.();
     this.cargar();
   }

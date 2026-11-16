@@ -345,7 +345,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
         activo: formulario.querySelector('[name="activo"]').checked,
         especialistas_por_defecto: [...formulario.querySelectorAll('[name="especialistas_por_defecto"]:checked')].map((c) => c.value),
       };
-      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => actualizarServicio(this.registro, cuerpo), () => location.assign('/app/tarifas?aviso=servicio-actualizado'));
+      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => actualizarServicio(this.registro, cuerpo), () => location.assign('/app/tarifas?aviso=servicio-actualizado'), true);
     }
 
     // --- Especialista ---
@@ -369,7 +369,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       const { valores, errores } = this.importes(formulario, ['monto_fijo', 'monto_variable']);
       if (!this.validar(errores)) return;
       const cuerpo = { ...valores, unidad: formulario.querySelector('[name="unidad"]:checked').value, activo: formulario.querySelector('[name="activo"]').checked };
-      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => actualizarEspecialista(this.registro, cuerpo), () => location.assign('/app/tarifas?aviso=especialista-actualizado'));
+      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => actualizarEspecialista(this.registro, cuerpo), () => location.assign('/app/tarifas?aviso=especialista-actualizado'), true);
     }
 
     // --- Recargos y feriados ---

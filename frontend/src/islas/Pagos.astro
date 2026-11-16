@@ -522,7 +522,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
       this.enviar(formulario.querySelector('[type="submit"]'), 'Guardando…', async () => {
         await guardarInstrucciones(instrucciones);
         await guardarContacto(contacto.value.trim());
-      }, () => location.assign('/app/pagos/?aviso=datos-actualizados'));
+      }, () => location.assign('/app/pagos/?aviso=datos-actualizados'), true);
     }
   }
 

@@ -363,3 +363,20 @@ test('N12 y B2: porcentajes sin decimales y feriados como tarjetas en el lateral
   const fila = page.getByRole('table', { name: 'Feriados 2026' }).getByRole('row').nth(1);
   expect(await fila.evaluate((e) => getComputedStyle(e).display)).toBe('block');
 });
+
+// --- Botón bloqueado hasta navegar y vuelta con "Atrás" (bfcache) ---
+test('servicio: tras guardar, el botón sigue bloqueado hasta navegar y se libera al volver desde la caché', async ({ page }) => {
+  await base(page);
+  await simular(page, 'PATCH', '/servicios/s1', json(200, SERVICIOS[0]));
+  await page.route('**/app/tarifas?aviso=*', (ruta) => ruta.fulfill({ status: 204 })); // 204: el navegador se queda en la página, como si la navegación no llegara
+  await page.goto('/app/tarifas/servicio?id=s1');
+  const boton = page.locator('[data-envio]').first();
+  await boton.click();
+  await page.waitForTimeout(300);
+  await expect(boton).toHaveAttribute('aria-busy', 'true'); // no se suelta tras el éxito
+  await expect(boton).toBeDisabled();
+  // Volver con "Atrás": la página sale de la caché del navegador con el botón aún en carga.
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Guardar servicio' })).toBeEnabled();
+});

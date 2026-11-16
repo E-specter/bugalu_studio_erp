@@ -250,3 +250,36 @@ test('lista: la columna PAGO dice pago por validar, saldo, pagada o nada', async
   await expect(fila('E-5')).toContainText('Resto: S/ 207,50');
   await expect(fila('F-6').getByRole('cell').nth(3)).toHaveText('—');
 });
+
+// --- Contacto del estudio: toda reserva cancelable con pagos (RN-20, RF-06 CA-04) ---
+const AVISO_PIDE = 'Ya registraste un pago, así que la cancelación la gestiona el estudio. Escríbele y te dirá qué pasa con tu pago.';
+test('detalle: confirmada con pagos pide la cancelación al estudio y muestra su contacto', async ({ page }) => {
+  await con(page, reserva({ estado: 'confirmada', vence_pago: null, cuotas: cuotas(pagada, { pagable: true }) }));
+  await ver(page);
+  await expect(page.getByText(AVISO_PIDE)).toBeVisible();
+  await expect(page.getByText('WhatsApp 999 000 111')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Cancelar reserva' })).toHaveCount(0);
+  await sinViolaciones(page);
+  await page.screenshot({ path: 'pruebas/capturas/reservas-detalle-confirmada-pide-estudio.png', fullPage: true });
+});
+
+for (const estado of ['en_curso', 'finalizada', 'cancelada']) {
+  test(`detalle: ${estado} no ofrece pedir la cancelación al estudio`, async ({ page }) => {
+    await con(page, reserva({ estado, vence_pago: null, motivo_cancelacion: estado === 'cancelada' ? 'cliente' : null, cuotas: cuotas(pagada, { pagable: true }) }));
+    await ver(page);
+    await expect(barra(page)).toBeVisible();
+    await expect(page.getByText(AVISO_PIDE)).toBeHidden();
+    await expect(page.getByText('WhatsApp 999 000 111')).toBeHidden();
+  });
+}
+
+for (const rol of ['personal', 'administrador']) {
+  test(`detalle: ${rol} con la reserva confirmada y con pagos no ve el aviso al cliente`, async ({ page }) => {
+    await comoRol(page, rol);
+    await con(page, reserva({ estado: 'confirmada', vence_pago: null, cuotas: cuotas(pagada, { pagable: true }) }));
+    await ver(page);
+    await expect(barra(page)).toBeVisible();
+    await expect(page.getByText(AVISO_PIDE)).toBeHidden();
+    await expect(page.getByText('WhatsApp 999 000 111')).toBeHidden();
+  });
+}
