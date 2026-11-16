@@ -20,7 +20,7 @@ Pre-reservada ──(cuota al_reservar validada)──► Confirmada ──► E
 | Desde | Hacia | Condición |
 |---|---|---|
 | Pre-reservada | Confirmada | El Administrador valida la cuota `al_reservar` ([RN-03](reglas-negocio.md)) |
-| Pre-reservada | Cancelada | El Administrador la cancela; en v1 no caduca sola (D-06) |
+| Pre-reservada | Cancelada | El cliente la cancela sin pagos (RN-20), el Administrador la cancela, o caduca sin pago registrado (RN-18) |
 | Confirmada | En curso | Inicio de la sesión |
 | Confirmada | Cancelada | Cancelación; reembolso según D-11 |
 | En curso | Finalizada | Fin de la sesión; se habilita la cuota `al_terminar` ([RN-13](reglas-negocio.md)) |

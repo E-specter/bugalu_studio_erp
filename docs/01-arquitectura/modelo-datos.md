@@ -15,15 +15,21 @@ Todas las claves primarias son `uuid` ([ADR-006](../00-proyecto/decisiones/ADR-0
 |---|---|---|
 | `usuario` | `id` (uuid, = `auth.users.id`), `nombre`, `telefono` (`^\+?[0-9]{9,15}$` o nulo), `nombre_artistico`, `rol` (`cliente`/`personal`/`administrador`, por defecto `cliente`), `especialidad`, `correo_verificado_en` (nulo = sin verificar), `creado_en` | `id` → `auth.users` con borrado en cascada ([ADR-005](../00-proyecto/decisiones/ADR-005-supabase-auth.md)); el correo vive en `auth.users`. RLS: cada usuario lee su perfil y edita solo `nombre`, `telefono` y `nombre_artistico` (`rol` y `especialidad` los asigna el administrador); el administrador lee todos (`public.es_administrador()`); sin insert ni delete por la API. Un trigger en `auth.users` crea el perfil `cliente` con `nombre`, `telefono` (si es válido) y `nombre_artistico` de `raw_user_meta_data`, nunca rol ni especialidad. Un trigger impide dejar el sistema sin administradores (SQLSTATE `BG001`, el backend lo traduce a 409 `ultimo_administrador`); toma `pg_advisory_xact_lock(20261119)` y recuenta dentro del bloqueo, así dos cambios cruzados concurrentes no dejan cero administradores. Otro trigger en `auth.users` (`after update of email`) pone `correo_verificado_en` en nulo cuando el correo cambia. Supabase confirma el correo al registrar (ADR-008), así que la verificación propia vive en `correo_verificado_en`, sin privilegio de escritura para `authenticated`; solo la fija `public.marcar_correo_verificado()` (`security definer`): exige que `amr` del token incluya `otp`, `magiclink` u `oauth` (si no, SQLSTATE `BG002`, el backend lo traduce a 409 `verificacion_no_valida`). `public.correo_confirmado()` lee `correo_verificado_en` de `auth.uid()`. `public.asignar_rol(id_usuario, rol, especialidad)` (`security definer`, solo `authenticated` y solo si `es_administrador()`, si no `42501`) es la única vía para cambiar `rol` y `especialidad`; respeta el trigger del último administrador (`BG001`) y lanza `P0002` si el usuario no existe. `public.correo_de_usuario(id_usuario)` (`security definer`) devuelve el correo de `auth.users` al propio usuario o a un administrador (`42501` a otros); el backend la usa para `Perfil.correo` y `Solicitud.correo` de terceros. Todas con `search_path` vacío, `revoke` a `public`/`anon`. El backend conecta como `bugalu_api` (`login`, `noinherit`, miembro solo de `anon` y `authenticated`, sin acceso directo a `usuario`); cada transacción asume `authenticated`. PostgREST no expone `public` |
 | `solicitud_acceso` | `id`, `especialidad`, `mensaje`, `estado` (`pendiente`/`aprobada`/`rechazada`, por defecto `pendiente`), `motivo`, `creada_en`, `revisada_en` | `id_usuario` → usuario (cascada) · `id_revisor` → usuario ([ADR-008](../00-proyecto/decisiones/ADR-008-acceso-y-roles-v1.md)). Índice único parcial: una sola `pendiente` por usuario. RLS: el dueño lee las suyas e inserta solo con su `id_usuario`, `estado` `pendiente` y sin `motivo` ni `id_revisor` (privilegio de columna y política); el administrador lee todas y actualiza `estado`, `motivo`, `id_revisor` y `revisada_en`; nadie borra por la API; `anon` nada |
-| `sala_tecnica` | `id`, `nombre`, `tarifa_hora_grabacion`, `tarifa_hora_ensayo`, `estado_operativo` | — |
-| `servicio` | `id`, `nombre`, `tipo`, `tarifa` | — (catálogo usado por la simulación, [RN-15](../02-dominio/reglas-negocio.md)) |
+| `sala_tecnica` | `id`, `nombre`, `sede`, `activa` | — (hoy una: sede La Molina, [ADR-009](../00-proyecto/decisiones/ADR-009-reservas-tarifas-y-caducidad.md)) |
+| `servicio` | `id`, `nombre`, `categoria` (`grabacion`/`ensayo`/`live`/`posproduccion`), `ocupa_sala`, `tarifa_hora`, `activo` | — (motor de precio, [RN-15](../02-dominio/reglas-negocio.md)) |
+| `especialista` | `id`, `nombre`, `monto_fijo`, `monto_variable`, `unidad` (`hora`/`lapso_30`), `activo` | — (ingeniero de sonido, ejecutante, audiovisual, productor o arreglista) |
+| `servicio_especialista` | `id_servicio`, `id_especialista` | especialistas por defecto de cada servicio |
+| `recargo` | `tipo` (`noche`/`fin_de_semana`/`feriado`), `porcentaje`, `desde`, `hasta` (solo noche) | — |
+| `feriado` | `fecha` (clave), `nombre` | — |
+| `parametro` | `clave`, `valor` | plazos de caducidad y anticipación ([RN-17](../02-dominio/reglas-negocio.md), [RN-18](../02-dominio/reglas-negocio.md)) |
 
 ## Disponibilidad, reservas y asesorías
 
 | Tabla | Campos clave | Relaciones |
 |---|---|---|
-| `franja_sala` | `id`, `inicio`, `fin` | `id_sala` → sala_tecnica · publicada por un administrador ([RN-12](../02-dominio/reglas-negocio.md)) |
-| `reserva` | `id`, `tipo` (`grabacion`/`ensayo`), `inicio`, `fin`, `fin_buffer`, `estado`, `folio` (único) | `id_cliente` → usuario · `id_sala` → sala_tecnica · `id_franja` → franja_sala · `id_cotizacion` → cotizacion (opcional) · `id_proyecto` → proyecto_musical (opcional) · `id_ingeniero` → usuario (D-12) |
+| `franja_sala` | `id`, `inicio`, `fin` (sin solapes por sala) | `id_sala` → sala_tecnica · `id_publicador` → usuario ([RN-12](../02-dominio/reglas-negocio.md)) |
+| `cierre_sala` | `id`, `inicio`, `fin`, `motivo` | `id_sala` → sala_tecnica · `id_autor` → usuario |
+| `reserva` | `id`, `inicio`, `fin`, `fin_buffer`, `estado`, `motivo_cancelacion` (`cliente`/`caducada`/`administrador`), `folio` (único), `precio` (desglose), `total`, `vence_pago`, `detalle`; sin solapes de `[inicio, fin_buffer)` entre reservas vigentes de una sala | `id_cliente` → usuario · `id_sala` → sala_tecnica · `id_servicio` → servicio · `id_franja` → franja_sala · `id_cotizacion` → cotizacion (opcional) · `id_proyecto` → proyecto_musical (opcional) · `id_ingeniero` → usuario (D-12) |
 | `horario_profesional` | `id`, `inicio`, `fin` | `id_profesional` → usuario (rol `personal`, especialidad `asesoria`) |
 | `asesoria` | `id`, `inicio`, `fin`, `modalidad` (`presencial`/`virtual`), `lugar` o `enlace`, `precio`, `estado` | `id_cliente` → usuario · `id_profesional` → usuario ([RN-14](../02-dominio/reglas-negocio.md)) |
 
@@ -52,6 +58,7 @@ Las capturas van al bucket privado `comprobantes` ([ADR-003](../00-proyecto/deci
 |---|---|
 | `asignacion_sesion` (reserva × personal × función) | [RF-07](../03-requerimientos/RF-07.md) — una reserva admite varios técnicos |
 | `evaluacion_servicio` | [RF-13](../03-requerimientos/RF-13.md) |
-| `notificacion` (registro de envíos) | [RF-06](../03-requerimientos/RF-06.md) |
+| `reserva_especialista` (reserva × especialista con su tarifa aplicada) | [RF-04](../03-requerimientos/RF-04.md) |
+| `notificacion` (bandeja de salida de correos, [ADR-009](../00-proyecto/decisiones/ADR-009-reservas-tarifas-y-caducidad.md)) | [RF-04](../03-requerimientos/RF-04.md), [RF-06](../03-requerimientos/RF-06.md) |
 
 Las migraciones versionadas viven en `supabase/` (ver [herramientas-mcp](../06-operacion/herramientas-mcp.md)); este archivo se actualiza en la misma tarea que la migración.

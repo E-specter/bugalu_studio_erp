@@ -11,7 +11,7 @@ Registro de decisiones abiertas. Cuando una se cierra, se crea `ADR-<nnn>-<tema>
 | D-03 | Autenticación | Supabase Auth (sin `password_hash` propio) vs. autenticación propia en FastAPI (el informe asume `passwordHash`) | **Cerrada:** [ADR-005](ADR-005-supabase-auth.md) |
 | D-04 | Tipo de clave primaria | UUID (alineado con Supabase Auth) vs. entero (informe) | **Cerrada:** [ADR-006](ADR-006-claves-uuid.md) |
 | D-05 | Límite por defecto de rondas de corrección | Sin definir | — |
-| D-06 | Caducidad de una reserva `Pre-reservada` sin pago | Sin definir | — |
+| D-06 | Caducidad de una reserva `Pre-reservada` sin pago | 3 días antes o 1 hora, ajustables | **Cerrada:** [ADR-009](ADR-009-reservas-tarifas-y-caducidad.md) (reservas de sala) |
 | D-07 | Proveedor de correo transaccional | Sin definir | — |
 | D-08 | Hosting de backend y frontend | Sin definir | — |
 | D-09 | Moneda, impuestos y facturación electrónica | Moneda **PEN** decidida ([ADR-004](ADR-004-pagos-validacion-manual.md)); impuestos y "comprobante fiscal" sin definir | Parcial |
