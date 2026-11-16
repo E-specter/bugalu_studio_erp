@@ -14,6 +14,7 @@ export default defineConfig({
     {
       command: `uv run uvicorn bugalu.main:crear_app --factory --host 127.0.0.1 --port ${PUERTO_API} --loop bugalu.compartido.bucle:crear_bucle`,
       cwd: '../backend',
+      env: { INTERVALO_ENVIO_CORREOS: '2' }, // envía la bandeja de correos cada 2 s: el recorrido de reservas lee Mailpit
       url: `http://127.0.0.1:${PUERTO_API}/api/v1/perfil`, // sin token responde 401: basta para saber que escucha
       reuseExistingServer: false,
       timeout: 60_000,
