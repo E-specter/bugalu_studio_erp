@@ -14,7 +14,7 @@ export class ErrorApi extends Error {
   }
 }
 
-// `cuerpo` (opcional) se envia como JSON. `sinToken`: consulta publica; si el token (caducado o ajeno) recibe 401, se repite una vez sin token.
+// `cuerpo` (opcional) se envia como JSON; un FormData va tal cual (multipart: el navegador pone el boundary, no se fuerza Content-Type). `sinToken`: consulta publica; si el token (caducado o ajeno) recibe 401, se repite una vez sin token.
 export async function pedir(ruta, { cuerpo, headers, sinToken = false, ...opciones } = {}) {
   const token = await obtenerToken();
   let respuesta = await enviar(ruta, { cuerpo, headers, token, opciones });
@@ -28,11 +28,11 @@ async function enviar(ruta, { cuerpo, headers, token, opciones }) {
       ...opciones,
       headers: {
         Accept: 'application/json',
-        ...(cuerpo !== undefined && { 'Content-Type': 'application/json' }),
+        ...(cuerpo !== undefined && !(cuerpo instanceof FormData) && { 'Content-Type': 'application/json' }),
         ...(token && { Authorization: `Bearer ${token}` }),
         ...headers,
       },
-      body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
+      body: cuerpo === undefined || cuerpo instanceof FormData ? cuerpo : JSON.stringify(cuerpo),
     });
   } catch {
     // Red caida, DNS o CORS rechazado: el navegador no distingue las causas.

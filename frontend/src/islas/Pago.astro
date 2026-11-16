@@ -1,0 +1,516 @@
+---
+// <bugalu-pago>: registrar el pago de una cuota (spec RF-05-registrar-pago). Datos de la reserva e instrucciones por la API.
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Casilla from '../componentes/Casilla.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+import CargaArchivos from './CargaArchivos.astro';
+
+const principal = { titulo: 'Registrar pago' };
+const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
+---
+
+<EstilosGestion />
+
+<bugalu-pago class="pago" data-gestion vista="pagar">
+  <div data-avisos></div>
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  <div data-salida><Panel {...principal} cargando /></div>
+
+  <EstadosIsla principal={principal} />
+
+  <template data-estado="no-encontrada">
+    <Panel codigo="[404]" titulo="Cuota no encontrada"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a mis reservas', href: '/app/reservas/' }} /></Panel>
+  </template>
+  <template data-estado="no-pagable">
+    <Panel titulo="Cuota a pagar"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a la reserva', href: '#' }} /></Panel>
+  </template>
+  <template data-estado="sin-metodos">
+    <Panel codigo="P1" titulo="Método de pago">
+      <p class="gestion-vacio-titulo">Por ahora no hay métodos de pago disponibles</p>
+      <p>Escríbele al estudio para pagar esta cuota.</p>
+      <p class="pago-texto" data-contacto hidden></p>
+      <div class="pago-vacio-accion"><Boton variante="secundario" href="#" data-volver>Volver a la reserva</Boton></div>
+    </Panel>
+  </template>
+  <template data-metodo><Casilla tipo="radio" nombre="metodo" valor="" etiqueta=" " detalle=" " /></template>
+
+  <template data-estado="datos">
+    <div class="gestion-rejilla">
+      <aside class="gestion-lateral">
+        <Panel titulo="Cuota a pagar" variante="lateral">
+          <EtiquetaTecnica texto="Pendiente" variante="aviso" />
+          <dl class="gestion-datos pago-resumen">
+            <div><dt>Reserva</dt><dd class="pago-folio" data-campo="folio"></dd></div>
+            <div><dt>Servicio</dt><dd data-campo="servicio"></dd></div>
+            <div><dt>Fecha</dt><dd data-campo="fecha"></dd></div>
+            <div><dt>Cuota</dt><dd data-campo="cuota"></dd></div>
+            <div data-fila="vence"><dt>Paga antes de</dt><dd data-campo="vence"></dd></div>
+          </dl>
+          <p class="pago-total"><span class="pago-total-etiqueta">Importe de la cuota</span><span class="pago-total-importe" data-campo="importe"></span></p>
+          <div class="pago-rechazo" data-rechazo hidden><Aviso variante="aviso" titulo=" " texto=" " /></div>
+        </Panel>
+      </aside>
+      <form class="gestion-principal" novalidate enctype="multipart/form-data">
+        <Panel codigo="P1" titulo="Método de pago">
+          <div class="campo">
+            <fieldset class="gestion-grupo">
+              <legend>Método de pago</legend>
+              <div class="pago-metodos" data-metodos></div>
+            </fieldset>
+          </div>
+          <div class="pago-datos" data-datos-pago aria-live="polite"></div>
+        </Panel>
+        <Panel codigo="P2" titulo="Comprobante">
+          <div class="gestion-formulario">
+            <div class="gestion-fila-campos">
+              <Campo id="pago-monto" nombre="monto" etiqueta="Monto pagado (S/)" obligatorio inputmode="decimal" autocomplete="off" ayuda={AYUDA_MONTO} />
+              <Campo id="pago-operacion" class="pago-operacion" nombre="numero_operacion" etiqueta="Número de operación" obligatorio autocomplete="off" spellcheck="false" ayuda="Está en la constancia de tu app o en el voucher. Con tarjeta, el número del voucher." />
+            </div>
+            <CargaArchivos id="pago-captura" nombre="captura" etiqueta="Captura del comprobante" obligatorio ayuda="JPG, PNG o PDF, hasta 5 MB. Que se lean el monto, la fecha y el número de operación." />
+          </div>
+        </Panel>
+        <div class="pago-barra">
+          <div class="pago-acciones">
+            <Boton variante="secundario" href="#" data-volver>Volver a la reserva</Boton>
+            <Boton tipo="submit" data-envio data-registrar>Registrar pago</Boton>
+          </div>
+          <p class="gestion-ayuda" data-lento hidden>Subiendo la captura. Con conexión lenta puede tardar un poco.</p>
+        </div>
+      </form>
+    </div>
+  </template>
+</bugalu-pago>
+
+<script>
+  // @ts-nocheck
+  import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { obtenerReserva, absoluta, faltan, textoCuota, ultimoRechazo } from '../servicios/reservas.js';
+  import { registrarPago, obtenerInstrucciones, obtenerContacto } from '../servicios/pagos.js';
+  import { fechaDe, horaDe, diaMesAnio, soles, leerImporte, mostrarImporte } from '../servicios/formatos.js';
+  import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, llenarAviso } from '../servicios/formulario.js';
+
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
+  // Orden fijo de los metodos: [nombre, detalle].
+  const METODOS = {
+    transferencia: ['Transferencia bancaria'],
+    yape: ['Yape'],
+    plin: ['Plin'],
+    tarjeta: ['Tarjeta', 'En el POS del estudio o con el enlace del banco'],
+  };
+  const MSG = {
+    pagada: 'Esta cuota ya está pagada.',
+    validacion: 'Ya registraste un pago para esta cuota. Te avisaremos por correo cuando el estudio lo revise.',
+    cancelada: 'Esta reserva está cancelada: ya no admite pagos.',
+    resto: 'El resto se paga cuando tu reserva esté confirmada.',
+    generica: 'Esta cuota ya no admite pagos.',
+  };
+  const OPERACION = /^[A-Za-z0-9-]{4,40}$/;
+  const tecnica = (texto) => Object.assign(document.createElement('span'), { textContent: texto });
+
+  class BugaluPago extends IslaGestion {
+    noEncontrada = ['No encontramos esta cuota en tu reserva.', ''];
+    reserva = null;
+    cuota = null;
+    lento = 0;
+
+    iniciar() {
+      this.addEventListener('change', (e) => {
+        if (e.target.matches('input[name="metodo"]')) this.datosMetodo();
+        else if (e.target.id === 'pago-monto') this.ayudaMonto();
+      });
+      this.addEventListener('focusout', (e) => e.target.id === 'pago-monto' && this.ayudaMonto());
+      this.addEventListener('cambio', () => this.revisarCaptura());
+    }
+
+    disconnectedCallback() {
+      clearTimeout(this.lento);
+    }
+
+    // 401 y 403 llevan el texto de esta pantalla y su propio enlace (como mis reservas).
+    mostrar(estado) {
+      super.mostrar(estado);
+      const aviso = this.querySelector('[data-salida] .aviso');
+      if (estado === 'no-autenticado') {
+        llenarAviso(aviso, 'Tu sesión no es válida', 'Inicia sesión para ver tus reservas.');
+        const enlace = aviso.querySelector('.aviso-accion');
+        enlace.textContent = 'Ir al acceso';
+        enlace.href = `/acceso?${new URLSearchParams({ volver: location.pathname + location.search })}`;
+      } else if (estado === 'sin-permiso') {
+        aviso.querySelector('.aviso-titulo').textContent = 'Esta reserva no es tuya.';
+        aviso.querySelector('.aviso-texto')?.remove();
+        const enlace = aviso.querySelector('.aviso-accion');
+        enlace.textContent = 'Volver a mis reservas';
+        enlace.href = '/app/reservas/';
+      }
+    }
+
+    // --- Carga ---
+
+    async pagar() {
+      const url = new URLSearchParams(location.search);
+      const id = url.get('id') ?? '';
+      const cuota = url.get('cuota') ?? '';
+      if (!UUID.test(id) || !UUID.test(cuota)) return this.mostrar('no-encontrada');
+      let r, instrucciones;
+      try {
+        [r, instrucciones] = await Promise.all([obtenerReserva(id), obtenerInstrucciones()]);
+      } catch (error) {
+        if (error.estado !== 404) throw error;
+        return this.mostrar('no-encontrada');
+      }
+      const c = (r.cuotas ?? []).find((x) => x.id === cuota);
+      if (!c) return this.mostrar('no-encontrada');
+      this.reserva = r;
+      this.cuota = c;
+      this.retocarRuta(r);
+      const motivo = this.noPagable(r, c);
+      if (motivo) return this.verNoPagable(motivo);
+      const activos = this.activos(instrucciones);
+      if (!activos.length) return this.sinMetodos();
+      this.mostrar('datos');
+      this.pintar(r, c, activos);
+      return 'Registrar pago';
+    }
+
+    activos(instrucciones) {
+      const lista = Array.isArray(instrucciones) ? instrucciones.filter((i) => i.activo !== false && Object.hasOwn(METODOS, i.metodo)) : [];
+      this.textos = Object.fromEntries(lista.map((i) => [i.metodo, i.texto]));
+      return Object.keys(METODOS).filter((m) => m in this.textos);
+    }
+
+    // Reserva y cuota -> mensaje de "no se puede pagar", o null si se puede. `codigo`: 409 recibido al enviar.
+    noPagable(r, c, codigo) {
+      if (c.estado === 'pagada' || codigo === 'cuota_pagada') return MSG.pagada;
+      if (c.estado === 'en_validacion' || codigo === 'pago_en_validacion') return MSG.validacion;
+      if (r.estado === 'cancelada') return MSG.cancelada;
+      if (!c.pagable) return c.hito === 'al_terminar' ? MSG.resto : MSG.generica;
+      return codigo ? MSG.generica : null;
+    }
+
+    verNoPagable(texto) {
+      limpiarAvisos(this);
+      this.mostrar('no-pagable');
+      const aviso = this.querySelector('[data-salida] .aviso');
+      llenarAviso(aviso, texto);
+      aviso.querySelector('.aviso-accion').href = this.urlReserva();
+    }
+
+    async sinMetodos() {
+      this.mostrar('sin-metodos');
+      this.querySelector('[data-volver]').href = this.urlReserva();
+      try {
+        const { texto } = await obtenerContacto();
+        const p = this.querySelector('[data-contacto]');
+        if (texto && p) {
+          p.textContent = texto;
+          p.hidden = false;
+        }
+      } catch {} // el contacto es un extra: sin el, queda el mensaje
+      return 'Por ahora no hay métodos de pago disponibles';
+    }
+
+    urlReserva() {
+      return `/app/reservas/detalle?id=${encodeURIComponent(this.reserva.id)}`;
+    }
+
+    // Ruta: Inicio / Reservas / {folio} / Pagar.
+    retocarRuta(r) {
+      const enlace = document.querySelector('.encabezado-ruta li:nth-last-child(2) a');
+      if (enlace) Object.assign(enlace, { textContent: r.folio, href: this.urlReserva() });
+    }
+
+    pintar(r, c, activos) {
+      const campo = (nombre, valor) => (this.querySelector(`[data-campo="${nombre}"]`).textContent = valor);
+      campo('folio', r.folio);
+      campo('servicio', typeof r.servicio === 'object' ? r.servicio.nombre : r.servicio);
+      campo('fecha', `${diaMesAnio(fechaDe(r.inicio))}, ${horaDe(r.inicio)}–${horaDe(r.fin)}`);
+      campo('cuota', textoCuota(c, r.precio?.total));
+      campo('importe', soles(c.monto));
+      const ms = r.estado === 'pre_reservada' && r.vence_pago && !r.pago_por_validar ? Date.parse(r.vence_pago) - Date.now() : 0;
+      if (ms > 0) campo('vence', `${absoluta(r.vence_pago)} · ${faltan(ms)}`);
+      else this.querySelector('[data-fila="vence"]').remove();
+      const rechazo = ultimoRechazo(c);
+      if (rechazo) {
+        const caja = this.querySelector('[data-rechazo]');
+        caja.hidden = false;
+        llenarAviso(caja.querySelector('.aviso'), `Rechazamos tu pago del ${absoluta(rechazo.registrado_en)}: «${rechazo.motivo_rechazo}»`, 'Corrígelo y regístralo de nuevo.');
+        caja.querySelector('.aviso').removeAttribute('role');
+      }
+      this.querySelector('#pago-monto').value = mostrarImporte(c.monto);
+      this.querySelector('[data-volver]').href = this.urlReserva();
+      this.pintarMetodos(activos);
+    }
+
+    pintarMetodos(activos, marcado) {
+      const molde = this.querySelector('template[data-metodo]');
+      this.querySelector('[data-metodos]').replaceChildren(
+        ...activos.map((metodo) => {
+          const nodo = molde.content.cloneNode(true);
+          const entrada = nodo.querySelector('input');
+          entrada.value = metodo;
+          entrada.id = `pago-metodo-${metodo}`;
+          entrada.checked = metodo === marcado || activos.length === 1;
+          nodo.querySelector('.casilla-etiqueta').textContent = METODOS[metodo][0];
+          const detalle = nodo.querySelector('.casilla-detalle');
+          if (METODOS[metodo][1]) detalle.textContent = METODOS[metodo][1];
+          else detalle.remove();
+          return nodo;
+        }),
+      );
+      this.datosMetodo();
+    }
+
+    // Datos para pagar del metodo elegido, en una region viva: se anuncian al cambiar de metodo.
+    datosMetodo() {
+      const elegido = this.querySelector('input[name="metodo"]:checked')?.value;
+      const zona = this.querySelector('[data-datos-pago]');
+      if (!elegido) {
+        zona.replaceChildren(Object.assign(document.createElement('p'), { className: 'gestion-ayuda', textContent: 'Elige un método para ver los datos.' }));
+        return;
+      }
+      zona.replaceChildren(
+        Object.assign(document.createElement('h3'), { className: 'pago-datos-titulo', textContent: `Datos para pagar con ${METODOS[elegido][0]}` }),
+        Object.assign(document.createElement('p'), { className: 'pago-texto', textContent: this.textos[elegido] }),
+      );
+    }
+
+    // RN-04 admite pagar otro monto: la ayuda avisa, no es error.
+    ayudaMonto() {
+      const v = leerImporte(this.querySelector('#pago-monto').value);
+      const distinto = v !== null && Number(v) > 0 && Number(v) !== Number(this.cuota.monto);
+      this.querySelector('#pago-monto-ayuda').textContent = distinto ? `No coincide con la cuota (${soles(this.cuota.monto)}). Puedes registrarlo igual: el estudio lo revisará.` : AYUDA_MONTO;
+    }
+
+    revisarCaptura() {
+      const carga = this.querySelector('bugalu-carga-archivos');
+      quitarError(carga.entrada);
+      const error = carga.error();
+      if (error && carga.archivo) ponerError(this, carga.entrada, error);
+    }
+
+    // --- Envio ---
+
+    limpiarErrores() {
+      this.querySelectorAll('[aria-invalid="true"]').forEach(quitarError);
+    }
+
+    alEnviar() {
+      const entradas = this.entradas();
+      const { metodo, monto, operacion, carga } = entradas;
+      this.limpiarErrores();
+      const importe = leerImporte(monto.value);
+      const numero = operacion.value.trim();
+      const errores = [];
+      if (!metodo) errores.push({ entrada: this.querySelector('input[name="metodo"]'), mensaje: 'Elige cómo pagaste.', texto: 'Método de pago' });
+      if (importe === null || Number(importe) <= 0) errores.push({ entrada: monto, mensaje: 'Escribe el monto que pagaste, mayor que 0 (por ejemplo, 225,00).', texto: 'Monto pagado' });
+      if (!numero) errores.push({ entrada: operacion, mensaje: 'Escribe el número de operación.', texto: 'Número de operación' });
+      else if (!OPERACION.test(numero)) errores.push({ entrada: operacion, mensaje: 'Escribe de 4 a 40 letras, cifras o guiones.', texto: 'Número de operación' });
+      const errorCaptura = carga.error();
+      if (errorCaptura) errores.push({ entrada: carga.entrada, mensaje: errorCaptura, texto: 'Captura del comprobante' });
+      if (!this.validar(errores)) return;
+      const datos = new FormData();
+      datos.append('id_cuota', this.cuota.id);
+      datos.append('metodo', metodo.value);
+      datos.append('monto', importe);
+      datos.append('numero_operacion', numero);
+      datos.append('captura', carga.archivo, carga.archivo.name);
+      this.enviar(this.querySelector('[data-registrar]'), 'Registrando pago…', () => registrarPago(datos), () => {
+        location.assign(`${this.urlReserva()}&aviso=pago-registrado`);
+      });
+    }
+
+    entradas() {
+      return {
+        metodo: this.querySelector('input[name="metodo"]:checked'),
+        monto: this.querySelector('#pago-monto'),
+        operacion: this.querySelector('#pago-operacion'),
+        carga: this.querySelector('bugalu-carga-archivos'),
+      };
+    }
+
+    // Durante el envio: campos y "Volver" bloqueados; a los 10 s, el aviso de subida lenta.
+    bloquear(si) {
+      super.bloquear(si);
+      this.querySelectorAll('form input').forEach((e) => (e.disabled = si));
+      const volver = this.querySelector('form [data-volver]');
+      if (si) volver?.setAttribute('aria-disabled', 'true');
+      else volver?.removeAttribute('aria-disabled');
+      if (volver) volver.tabIndex = si ? -1 : 0;
+      const aviso = this.querySelector('[data-lento]');
+      clearTimeout(this.lento);
+      if (aviso) aviso.hidden = true;
+      if (si) this.lento = setTimeout(() => aviso && (aviso.hidden = false), 10000);
+    }
+
+    errorEnvio(error) {
+      const { metodo, monto, operacion, carga } = this.entradas();
+      const sobre = (entrada, mensaje, texto) => {
+        this.limpiarErrores();
+        this.validar([{ entrada, mensaje, texto }]);
+        return true;
+      };
+      const estado = error.estado;
+      const codigo = error.codigo;
+      const mb = (carga.archivo?.size ?? 0) / 1048576;
+      const pesa = mb > 5 ? `La captura pesa ${String(Number(mb.toFixed(1))).replace('.', ',')} MB.` : 'La captura pesa más de 5 MB.';
+      const CAPTURA = { archivo_muy_grande: `${pesa} Sube una de hasta 5 MB.`, formato_no_admitido: 'Sube la captura en JPG, PNG o PDF.' };
+      if (estado === 404) {
+        this.sustituir('no-encontrada');
+        return true;
+      }
+      if (estado === 409 && codigo === 'operacion_duplicada') {
+        return sobre(operacion, `Ese número ya está registrado con ${METODOS[metodo?.value]?.[0] ?? 'ese método'}. Revisa el número del voucher.`, 'Número de operación');
+      }
+      if (estado === 409 && ['pago_en_validacion', 'cuota_pagada', 'cuota_no_pagable'].includes(codigo)) {
+        this.yaNoPagable(codigo);
+        return true;
+      }
+      if (estado === 413 || (estado === 422 && codigo === 'formato_no_admitido')) return sobre(carga.entrada, CAPTURA[estado === 413 ? 'archivo_muy_grande' : codigo], 'Captura del comprobante');
+      if (estado === 422 && codigo === 'metodo_no_disponible') {
+        this.metodoNoDisponible(metodo?.value);
+        return true;
+      }
+      if (estado === 422 && codigo === 'datos_invalidos') {
+        const destino = { monto: [monto, 'Monto pagado'], numero_operacion: [operacion, 'Número de operación'], captura: [carga.entrada, 'Captura del comprobante'], metodo: [this.querySelector('input[name="metodo"]'), 'Método de pago'] }[error.detalles?.campo];
+        return destino ? sobre(destino[0], error.mensaje || 'Revisa este dato.', destino[1]) : false;
+      }
+      if (estado === 422) return false; // el aviso con el mensaje del servidor
+      const [titulo, texto] =
+        estado === 0 ? ['Sin conexión', 'Tus datos siguen aquí; revisa tu red y vuelve a intentarlo.']
+        : estado === 503 ? ['No pudimos registrar el pago: el servicio no responde', 'Tus datos siguen aquí; inténtalo en unos minutos.']
+        : ['Algo salió mal', 'Tus datos siguen aquí; inténtalo de nuevo.'];
+      enfocarAviso(mostrarAviso(this, 'error', titulo, texto));
+      return true;
+    }
+
+    // 409: se vuelve a leer la reserva para decir por que ya no se puede pagar.
+    async yaNoPagable(codigo) {
+      try {
+        const r = await obtenerReserva(this.reserva.id);
+        this.reserva = r;
+        this.cuota = (r.cuotas ?? []).find((x) => x.id === this.cuota.id) ?? this.cuota;
+      } catch {}
+      this.verNoPagable(this.noPagable(this.reserva, this.cuota, codigo));
+      this.anunciar();
+      this.enfocar();
+    }
+
+    // 422: el metodo se desactivo mientras tanto; se recargan los metodos y se conserva el resto del formulario.
+    async metodoNoDisponible(elegido) {
+      const nombre = METODOS[elegido]?.[0] ?? 'Ese método';
+      let activos = [];
+      try {
+        activos = this.activos(await obtenerInstrucciones());
+      } catch {}
+      if (!activos.length) return this.cargar();
+      this.pintarMetodos(activos.filter((m) => m !== elegido), undefined);
+      enfocarAviso(mostrarAviso(this, 'error', `${nombre} ya no está disponible. Elige otro método.`));
+    }
+  }
+
+  if (!customElements.get('bugalu-pago')) customElements.define('bugalu-pago', BugaluPago);
+</script>
+
+<style>
+  .pago {
+    display: block;
+  }
+  .pago :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  /* El lateral va antes en el DOM: bajo el escritorio queda arriba (qué pagas y cuánto); en escritorio, a la derecha. */
+  @media (min-width: 64em) { /* punto-quiebre-escritorio */
+    .pago :global(form.gestion-principal) {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .pago :global(.gestion-lateral) {
+      grid-column: 2;
+      grid-row: 1;
+    }
+  }
+  .pago :global(.gestion-lateral .etiqueta) {
+    display: flex;
+    inline-size: fit-content;
+    margin-block-end: var(--espacio-3);
+  }
+  .pago :global(.pago-folio),
+  .pago :global(.pago-operacion .campo-control) {
+    font-family: var(--fuente-familia-tecnica);
+  }
+  .pago :global(.pago-folio) {
+    white-space: nowrap;
+  }
+  .pago :global(.pago-total) {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--espacio-2);
+    margin: var(--espacio-4) 0 0;
+    padding-block-start: var(--espacio-3);
+    border-block-start: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+    color: var(--color-texto-principal);
+  }
+  .pago :global(.pago-total-etiqueta) {
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .pago :global(.pago-total-importe) {
+    font-family: var(--fuente-familia-tecnica);
+    font-weight: var(--fuente-peso-medio);
+  }
+  .pago :global(.pago-rechazo) {
+    margin-block-start: var(--espacio-4);
+  }
+  .pago :global(.pago-metodos) {
+    display: grid;
+    gap: var(--espacio-2);
+  }
+  .pago :global(.pago-datos) {
+    margin-block-start: var(--espacio-4);
+  }
+  .pago :global(.pago-datos-titulo) {
+    margin: 0 0 var(--espacio-2);
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  /* Datos para pagar: son datos del estudio, tal cual y con sus saltos de línea. */
+  .pago :global(.pago-texto) {
+    margin: 0;
+    color: var(--color-texto-principal);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+  .pago :global(.pago-vacio-accion) {
+    margin-block-start: var(--espacio-3);
+  }
+  .pago :global(.pago-barra) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+  }
+  .pago :global(.pago-acciones) {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--espacio-3);
+  }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    .pago :global(.pago-acciones) {
+      flex-direction: row;
+      justify-content: flex-end;
+    }
+  }
+  .pago :global(.pago-acciones [aria-disabled='true']) {
+    opacity: var(--efecto-opacidad-capa);
+    pointer-events: none;
+  }
+</style>

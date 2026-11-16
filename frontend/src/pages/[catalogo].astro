@@ -21,6 +21,8 @@ import NavegacionLateral from '../componentes/NavegacionLateral.astro';
 import NavegacionTactil from '../componentes/NavegacionTactil.astro';
 import Tabla from '../componentes/Tabla.astro';
 import Pasos from '../componentes/Pasos.astro';
+import Archivo from '../componentes/Archivo.astro';
+import CargaArchivos from '../islas/CargaArchivos.astro';
 
 const destinos = [
   { etiqueta: 'Inicio', href: '/app/', icono: 'house' as const },
@@ -286,6 +288,26 @@ const destinos = [
       actual={3}
       pasos={[{ nombre: 'Horario', href: '#h', estado: 'revisar' }, { nombre: 'Servicio', href: '#s' }, { nombre: 'Confirmar' }, { nombre: 'Listo' }]}
     />
+  </section>
+
+  <section class="grupo" aria-labelledby="g-archivo">
+    <h2 id="g-archivo">Archivo</h2>
+    <h3>Adjunto</h3>
+    <Archivo variante="adjunto" tipo="pdf" nombre="comprobante-yape.pdf" metadato="PDF · 120 KB" />
+    <Archivo variante="adjunto" tipo="imagen" nombre="captura-de-pago.png" metadato="PNG · 1,2 MB" miniatura="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' fill='%23ccc'/%3E%3C/svg%3E" />
+    <Archivo variante="adjunto" tipo="audio" nombre="CYBERNETIC_MIX_V3_CON_UN_NOMBRE_MUY_LARGO_QUE_NO_CABE.wav" metadato="WAV · 54 MB" etiqueta="WAV" />
+    <h3>Descarga y lectura</h3>
+    <Archivo variante="descarga" tipo="audio" nombre="CYBERNETIC_MIX_V3.wav" metadato="54 MB" etiqueta="WAV" href="#descarga" />
+    <Archivo variante="lectura" tipo="pdf" nombre="comprobante.pdf" metadato="PDF · 120 KB" href="#lectura" />
+    <Archivo variante="lectura" tipo="imagen" nombre="captura.png" metadato="PNG · 800 KB" />
+  </section>
+
+  <section class="grupo" aria-labelledby="g-carga">
+    <h2 id="g-carga">Carga de archivos</h2>
+    <h3>Captura de pago</h3>
+    <form enctype="multipart/form-data">
+      <CargaArchivos id="catalogo-captura" nombre="captura" etiqueta="Captura del comprobante" obligatorio ayuda="JPG, PNG o PDF, hasta 5 MB. Que se lean el monto, la fecha y el número de operación." />
+    </form>
   </section>
 
   <script>

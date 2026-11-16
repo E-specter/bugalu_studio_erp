@@ -1,0 +1,150 @@
+---
+// Variante captura de pago (carga-archivos.md): un <input type="file" name="captura"> real dentro del <form> de la pantalla, que
+// lo envia en su multipart. Sin zona de soltar ni progreso. Sin JS queda el input nativo; la isla pone el boton y el adjunto.
+import Campo from '../componentes/Campo.astro';
+import Archivo from '../componentes/Archivo.astro';
+import Icono from '../componentes/internos/Icono.astro';
+
+interface Props {
+  etiqueta: string;
+  ayuda?: string;
+  nombre?: string;
+  id?: string;
+  accept?: string;
+  maxMb?: number;
+  obligatorio?: boolean;
+}
+const { etiqueta, ayuda, nombre = 'captura', id = `carga-${nombre}`, accept = 'image/jpeg,image/png,application/pdf', maxMb = 5, obligatorio = false } = Astro.props;
+---
+
+<bugalu-carga-archivos variante="captura" max-mb={maxMb} accept={accept}>
+  <!-- Campo pinta <input type={tipo}> para cualquier tipo que no sea area, selector, password ni search: 'file' funciona aunque su tipado no lo liste. -->
+  <Campo tipo={'file' as 'text'} {nombre} {etiqueta} {ayuda} {id} {obligatorio} accept={accept} />
+  <template data-boton><label class="carga-boton"><Icono nombre="upload" />Seleccionar archivo</label></template>
+  <template data-archivo><Archivo nombre=" " tipo="pdf" metadato=" " /></template>
+</bugalu-carga-archivos>
+
+<script>
+  // @ts-nocheck
+  const MB = 1048576;
+  const TIPOS = { 'image/jpeg': 'JPG', 'image/png': 'PNG', 'application/pdf': 'PDF' };
+  const tamano = (bytes) => (bytes < MB ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${String(Number((bytes / MB).toFixed(1))).replace('.', ',')} MB`);
+
+  class BugaluCargaArchivos extends HTMLElement {
+    connectedCallback() {
+      this.entrada = this.querySelector('input[type="file"]');
+      this.boton = this.querySelector('template[data-boton]').content.firstElementChild.cloneNode(true);
+      this.boton.htmlFor = this.entrada.id;
+      this.adjunto = document.createElement('div');
+      this.adjunto.hidden = true;
+      this.entrada.classList.add('carga-entrada', 'visualmente-oculto');
+      this.entrada.after(this.boton, this.adjunto);
+      this.entrada.addEventListener('change', () => this.cambiar());
+      this.adjunto.addEventListener('click', (e) => e.target.closest('.archivo-accion') && this.quitar());
+    }
+
+    get archivo() {
+      return this.entrada.files[0] ?? null;
+    }
+
+    // Primera capa en el navegador (manda la del servidor): null si no hay problema.
+    error() {
+      const f = this.archivo;
+      const max = Number(this.getAttribute('max-mb'));
+      if (!f) return this.entrada.required ? 'Adjunta la captura del comprobante.' : null;
+      if (f.size > max * MB) return `La captura pesa ${String(Number((f.size / MB).toFixed(1))).replace('.', ',')} MB. Sube una de hasta ${max} MB.`;
+      if (!this.getAttribute('accept').split(',').includes(f.type)) return 'Sube la captura en JPG, PNG o PDF.';
+      return null;
+    }
+
+    cambiar() {
+      const f = this.archivo;
+      URL.revokeObjectURL(this.vista ?? '');
+      this.vista = null;
+      this.adjunto.replaceChildren();
+      this.adjunto.hidden = !f;
+      this.boton.hidden = Boolean(f);
+      if (f) {
+        const nodo = this.querySelector('template[data-archivo]').content.firstElementChild.cloneNode(true);
+        nodo.querySelector('.archivo-nombre').textContent = f.name;
+        nodo.querySelector('.archivo-nombre').title = f.name;
+        nodo.querySelector('.archivo-metadato').textContent = `${TIPOS[f.type] ?? (f.name.split('.').pop() || '').toUpperCase()} · ${tamano(f.size)}`;
+        nodo.querySelector('.archivo-accion').setAttribute('aria-label', `Quitar ${f.name}`);
+        if (f.type.startsWith('image/')) {
+          this.vista = URL.createObjectURL(f);
+          const img = Object.assign(document.createElement('img'), { className: 'archivo-miniatura', src: this.vista, alt: `Vista previa de la captura ${f.name}` });
+          nodo.querySelector('.archivo-visual').replaceChildren(img);
+        }
+        this.adjunto.append(nodo);
+      }
+      // Con adjunto, el input sigue en el formulario pero no es parada de teclado: el control es "Quitar".
+      if (f) this.entrada.tabIndex = -1;
+      else this.entrada.removeAttribute('tabindex');
+      this.dispatchEvent(new CustomEvent('cambio', { bubbles: true }));
+    }
+
+    quitar() {
+      this.entrada.value = '';
+      this.cambiar();
+      this.entrada.focus();
+    }
+  }
+
+  if (!customElements.get('bugalu-carga-archivos')) customElements.define('bugalu-carga-archivos', BugaluCargaArchivos);
+</script>
+
+<style>
+  bugalu-carga-archivos {
+    display: block;
+  }
+  bugalu-carga-archivos :global(.campo) {
+    gap: var(--espacio-3);
+  }
+  /* El input real queda fuera de la vista (no display:none: sigue enfocable y en el formulario); gana a la medida del campo. */
+  bugalu-carga-archivos :global(.campo-control.carga-entrada) {
+    inline-size: var(--borde-grosor-fino);
+    min-block-size: 0;
+    padding: 0;
+  }
+  .carga-boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--espacio-2);
+    box-sizing: border-box;
+    inline-size: fit-content;
+    min-block-size: var(--medida-control-tactil);
+    padding: var(--espacio-2) var(--espacio-5);
+    background: var(--color-fondo-superficie);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-titulo);
+    font-weight: var(--fuente-peso-titulo);
+    font-size: var(--fuente-tamano-base);
+    line-height: var(--fuente-interlineado-interfaz);
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .carga-boton[hidden] {
+    display: none;
+  }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    .carga-boton {
+      min-block-size: var(--medida-control-base);
+    }
+  }
+  /* El foco real está en el input (oculto): el anillo se ve en el botón que lo representa. */
+  bugalu-carga-archivos :global(.carga-entrada:focus-visible) + .carga-boton {
+    outline: var(--borde-grosor-base) solid var(--color-foco-anillo);
+    outline-offset: var(--borde-grosor-base);
+  }
+  bugalu-carga-archivos :global(.carga-entrada[aria-invalid='true']) + .carga-boton {
+    border-color: var(--color-texto-alerta);
+  }
+  @media (hover: hover) {
+    .carga-boton:hover {
+      background: var(--color-fondo-alerta);
+      color: var(--color-texto-sobre-alerta);
+    }
+  }
+</style>

@@ -1,0 +1,105 @@
+---
+import Icono from './internos/Icono.astro';
+import EtiquetaTecnica from './EtiquetaTecnica.astro';
+
+interface Props {
+  nombre: string;
+  tipo?: 'audio' | 'imagen' | 'pdf' | 'otro';
+  metadato?: string;
+  etiqueta?: string;
+  variante?: 'adjunto' | 'descarga' | 'lectura';
+  href?: string;
+  miniatura?: string; // src de la vista previa de una imagen adjunta (adjunto: antes de enviar)
+}
+const { nombre, tipo = 'otro', metadato, etiqueta, variante = 'adjunto', href, miniatura, class: clase } = Astro.props as Props & { class?: string };
+const icono = { audio: 'audio-waveform', imagen: 'image', pdf: 'file', otro: 'file' } as const;
+---
+
+<div class:list={['archivo', `archivo-${variante}`, clase]}>
+  <span class="archivo-visual">
+    {miniatura ? <img class="archivo-miniatura" src={miniatura} alt={`Vista previa de ${nombre}`} /> : <Icono nombre={icono[tipo]} />}
+  </span>
+  <div class="archivo-cuerpo">
+    <p class="archivo-nombre" title={nombre}>{nombre}</p>
+    {metadato && <p class="archivo-metadato">{metadato}</p>}
+  </div>
+  {etiqueta && <EtiquetaTecnica texto={etiqueta} />}
+  {variante === 'adjunto' && (
+    <button type="button" class="archivo-accion" aria-label={`Quitar ${nombre}`}><Icono nombre="x" /></button>
+  )}
+  {variante === 'descarga' && href && (
+    <a class="archivo-accion" href={href} download aria-label={`Descargar ${nombre}${etiqueta ? ` en ${etiqueta}` : ''}${metadato ? ` (${metadato})` : ''}`}><Icono nombre="download" /></a>
+  )}
+  {variante === 'lectura' && href && (
+    <a class="archivo-enlace" href={href} target="_blank" rel="noopener noreferrer">Abrir {nombre}<span class="visualmente-oculto"> (pestaña nueva)</span><Icono nombre="external-link" /></a>
+  )}
+</div>
+
+<style>
+  .archivo {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-3);
+    box-sizing: border-box;
+    padding: var(--espacio-4);
+    background: var(--color-fondo-superficie);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+  }
+  .archivo-visual {
+    display: grid;
+    flex: none;
+    place-items: center;
+    color: var(--color-texto-principal);
+  }
+  .archivo :global(.archivo-miniatura) {
+    display: block;
+    box-sizing: border-box;
+    inline-size: var(--medida-miniatura);
+    block-size: var(--medida-miniatura);
+    object-fit: contain;
+    background: var(--color-fondo-claro);
+    border: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+  }
+  .archivo-cuerpo {
+    flex: 1;
+    min-inline-size: 0;
+  }
+  .archivo-nombre {
+    margin: 0;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-base);
+    overflow-wrap: anywhere; /* shortcut: el nombre largo se parte en líneas en vez de elipsis en medio (la prueba de desbordes no admite recorte); nombre completo en title */
+  }
+  .archivo-metadato {
+    margin: 0;
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-micro);
+  }
+  .archivo-accion {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    box-sizing: border-box;
+    inline-size: var(--medida-control-tactil);
+    block-size: var(--medida-control-tactil);
+    padding: 0;
+    background: var(--color-fondo-superficie);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    color: var(--color-texto-principal);
+    cursor: pointer;
+  }
+  .archivo-enlace {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--espacio-2);
+    min-block-size: var(--medida-control-tactil);
+    color: var(--color-texto-principal);
+  }
+  @media (hover: hover) {
+    .archivo-accion:hover {
+      background: var(--color-fondo-alerta);
+      color: var(--color-texto-sobre-alerta);
+    }
+  }
+</style>

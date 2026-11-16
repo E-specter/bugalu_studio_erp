@@ -3,6 +3,7 @@ import Panel from '../componentes/Panel.astro';
 import Aviso from '../componentes/Aviso.astro';
 import Boton from '../componentes/Boton.astro';
 import Tabla from '../componentes/Tabla.astro';
+import Campo from '../componentes/Campo.astro';
 import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
 import IndicadorEstado from '../componentes/IndicadorEstado.astro';
 import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
@@ -84,13 +85,20 @@ const filtros = [
             <div data-estado-reserva class="reservas-estado">
               <IndicadorEstado variante="barra" texto=" " dato=" " />
               <p class="reservas-nota" data-nota hidden></p>
+              <p class="reservas-nota" data-nota-estudio hidden></p>
               <div data-menos-hora hidden><Aviso variante="aviso" titulo=" " texto=" " /></div>
+            </div>
+            <div data-pagar hidden><Boton href="#">Registrar pago</Boton></div>
+            <div class="reservas-estado" data-pide-estudio hidden>
+              <p class="reservas-nota">Ya registraste un pago, así que la cancelación la gestiona el estudio. Escríbele y te dirá qué pasa con tu pago.</p>
+              <p class="reservas-nota reservas-contacto" data-contacto hidden></p>
             </div>
             <div data-abrir-cancelar hidden><Boton variante="peligro" data-abrir>Cancelar reserva</Boton></div>
             <div data-confirmar hidden>
               <Panel titulo="Cancelar reserva" variante="lateral" id="cancelar">
                 <p class="reservas-resumen" data-resumen></p>
                 <p data-consecuencia></p>
+                <div data-nota-campo hidden><Campo tipo="area" id="cancelar-nota" nombre="nota" etiqueta="Nota sobre el reembolso" obligatorio maxlength="300" ayuda="Por ejemplo: «Devolvemos S/ 225,00 por Yape en 48 h» o «Sin devolución: cancelación fuera de plazo»." /></div>
                 <div class="reservas-botones">
                   <Boton variante="secundario" data-envio data-volver>Volver a la reserva</Boton>
                   <Boton variante="peligro" data-envio data-cancelar>Cancelar reserva</Boton>
@@ -101,7 +109,7 @@ const filtros = [
           <div class="gestion-principal">
             <Panel codigo="D1" titulo="Reserva">
               <dl class="gestion-datos">
-                <div><dt>Estado</dt><dd><EtiquetaTecnica texto="Estado" /></dd></div>
+                <div><dt>Estado</dt><dd class="reservas-estados"><EtiquetaTecnica texto="Estado" /><span data-pago-validar hidden><EtiquetaTecnica texto="Pago por validar" variante="aviso" /></span></dd></div>
                 <div><dt>Fecha y horario</dt><dd data-campo="horario"></dd></div>
                 <div><dt>Duración</dt><dd data-campo="duracion"></dd></div>
                 <div><dt>Servicio</dt><dd data-campo="servicio"></dd></div>
@@ -122,7 +130,7 @@ const filtros = [
       </template>
       <template data-fila-cuota>
         <tr>
-          <th scope="row" data-concepto></th>
+          <th scope="row"><span data-concepto></span><span class="gestion-motivo reservas-rechazo" data-rechazo hidden></span></th>
           <td data-etiqueta="Importe" class="tabla-num" data-importe></td>
           <td data-etiqueta="Estado"><EtiquetaTecnica texto="Estado" /></td>
         </tr>
@@ -134,10 +142,11 @@ const filtros = [
 <script>
   // @ts-nocheck
   import { IslaGestion } from '../servicios/isla-gestion.js';
-  import { listarMisReservas, obtenerReserva, cancelarReserva } from '../servicios/reservas.js';
+  import { listarMisReservas, obtenerReserva, cancelarReserva, absoluta, faltan, textoCuota, ultimoRechazo, tienePagos } from '../servicios/reservas.js';
+  import { obtenerContacto } from '../servicios/pagos.js';
   import { obtenerPerfil } from '../servicios/api.js';
   import { fechaDe, horaDe, diaMes, diaMesAnio, soles, pintarPartidas } from '../servicios/formatos.js';
-  import { mostrarAviso, enfocarAviso, llenarAviso } from '../servicios/formulario.js';
+  import { mostrarAviso, enfocarAviso, llenarAviso, quitarError } from '../servicios/formulario.js';
 
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const MINUTO = 60e3;
@@ -145,28 +154,21 @@ const filtros = [
   // estado -> [texto, variante de la etiqueta]
   const ESTADOS = { pre_reservada: ['Pre-reservada', 'aviso'], confirmada: ['Confirmada', 'exito'], en_curso: ['En curso', 'activa'], finalizada: ['Finalizada', 'exito'], cancelada: ['Cancelada', 'alerta'] };
   const PROXIMAS = ['pre_reservada', 'confirmada', 'en_curso'];
-  const HITOS = { al_reservar: 'Al reservar', al_terminar: 'Al terminar la sesión', al_encargar: 'Al encargar', al_aprobar_version: 'Al aprobar la versión' };
-  const CUOTAS = { pendiente: ['Pendiente', 'neutra'], pagada: ['Pagada', 'exito'] };
+  const CUOTAS = { pendiente: ['Pendiente', 'aviso'], en_validacion: ['En validación', 'aviso'], pagada: ['Pagada', 'exito'] };
 
   const nombre = (v) => v?.nombre ?? v;
-  const absoluta = (iso) => `${diaMes(fechaDe(iso))}, ${horaDe(iso)}`;
   const horario = (r) => `${horaDe(r.inicio)}–${horaDe(r.fin)}`;
   const fecha = (r) => diaMesAnio(fechaDe(r.inicio));
   const duracion = (r) => {
     const min = Math.round((Date.parse(r.fin) - Date.parse(r.inicio)) / MINUTO);
     return [Math.floor(min / 60) && `${Math.floor(min / 60)} h`, min % 60 && `${min % 60} min`].filter(Boolean).join(' ') || '0 min';
   };
-  // "faltan 2 d 3 h" (>= 1 dia), "faltan 1 h 5 min", "faltan 59 min".
-  const faltan = (ms) => {
-    const min = Math.floor(ms / MINUTO);
-    const partes = min >= 1440 ? [[Math.floor(min / 1440), 'd'], [Math.floor((min % 1440) / 60), 'h']] : min >= 60 ? [[Math.floor(min / 60), 'h'], [min % 60, 'min']] : [[min, 'min']];
-    return `faltan ${partes.filter(([n]) => n).map(([n, u]) => `${n} ${u}`).join(' ')}`;
-  };
   // Umbrales del plazo (0 = vencido): solo al cruzarlos se anuncia.
   const umbral = (ms) => (ms <= 0 ? 0 : ms <= 15 * MINUTO ? 1 : ms <= 60 * MINUTO ? 2 : 3);
   const anuncios = [(f) => `La reserva ${f} venció sin pago.`, (f) => `La reserva ${f} vence en menos de 15 min.`, (f) => `La reserva ${f} vence en menos de 1 h.`];
 
-  const resto = (r) => (r.estado === 'pre_reservada' && r.vence_pago ? Date.parse(r.vence_pago) - Date.now() : null);
+  // Con un pago por validar el plazo no corre (RN-18).
+  const resto = (r) => (r.estado === 'pre_reservada' && r.vence_pago && !r.pago_por_validar ? Date.parse(r.vence_pago) - Date.now() : null);
   // Una pre-reservada con el plazo vencido ya cuenta como caducada, aunque la API tarde en cancelarla.
   const caducada = (r) => resto(r) !== null && resto(r) <= 0;
   const estadoDe = (r) => (caducada(r) ? ['Caducada', 'alerta'] : ESTADOS[r.estado]);
@@ -174,6 +176,18 @@ const filtros = [
     if (caducada(r)) return `Venció sin pago${r.vence_pago ? ` el ${absoluta(r.vence_pago)}` : ''}. El horario quedó libre.`;
     if (r.estado !== 'cancelada') return null;
     return { cliente: 'La cancelaste.', administrador: 'La canceló el estudio.' }[r.motivo_cancelacion] ?? `Caducó sin pago${r.vence_pago ? ` el ${absoluta(r.vence_pago)}` : ''}. El horario se liberó.`;
+  };
+
+  // Columna PAGO de la lista: [texto, plazo restante o null].
+  const pagoDe = (r, ms) => {
+    if (r.estado === 'cancelada') return ['—', null];
+    if (r.estado === 'pre_reservada') {
+      if (r.pago_por_validar) return ['En validación', null];
+      if (ms === null) return ['—', null];
+      return ms <= 0 ? ['Venció sin pago', null] : [`Antes del ${absoluta(r.vence_pago)}`, faltan(ms)];
+    }
+    const resta = (r.cuotas ?? []).find((c) => c.hito === 'al_terminar');
+    return [{ pendiente: `Resto: ${soles(resta?.monto)}`, en_validacion: 'En validación', pagada: 'Pagada' }[resta?.estado] ?? '—', null];
   };
 
   // Un dato fuera de la lista cerrada no se usa en plantillas: respuesta inesperada (cae en "Algo salió mal").
@@ -195,6 +209,7 @@ const filtros = [
     noEncontrada = ['No encontramos esta reserva.', ''];
     filas = [];
     reserva = null;
+    pagosConfirmados = false;
     rol = null;
     temporizador = 0;
 
@@ -209,6 +224,12 @@ const filtros = [
 
     disconnectedCallback() {
       clearInterval(this.temporizador);
+    }
+
+    // Solo el detalle recibe ?aviso= (lista cerrada: el texto sale de aqui).
+    avisoDeUrl() {
+      if (this.vista === 'detalle') this.avisosUrl = { 'pago-registrado': ['Pago registrado. Queda pendiente de validación', 'Te avisaremos por correo cuando el estudio lo revise.'] };
+      super.avisoDeUrl();
     }
 
     // 401 y 403 llevan el texto de esta pantalla y su propio enlace.
@@ -281,10 +302,9 @@ const filtros = [
     pintarFila({ raiz, r }) {
       poner(raiz.querySelector('.etiqueta'), estadoDe(r));
       oculto(raiz.querySelector('[data-motivo]'), motivo(r));
-      const ms = resto(r);
-      const limite = raiz.querySelector('[data-limite]');
-      limite.textContent = ms === null ? '—' : ms <= 0 ? 'Venció sin pago' : `Antes del ${absoluta(r.vence_pago)}`;
-      oculto(raiz.querySelector('[data-plazo]'), ms > 0 ? faltan(ms) : null);
+      const [texto, plazo] = pagoDe(r, resto(r));
+      raiz.querySelector('[data-limite]').textContent = texto;
+      oculto(raiz.querySelector('[data-plazo]'), plazo);
     }
 
     // Cada minuto: recalcula sin anunciar; anuncia solo al cruzar 1 h, 15 min o el vencimiento.
@@ -327,15 +347,16 @@ const filtros = [
       return `Reserva ${r.folio}, ${estadoDe(r)[0].toLowerCase()}`;
     }
 
-    llenarFilas(contenedor, plantilla, filas) {
-      const molde = this.querySelector(`template[${plantilla}]`);
-      this.querySelector(`${contenedor} tbody`).replaceChildren(
-        ...filas.map(([concepto, importe, cantidad, estado]) => {
+    llenarCuotas(r) {
+      const molde = this.querySelector('template[data-fila-cuota]');
+      this.querySelector('[data-cuotas] tbody').replaceChildren(
+        ...(r.cuotas ?? []).map((c) => {
           const fila = molde.content.cloneNode(true).firstElementChild;
-          fila.querySelector('[data-concepto]').textContent = concepto;
-          fila.querySelector('[data-importe]').textContent = importe;
-          if (cantidad !== undefined) fila.querySelector('[data-cantidad]').textContent = cantidad;
-          if (estado) poner(fila.querySelector('.etiqueta'), estado);
+          fila.querySelector('[data-concepto]').textContent = textoCuota(c, r.precio.total);
+          fila.querySelector('[data-importe]').textContent = soles(c.monto);
+          poner(fila.querySelector('.etiqueta'), CUOTAS[c.estado] ?? [String(c.estado).replace(/_/g, ' ').replace(/^./, (x) => x.toUpperCase()), 'neutra']);
+          const rechazo = ultimoRechazo(c);
+          oculto(fila.querySelector('[data-rechazo]'), rechazo && `Pago rechazado el ${diaMes(fechaDe(rechazo.registrado_en))}: ${rechazo.motivo_rechazo}`);
           return fila;
         }),
       );
@@ -358,13 +379,7 @@ const filtros = [
       campo('cliente', r.cliente && nombre(r.cliente));
       const p = r.precio;
       pintarPartidas(this.querySelector('[data-precio] .tabla'), p);
-      const total = Number(p.total);
-      this.llenarFilas('[data-cuotas]', 'data-fila-cuota', r.cuotas.map((c) => [
-        `${HITOS[c.hito] ?? c.hito}${total > 0 ? ` · ${Math.round((Number(c.monto) / total) * 100)} %` : ''}`,
-        soles(c.monto),
-        undefined,
-        CUOTAS[c.estado] ?? [String(c.estado).replace(/_/g, ' ').replace(/^./, (x) => x.toUpperCase()), 'neutra'],
-      ]));
+      this.llenarCuotas(r);
       this.pintarEstado();
     }
 
@@ -372,41 +387,79 @@ const filtros = [
     pintarEstado() {
       const r = this.reserva;
       const ms = resto(r);
+      const cuotas = r.cuotas ?? [];
+      const resta = cuotas.find((c) => c.hito === 'al_terminar');
+      const restoTexto = { en_validacion: 'Pago del resto en validación', pagada: 'Pagada' }[resta?.estado];
       poner(this.querySelector('dl .etiqueta'), estadoDe(r));
+      this.querySelector('[data-pago-validar]').hidden = !r.pago_por_validar;
       let tono = 'neutro', texto = estadoDe(r)[0], dato = '';
-      if (ms > 0) [tono, texto, dato] = ['pendiente', `Paga el anticipo antes del ${absoluta(r.vence_pago)}`, faltan(ms)];
+      if (r.estado === 'pre_reservada' && r.pago_por_validar) [tono, texto, dato] = ['pendiente', 'Pago en validación', 'Registraste tu pago. No caduca mientras el estudio lo revise; te avisaremos por correo.'];
+      else if (ms > 0) [tono, texto, dato] = ['pendiente', `Paga el anticipo antes del ${absoluta(r.vence_pago)}`, faltan(ms)];
       else if (caducada(r)) tono = 'problema';
-      else if (r.estado === 'confirmada') [tono, dato] = ['correcto', 'Pagas el resto al terminar la sesión.'];
+      else if (r.estado === 'confirmada') [tono, dato] = ['correcto', restoTexto ?? 'Pagas el resto al terminar la sesión.'];
+      else if (r.estado === 'en_curso') dato = restoTexto ?? 'Pagas el resto al terminar.';
       else if (r.estado === 'finalizada') {
-        tono = 'correcto';
-        const resta = r.cuotas.find((c) => c.hito === 'al_terminar' && c.estado !== 'pagada');
-        if (resta) dato = `Falta pagar el resto: ${soles(resta.monto)}.`;
+        if (resta?.estado === 'pagada') [tono, dato] = ['correcto', 'Pagada'];
+        else if (resta?.estado === 'en_validacion') [tono, texto] = ['pendiente', 'Pago del resto en validación'];
+        else if (resta) [tono, texto] = ['pendiente', `Falta pagar el resto: ${soles(resta.monto)}`];
+        else tono = 'correcto';
       }
       const barra = this.querySelector('[data-estado-reserva] .indicador');
       barra.className = barra.className.replace(/indicador-(correcto|pendiente|problema|neutro)/, `indicador-${tono}`);
       barra.querySelector('.indicador-texto').textContent = texto;
       oculto(barra.querySelector('.indicador-dato'), dato);
       oculto(this.querySelector('[data-nota]'), motivo(r));
+      oculto(this.querySelector('[data-nota-estudio]'), r.nota_cancelacion && `Nota del estudio: ${r.nota_cancelacion}`);
       const menos = this.querySelector('[data-menos-hora]');
       menos.hidden = !(ms > 0 && ms < 60 * MINUTO);
       if (!menos.hidden && !menos.dataset.listo) {
         menos.dataset.listo = '1';
         llenarAviso(menos.querySelector('.aviso'), `Tu reserva vence en ${Math.floor(ms / MINUTO)} min`, 'Si no registras el pago, se cancelará y el horario se liberará.');
       }
-      // El dueño cancela solo pre-reservadas; el Administrador, tambien confirmadas; el personal no cancela.
-      const puede = !caducada(r) && ((this.rol === 'cliente' && r.estado === 'pre_reservada') || (this.rol === 'administrador' && ['pre_reservada', 'confirmada'].includes(r.estado)));
+      // Registrar pago (solo el dueño): primario si la cuota toca ya; secundario si adelanta el resto.
+      const pagable = this.rol === 'cliente' && !caducada(r) ? cuotas.find((c) => c.pagable) : null;
+      const bloquePago = this.querySelector('[data-pagar]');
+      bloquePago.hidden = !pagable;
+      if (pagable) {
+        const toca = pagable.hito === 'al_reservar' || r.estado === 'finalizada';
+        const enlace = bloquePago.querySelector('a');
+        enlace.href = `/app/reservas/pagar?id=${encodeURIComponent(r.id)}&cuota=${encodeURIComponent(pagable.id)}`;
+        enlace.firstChild.textContent = toca ? 'Registrar pago' : 'Adelantar el pago del resto';
+        enlace.className = enlace.className.replace(/boton-(primario|secundario)/, toca ? 'boton-primario' : 'boton-secundario');
+      }
+      // El dueño cancela solo pre-reservadas sin pagos; el Administrador, tambien confirmadas y con pagos (con nota); el personal no cancela.
+      const conPagos = tienePagos(r) || this.pagosConfirmados;
+      const admin = this.rol === 'administrador';
+      const puede = !caducada(r) && ((this.rol === 'cliente' && r.estado === 'pre_reservada' && !conPagos) || (admin && ['pre_reservada', 'confirmada'].includes(r.estado)));
+      const pide = this.rol === 'cliente' && r.estado === 'pre_reservada' && conPagos && !caducada(r);
+      this.querySelector('[data-pide-estudio]').hidden = !pide;
+      if (pide) this.contacto();
       const abrir = this.querySelector('[data-abrir-cancelar]');
       if (!puede) {
         abrir?.remove();
         this.querySelector('[data-confirmar]')?.remove();
         return;
       }
-      if (!abrir) return; // ya se vio que no se puede cancelar (409 tiene_pagos)
+      if (!abrir) return;
       abrir.hidden = !this.querySelector('[data-confirmar]').hidden;
       this.querySelector('[data-confirmar] .panel-titulo').lastChild.textContent = ` Cancelar reserva ${r.folio}`;
       this.querySelector('[data-resumen]').textContent = `${nombre(r.servicio)} · ${fecha(r)}, ${horario(r)}`;
-      this.querySelector('[data-consecuencia]').textContent = `El horario se libera al momento${r.cliente ? '' : ' y no se te cobra nada'}. No se puede deshacer: si quieres ese horario otra vez, tendrás que reservarlo de nuevo si sigue libre.`;
+      const pideNota = admin && conPagos;
+      this.querySelector('[data-nota-campo]').hidden = !pideNota;
+      this.querySelector('[data-consecuencia]').textContent = pideNota
+        ? 'El horario se libera al momento. La app no devuelve dinero: gestiona el reembolso por tu cuenta y explícalo en la nota. El cliente la verá en su reserva y en el correo.'
+        : `El horario se libera al momento${r.cliente ? '' : ' y no se te cobra nada'}. No se puede deshacer: si quieres ese horario otra vez, tendrás que reservarlo de nuevo si sigue libre.`;
       this.querySelector('[data-cancelar]').textContent = `Cancelar reserva ${r.folio}`;
+    }
+
+    // Contacto del estudio para el cliente que debe pedirle la cancelacion; un fallo deja solo el parrafo.
+    async contacto() {
+      const p = this.querySelector('[data-contacto]');
+      if (!p || p.dataset.listo) return;
+      p.dataset.listo = '1';
+      try {
+        oculto(p, (await obtenerContacto()).texto || null);
+      } catch {}
     }
 
     ticDetalle() {
@@ -434,11 +487,21 @@ const filtros = [
 
     cancelar(boton) {
       const id = this.reserva.id;
-      this.enviar(boton, 'Cancelando…', () => cancelarReserva(id), (nueva) => {
+      const campo = this.querySelector('#cancelar-nota');
+      const pide = !this.querySelector('[data-nota-campo]').hidden;
+      const nota = pide ? campo.value.trim() : '';
+      quitarError(campo);
+      if (pide && !nota) return this.errorNota('Escribe qué pasa con el pago: cómo se devuelve o por qué no.');
+      this.enviar(boton, 'Cancelando…', () => cancelarReserva(id, nota || undefined), (nueva) => {
         this.querySelector('[data-confirmar]').hidden = true;
         this.pintar(validar(nueva));
-        enfocarAviso(mostrarAviso(this, 'exito', 'Reserva cancelada', `El horario quedó libre${nueva.cliente ? '' : ' y no se te cobró nada'}.`));
+        enfocarAviso(mostrarAviso(this, 'exito', 'Reserva cancelada', `El horario quedó libre${nueva.cliente ? ' y avisamos al cliente por correo' : ' y no se te cobró nada'}.`));
       });
+    }
+
+    // Error de la nota del reembolso: bajo el campo y en el resumen (foco al aviso).
+    errorNota(mensaje) {
+      this.validar([{ entrada: this.querySelector('#cancelar-nota'), mensaje, texto: 'Nota sobre el reembolso' }]);
     }
 
     errorEnvio(error) {
@@ -446,13 +509,26 @@ const filtros = [
         this.sustituir('no-encontrada');
         return true;
       }
+      if (error.estado === 422 && ['nota_requerida', 'datos_invalidos'].includes(error.codigo)) {
+        this.errorNota(error.codigo === 'nota_requerida' ? 'Escribe qué pasa con el pago: cómo se devuelve o por qué no.' : 'La nota admite hasta 300 caracteres.');
+        return true;
+      }
       if (error.estado !== 409) return false;
       this.querySelector('[data-confirmar]').hidden = true;
-      if (error.codigo === 'tiene_pagos') {
-        this.querySelector('[data-abrir-cancelar]').remove();
-        enfocarAviso(mostrarAviso(this, 'error', 'Ya registraste un pago para esta reserva, así que no puedes cancelarla desde aquí. Escríbenos para revisar tu caso.'));
-      } else this.yaNoSePuede();
+      if (error.codigo === 'tiene_pagos') this.yaTienePagos();
+      else this.yaNoSePuede();
       return true;
+    }
+
+    // 409 tiene_pagos (pago registrado desde otra pestaña): se recarga y queda "pidelo al estudio".
+    async yaTienePagos() {
+      this.pagosConfirmados = true;
+      try {
+        this.pintar(validar(await obtenerReserva(this.reserva.id)));
+      } catch {
+        this.pintarEstado();
+      }
+      enfocarAviso(mostrarAviso(this, 'informacion', 'Ya registraste un pago para esta reserva. La cancelación la gestiona el estudio: escríbele.'));
     }
 
     // 409 no_cancelable: se vuelve a leer la reserva para decir en que estado esta.
@@ -527,6 +603,18 @@ const filtros = [
   }
   .reservas-nota-precio {
     margin-block-start: var(--espacio-3);
+  }
+  .reservas-estados {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+  }
+  .reservas-contacto {
+    color: var(--color-texto-principal);
+    white-space: pre-line;
+  }
+  .reservas-rechazo {
+    color: var(--color-texto-cuerpo);
   }
   .reservas-botones {
     display: flex;

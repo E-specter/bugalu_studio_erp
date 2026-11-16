@@ -1,0 +1,16 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Pago from '../../../islas/Pago.astro';
+---
+
+<!-- La ruta recibe el folio (y su enlace al detalle) cuando la isla carga la reserva. -->
+<LayoutApp titulo="Registrar pago">
+  <EncabezadoPantalla
+    titulo="Registrar pago"
+    indice="[P2] SALA / RESERVAS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Reservas', href: '/app/reservas/' }, { etiqueta: 'Reserva', href: '/app/reservas/' }, { etiqueta: 'Pagar' }]}
+    descripcion="Paga la cuota con el método que prefieras y sube la captura del comprobante. El estudio la revisa y te avisa por correo."
+  />
+  <Pago />
+</LayoutApp>

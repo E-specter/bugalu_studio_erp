@@ -269,7 +269,7 @@ test('detalle: pre-reservada con plazo vencido se ve caducada y sin cancelar', a
 const porEstado = [
   ['confirmada', { estado: 'confirmada' }, ['Confirmada', 'Pagas el resto al terminar la sesión.']],
   ['en_curso', { estado: 'en_curso' }, ['En curso']],
-  ['finalizada', { estado: 'finalizada', cuotas: [{ id: 'c1', hito: 'al_reservar', monto: '207.50', estado: 'pagada' }, { id: 'c2', hito: 'al_terminar', monto: '207.50', estado: 'pendiente' }] }, ['Finalizada', 'Falta pagar el resto: S/ 207,50.']],
+  ['finalizada', { estado: 'finalizada', cuotas: [{ id: 'c1', hito: 'al_reservar', monto: '207.50', estado: 'pagada' }, { id: 'c2', hito: 'al_terminar', monto: '207.50', estado: 'pendiente' }] }, ['Falta pagar el resto: S/ 207,50']],
   ['cancelada por ti', { estado: 'cancelada', motivo_cancelacion: 'cliente' }, ['Cancelada', 'La cancelaste.']],
   ['cancelada caducada', { estado: 'cancelada', motivo_cancelacion: 'caducada' }, ['Cancelada', /Caducó sin pago el \d{1,2} \w{3}, \d{2}:\d{2}\. El horario se liberó\./]],
   ['cancelada por el estudio', { estado: 'cancelada', motivo_cancelacion: 'administrador' }, ['Cancelada', 'La canceló el estudio.']],
@@ -359,7 +359,7 @@ test('cancelar: enviando bloquea los botones', async ({ page }) => {
 });
 
 const conflictos = [
-  ['tiene_pagos', 'Ya registraste un pago para esta reserva, así que no puedes cancelarla desde aquí. Escríbenos para revisar tu caso.'],
+  ['tiene_pagos', 'Ya registraste un pago para esta reserva. La cancelación la gestiona el estudio: escríbele.'],
   ['no_cancelable', 'Esta reserva ya no se puede cancelar: está confirmada.'],
 ];
 for (const [codigo, texto] of conflictos) {
