@@ -29,11 +29,13 @@ Todas las claves primarias son `uuid` ([ADR-006](../00-proyecto/decisiones/ADR-0
 
 | Tabla | Campos clave | Relaciones |
 |---|---|---|
-| `franja_sala` | `id`, `inicio`, `fin` (sin solapes por sala) | `id_sala` → sala_tecnica · `id_publicador` → usuario ([RN-12](../02-dominio/reglas-negocio.md)) |
-| `cierre_sala` | `id`, `inicio`, `fin`, `motivo` | `id_sala` → sala_tecnica · `id_autor` → usuario |
-| `reserva` | `id`, `inicio`, `fin`, `fin_buffer`, `estado`, `motivo_cancelacion` (`cliente`/`caducada`/`administrador`), `folio` (único), `precio` (desglose), `total`, `vence_pago`, `detalle`; sin solapes de `[inicio, fin_buffer)` entre reservas vigentes de una sala | `id_cliente` → usuario · `id_sala` → sala_tecnica · `id_servicio` → servicio · `id_franja` → franja_sala · `id_cotizacion` → cotizacion (opcional) · `id_proyecto` → proyecto_musical (opcional) · `id_ingeniero` → usuario (D-12) |
+| `franja_sala` | `id`, `inicio`, `fin` (`fin > inicio`, múltiplos de 30 min; exclusión de solapes por sala con `btree_gist`) | `id_sala` → sala_tecnica · `id_publicador` → usuario (nulo si se borra) ([RN-12](../02-dominio/reglas-negocio.md)) |
+| `cierre_sala` | `id`, `inicio`, `fin` (`fin > inicio`), `motivo` | `id_sala` → sala_tecnica · `id_autor` → usuario (nulo si se borra) |
+| `reserva` | `id`, `inicio`, `fin`, `fin_buffer`, `estado` (`pre_reservada`/`confirmada`/`en_curso`/`finalizada`/`cancelada`, por defecto `pre_reservada`), `motivo_cancelacion` (`cliente`/`caducada`/`administrador`; presente si y solo si `cancelada`), `folio` (único, `R-AAAA-NNNNN` desde la secuencia `reserva_folio_seq`), `precio` (jsonb, desglose), `total` (`numeric(10,2)`), `vence_pago` (nulo = no caduca), `detalle`; `inicio` y `fin` en múltiplos de 30 min, duración de 30 min a 8 h; `fin_buffer = fin + 30 min` lo fija el trigger `before insert`; exclusión `btree_gist` de solapes de `[inicio, fin_buffer)` por sala entre reservas no canceladas (SQLSTATE `23P01`) | `id_cliente` → usuario · `id_sala` → sala_tecnica · `id_servicio` → servicio · `id_franja` → franja_sala (opcional; que el tramo quepa en la franja aún lo valida el backend) · `id_cotizacion` → cotizacion (opcional) · `id_proyecto` → proyecto_musical (opcional) · `id_ingeniero` → usuario (D-12) |
 | `horario_profesional` | `id`, `inicio`, `fin` | `id_profesional` → usuario (rol `personal`, especialidad `asesoria`) |
 | `asesoria` | `id`, `inicio`, `fin`, `modalidad` (`presencial`/`virtual`), `lugar` o `enlace`, `precio`, `estado` | `id_cliente` → usuario · `id_profesional` → usuario ([RN-14](../02-dominio/reglas-negocio.md)) |
+
+**RLS de franjas y reservas** (migración `20261121100000_rf03_rf04_franjas_reservas`): `franja_sala` y `cierre_sala`, lectura pública y escritura solo del administrador. `reserva`: el cliente lee e inserta solo las suyas (`id_cliente = auth.uid()`, `estado = 'pre_reservada'`, sin `motivo_cancelacion`); no tiene privilegio sobre `folio` ni `fin_buffer` al insertar ni update alguno; `estado`, `motivo_cancelacion`, `vence_pago` y `detalle` los actualiza solo el administrador (o funciones `security definer`); `personal` y `administrador` leen todas (`public.es_personal()`); nadie borra. `reserva_especialista` y `cuota` se ven con su reserva y las inserta su dueño o el administrador. `anon` no accede a `reserva`: la ocupación pública sale de `public.ocupacion_sala(id_sala, desde, hasta)` (`security definer`), que devuelve solo `inicio` y `fin_buffer` de las reservas vigentes; una `pre_reservada` vencida sin pagos cuenta como libre. **Caducidad (RN-18):** `public.caducar_reservas()` (`security definer`, sin acceso para clientes) cancela con motivo `caducada` las `pre_reservada` con `vence_pago < now()` sin pagos y encola `reserva_caducada` en `notificacion`; `pg_cron` la corre cada minuto (job `caducar_reservas`) y el trigger `before insert` la corre sobre el tramo a ocupar. `public.tiene_pagos(id_reserva)` es el punto de extensión: hoy cuenta cuotas `pagada`; al crear `comprobante_pago` debe incluir los comprobantes registrados.
 
 ## Cotizaciones y pagos
 
@@ -41,7 +43,7 @@ Todas las claves primarias son `uuid` ([ADR-006](../00-proyecto/decisiones/ADR-0
 |---|---|---|
 | `cotizacion` | `id`, `subtotal`, `descuento`, `total`, `fecha_vigencia`, `estado` | `id_cliente` → usuario · `id_asesoria` → asesoria (opcional) ([RN-16](../02-dominio/reglas-negocio.md)) |
 | `detalle_cotizacion` | `id`, `cantidad`, `precio_unitario` | `id_cotizacion` → cotizacion · `id_servicio` → servicio |
-| `cuota` | `id`, `monto`, `vence` (fecha) o `hito` (`al_reservar`/`al_terminar`/`al_encargar`/`al_aprobar_version`), `estado` | exactamente una de: `id_reserva`, `id_asesoria`, `id_cotizacion`, `id_proyecto` |
+| `cuota` | `id`, `monto`, `vence` (fecha) o `hito` (`al_reservar`/`al_terminar`/`al_encargar`/`al_aprobar_version`), `estado` (`pendiente`/`pagada`) | exactamente una de: `id_reserva`, `id_asesoria`, `id_cotizacion`, `id_proyecto`. **Hoy** existe solo con `id`, `id_reserva` (cascada), `hito`, `monto`, `estado`; `vence` y las demás relaciones llegan con sus RF. RLS: visible con su reserva; la inserta el dueño de la reserva o el administrador; solo el administrador cambia `estado` |
 | `comprobante_pago` | `id`, `metodo` (`transferencia`/`yape`/`plin`/`tarjeta`), `monto`, `numero_operacion`, `ruta_captura`, `estado`, `motivo_rechazo` | `id_cuota` → cuota · `id_validador` → usuario ([RN-04](../02-dominio/reglas-negocio.md)) |
 
 Las capturas van al bucket privado `comprobantes` ([ADR-003](../00-proyecto/decisiones/ADR-003-almacenamiento-supabase-storage.md)).
@@ -60,7 +62,14 @@ Las capturas van al bucket privado `comprobantes` ([ADR-003](../00-proyecto/deci
 |---|---|
 | `asignacion_sesion` (reserva × personal × función) | [RF-07](../03-requerimientos/RF-07.md) — una reserva admite varios técnicos |
 | `evaluacion_servicio` | [RF-13](../03-requerimientos/RF-13.md) |
-| `reserva_especialista` (reserva × especialista con su tarifa aplicada) | [RF-04](../03-requerimientos/RF-04.md) |
-| `notificacion` (bandeja de salida de correos, [ADR-009](../00-proyecto/decisiones/ADR-009-reservas-tarifas-y-caducidad.md)) | [RF-04](../03-requerimientos/RF-04.md), [RF-06](../03-requerimientos/RF-06.md) |
+
+## Tablas de reservas ya creadas
+
+| Tabla | Campos clave | Relaciones |
+|---|---|---|
+| `reserva_especialista` | `monto_fijo`, `monto_variable`, `unidad` (`hora`/`lapso_30`) aplicados a la reserva | clave `id_reserva` (cascada) + `id_especialista` ([RF-04](../03-requerimientos/RF-04.md)) |
+| `notificacion` | `id`, `tipo` (`reserva_creada`/`reserva_caducada`), `destinatario` (correo), `datos` (jsonb), `creada_en`, `enviada_en`, `intentos`, `error` | Bandeja de salida ([ADR-009](../00-proyecto/decisiones/ADR-009-reservas-tarifas-y-caducidad.md), [RF-04](../03-requerimientos/RF-04.md), [RF-06](../03-requerimientos/RF-06.md)). Sin acceso para `anon` ni `authenticated`: solo `select`, `insert` y `update` del rol `bugalu_api` (política propia) y las funciones `security definer`. Índice parcial de pendientes (`enviada_en` nulo) |
+
+`servicio_especialista`: el administrador puede borrar filas (quitar especialistas por defecto).
 
 Las migraciones versionadas viven en `supabase/` (ver [herramientas-mcp](../06-operacion/herramientas-mcp.md)); este archivo se actualiza en la misma tarea que la migración.
