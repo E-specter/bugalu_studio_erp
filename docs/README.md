@@ -39,8 +39,8 @@ Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-15 →
 | [RF-02](03-requerimientos/RF-02.md) | Simular precio y emitir cotización a medida | `catalogo` | borrador (CA-01…CA-05 implementados; CA-06 con RF-15) |
 | [RF-03](03-requerimientos/RF-03.md) | Publicar y consultar franjas de sala | `reservas` | implementado |
 | [RF-04](03-requerimientos/RF-04.md) | Registrar reserva de sala | `reservas` | implementado |
-| [RF-05](03-requerimientos/RF-05.md) | Registrar y validar pagos | `pagos` | borrador |
-| [RF-06](03-requerimientos/RF-06.md) | Gestionar estado de reserva y notificaciones | `reservas` | borrador |
+| [RF-05](03-requerimientos/RF-05.md) | Registrar y validar pagos | `pagos` | implementado |
+| [RF-06](03-requerimientos/RF-06.md) | Gestionar estado de reserva y notificaciones | `reservas` | implementado |
 | [RF-07](03-requerimientos/RF-07.md) | Asignar personal técnico a sala | `personal` | borrador |
 | [RF-08](03-requerimientos/RF-08.md) | Administrar ficha de proyecto musical | `proyectos` | borrador |
 | [RF-09](03-requerimientos/RF-09.md) | Cargar y versionar entregables de audio | `entregables` | borrador |
@@ -79,6 +79,6 @@ Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-15 →
 | 4 | Esqueleto frontend (Astro, layouts, `tokens.css` desde el brief, componentes base, cliente API) | dev_frontend | Hecho |
 | 5 | Skills propias del proyecto ([herramientas-mcp](06-operacion/herramientas-mcp.md#skills-propias-del-proyecto)) | leader | Hecho |
 | 6 | Auditoría del esqueleto contra arquitectura, convenciones y brief | dev_audit (Opus) | Hecho |
-| 7 | Implementación por RF en el orden indicado arriba | todos | En curso: RF-01, RF-03 y RF-04 hechos; RF-02 parcial (CA-06 con RF-15); siguiente RF-05 |
+| 7 | Implementación por RF en el orden indicado arriba | todos | En curso: RF-01, RF-03, RF-04, RF-05 y RF-06 hechos; RF-02 parcial; siguiente RF-15 |
 
 Planes de implementación: `superpowers/plans/`. Spec original congelada: `superpowers/specs/PROYECTO-v0.2.md`.

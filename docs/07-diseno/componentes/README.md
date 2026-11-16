@@ -55,7 +55,9 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Marco de registro | [marco-registro](marco-registro.md) | `componentes/MarcoRegistro.astro` | Implementado |
 | Calendario | [calendario](calendario.md) | isla `<bugalu-calendario>` | Implementado |
 | Reproductor | [reproductor](reproductor.md) | isla `<bugalu-reproductor>` | Borrador |
-| Carga de archivos | [carga-archivos](carga-archivos.md) | isla `<bugalu-carga-archivos>` | Implementado (Captura de pago; audio y referencias entran con su RF) |
+| Carga de archivos | [carga-archivos](carga-archivos.md) | isla `<bugalu-carga-archivos>` (`islas/CargaArchivos.astro`) | Implementado (Captura de pago; audio y referencias entran con su RF) |
+| Registro de pago | [registrar-pago](../pantallas/RF-05-registrar-pago.md) | isla `<bugalu-pago>` (`islas/Pago.astro`) | Implementado |
+| Pagos del Administrador | [pagos](../pantallas/RF-05-pagos.md) | isla `<bugalu-pagos>` (`islas/Pagos.astro`) | Implementado |
 
 Rutas relativas a `frontend/src/`. Islas en `islas/<Nombre>.astro`.
 
