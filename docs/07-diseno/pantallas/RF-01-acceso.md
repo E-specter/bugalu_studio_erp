@@ -43,7 +43,7 @@ depende_de: [RF-01, ADR-008, diseno-brief, patron-estructura-app, patron-formula
 | Nombre | Metadato `nombre` de `signUp` → `Perfil.nombre` | Texto, `autocomplete="name"` |
 | Teléfono | Metadato `telefono` → `Perfil.telefono` | `type="tel"`, `autocomplete="tel"`; la isla quita espacios; 9 a 15 dígitos, `+` inicial opcional |
 | Nombre artístico | Metadato `nombre_artistico` → `Perfil.nombre_artistico` | Texto, tal cual |
-| Google disponible | Variable pública de entorno (p. ej. `PUBLIC_ACCESO_GOOGLE`), leída al construir | Si no está, el botón no se pinta |
+| Proveedores sociales | `PUBLIC_ACCESO_PROVEEDORES` (lista: `google`, `facebook`), leída al construir | Un botón secundario por proveedor configurado, en el orden de la lista; ninguno si la lista está vacía |
 
 En el registro los cinco datos son obligatorios (CA-01).
 

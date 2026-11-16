@@ -40,6 +40,10 @@ frontend/
 | Contraseña: mostrar u ocultar y medidor de robustez (`<bugalu-contrasena>`) | [RF-01](../03-requerimientos/RF-01.md) |
 | Acceso: iniciar sesión, registrarse, solicitar acceso interno, recuperar y restablecer (`<bugalu-acceso>`) | [RF-01](../03-requerimientos/RF-01.md) |
 | Estado de la solicitud de acceso interno (`<bugalu-solicitud>`) | [RF-01](../03-requerimientos/RF-01.md) |
+| Reserva por pasos (`<bugalu-reserva>`) | [RF-02](../03-requerimientos/RF-02.md), [RF-04](../03-requerimientos/RF-04.md) |
+| Mis reservas y agenda (`<bugalu-reservas>`) | [RF-04](../03-requerimientos/RF-04.md) |
+| Publicación de franjas, cierres y parámetros (`<bugalu-franjas>`) | [RF-03](../03-requerimientos/RF-03.md) |
+| Tarifas, recargos y feriados (`<bugalu-tarifas>`) | [RF-02](../03-requerimientos/RF-02.md) |
 | Bandeja de solicitudes y usuarios del Administrador (`<bugalu-solicitudes>`) | [RF-01](../03-requerimientos/RF-01.md) |
 | Perfil propio, editable (`<bugalu-perfil>`) | [RF-01](../03-requerimientos/RF-01.md) |
 | Aviso descartable (`<bugalu-aviso>`) | Transversal ([aviso](../07-diseno/componentes/aviso.md)) |

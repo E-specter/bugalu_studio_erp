@@ -26,6 +26,14 @@ depende_de: [diseno-tokens, comp-cabecera-app]
 
 Los elementos dependen del rol ([RF-01](../../03-requerimientos/RF-01.md)); nunca se muestra un destino al que el rol no tiene acceso.
 
+Destinos implementados (etiqueta ≤ 9 caracteres · icono · ruta):
+
+| Rol | Destinos |
+|---|---|
+| Cliente | INICIO (`house`, `/app/`) · RESERVAS (`calendar-check`, `/app/reservas/`) · PERFIL (menú de la cabecera) |
+| Personal | INICIO · AGENDA (`calendar`, `/app/agenda/`) |
+| Administrador | INICIO · AGENDA · ACCESOS (`user-plus`) · USUARIOS (`users`) · FRANJAS (`calendar-cog`, `/app/franjas/`) · TARIFAS (`tag`, `/app/tarifas/`) |
+
 ## Estados
 
 Comunes: [catálogo](README.md#estados-comunes). Propios:
