@@ -84,8 +84,13 @@
     align-items: start;
   }
   .gestion-fila-campos > * {
-    flex: 1 1 calc(var(--espacio-20) + var(--espacio-12));
+    flex: 1 1 100%;
     min-inline-size: 0;
+  }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    .gestion-fila-campos > * {
+      flex-basis: calc(var(--espacio-20) + var(--espacio-12));
+    }
   }
   .gestion-datos {
     display: grid;

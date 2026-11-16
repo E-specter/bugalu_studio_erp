@@ -180,8 +180,8 @@ test('envío: multipart con los cinco campos, aviso y vuelta al detalle', async 
   await preparar(page);
   await page.route(`${API}/pagos`, (r) => { peticion = r.request(); return r.fulfill(json(201, { id: 'p1', estado: 'pendiente_validacion' })); });
   await page.goto(URL);
-  await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva({ pago_por_validar: true })));
   await llenar(page, { monto: '207,5' });
+  await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva({ pago_por_validar: true, cuotas: reserva().cuotas.map((c) => (c.id === C1 ? { ...c, estado: 'en_validacion', pagable: false, pagos: [{ id: 'p1', estado: 'pendiente_validacion', metodo: 'yape', monto: '207.50', numero_operacion: 'op-12345', motivo_rechazo: null, registrado_en: '2026-11-15T15:00:00Z' }] } : c)) })));
   await registrar(page).click();
   await page.waitForURL(`**/app/reservas/detalle?id=${ID}`);
   const cuerpo = peticion.postDataBuffer().toString('latin1');
@@ -250,7 +250,7 @@ for (const [nombre, estado, codigo, detalles, texto] of errores) {
       await expect(page.getByLabel(/Número de operación/)).toHaveAttribute('aria-invalid', 'true');
       await page.screenshot({ path: 'pruebas/capturas/pago-error-duplicada.png', fullPage: true });
     }
-    if (codigo === 'archivo_muy_grande') await expect(page.locator('#pago-captura-error')).toContainText('La captura pesa');
+    if (codigo === 'archivo_muy_grande') await expect(page.locator('#pago-captura-error')).toContainText('La captura es demasiado pesada para subirla. Sube una más ligera, de hasta 5 MB.');
     if (codigo === 'formato_no_admitido') await expect(page.locator('#pago-captura-error')).toContainText('Sube la captura en JPG, PNG o PDF.');
     if (codigo === 'datos_invalidos' && detalles) await expect(page.getByLabel(/Monto pagado/)).toHaveAttribute('aria-invalid', 'true');
   });

@@ -57,7 +57,7 @@ const partidas = variante === 'partidas';
   .tabla :global(td.tabla-num) {
     font-variant-numeric: tabular-nums;
   }
-  .tabla :global(td[data-etiqueta]:not([data-etiqueta='']):not(:empty)::before) {
+  .tabla:not(.tabla-partidas) :global(td[data-etiqueta]:not([data-etiqueta='']):not(:empty)::before) {
     content: attr(data-etiqueta);
     color: var(--color-texto-secundario);
     font-family: var(--fuente-familia-tecnica);
@@ -96,7 +96,11 @@ const partidas = variante === 'partidas';
   .tabla-partidas thead :global(th.tabla-num),
   .tabla-partidas :global(th.tabla-num),
   .tabla-partidas :global(td.tabla-num) {
+    white-space: nowrap;
     text-align: end;
+  }
+  .tabla-partidas :global(.etiqueta) {
+    white-space: nowrap;
   }
   .tabla-partidas tfoot :global(tr:first-child > *) {
     border-block-start: var(--borde-grosor-base) solid var(--color-borde-fuerte);

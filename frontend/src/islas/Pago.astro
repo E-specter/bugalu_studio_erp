@@ -69,7 +69,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
           <div class="gestion-formulario">
             <div class="gestion-fila-campos">
               <Campo id="pago-monto" nombre="monto" etiqueta="Monto pagado (S/)" obligatorio inputmode="decimal" autocomplete="off" ayuda={AYUDA_MONTO} />
-              <Campo id="pago-operacion" class="pago-operacion" nombre="numero_operacion" etiqueta="Número de operación" obligatorio autocomplete="off" spellcheck="false" ayuda="Está en la constancia de tu app o en el voucher. Con tarjeta, el número del voucher." />
+              <Campo id="pago-operacion" class="pago-operacion" nombre="numero_operacion" etiqueta="Número de operación" obligatorio autocomplete="off" spellcheck="false" ayuda="Está en la constancia de tu app o en el voucher." />
             </div>
             <CargaArchivos id="pago-captura" nombre="captura" etiqueta="Captura del comprobante" obligatorio ayuda="JPG, PNG o PDF, hasta 5 MB. Que se lean el monto, la fecha y el número de operación." />
           </div>
@@ -337,7 +337,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
     // Durante el envio: campos y "Volver" bloqueados; a los 10 s, el aviso de subida lenta.
     bloquear(si) {
       super.bloquear(si);
-      this.querySelectorAll('form input').forEach((e) => (e.disabled = si));
+      this.querySelectorAll('form input, form .archivo-accion').forEach((e) => (e.disabled = si));
       const volver = this.querySelector('form [data-volver]');
       if (si) volver?.setAttribute('aria-disabled', 'true');
       else volver?.removeAttribute('aria-disabled');
@@ -357,9 +357,10 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
       };
       const estado = error.estado;
       const codigo = error.codigo;
+      // El servidor cuenta 5 * 1024 * 1024 bytes, igual que la comprobacion local de CargaArchivos.
       const mb = (carga.archivo?.size ?? 0) / 1048576;
-      const pesa = mb > 5 ? `La captura pesa ${String(Number(mb.toFixed(1))).replace('.', ',')} MB.` : 'La captura pesa más de 5 MB.';
-      const CAPTURA = { archivo_muy_grande: `${pesa} Sube una de hasta 5 MB.`, formato_no_admitido: 'Sube la captura en JPG, PNG o PDF.' };
+      const pesa = mb > 5 ? `La captura pesa ${String(Number(mb.toFixed(1))).replace('.', ',')} MB. Sube una de hasta 5 MB.` : 'La captura es demasiado pesada para subirla. Sube una más ligera, de hasta 5 MB.';
+      const CAPTURA = { archivo_muy_grande: pesa, formato_no_admitido: 'Sube la captura en JPG, PNG o PDF.' };
       if (estado === 404) {
         this.sustituir('no-encontrada');
         return true;

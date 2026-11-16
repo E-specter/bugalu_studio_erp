@@ -43,7 +43,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
   {vista === 'lista' && <nav class="pagos-filtros" aria-label="Filtrar por estado" data-filtros hidden></nav>}
   <div data-salida><Panel {...principal} cargando /></div>
 
-  <EstadosIsla principal={principal} noEncontrada={vista === 'revisar' ? { etiqueta: 'Volver a pagos', href: '/app/pagos/' } : undefined} />
+  <EstadosIsla principal={principal} />
 
   {['neutra', 'exito', 'aviso', 'activa', 'alerta'].map((variante) => <template data-sello={variante}><EtiquetaTecnica variante={variante as 'neutra'} texto=" " /></template>)}
 
@@ -82,6 +82,9 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
 
   {vista === 'revisar' && (
     <>
+      <template data-estado="no-encontrada">
+        <Panel codigo="[404]" titulo="Pago no encontrado"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a pagos', href: '/app/pagos/' }} /></Panel>
+      </template>
       <template data-captura-aviso="error"><Aviso variante="error" titulo=" " texto=" "><div class="pagos-aparte"><Boton variante="secundario" data-captura-recargar>Reintentar</Boton></div></Aviso></template>
       <template data-captura-aviso="caducada"><Aviso variante="informacion" titulo=" " texto=" "><div class="pagos-aparte"><Boton variante="secundario" data-captura-recargar>Cargar captura de nuevo</Boton></div></Aviso></template>
       <template data-indicador="correcto"><div><IndicadorEstado variante="barra" tono="correcto" texto="APROBADO" dato=" " activo /></div></template>
@@ -92,7 +95,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
             <Panel codigo="V1" titulo="Comprobante">
               <div class="pagos-captura" data-captura>
                 <img class="pagos-imagen" data-imagen alt=" " hidden />
-                <div data-archivo hidden><Archivo variante="lectura" tipo="pdf" nombre="Comprobante en PDF" metadato="PDF" href="#" /></div>
+                <div data-archivo hidden><Archivo variante="lectura" tipo="pdf" nombre="comprobante.pdf" metadato="PDF" href="#" /></div>
                 <a class="pagos-abrir" data-abrir href="#" target="_blank" rel="noopener noreferrer" hidden>Abrir en una pestaña nueva<Icono nombre="external-link" /></a>
                 <div data-captura-zona></div>
               </div>
@@ -101,7 +104,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
               <dl class="gestion-datos">
                 <div><dt>Método</dt><dd data-campo="metodo"></dd></div>
                 <div><dt>Monto</dt><dd class="pagos-monto" data-campo="monto"></dd></div>
-                <div><dt>Número de operación</dt><dd data-campo="operacion"></dd></div>
+                <div><dt>Número de operación</dt><dd class="pagos-operacion" data-campo="operacion"></dd></div>
                 <div><dt>Registrado</dt><dd data-campo="registrado"></dd></div>
                 <div><dt>Cliente</dt><dd data-campo="cliente"></dd></div>
               </dl>
@@ -157,11 +160,12 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
       <div class="gestion-rejilla gestion-rejilla-simple">
         <Panel codigo="D1" titulo="Datos para pagar">
           <form novalidate method="post" class="gestion-formulario" data-formulario="datos">
+            <p class="gestion-ayuda" id="datos-ayuda">Banco, cuenta, CCI, número de Yape o Plin y titular. Se muestra tal cual escribas.</p>
             <div data-sin-activos hidden><Aviso variante="aviso" titulo="Ningún método está activo: los clientes no podrán registrar pagos." /></div>
             {metodos.map((m) => (
               <fieldset class="gestion-grupo">
                 <legend>{m.nombre}</legend>
-                <Campo tipo="area" nombre={`texto-${m.clave}`} etiqueta="Datos para pagar" ayuda="Banco, cuenta, CCI, número de Yape o Plin y titular. Se muestra tal cual escribas." maxlength="1000" />
+                <Campo tipo="area" nombre={`texto-${m.clave}`} etiqueta="Datos para pagar" aria-describedby="datos-ayuda" maxlength="1000" />
                 <Casilla nombre={`activo-${m.clave}`} etiqueta="Activo" detalle="Los clientes pueden pagar así." data-metodo-activo />
               </fieldset>
             ))}
@@ -202,6 +206,9 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
     return [texto, horaAnio(iso)];
   }
 
+  // El folio no se parte en dos lineas.
+  const folioTitulo = (folio) => Object.assign(document.createElement('span'), { className: 'pagos-folio-titulo', textContent: folio });
+
   class BugaluPagos extends IslaGestion {
     avisosUrl = {
       'pago-aprobado': ['Pago aprobado', 'La cuota quedó pagada y avisamos al cliente.'],
@@ -212,7 +219,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
 
     iniciar() {
       this.registro = new URLSearchParams(location.search).get('id') ?? '';
-      this.noEncontrada = ['No encontramos este pago', 'Puede que el enlace esté mal escrito.'];
+      this.noEncontrada = ['No encontramos este pago.', ''];
       this.addEventListener('click', (e) => {
         const boton = e.target.closest('button');
         if (!boton) return;
@@ -288,7 +295,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
         fila.querySelector('[data-cuota]').textContent = HITOS[p.cuota.hito] ?? p.cuota.hito;
         const cliente = fila.querySelector('[data-cliente]');
         cliente.textContent = p.cliente?.nombre ?? 'Sin nombre';
-        if (!p.cliente?.nombre) cliente.classList.add('pagos-secundario');
+        if (!p.cliente?.nombre) cliente.classList.add('pagos-sin-nombre');
         fila.querySelector('[data-metodo]').textContent = METODOS[p.metodo] ?? p.metodo;
         fila.querySelector('[data-monto]').textContent = soles(p.monto);
         if (p.monto_coincide === false) fila.querySelector('[data-nocoincide]').append(this.sello('alerta', 'NO COINCIDE'));
@@ -345,9 +352,13 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
       campo('cuota').textContent = `${cuota} · ${soles(p.cuota.monto)}`;
       const confirma = p.cuota.hito === 'al_reservar' && p.reserva.estado === 'pre_reservada';
       this.querySelector('[data-consecuencias]').textContent = `Al aprobar, la cuota queda pagada${confirma ? ', la reserva se confirma' : ''} y avisamos al cliente. No se puede deshacer.`;
-      this.querySelector('[data-panel="rechazo"] .panel-titulo').lastChild.textContent = ` Rechazar pago de ${p.reserva.folio}`; // tras el codigo V4
+      const tituloRechazo = this.querySelector('[data-panel="rechazo"] .panel-titulo');
+      tituloRechazo.querySelector('.pagos-folio-titulo')?.remove();
+      tituloRechazo.lastChild.textContent = ' Rechazar pago de '; // tras el codigo V4
+      tituloRechazo.append(folioTitulo(p.reserva.folio));
       if (p.estado !== 'pendiente_validacion') this.mostrarResultado(p);
-      this.encabezado(`${cliente} · ${cuota} de la reserva ${p.reserva.folio}`, p.reserva.folio);
+      this.encabezado('', p.reserva.folio);
+      document.querySelector('.encabezado-descripcion')?.replaceChildren(`${cliente} · ${cuota} de la reserva `, folioTitulo(p.reserva.folio));
       this.cargarCaptura();
       return `Pago de ${p.reserva.folio}`;
     }
@@ -547,6 +558,34 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
     color: var(--color-texto-principal);
     font-family: var(--fuente-familia-tecnica);
     font-weight: var(--fuente-peso-medio);
+  }
+  :global(.pagos-folio-titulo) {
+    white-space: nowrap;
+  }
+  .pagos-sin-nombre {
+    color: var(--color-texto-secundario);
+  }
+  .pagos-operacion {
+    font-family: var(--fuente-familia-tecnica);
+  }
+  [data-nocoincide]:not(:empty) {
+    display: block;
+    margin-block-start: var(--espacio-1);
+  }
+  /* Datos para pagar: el grupo (metodo) manda sobre el campo; la ayuda va una vez bajo el titulo. */
+  [data-formulario='datos'] > .gestion-grupo > :global(legend) {
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-titulo);
+    font-size: var(--fuente-tamano-base);
+    font-weight: var(--fuente-peso-titulo);
+    text-transform: none;
+  }
+  /* El filete va en la legend: el borde del fieldset se dibujaria atravesandola. */
+  [data-formulario='datos'] > .gestion-grupo + .gestion-grupo > :global(legend) {
+    box-sizing: border-box;
+    inline-size: 100%;
+    padding-block-start: var(--espacio-5);
+    border-block-start: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
   }
   .pagos-secundario {
     display: block;

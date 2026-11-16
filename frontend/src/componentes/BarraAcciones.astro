@@ -50,5 +50,16 @@ const { variante = 'decision', nota, class: clase } = Astro.props as Props & { c
     .barra :global(.boton) {
       inline-size: auto;
     }
+    /* Dentro de un panel Lateral la barra usa la variante Móvil a cualquier ancho. */
+    :global(.panel-lateral) .barra {
+      flex-direction: column-reverse;
+      align-items: stretch;
+    }
+    :global(.panel-lateral) .barra-secundaria {
+      flex-direction: column;
+    }
+    :global(.panel-lateral) .barra :global(.boton) {
+      inline-size: 100%;
+    }
   }
 </style>

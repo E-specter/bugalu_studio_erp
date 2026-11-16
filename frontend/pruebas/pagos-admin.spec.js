@@ -284,7 +284,7 @@ for (const [estado, texto] of [['aprobado', 'APROBADO'], ['rechazado', 'RECHAZAD
 test('revisar: captura PDF con enlace a pestaña nueva', async ({ page }) => {
   await base(page, { captura: json(200, { url: 'http://captura.prueba/c.pdf', expira_en: '2026-11-15T15:10:00Z', tipo: 'pdf' }) });
   await page.goto(REVISAR);
-  const enlace = page.getByRole('link', { name: /Abrir Comprobante en PDF/ });
+  const enlace = page.getByRole('link', { name: /Abrir comprobante\.pdf/ });
   await expect(enlace).toHaveAttribute('href', 'http://captura.prueba/c.pdf');
   await expect(enlace).toHaveAttribute('target', '_blank');
   await expect(page.getByRole('img', { name: /Captura del comprobante/ })).toHaveCount(0);

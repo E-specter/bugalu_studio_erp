@@ -442,7 +442,10 @@ const filtros = [
       }
       if (!abrir) return;
       abrir.hidden = !this.querySelector('[data-confirmar]').hidden;
-      this.querySelector('[data-confirmar] .panel-titulo').lastChild.textContent = ` Cancelar reserva ${r.folio}`;
+      const tituloCancelar = this.querySelector('[data-confirmar] .panel-titulo');
+      tituloCancelar.querySelector('.reservas-folio-titulo')?.remove();
+      tituloCancelar.lastChild.textContent = ' Cancelar reserva ';
+      tituloCancelar.append(Object.assign(document.createElement('span'), { className: 'reservas-folio-titulo', textContent: r.folio }));
       this.querySelector('[data-resumen]').textContent = `${nombre(r.servicio)} · ${fecha(r)}, ${horario(r)}`;
       const pideNota = admin && conPagos;
       this.querySelector('[data-nota-campo]').hidden = !pideNota;
@@ -596,10 +599,17 @@ const filtros = [
     flex-direction: column;
     gap: var(--espacio-3);
   }
+  .reservas-estado[hidden] {
+    display: none;
+  }
   .reservas-nota,
   .reservas-resumen {
     margin: 0;
     color: var(--color-texto-cuerpo);
+  }
+  .reservas-resumen,
+  [data-consecuencia] {
+    margin-block-end: var(--espacio-4);
   }
   .reservas-nota-precio {
     margin-block-start: var(--espacio-3);

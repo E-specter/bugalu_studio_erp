@@ -22,11 +22,12 @@ const { destinos, actual, etiqueta = 'Principal', class: clase } = Astro.props a
             {destino.vivo && (
               <span class="tactil-contador" data-contador={destino.vivo} hidden>
                 <span aria-hidden="true"><EtiquetaTecnica variante="alerta" texto="0" /></span>
-                <span class="visualmente-oculto" data-contador-texto></span>
               </span>
             )}
           </span>
           <span class="tactil-etiqueta">{destino.etiqueta}</span>
+          {/* Hermano posterior de la etiqueta: el nombre accesible es "Pagos 2 pagos por validar". */}
+          {destino.vivo && <span class="visualmente-oculto" data-contador-texto></span>}
         </a>
       </li>
     ))}
@@ -68,6 +69,7 @@ const { destinos, actual, etiqueta = 'Principal', class: clase } = Astro.props a
     transition: background-color var(--movimiento-duracion-rapida) var(--movimiento-curva-estandar);
   }
   .tactil-icono {
+    block-size: var(--medida-icono-md);
     display: flex;
     align-items: center;
     gap: var(--espacio-1);

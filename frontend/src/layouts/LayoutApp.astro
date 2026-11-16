@@ -71,7 +71,7 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
     document.querySelectorAll<HTMLElement>('[data-contador="pagos"]').forEach((c) => {
       c.hidden = !(total > 0);
       c.querySelector('.etiqueta span:last-child')!.textContent = total > 99 ? '99+' : String(total);
-      c.querySelector('[data-contador-texto]')!.textContent = total > 99 ? 'más de 99 pagos por validar' : `${total} ${total === 1 ? 'pago por validar' : 'pagos por validar'}`;
+      c.closest('a')!.querySelector('[data-contador-texto]')!.textContent = !(total > 0) ? '' : total > 99 ? 'más de 99 pagos por validar' : `${total} ${total === 1 ? 'pago por validar' : 'pagos por validar'}`;
     });
   }
 
