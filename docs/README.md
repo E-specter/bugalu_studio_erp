@@ -50,6 +50,11 @@ Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-15 →
 | [RF-13](03-requerimientos/RF-13.md) | Evaluar calidad y cierre de servicio | `proyectos` | borrador |
 | [RF-14](03-requerimientos/RF-14.md) | Generar reportes de operatividad y gestión | `reportes` | borrador |
 | [RF-15](03-requerimientos/RF-15.md) | Agendar asesoría artística | `asesorias` | borrador |
+| [RF-16](03-requerimientos/RF-16.md) | Libro de Reclamaciones virtual | `reclamaciones` | borrador |
+| [RF-17](03-requerimientos/RF-17.md) | Registro reforzado de artistas y aceptación de textos legales | `identidad` | borrador |
+| [RF-18](03-requerimientos/RF-18.md) | Cancelar y reprogramar con política de niveles y créditos | `reservas` | borrador |
+| [RF-19](03-requerimientos/RF-19.md) | Calendario de Google y videollamadas | `notificaciones` | borrador |
+| [RF-20](03-requerimientos/RF-20.md) | Parámetros sensibles con barreras y auditoría | `catalogo` | borrador |
 
 ## 04 · Agentes
 
