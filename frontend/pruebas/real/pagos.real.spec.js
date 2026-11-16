@@ -213,7 +213,8 @@ test('4. otro pago con un PDF: el cliente ve el contacto en vez de Cancelar; el 
   await expect(paginaAdmin.getByRole('link', { name: /Abrir comprobante\.pdf/ })).toHaveAttribute('href', new RegExp(`^${SUPABASE}/storage/v1/`));
   await captura(paginaAdmin, '7-revisar-pdf');
   await paginaAdmin.getByRole('button', { name: 'Aprobar pago' }).click();
-  await expect(paginaAdmin).toHaveURL(/aviso=reserva-confirmada/);
+  // La isla muestra el aviso y quita ?aviso= de la URL al instante: se comprueba el aviso, no la URL.
+  await expect(paginaAdmin.getByText('La reserva quedó confirmada y avisamos al cliente.')).toBeVisible();
   const texto = await correoDe(cliente.correo, `Pago aprobado de la reserva ${folio}`);
   expect(texto).toContain('confirmada');
   await paginaA.goto(`/app/reservas/detalle?id=${idReserva}`);
