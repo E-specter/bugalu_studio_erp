@@ -41,6 +41,8 @@ class RegistrarPago:
                 tipo.mime,
             )
         )
+        # shortcut: la reserva queda bloqueada durante la subida a Storage (<= 10 s de espera para
+        # cron, cancelaciones y reservas de esa sala); mejorar si la carga crece.
         await self._almacen.subir(ruta, captura, tipo.mime)
         pago = await self._pagos.obtener_pago(id_pago)
         assert pago is not None  # el dueño lee lo que acaba de insertar

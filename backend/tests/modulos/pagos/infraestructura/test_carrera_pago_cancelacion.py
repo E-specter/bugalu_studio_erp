@@ -172,3 +172,43 @@ async def test_con_el_plazo_vencido_el_pago_es_409_y_la_reserva_caduca_despues(
     assert sql("select count(*) from public.comprobante_pago")[0][0] == 0
     assert _caducar(configuracion) == 1
     assert _estado(sql, reserva) == ("cancelada", "caducada")
+
+
+def _avanzar(configuracion: Configuracion) -> int:
+    with psycopg.connect(configuracion.url_base_datos_admin) as c:
+        return int(c.execute("select public.avanzar_reservas()").fetchone()[0])  # type: ignore[index]
+
+
+def test_avanzar_reservas_espera_al_pago_del_saldo_y_no_avisa_del_saldo(
+    configuracion: Configuracion,
+    cliente_a: UsuarioDePrueba,
+    cuota_de: Cuota,
+    sql: Ejecutar,
+    pago_sin_confirmar: Callable[[UsuarioDePrueba, str], psycopg.Connection],
+) -> None:
+    # La reserva ya termino; el cliente paga el saldo (`al_terminar`) y su pago aun no se confirma
+    # cuando el cron avanza. Al confirmarse, la finalizacion no debe encolar "saldo pendiente".
+    cuota = cuota_de(cliente_a, "en_curso")
+    reserva = _reserva(sql, cuota)
+    original = sql("select inicio, fin from public.reserva where id = %s", UUID(reserva))[0]
+    sql("update public.cuota set hito = 'al_terminar' where id = %s", UUID(cuota))
+    sql(
+        "update public.reserva set inicio = date_trunc('hour', now()) - interval '3 hours', "
+        "fin = date_trunc('hour', now()) - interval '1 hour' where id = %s",  # medias horas exactas
+        UUID(reserva),
+    )
+    pago = pago_sin_confirmar(cliente_a, cuota)
+    with _hilo() as hilo:
+        avance = hilo.submit(_avanzar, configuracion)
+        _espera(avance)
+        pago.commit()
+        assert avance.result(20) == 1
+    assert _estado(sql, reserva)[0] == "finalizada"
+    sql(  # de vuelta a 2027: la limpieza de las pruebas borra por anio
+        "update public.reserva set inicio = %s, fin = %s where id = %s", *original, UUID(reserva)
+    )
+    assert sql(
+        "select count(*) from public.notificacion where tipo = 'reserva_finalizada_saldo' "
+        "and datos->>'id_reserva' = %s",
+        reserva,
+    ) == [(0,)]

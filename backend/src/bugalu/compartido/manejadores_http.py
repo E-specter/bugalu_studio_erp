@@ -48,6 +48,12 @@ def registrar_manejadores(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def _http(_: Request, error: StarletteHTTPException) -> JSONResponse:
+        if (
+            error.status_code == 400
+        ):  # Starlette: cuerpo JSON o multipart ilegible (UTF-8 roto, etc.)
+            return respuesta_de_error(
+                422, "datos_invalidos", "Datos invalidos: cuerpo.", detalles={"campo": "cuerpo"}
+            )
         codigo, mensaje = _HTTP.get(error.status_code, ("error_http", str(error.detail)))
         return respuesta_de_error(
             error.status_code, codigo, mensaje, error.headers

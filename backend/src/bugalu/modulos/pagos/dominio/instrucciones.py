@@ -9,7 +9,9 @@ from bugalu.compartido.errores import DatosInvalidos
 METODOS = ("transferencia", "yape", "plin", "tarjeta")
 MAX_INSTRUCCION = 1000
 MAX_CONTACTO = 500
-_CONTROLES = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f  ]")  # salvo \n, \r, \t
+_CONTROLES = re.compile(
+    r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\u2028\u2029\ud800-\udfff]"
+)  # salvo \n, \r, \t; un sustituto suelto no se codifica a UTF-8 y tumba a psycopg
 
 
 @dataclass(frozen=True)
