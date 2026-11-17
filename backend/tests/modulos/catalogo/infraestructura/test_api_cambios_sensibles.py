@@ -357,6 +357,31 @@ async def test_recargos_parciales_con_la_noche_vacia_de_duracion_es_422(
     assert _codigo(r) == (422, "datos_invalidos")
 
 
+async def test_dos_confirmaciones_que_dejarian_la_noche_sin_duracion_la_segunda_es_422(
+    cliente: AsyncClient, administrador: Cabeceras, otro_administrador: Cabeceras, sql: Sql
+) -> None:
+    anterior = sql("select porcentaje, desde, hasta from public.recargo where tipo = 'noche'")[0]
+    sql("update public.recargo set desde = '20:00', hasta = '06:00' where tipo = 'noche'")
+    try:
+        a = await _previsualizar(cliente, administrador, "recargos", {"noche": {"desde": "05:00"}})
+        b = await _previsualizar(
+            cliente, otro_administrador, "recargos", {"noche": {"hasta": "05:00"}}
+        )
+        assert a.status_code == b.status_code == 200
+        assert (await _confirmar(cliente, administrador, a.json()["token"])).status_code == 200
+        r = await _confirmar(cliente, otro_administrador, b.json()["token"])
+        assert _codigo(r) == (422, "datos_invalidos")
+        assert sql("select desde::text, hasta::text from public.recargo where tipo = 'noche'") == [
+            ("05:00:00", "06:00:00")
+        ]
+    finally:
+        sql(
+            "update public.recargo set porcentaje = %s, desde = %s, hasta = %s "
+            "where tipo = 'noche'",
+            *anterior,
+        )
+
+
 async def test_palabra_incorrecta_es_422_y_el_token_sigue_vigente(
     cliente: AsyncClient, administrador: Cabeceras, sql: Sql
 ) -> None:

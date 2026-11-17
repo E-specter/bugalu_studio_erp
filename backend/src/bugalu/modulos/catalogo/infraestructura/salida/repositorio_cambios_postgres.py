@@ -3,9 +3,10 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from psycopg import AsyncConnection
+from psycopg import AsyncConnection, Error
 from psycopg.types.json import Jsonb
 
+from bugalu.compartido.errores import DatosInvalidos
 from bugalu.modulos.catalogo.dominio.cambios_sensibles import CambioRegistrado, Confirmacion
 
 _COLUMNAS = (
@@ -63,9 +64,14 @@ class RepositorioCambiosPostgres:
         )
 
     async def aplicar(self, confirmacion: Confirmacion) -> list[CambioRegistrado]:
-        await self._conexion.execute(
-            "select public.aplicar_cambio_confirmado(%s)", (confirmacion.id,)
-        )
+        try:
+            await self._conexion.execute(
+                "select public.aplicar_cambio_confirmado(%s)", (confirmacion.id,)
+            )
+        except Error as error:
+            if error.sqlstate != "BG010":  # incoherencia que la base rechaza (barrera final)
+                raise
+            raise DatosInvalidos("El cambio deja valores incoherentes.") from error
         # Las filas de esta transaccion comparten `cambiado_en` (now()).
         filas = await self._filas(
             f"select {_COLUMNAS} from public.registro_cambio "

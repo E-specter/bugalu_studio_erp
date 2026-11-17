@@ -4,6 +4,7 @@ from typing import Any
 from bugalu.compartido.errores import (
     CambioDesactualizado,
     ConfirmacionNoValida,
+    DatosInvalidos,
     PalabraIncorrecta,
     SinPermiso,
 )
@@ -48,6 +49,14 @@ class ConfirmarCambio:
         if recurso == "parametros":
             nuevos = {c: nuevo for c, (_, nuevo) in confirmacion.cambios.items()}
             sensibles.validar_plazos(sensibles.aplicar(recurso, actual, nuevos))
+        if recurso == "recargos":  # como en la vista previa: otro cambio pudo mediar
+            noche = sensibles.aplicar(
+                recurso, actual, {c: n for c, (_, n) in confirmacion.cambios.items()}
+            )
+            if noche.desde_noche == noche.hasta_noche:
+                raise DatosInvalidos(
+                    "La noche no puede empezar y terminar a la misma hora.", {"campo": "noche"}
+                )
         registrados = await self._cambios.aplicar(confirmacion)
         _, valor = await cargar(self._catalogo, recurso, id_recurso)
         return Confirmado(confirmacion, valor, registrados)

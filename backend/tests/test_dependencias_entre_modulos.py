@@ -17,6 +17,12 @@ PERMITIDOS: dict[str, set[str]] = {
 
 
 @pytest.mark.parametrize("modulo", sorted(PERMITIDOS))
+def test_la_carpeta_de_cada_modulo_existe_con_codigo(modulo: str) -> None:
+    # Sin esto, un modulo renombrado o movido pasaria la prueba de abajo en vacio.
+    assert any((RAIZ / modulo).rglob("*.py")), f"no hay codigo en {RAIZ / modulo}"
+
+
+@pytest.mark.parametrize("modulo", sorted(PERMITIDOS))
 def test_un_modulo_solo_importa_de_los_que_le_corresponden(modulo: str) -> None:
     usados = {
         m
