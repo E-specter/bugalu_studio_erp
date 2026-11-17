@@ -130,7 +130,7 @@ test.describe('reprogramar', () => {
     await page.goto(RUTA);
     await elegir(page);
     await principal(page).click();
-    await expect(page).toHaveURL(new RegExp(`/app/reservas/detalle\\?id=${ID}&aviso=reserva-reprogramada&credito=20\\.00`));
+    await expect(page).toHaveURL(new RegExp(`/app/reservas/detalle\\?id=${ID}&aviso=reserva-reprogramada$`));
     expect(confirmaciones).toHaveLength(1);
     expect(confirmaciones[0].cuerpo).toEqual({ inicio: NUEVO, nivel_esperado: 1, total_esperado: '80.00' });
     const aviso = page.locator('[data-avisos] .aviso');
@@ -206,6 +206,18 @@ test.describe('reprogramar', () => {
       expect(new URL(page.url()).searchParams.has('inicio')).toBe(false);
       await expect.poll(() => semanas.length).toBeGreaterThan(1);
       await sinViolaciones(page);
+    });
+  }
+
+  for (const detalles of [{ ...vistaR(2), nivel: 3 }, { nivel: 3 }]) {
+    test(`409 nivel_cambiado con nivel 3 (${Object.keys(detalles).length > 1 ? 'con vista' : 'solo nivel'}) es "no permitida", nunca "sin costo"`, async ({ page }) => {
+      await montar(page, { simula: json(200, vistaR(1)), confirma: (r) => r.fulfill(json(409, { error: { codigo: 'nivel_cambiado', mensaje: 'x', detalles } })) });
+      await page.goto(RUTA);
+      await elegir(page);
+      await principal(page).click();
+      await expect(page.locator('bugalu-calendario')).toHaveCount(0);
+      await expect(page.locator('[data-salida] .aviso')).toContainText('Ya no puedes reprogramar esta reserva: faltan 24 h o menos para el inicio.');
+      await expect(page.locator('body')).not.toContainText('sin costo');
     });
   }
 
@@ -349,6 +361,16 @@ test.describe('reprogramar', () => {
     await expect(page.locator('bugalu-calendario')).toHaveCount(0);
     await sinViolaciones(page);
   });
+
+  for (const [nombre, extra] of [['cancelada por el cliente', { estado: 'cancelada', motivo_cancelacion: 'cliente' }], ['del estudio con la elección ya hecha', { eleccion_estudio: 'devolucion' }], ['del estudio ya reprogramada', { eleccion_estudio: 'reprogramada' }]]) {
+    test(`reserva ${nombre}: no se reprograma sin costo ni se ofrece el calendario`, async ({ page }) => {
+      await montar(page, { reserva: delEstudio({ ...extra, ...(extra.estado ? { eleccion_estudio: undefined } : {}) }) });
+      await page.goto(RUTA);
+      await expect(page.locator('[data-salida] .aviso')).toContainText('Esta reserva ya no se puede reprogramar.');
+      await expect(page.locator('bugalu-calendario')).toHaveCount(0);
+      await expect(page.getByText('Elige tu nuevo horario')).toHaveCount(0);
+    });
+  }
 
   // --- Fallos ---
   test('un id inválido es 404', async ({ page }) => {

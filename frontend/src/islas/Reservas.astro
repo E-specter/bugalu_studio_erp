@@ -337,6 +337,8 @@ const filtros = [
   import { fechaDe, horaDe, diaMes, diaMesAnio, nombreDia, soles, porcentaje, duracionReserva, instante, pintarPartidas } from '../servicios/formatos.js';
   import { mostrarAviso, enfocarAviso, llenarAviso, quitarError, limpiarAvisos } from '../servicios/formulario.js';
 
+  // Prefijo de cerrarSesion(): la cifra del aviso de reprogramar no sobrevive a la sesión.
+  const claveReprogramada = (id) => `bugalu:reserva-detalle-reprogramada:${id}`;
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const MINUTO = 60e3;
   const filtrosOrden = ['proximas', 'historial'];
@@ -411,6 +413,7 @@ const filtros = [
     abierto = null; // panel de acción abierto: cancelar | inasistencia | excepcion
     previa = null; // VistaCancelacion mostrada (la última que llegó)
     secuencia = 0; // descarta vistas previas que llegan tarde
+    vistaDesde = 0; // instante en que se pidió la última
     vistaCancel = null; // VistaCancelacion pedida al cargar el detalle (null si no aplica o falla)
     reprogramada = null; // viene de reprogramar: {credito} para el aviso de éxito
     sinCosto = false; // reprogramar tras una cancelación del estudio
@@ -454,8 +457,14 @@ const filtros = [
         // Reprogramar vuelve con el crédito que pasó, si lo hubo; el aviso se arma al tener la reserva (lleva su nuevo horario).
         const url = new URL(location.href);
         if (url.searchParams.get('aviso') === 'reserva-reprogramada') {
-          const credito = url.searchParams.get('credito') ?? '';
-          this.reprogramada = { credito: /^\d{1,9}\.\d{2}$/.test(credito) ? credito : null };
+          // La cifra sale de la vista previa que se confirmó (guardada por reserva), nunca de la URL.
+          const id = url.searchParams.get('id') ?? '';
+          let credito = null;
+          try {
+            credito = sessionStorage.getItem(claveReprogramada(id));
+            sessionStorage.removeItem(claveReprogramada(id));
+          } catch {}
+          this.reprogramada = { credito: /^\d{1,9}\.\d{2}$/.test(credito ?? '') ? credito : null };
           url.searchParams.delete('aviso');
           url.searchParams.delete('credito');
           history.replaceState(null, '', url);
@@ -576,11 +585,7 @@ const filtros = [
       this.vistaCancel = null;
       if (this.rol === 'cliente' && r.estado === 'confirmada' && Date.parse(r.inicio) > Date.now()) {
         this.vistaCancel = undefined;
-        verCancelacion(id).catch(() => null).then((v) => {
-          if (this.reserva?.id !== id) return;
-          this.vistaCancel = v;
-          this.pintarAcciones();
-        });
+        this.pedirVistaCancel(id);
       }
       this.abierto = null;
       this.mostrar('datos');
@@ -598,7 +603,9 @@ const filtros = [
       if (this.reprogramada) {
         const { credito } = this.reprogramada;
         this.reprogramada = null;
-        enfocarAviso(mostrarAviso(this, 'exito', `Reserva reprogramada al ${absoluta(r.inicio)}`, `Te enviamos el correo con el nuevo horario para tu calendario.${positivo(credito) ? ` ${soles(credito)} pasaron a crédito.` : ''}`));
+        // Sin la vista guardada no hay cifra que respalde: no se afirma crédito; se enlaza a Mis créditos.
+        const texto = `Te enviamos el correo con el nuevo horario para tu calendario.${credito === null ? ' Si quedó saldo a tu favor, lo verás en Mis créditos.' : positivo(credito) ? ` ${soles(credito)} pasaron a crédito.` : ''}`;
+        enfocarAviso(mostrarAviso(this, 'exito', `Reserva reprogramada al ${absoluta(r.inicio)}`, texto, credito === null ? { enlaces: [{ texto: 'Ver mis créditos', href: '/app/reservas/creditos' }] } : undefined));
       }
       return `Reserva ${r.folio}, ${estadoDe(r)[0].toLowerCase()}`;
     }
@@ -856,8 +863,29 @@ const filtros = [
       this.querySelector(`[data-panel="${nombre}"]`).hidden = !(aplica && this.abierto === nombre);
     }
 
+    // Pide la vista previa de cancelación; de ella salen la ayuda y la visibilidad de "Reprogramar".
+    pedirVistaCancel(id) {
+      this.vistaDesde = Date.now();
+      verCancelacion(id).catch(() => null).then((v) => {
+        if (this.reserva?.id !== id) return;
+        this.vistaCancel = v;
+        this.pintarAcciones();
+      });
+    }
+
+    // Con la página abierta, cruzar un plazo de nivel (inicio menos horas_nivel_1 / horas_nivel_2) cambia lo que dice esa vista.
+    cruzoPlazo(r) {
+      const { horas_nivel_1: h1, horas_nivel_2: h2 } = r.politica ?? {};
+      const ahora = Date.now();
+      return [h1, h2].some((h) => {
+        const limite = Date.parse(r.inicio) - Number(h) * 36e5;
+        return Number.isFinite(limite) && this.vistaDesde < limite && limite <= ahora;
+      });
+    }
+
     ticDetalle() {
       if (!this.reserva || !this.querySelector('[data-estado-reserva]')) return;
+      if (this.vistaCancel !== null && this.vistaCancel !== undefined && this.cruzoPlazo(this.reserva)) this.pedirVistaCancel(this.reserva.id);
       const vencia = !caducada(this.reserva);
       this.pintarEstado();
       if (vencia && caducada(this.reserva)) this.querySelector('[data-anuncio]').textContent = `La reserva ${this.reserva.folio} venció sin pago.`;
@@ -1351,9 +1379,10 @@ const filtros = [
         return;
       }
       const cuerpo = { inicio: this.inicioR, nivel_esperado: v.nivel ?? null, total_esperado: v.precio.total };
-      const credito = positivo(v.credito) ? v.credito : null;
+      const credito = positivo(v.credito) ? v.credito : '0.00';
       this.enviar(this.querySelector('[data-confirmar-reprog]'), 'Reprogramando…', () => reprogramarReserva(this.reserva.id, cuerpo), () => {
-        location.href = `/app/reservas/detalle?${new URLSearchParams({ id: this.reserva.id, aviso: 'reserva-reprogramada', ...(credito && { credito }) })}`;
+        try { sessionStorage.setItem(claveReprogramada(this.reserva.id), credito); } catch {}
+        location.href = `/app/reservas/detalle?${new URLSearchParams({ id: this.reserva.id, aviso: 'reserva-reprogramada' })}`;
       }, true);
     }
 
@@ -1362,6 +1391,8 @@ const filtros = [
       const { estado, codigo } = error;
       if (estado === 401 || estado === 403) this.sustituir(estado === 401 ? 'no-autenticado' : 'sin-permiso');
       else if (estado === 404) this.sustituir('no-encontrada');
+      // Un plazo cruzado a nivel 3 ya no deja reprogramar (no es "sin costo": ese caso es nivel null).
+      else if (estado === 409 && codigo === 'nivel_cambiado' && error.detalles?.nivel === 3) this.noPermitida(sinReprogramar('reprogramacion_no_permitida', this.reserva.politica));
       else if (estado === 409 && (codigo === 'reprogramacion_no_permitida' || codigo === 'limite_reprogramaciones')) this.noPermitida(sinReprogramar(codigo, this.reserva.politica));
       else if (estado === 409 && codigo === 'tramo_no_disponible') {
         this.inicioR = null;

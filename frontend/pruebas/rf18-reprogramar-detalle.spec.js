@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test';
 import { API, json, errorApi, perfil, conSesion, silenciarApi, sinViolaciones, vigilarConsola, tamanos } from './ayudas-acceso.js';
 import { simular } from './ayudas-admin.js';
-import { ID, AHORA, reserva, vista, cuotasSinPagos, delEstudio } from './ayudas-rf18.js';
+import { ID, AHORA, dentroDe, reserva, vista, cuotasSinPagos, delEstudio } from './ayudas-rf18.js';
 
 const ver = (page, query = '') => page.goto(`/app/reservas/detalle?id=${ID}${query}`);
 const con = (page, r) => simular(page, 'GET', `/reservas/${ID}`, typeof r === 'function' ? r : json(200, r));
@@ -232,6 +232,16 @@ test('elección: con ?aviso=devolucion-elegida se muestra el éxito y se quita d
   expect(new URL(page.url()).searchParams.has('aviso')).toBe(false);
 });
 
+for (const [nombre, extra] of [['cancelada por el cliente', { motivo_cancelacion: 'cliente', eleccion_estudio: undefined }], ['con la elección ya reprogramada', { eleccion_estudio: 'reprogramada' }]]) {
+  test(`elección: una reserva ${nombre} no ofrece elegir`, async ({ page }) => {
+    await con(page, delEstudio(extra));
+    await ver(page);
+    await expect(barra(page)).toContainText('Cancelada');
+    await expect(eleccion(page)).toBeHidden();
+    await expect(sinCosto(page)).toHaveCount(0);
+  });
+}
+
 test('elección: una elegida reprogramada deja la reserva en su estado', async ({ page }) => {
   await con(page, reserva({ eleccion_estudio: 'reprogramada' }));
   await previa(page, vista(1));
@@ -306,24 +316,74 @@ test('elección: el personal no elige por el cliente', async ({ page }) => {
   await expect(eleccion(page)).toBeHidden();
 });
 
-test('detalle: la reprogramación vuelve con ?aviso=reserva-reprogramada, el crédito y el nuevo horario', async ({ page }) => {
+const CLAVE = `bugalu:reserva-detalle-reprogramada:${ID}`;
+const guardar = (page, valor) => page.addInitScript(([k, v]) => sessionStorage.setItem(k, v), [CLAVE, valor]);
+
+test('detalle: la reprogramación vuelve con ?aviso=reserva-reprogramada, el crédito de la vista previa guardada y el nuevo horario', async ({ page }) => {
   await con(page, reserva({ inicio: '2026-12-19T10:00:00-05:00', fin: '2026-12-19T12:00:00-05:00' }));
   await previa(page, vista(1));
-  await ver(page, '&aviso=reserva-reprogramada&credito=20.00');
+  await guardar(page, '20.00');
+  await ver(page, '&aviso=reserva-reprogramada');
   const aviso = page.locator('[data-avisos] .aviso-exito');
   await expect(aviso).toContainText('Reserva reprogramada al 19 dic, 10:00.');
   await expect(aviso).toContainText('S/ 20,00 pasaron a crédito.');
   await expect(aviso).toBeFocused();
   expect(new URL(page.url()).search).toBe(`?id=${ID}`);
+  expect(await page.evaluate((k) => sessionStorage.getItem(k), CLAVE)).toBeNull();
   await sinViolaciones(page);
 });
 
-test('detalle: el aviso de reprogramada sin crédito no lo menciona, y un crédito inválido se ignora', async ({ page }) => {
+test('detalle: un enlace armado con &credito= no muestra esa cifra; sin vista guardada no afirma crédito y enlaza a Mis créditos', async ({ page }) => {
   await con(page, reserva());
   await previa(page, vista(1));
-  await ver(page, '&aviso=reserva-reprogramada&credito=<b>');
+  await ver(page, '&aviso=reserva-reprogramada&credito=999999.00');
   const aviso = page.locator('[data-avisos] .aviso-exito');
   await expect(aviso).toContainText('Reserva reprogramada al 18 dic, 15:00.');
-  await expect(aviso).not.toContainText('crédito.');
+  await expect(aviso).not.toContainText('999');
+  await expect(aviso).not.toContainText('pasó a crédito');
+  await expect(aviso).toContainText('Si quedó saldo a tu favor, lo verás en Mis créditos.');
+  await expect(aviso.getByRole('link', { name: 'Ver mis créditos' })).toHaveAttribute('href', '/app/reservas/creditos');
+  expect(new URL(page.url()).search).toBe(`?id=${ID}`);
 });
 
+test('detalle: la vista guardada sin crédito (0.00) no menciona ningún crédito, y un valor inválido se trata como ausente', async ({ page }) => {
+  await con(page, reserva());
+  await previa(page, vista(1));
+  await guardar(page, '0.00');
+  await ver(page, '&aviso=reserva-reprogramada');
+  const aviso = page.locator('[data-avisos] .aviso-exito');
+  await expect(aviso).toContainText('Reserva reprogramada al 18 dic, 15:00.');
+  await expect(aviso).not.toContainText('crédito');
+});
+
+test('detalle: una vista guardada inválida no se muestra', async ({ page }) => {
+  await con(page, reserva());
+  await previa(page, vista(1));
+  await guardar(page, '<b>');
+  await ver(page, '&aviso=reserva-reprogramada');
+  await expect(page.locator('[data-avisos] .aviso-exito')).not.toContainText('<b>');
+  await expect(page.locator('[data-avisos] .aviso-exito')).not.toContainText('pasó a crédito');
+  await expect(page.locator('[data-avisos] .aviso-exito')).toContainText('Si quedó saldo a tu favor, lo verás en Mis créditos.');
+});
+
+
+test('detalle: con la página abierta, al cruzar el plazo de 48 h y el de 24 h se vuelve a pedir la vista previa y cambia la ayuda', async ({ page }) => {
+  await page.clock.install({ time: AHORA });
+  await con(page, reserva({ inicio: dentroDe(49 * 60), fin: dentroDe(51 * 60) }));
+  const respuestas = [vista(1), vista(2, { reprogramaciones_restantes: 1 }), vista(3)];
+  let llamadas = 0;
+  await previa(page, (r) => r.fulfill(json(200, respuestas[Math.min(llamadas++, 2)])));
+  await ver(page);
+  await expect(reprogramar(page)).toHaveAccessibleDescription('Te quedan 2 cambios de horario.');
+  await page.clock.runFor(30 * 60_000); // sigue en nivel 1: no se vuelve a pedir
+  expect(llamadas).toBe(1);
+  await page.clock.runFor(31 * 60_000); // cruza las 48 h
+  await expect(reprogramar(page)).toHaveAccessibleDescription(/Faltan 48 h o menos: reprogramar tiene una penalización/);
+  expect(llamadas).toBe(2);
+  await page.clock.runFor(23 * 60 * 60_000); // sigue en nivel 2
+  expect(llamadas).toBe(2);
+  await page.clock.runFor(2 * 60 * 60_000); // cruza las 24 h
+  await expect(page.locator('[data-no-reprogramar]')).toHaveText('Ya no puedes reprogramarla: faltan 24 h o menos para el inicio.');
+  await expect(reprogramar(page)).toHaveCount(0);
+  expect(llamadas).toBe(3);
+});

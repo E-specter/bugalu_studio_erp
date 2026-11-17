@@ -324,7 +324,8 @@ test('pago con crédito: parcial aplica, recarga con lo que falta y pide captura
   expect(envios[0].cuerpo).toEqual({ monto: '50.00' });
   await expect(aviso(page)).toBeFocused();
   const lateral = page.locator('aside');
-  await expect(lateral).toContainText('Pagado con crédito');
+  await expect(lateral).toContainText('Pagado');
+  await expect(lateral).not.toContainText('con crédito');
   await expect(lateral).toContainText('Falta pagar');
   await expect(page.getByLabel(/Monto pagado/)).toHaveValue('50,00');
   await expect(page.getByText('Usar mi crédito (S/ 100,00 disponible)')).toBeVisible();
@@ -426,6 +427,27 @@ test('pago con crédito: sin crédito disponible, o sin poder pedirlo, la pantal
   await expect(page.getByRole('region', { name: /P1 Método de pago/i })).toBeVisible();
   await expect(page.getByRole('region', { name: /P0 Crédito/i })).toHaveCount(0);
   await sinViolaciones(page);
+});
+
+test('pago con crédito: el lateral dice "Pagado" a secas cuando lo aplicado es una captura', async ({ page }) => {
+  await prepararPago(page, { r: preReserva({ pagado: '30.00', cuotas: [{ ...cuotasSinPagos()[0], pagado: '30.00' }, cuotasSinPagos()[1]] }) });
+  await page.goto(URL_PAGO);
+  const lateral = page.locator('aside');
+  await expect(lateral).toContainText('Pagado');
+  await expect(lateral).not.toContainText('con crédito');
+});
+
+test('pago con crédito: sin P0 cuando no falta nada de la cuota', async ({ page }) => {
+  await prepararPago(page, { r: preReserva({ cuotas: [{ ...cuotasSinPagos()[0], pagado: cuotasSinPagos()[0].monto }, cuotasSinPagos()[1]] }) });
+  await page.goto(URL_PAGO);
+  await expect(page.getByRole('region', { name: /P1 Método de pago/i })).toBeVisible();
+  await expect(page.getByRole('region', { name: /P0 Crédito/i })).toHaveCount(0);
+});
+
+test('pago con crédito: el disponible suma en céntimos (0,10 + 0,20 + 0,05)', async ({ page }) => {
+  await prepararPago(page, { creditos: [credito({ saldo: '0.10' }), credito({ id: 'c2', saldo: '0.20' }), credito({ id: 'c3', saldo: '0.05' })] });
+  await page.goto(URL_PAGO);
+  await expect(page.getByText('Usar mi crédito (S/ 0,35 disponible)')).toBeVisible();
 });
 
 test('pago con crédito: cuota del resto no pagable no ofrece P0', async ({ page }) => {

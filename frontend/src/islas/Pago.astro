@@ -55,7 +55,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
           </dl>
           <p class="pago-total"><span class="pago-total-etiqueta">Importe de la cuota</span><span class="pago-total-importe" data-campo="importe"></span></p>
           <dl class="gestion-datos pago-resumen pago-credito-resumen" data-aplicado hidden>
-            <div><dt>Pagado con crédito</dt><dd data-campo="pagado"></dd></div>
+            <div><dt>Pagado</dt><dd data-campo="pagado"></dd></div>
             <div><dt>Falta pagar</dt><dd data-campo="falta"></dd></div>
           </dl>
           <p class="gestion-ayuda" data-igv hidden></p>
@@ -307,7 +307,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
     pintarCredito() {
       const bloque = this.querySelector('[data-p0]');
       const disp = disponible(this.creditos ?? []);
-      bloque.hidden = !(centimos(disp) > 0);
+      bloque.hidden = !(centimos(disp) > 0 && centimos(this.falta) > 0);
       if (bloque.hidden) return;
       this.maximoCredito = decimal(Math.min(centimos(disp), centimos(this.falta)));
       this.querySelector('#pago-usar-credito').closest('.casilla').querySelector('.casilla-etiqueta').textContent = `Usar mi crédito (${soles(disp)} disponible)`;
