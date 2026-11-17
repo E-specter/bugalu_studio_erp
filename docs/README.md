@@ -31,7 +31,7 @@ Flujos: [ciclo-servicio](02-dominio/flujos/ciclo-servicio.md) · [registrar-rese
 
 ## Requerimientos
 
-Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-15 → RF-02 → RF-07/08 → RF-09/10 → RF-11/12 → RF-13 → RF-14.
+Orden de implementación (fase 7, revisado por el usuario el 2026-11-16): RF-01 → RF-03/04 → RF-05/06 → RF-20 y RF-17 → RF-18 → RF-16 → RF-15 → RF-02 (cotización y árbol de precios) → RF-19 → RF-07/08 → RF-09/10 → RF-11/12 → RF-13 → RF-14. Antes de abrir al público: RF-16, RF-17, textos legales revisados por un abogado y los requisitos empresariales de [requisitos-empresariales](06-operacion/requisitos-empresariales.md).
 
 | RF | Título | Módulo | Estado |
 |---|---|---|---|
@@ -54,7 +54,7 @@ Orden de implementación (fase 7): RF-01 → RF-03/04 → RF-05/06 → RF-15 →
 | [RF-17](03-requerimientos/RF-17.md) | Registro reforzado de artistas y aceptación de textos legales | `identidad` | borrador |
 | [RF-18](03-requerimientos/RF-18.md) | Cancelar y reprogramar con política de niveles y créditos | `reservas` | borrador |
 | [RF-19](03-requerimientos/RF-19.md) | Calendario de Google y videollamadas | `notificaciones` | borrador |
-| [RF-20](03-requerimientos/RF-20.md) | Parámetros sensibles con barreras y auditoría | `catalogo` | borrador |
+| [RF-20](03-requerimientos/RF-20.md) | Parámetros sensibles con barreras y auditoría | `catalogo` | implementado |
 
 ## 04 · Agentes
 
@@ -92,6 +92,6 @@ Empresa: [requisitos-empresariales](06-operacion/requisitos-empresariales.md) (t
 | 4 | Esqueleto frontend (Astro, layouts, `tokens.css` desde el brief, componentes base, cliente API) | dev_frontend | Hecho |
 | 5 | Skills propias del proyecto ([herramientas-mcp](06-operacion/herramientas-mcp.md#skills-propias-del-proyecto)) | leader | Hecho |
 | 6 | Auditoría del esqueleto contra arquitectura, convenciones y brief | dev_audit (Opus) | Hecho |
-| 7 | Implementación por RF en el orden indicado arriba | todos | En curso: RF-01, RF-03, RF-04, RF-05 y RF-06 hechos; RF-02 parcial; siguiente RF-15 |
+| 7 | Implementación por RF en el orden indicado arriba | todos | En curso: RF-01, RF-03, RF-04, RF-05, RF-06 y RF-20 hechos; RF-02 parcial; siguiente RF-17 |
 
 Planes de implementación: `superpowers/plans/`. Spec original congelada: `superpowers/specs/PROYECTO-v0.2.md`.

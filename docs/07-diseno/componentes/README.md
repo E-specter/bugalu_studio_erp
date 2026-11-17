@@ -60,8 +60,8 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Carga de archivos | [carga-archivos](carga-archivos.md) | isla `<bugalu-carga-archivos>` (`islas/CargaArchivos.astro`) | Implementado (Captura de pago; audio y referencias entran con su RF) |
 | Registro de pago | [registrar-pago](../pantallas/RF-05-registrar-pago.md) | isla `<bugalu-pago>` (`islas/Pago.astro`) | Implementado |
 | Pagos del Administrador | [pagos](../pantallas/RF-05-pagos.md) | isla `<bugalu-pagos>` (`islas/Pagos.astro`) | Implementado |
-| Cambio sensible | [cambios sensibles](../pantallas/RF-20-cambios-sensibles.md) | isla `<bugalu-cambio-sensible>` (`islas/CambioSensible.astro`; la montan `<bugalu-tarifas>` y `<bugalu-franjas>`) | Implementado (ajustes pendientes de TAREA-RF20-6) |
-| Registro de cambios | [registro de cambios](../pantallas/RF-20-registro-cambios.md) | isla `<bugalu-registro-cambios>` (`islas/RegistroCambios.astro`) | Implementado (ajustes pendientes de TAREA-RF20-6) |
+| Cambio sensible | [cambios sensibles](../pantallas/RF-20-cambios-sensibles.md) | isla `<bugalu-cambio-sensible>` (`islas/CambioSensible.astro`; la montan `<bugalu-tarifas>` y `<bugalu-franjas>`) | Implementado |
+| Registro de cambios | [registro de cambios](../pantallas/RF-20-registro-cambios.md) | isla `<bugalu-registro-cambios>` (`islas/RegistroCambios.astro`) | Implementado |
 
 Rutas relativas a `frontend/src/`. Islas en `islas/<Nombre>.astro`.
 

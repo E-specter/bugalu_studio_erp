@@ -44,8 +44,8 @@ frontend/
 | Mis reservas y agenda (`<bugalu-reservas>`) | [RF-04](../03-requerimientos/RF-04.md) |
 | Publicación de franjas, cierres y parámetros (`<bugalu-franjas>`; los parámetros sensibles pasan por `<bugalu-cambio-sensible>`) | [RF-03](../03-requerimientos/RF-03.md), [RF-20](../03-requerimientos/RF-20.md) |
 | Tarifas, recargos, feriados e impuestos (`<bugalu-tarifas vista="…\|impuestos">`; los cambios sensibles pasan por `<bugalu-cambio-sensible>`) | [RF-02](../03-requerimientos/RF-02.md), [RF-20](../03-requerimientos/RF-20.md) |
-| Vista previa y confirmación escrita de un cambio sensible (`<bugalu-cambio-sensible>`, la montan `<bugalu-tarifas>` y `<bugalu-franjas>`, [spec](../07-diseno/pantallas/RF-20-cambios-sensibles.md)) | [RF-20](../03-requerimientos/RF-20.md) |
-| Registro de cambios del Administrador (`<bugalu-registro-cambios>`, [spec](../07-diseno/pantallas/RF-20-registro-cambios.md)) | [RF-20](../03-requerimientos/RF-20.md) |
+| Vista previa y confirmación escrita de un cambio sensible (`<bugalu-cambio-sensible>`, `islas/CambioSensible.astro`, la montan `<bugalu-tarifas>` y `<bugalu-franjas>`, [spec](../07-diseno/pantallas/RF-20-cambios-sensibles.md)) | [RF-20](../03-requerimientos/RF-20.md) |
+| Registro de cambios del Administrador (`<bugalu-registro-cambios>`, `islas/RegistroCambios.astro`, [spec](../07-diseno/pantallas/RF-20-registro-cambios.md)) | [RF-20](../03-requerimientos/RF-20.md) |
 | Bandeja de solicitudes y usuarios del Administrador (`<bugalu-solicitudes>`; suma documentos repetidos y textos aceptados) | [RF-01](../03-requerimientos/RF-01.md), [RF-17](../03-requerimientos/RF-17.md) |
 | Perfil propio, editable (`<bugalu-perfil vista="datos\|privacidad">`, [spec de RF-17](../07-diseno/pantallas/RF-17-perfil.md)) | [RF-01](../03-requerimientos/RF-01.md), [RF-17](../03-requerimientos/RF-17.md) |
 | Aceptación de textos pendientes tras registrarse o ingresar (`<bugalu-aceptacion>`, `/acceso/textos`) | [RF-17](../03-requerimientos/RF-17.md) |
