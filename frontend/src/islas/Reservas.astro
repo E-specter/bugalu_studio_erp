@@ -10,13 +10,14 @@ import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
 import IndicadorEstado from '../componentes/IndicadorEstado.astro';
 import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
 import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+import Calendario from './Calendario.astro';
 
 interface Props {
-  vista: 'lista' | 'detalle';
+  vista: 'lista' | 'detalle' | 'reprogramar';
 }
 const { vista } = Astro.props;
 // Panel de la vista mientras carga o falla (spec RF-04-mis-reservas).
-const principal = vista === 'lista' ? { titulo: 'Reservas' } : { codigo: 'D1', titulo: 'Reserva' };
+const principal = vista === 'lista' ? { titulo: 'Reservas' } : vista === 'reprogramar' ? { codigo: 'R1', titulo: 'Elige el nuevo horario' } : { codigo: 'D1', titulo: 'Reserva' };
 const filtros = [
   { clave: 'proximas', texto: 'Próximas', href: '/app/reservas/' },
   { clave: 'historial', texto: 'Historial', href: '/app/reservas/?ver=historial' },
@@ -31,8 +32,6 @@ const filtros = [
   <!-- Región viva estable: anuncia la carga y los umbrales del plazo, nunca cada minuto. -->
   <p class="visualmente-oculto" role="status" data-anuncio></p>
   {vista === 'lista' && <nav class="reservas-filtros" aria-label="Filtrar reservas" data-filtros hidden></nav>}
-  <div data-salida><Panel {...principal} cargando /></div>
-
   <EstadosIsla principal={principal} />
 
   {vista === 'lista' && (
@@ -76,6 +75,65 @@ const filtros = [
     </>
   )}
 
+  {vista === 'reprogramar' && (
+    <>
+      <template data-estado="no-encontrada">
+        <Panel codigo="[404]" titulo="Reserva no encontrada"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a mis reservas', href: '/app/reservas/' }} /></Panel>
+      </template>
+      <template data-estado="no-permitida">
+        <Panel codigo="R1" titulo="No se puede reprogramar"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a la reserva', href: '/app/reservas/' }} /></Panel>
+      </template>
+      <template data-plantilla="calendario"><Calendario modo="reserva" /></template>
+      <template data-estado="datos">
+        <div class="gestion-rejilla">
+          <div class="gestion-principal">
+            <div data-sin-costo hidden><Aviso variante="informacion" titulo="Sin costo: el estudio canceló tu sesión. Mantienes el precio y lo que pagaste." /></div>
+            <Panel codigo="R1" titulo="Elige el nuevo horario" variante="sin-borde">
+              <div data-calendario></div>
+              <p class="reservas-nota" data-ayuda-duracion></p>
+              <div data-error-horario hidden><Aviso variante="error" titulo=" " texto=" " /></div>
+            </Panel>
+            <div data-r2 hidden>
+              <Panel codigo="R2" titulo="Cómo queda">
+                <div class="reservas-r2">
+                  <div data-r2-aviso></div>
+                  <p class="reservas-nota" data-r2-carga hidden>Calculando cómo queda…</p>
+                  <div class="reservas-r2" data-r2-datos hidden>
+                    <p class="reservas-nivel" data-nuevo-horario></p>
+                    <p class="reservas-nota" data-nivel-texto></p>
+                    <div data-tabla="precio"><Tabla titulo="Nuevo precio" columnas={['Concepto', 'Cantidad', 'Importe']} variante="partidas" numericas={[1, 2]} /></div>
+                    <div data-tabla="saldo"><Tabla titulo="Saldo" columnas={['Concepto', 'Importe']} variante="partidas" numericas={[1]} /></div>
+                    <p class="reservas-nota" data-restantes hidden></p>
+                    <div data-recalculo><Aviso variante="informacion" titulo="El precio se recalcula con las tarifas vigentes del nuevo horario. Si sube, la diferencia va a tu saldo; si baja, lo pagado de más pasa a crédito, sin devolución." /></div>
+                  </div>
+                </div>
+              </Panel>
+            </div>
+          </div>
+          <div class="gestion-lateral">
+            <Panel titulo="Reserva actual" variante="lateral" id="actual">
+              <dl class="gestion-datos">
+                <div><dt>Folio</dt><dd data-actual="folio"></dd></div>
+                <div><dt>Fecha y horario</dt><dd data-actual="horario"></dd></div>
+                <div><dt>Servicio</dt><dd data-actual="servicio"></dd></div>
+                <div data-fila="especialistas"><dt>Especialistas</dt><dd data-actual="especialistas"></dd></div>
+                <div><dt>Total</dt><dd data-actual="total"></dd></div>
+                <div><dt>Pagado</dt><dd data-actual="pagado"></dd></div>
+              </dl>
+            </Panel>
+          </div>
+        </div>
+        <form novalidate class="reservas-pie" data-accion="reprogramar">
+          <p class="gestion-ayuda" id="reservas-ayuda-confirmar" data-ayuda-confirmar>Elige un horario para ver cómo queda.</p>
+          <BarraAcciones variante="formulario">
+            <Boton slot="secundaria" variante="secundario" href="#" data-volver-reprog>Volver a la reserva</Boton>
+            <Boton slot="principal" tipo="submit" data-envio data-confirmar-reprog aria-disabled="true" aria-describedby="reservas-ayuda-confirmar">Confirmar reprogramación</Boton>
+          </BarraAcciones>
+        </form>
+      </template>
+    </>
+  )}
+
   {vista === 'detalle' && (
     <>
       <template data-estado="no-encontrada">
@@ -92,6 +150,26 @@ const filtros = [
             </div>
             <div data-pagar hidden><Boton href="#">Registrar pago</Boton></div>
 
+            <!-- Reprogramar (solo el dueño de una confirmada): botón con su ayuda, o la explicación de por qué no. -->
+            <div class="reservas-estado" data-reprogramar hidden>
+              <Boton variante="secundario" href="#" data-enlace-reprogramar aria-describedby="reservas-ayuda-reprogramar">Reprogramar</Boton>
+              <p class="gestion-ayuda" id="reservas-ayuda-reprogramar" data-ayuda-reprogramar hidden></p>
+            </div>
+            <p class="reservas-nota" data-no-reprogramar hidden></p>
+
+            <!-- Elección tras una cancelación del estudio: dos opciones del mismo peso, sin primario. -->
+            <div class="reservas-estado" data-boton="devolucion" hidden>
+              <div class="reservas-opcion">
+                <Boton variante="secundario" href="#" data-sin-costo>Reprogramar sin costo</Boton>
+                <p class="reservas-nota" data-texto-sin-costo></p>
+              </div>
+              <div class="reservas-opcion">
+                <Boton variante="secundario" data-abrir="devolucion">Pedir la devolución íntegra</Boton>
+                <p class="reservas-nota" data-texto-devolucion></p>
+              </div>
+              <p class="gestion-ayuda">Mientras no elijas, nada vence.</p>
+            </div>
+
             <!-- Acciones del lateral: un botón por acción; al abrirla, su panel lo sustituye (una sola a la vez). -->
             <div class="reservas-estado" data-boton="inasistencia" hidden>
               <Boton variante="peligro" data-abrir="inasistencia">Marcar no asistió</Boton>
@@ -99,6 +177,18 @@ const filtros = [
             </div>
             <div data-boton="excepcion" hidden><Boton variante="secundario" data-abrir="excepcion">Tratar como nivel 1</Boton></div>
             <div data-boton="cancelar" hidden><Boton variante="peligro" data-abrir="cancelar">Solicitar cancelación</Boton></div>
+
+            <div data-panel="devolucion" hidden>
+              <Panel titulo="Devolución íntegra" variante="lateral" id="devolucion">
+                <form novalidate class="gestion-formulario" data-accion="devolucion">
+                  <p data-consecuencia></p>
+                  <BarraAcciones variante="decision">
+                    <Boton slot="secundaria" variante="secundario" data-envio data-volver>Volver</Boton>
+                    <Boton slot="principal" tipo="submit" data-envio>Confirmar devolución</Boton>
+                  </BarraAcciones>
+                </form>
+              </Panel>
+            </div>
 
             <div data-panel="inasistencia" hidden>
               <Panel titulo="Marcar inasistencia" variante="lateral" id="inasistencia">
@@ -164,6 +254,7 @@ const filtros = [
                   </div>
                   <p data-consecuencia></p>
                   <p class="reservas-nota"><a class="reservas-enlace" href="/legal/condiciones-de-contratacion/" data-condiciones>Leer las condiciones de cancelación</a></p>
+                  <p class="reservas-nota" data-en-lugar hidden><a class="reservas-enlace" href="#" data-enlace-en-lugar>Reprogramar en lugar de cancelar</a></p>
                   <BarraAcciones variante="decision">
                     <Boton slot="secundaria" variante="secundario" data-envio data-volver>Volver a la reserva</Boton>
                     <Boton slot="principal" variante="peligro" tipo="submit" data-envio data-confirmar-cancelar hidden>Confirmar cancelación</Boton>
@@ -233,15 +324,17 @@ const filtros = [
       </template>
     </>
   )}
+  <!-- Al final: sus plantillas van antes en el DOM que las del calendario que aloja la vista de reprogramar. -->
+  <div data-salida><Panel {...principal} cargando /></div>
 </bugalu-reservas>
 
 <script>
   // @ts-nocheck
   import { IslaGestion, mensajeError } from '../servicios/isla-gestion.js';
-  import { listarMisReservas, obtenerReserva, cancelarReserva, verCancelacion, marcarInasistencia, aplicarExcepcion, absoluta, faltan, textoCuota, ultimoRechazo, tienePagos } from '../servicios/reservas.js';
-  import { nivelTexto, consecuenciaCancelar, avisoValidacion, filasVista, anticipacionTexto } from '../servicios/cancelacion.js';
+  import { listarMisReservas, obtenerReserva, cancelarReserva, verCancelacion, marcarInasistencia, aplicarExcepcion, simularReprogramacion, reprogramarReserva, elegirDevolucionEstudio, absoluta, faltan, textoCuota, ultimoRechazo, tienePagos } from '../servicios/reservas.js';
+  import { nivelTexto, consecuenciaCancelar, avisoValidacion, filasVista, anticipacionTexto, entradaReprogramar, nivelReprogramacion, sinReprogramar, FRANJA } from '../servicios/cancelacion.js';
   import { obtenerPerfil } from '../servicios/api.js';
-  import { fechaDe, horaDe, diaMes, diaMesAnio, soles, instante, pintarPartidas } from '../servicios/formatos.js';
+  import { fechaDe, horaDe, diaMes, diaMesAnio, nombreDia, soles, porcentaje, duracionReserva, instante, pintarPartidas } from '../servicios/formatos.js';
   import { mostrarAviso, enfocarAviso, llenarAviso, quitarError, limpiarAvisos } from '../servicios/formulario.js';
 
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -252,7 +345,7 @@ const filtros = [
   const PROXIMAS = ['pre_reservada', 'confirmada', 'en_curso'];
   const CUOTAS = { pendiente: ['Pendiente', 'aviso'], en_validacion: ['En validación', 'aviso'], pagada: ['Pagada', 'exito'], anulada: ['Anulada', 'neutra'] };
   // Panel de acción -> título (el folio se suma aparte, sin partirse).
-  const TITULOS = { cancelar: 'Cancelar reserva ', inasistencia: 'Marcar inasistencia · ', excepcion: 'Tratar como nivel 1 · ' };
+  const TITULOS = { cancelar: 'Cancelar reserva ', inasistencia: 'Marcar inasistencia · ', excepcion: 'Tratar como nivel 1 · ', devolucion: 'Devolución íntegra · ' };
   const AVISO_INVALIDO = 'El aviso no puede ser futuro ni anterior a cuando se hizo la reserva.';
   const MOTIVO_EXCEPCION = 'Escribe el motivo, de 10 a 500 caracteres.';
 
@@ -318,6 +411,12 @@ const filtros = [
     abierto = null; // panel de acción abierto: cancelar | inasistencia | excepcion
     previa = null; // VistaCancelacion mostrada (la última que llegó)
     secuencia = 0; // descarta vistas previas que llegan tarde
+    vistaCancel = null; // VistaCancelacion pedida al cargar el detalle (null si no aplica o falla)
+    reprogramada = null; // viene de reprogramar: {credito} para el aviso de éxito
+    sinCosto = false; // reprogramar tras una cancelación del estudio
+    minutos = 0; // duración de la reserva que se reprograma
+    inicioR = null; // inicio elegido en el calendario
+    vistaR = null; // VistaReprogramacion mostrada (la última que llegó)
     avisoNa = false; // el botón de inasistencia se pulsó antes de tiempo (o la API dijo que aún no)
 
     iniciar() {
@@ -326,7 +425,9 @@ const filtros = [
         if (abrir) this.abrir(abrir.dataset.abrir, abrir);
         else if (e.target.closest('[data-volver]')) this.cerrar();
         else if (e.target.closest('[data-reintentar-previa]')) this.pedirVista(this.avisoReintento);
+        else if (e.target.closest('[data-volver-reprog]') && this.ocupado) e.preventDefault();
       });
+      this.addEventListener('calendario-inicio', (e) => this.alInicio(e.detail));
       this.addEventListener('change', (e) => {
         if (e.target.matches('input[name="por"]')) this.cambiarOpcion();
         else if (e.target.matches('#cancelar-fecha, #cancelar-hora')) this.vistaDelAviso();
@@ -341,6 +442,8 @@ const filtros = [
     alEnviar(formulario) {
       const accion = formulario.dataset.accion;
       if (accion === 'cancelar') this.cancelar();
+      else if (accion === 'reprogramar') this.confirmarReprogramacion();
+      else if (accion === 'devolucion') this.devolucion();
       else if (accion === 'inasistencia') this.inasistencia();
       else this.excepcion();
     }
@@ -348,7 +451,18 @@ const filtros = [
     // Solo el detalle recibe ?aviso= (lista cerrada: el texto sale de aqui).
     avisoDeUrl() {
       if (this.vista === 'detalle') {
+        // Reprogramar vuelve con el crédito que pasó, si lo hubo; el aviso se arma al tener la reserva (lleva su nuevo horario).
+        const url = new URL(location.href);
+        if (url.searchParams.get('aviso') === 'reserva-reprogramada') {
+          const credito = url.searchParams.get('credito') ?? '';
+          this.reprogramada = { credito: /^\d{1,9}\.\d{2}$/.test(credito) ? credito : null };
+          url.searchParams.delete('aviso');
+          url.searchParams.delete('credito');
+          history.replaceState(null, '', url);
+          return;
+        }
         this.avisosUrl = {
+          'devolucion-elegida': ['Elegiste la devolución íntegra. Avisamos al estudio.'],
           'pago-registrado': ['Pago registrado. Queda pendiente de validación', 'Te avisaremos por correo cuando el estudio lo revise.'],
           'pagado-con-credito': ['Pagaste la cuota con tu crédito.'],
           'pagado-con-credito-confirmada': ['Pagaste la cuota con tu crédito', 'Tu reserva quedó confirmada.'],
@@ -367,7 +481,7 @@ const filtros = [
         enlace.textContent = 'Ir al acceso';
         enlace.href = `/acceso?${new URLSearchParams({ volver: location.pathname + location.search })}`;
       } else if (estado === 'sin-permiso') {
-        aviso.querySelector('.aviso-titulo').textContent = this.vista === 'detalle' ? 'Esta reserva no es tuya.' : 'No tienes permiso para ver estas reservas.';
+        aviso.querySelector('.aviso-titulo').textContent = this.vista !== 'lista' ? 'Esta reserva no es tuya.' : 'No tienes permiso para ver estas reservas.';
         aviso.querySelector('.aviso-texto')?.remove();
         const enlace = aviso.querySelector('.aviso-accion');
         enlace.textContent = 'Volver a mis reservas';
@@ -457,6 +571,17 @@ const filtros = [
         return this.mostrar('no-encontrada');
       }
       this.rol = yo?.rol ?? null;
+      // La explicación de "Reprogramar" sale de la vista previa; si falla, se ofrece el botón y decide la API.
+      // No bloquea el detalle: "Reprogramar" aparece cuando llega (undefined = pendiente) o falla (null).
+      this.vistaCancel = null;
+      if (this.rol === 'cliente' && r.estado === 'confirmada' && Date.parse(r.inicio) > Date.now()) {
+        this.vistaCancel = undefined;
+        verCancelacion(id).catch(() => null).then((v) => {
+          if (this.reserva?.id !== id) return;
+          this.vistaCancel = v;
+          this.pintarAcciones();
+        });
+      }
       this.abierto = null;
       this.mostrar('datos');
       this.pintar(validar(r));
@@ -470,6 +595,11 @@ const filtros = [
       clearInterval(this.temporizador);
       this.temporizador = setInterval(() => this.ticDetalle(), MINUTO);
       this.abrirDeUrl();
+      if (this.reprogramada) {
+        const { credito } = this.reprogramada;
+        this.reprogramada = null;
+        enfocarAviso(mostrarAviso(this, 'exito', `Reserva reprogramada al ${absoluta(r.inicio)}`, `Te enviamos el correo con el nuevo horario para tu calendario.${positivo(credito) ? ` ${soles(credito)} pasaron a crédito.` : ''}`));
+      }
       return `Reserva ${r.folio}, ${estadoDe(r)[0].toLowerCase()}`;
     }
 
@@ -604,6 +734,8 @@ const filtros = [
       else if (ms > 0) [tono, texto, dato] = ['pendiente', `Paga el anticipo antes del ${absoluta(r.vence_pago)}`, faltan(ms)];
       else if (caducada(r)) tono = 'problema';
       else if (r.estado === 'no_asistio') [tono, dato] = ['problema', this.datoTerminal(r)];
+      else if (this.eleccionPendiente(r)) [tono, texto] = ['pendiente', this.rol === 'cliente' ? 'El estudio canceló tu sesión · elige qué hacer' : 'El estudio canceló la sesión · elige por el cliente'];
+      else if (r.estado === 'cancelada' && r.eleccion_estudio === 'devolucion') [texto, dato] = ['Cancelada por el estudio · devolución íntegra', this.textoDevolucion(r)];
       else if (r.estado === 'cancelada') dato = this.datoTerminal(r);
       else if (r.estado === 'confirmada') [tono, dato] = ['correcto', restoTexto ?? 'Pagas el resto al terminar la sesión.'];
       else if (r.estado === 'en_curso') dato = restoTexto ?? 'Pagas el resto al terminar.';
@@ -618,7 +750,8 @@ const filtros = [
       barra.querySelector('.indicador-texto').textContent = texto;
       oculto(barra.querySelector('.indicador-dato'), dato);
       oculto(this.querySelector('[data-nota]'), motivo(r));
-      oculto(this.querySelector('[data-nota-estudio]'), !r.cancelacion && r.nota_cancelacion && `Nota del estudio: ${r.nota_cancelacion}`);
+      const notaEstudio = this.eleccionPendiente(r) ? r.cancelacion?.nota ?? r.nota_cancelacion : !r.cancelacion && r.nota_cancelacion;
+      oculto(this.querySelector('[data-nota-estudio]'), notaEstudio && `Nota del estudio: ${notaEstudio}`);
       const menos = this.querySelector('[data-menos-hora]');
       menos.hidden = !(ms > 0 && ms < 60 * MINUTO);
       if (!menos.hidden && !menos.dataset.listo) {
@@ -637,6 +770,20 @@ const filtros = [
         enlace.className = enlace.className.replace(/boton-(primario|secundario)/, toca ? 'boton-primario' : 'boton-secundario');
       }
       this.pintarAcciones();
+    }
+
+    // Cancelada por el estudio, con la elección del cliente por hacer: la hace el dueño o el Administrador por él.
+    eleccionPendiente(r) {
+      return r.estado === 'cancelada' && r.eleccion_estudio === 'pendiente' && (this.rol === 'cliente' || this.rol === 'administrador');
+    }
+
+    // Estado de la devolución íntegra que eligió el cliente (`Reserva.devolucion`, con su límite de 7 días hábiles).
+    textoDevolucion(r) {
+      const d = r.devolucion;
+      const dueno = this.rol === 'cliente';
+      const monto = soles(d?.monto_aprobado ?? d?.monto_solicitado ?? r.pagado ?? '0.00');
+      if (d?.estado === 'realizada') return `${dueno ? 'Te devolvimos' : 'Se devolvieron'} ${monto}${d.realizada_en ? ` el ${absoluta(d.realizada_en)}` : ''}.`;
+      return `${dueno ? 'Te devolvemos' : 'Se devuelven al cliente'} ${monto} en un máximo de 7 días hábiles${d?.limite ? `, a más tardar el ${diaMesAnio(fechaDe(d.limite))}` : ''}. ${dueno ? 'Te avisaremos por correo cuando esté hecha.' : 'Se marca como realizada desde Devoluciones.'}`;
     }
 
     // Quién ve qué acción (spec RF-18-cancelar y RF-18-acciones-administrador). Se recalcula cada minuto: la ventana de la inasistencia corre.
@@ -669,6 +816,37 @@ const filtros = [
       const cancelable = vivo && ['pre_reservada', 'confirmada'].includes(r.estado) && inicio > ahora && (this.rol === 'cliente' || admin);
       this.querySelector('[data-abrir="cancelar"]').textContent = admin ? 'Cancelar reserva' : 'Solicitar cancelación';
       this.alternar('cancelar', cancelable);
+      // Elección tras la cancelación del estudio.
+      const pendiente = this.eleccionPendiente(r);
+      this.alternar('devolucion', pendiente);
+      if (pendiente) {
+        const dueno = this.rol === 'cliente';
+        this.querySelector('[data-sin-costo]').href = `/app/reservas/reprogramar?id=${encodeURIComponent(r.id)}`;
+        this.querySelector('[data-texto-sin-costo]').textContent = `Eliges otro horario libre de la misma sala. ${dueno ? 'Mantienes el precio y lo que pagaste.' : 'El cliente mantiene el precio y lo que pagó.'}`;
+        this.querySelector('[data-texto-devolucion]').textContent = `${dueno ? 'Te devolvemos' : 'Se devuelven al cliente'} ${soles(r.pagado ?? '0.00')} por el mismo medio, en un máximo de 7 días hábiles.`;
+      }
+      this.pintarReprogramar(r, ahora, inicio, vivo);
+    }
+
+    // "Reprogramar" del dueño de una confirmada con inicio futuro: botón con su ayuda, o por qué no.
+    pintarReprogramar(r, ahora, inicio, vivo) {
+      const bloque = this.querySelector('[data-reprogramar]');
+      const nota = this.querySelector('[data-no-reprogramar]');
+      bloque.hidden = true;
+      oculto(nota, null);
+      if (this.rol !== 'cliente' || !vivo || inicio <= ahora) return;
+      if (r.estado === 'pre_reservada') return oculto(nota, 'Podrás reprogramarla cuando esté confirmada.');
+      if (r.estado !== 'confirmada' || this.vistaCancel === undefined) return;
+      const { puede, ayuda } = entradaReprogramar(this.vistaCancel, r.politica);
+      if (puede) {
+        bloque.hidden = false;
+        bloque.querySelector('a').href = `/app/reservas/reprogramar?id=${encodeURIComponent(r.id)}`;
+        const texto = this.querySelector('[data-ayuda-reprogramar]');
+        oculto(texto, ayuda);
+        const boton = bloque.querySelector('a');
+        if (ayuda) boton.setAttribute('aria-describedby', texto.id);
+        else boton.removeAttribute('aria-describedby');
+      } else oculto(nota, ayuda);
     }
 
     // Muestra el botón de la acción (si aplica y su panel no está abierto) o su panel (si está abierto); si la acción ya no aplica, cierra su panel.
@@ -703,6 +881,7 @@ const filtros = [
       titulo.tabIndex = -1;
       titulo.focus();
       if (nombre === 'cancelar') this.prepararCancelar();
+      else if (nombre === 'devolucion') this.prepararDevolucion();
       else if (nombre === 'inasistencia') this.prepararInasistencia();
       else this.prepararExcepcion();
     }
@@ -741,11 +920,16 @@ const filtros = [
 
     errorEnvio(error) {
       const accion = this.abierto;
+      if (this.vista === 'reprogramar') return this.errorReprogramar(error, true);
       if (error.estado === 404) {
         this.sustituir('no-encontrada');
         return true;
       }
       if (accion === 'cancelar') return this.errorCancelar(error);
+      if (accion === 'devolucion' && error.estado === 409) {
+        this.cambio('Ya se eligió qué hacer con esta reserva, quizá desde otra sesión.');
+        return true;
+      }
       if (accion === 'inasistencia' && error.estado === 409) {
         if (error.codigo === 'tolerancia_no_cumplida') {
           this.abierto = null;
@@ -842,6 +1026,9 @@ const filtros = [
         }),
       );
       oculto(this.querySelector('[data-validacion]'), avisoValidacion(v.nivel, v.en_validacion));
+      const enLugar = this.querySelector('[data-en-lugar]');
+      enLugar.hidden = this.admin || !v.puede_reprogramar || this.reserva.estado !== 'confirmada';
+      enLugar.querySelector('a').href = `/app/reservas/reprogramar?id=${encodeURIComponent(this.reserva.id)}`;
       if (!this.admin) this.querySelector('[data-panel="cancelar"] [data-consecuencia]').textContent = consecuenciaCancelar(v.nivel, p);
       this.querySelector('[data-anuncio]').textContent = v.nivel ? `Vista previa lista: nivel ${v.nivel}, se retienen ${soles(v.retenido)}.` : 'Vista previa lista: sin pagos, cancelas gratis.';
     }
@@ -962,6 +1149,258 @@ const filtros = [
         return true;
       }
       return false;
+    }
+
+    // --- Elegir la devolución íntegra tras una cancelación del estudio ---
+
+    prepararDevolucion() {
+      const dueno = this.rol === 'cliente';
+      this.querySelector('[data-panel="devolucion"] [data-consecuencia]').textContent = dueno
+        ? `Te devolvemos ${soles(this.reserva.pagado ?? '0.00')} por el mismo medio con que pagaste, en un máximo de 7 días hábiles. Después ya no podrás reprogramar esta reserva.`
+        : `Se devuelven ${soles(this.reserva.pagado ?? '0.00')} al cliente por el mismo medio con que pagó, en un máximo de 7 días hábiles. Después el cliente ya no podrá reprogramar esta reserva.`;
+    }
+
+    devolucion() {
+      this.enviar(this.querySelector('[data-panel="devolucion"] [type="submit"]'), 'Confirmando…', () => elegirDevolucionEstudio(this.reserva.id), (nueva) => this.despues(nueva, 'Elegiste la devolución íntegra', 'Avisamos al estudio.'));
+    }
+
+    // --- Reprogramar (y "reprogramar sin costo" tras una cancelación del estudio): /app/reservas/reprogramar?id= ---
+
+    urlDetalle() {
+      return `/app/reservas/detalle?id=${encodeURIComponent(this.reserva.id)}`;
+    }
+
+    // Ruta y título con el folio; el título del sin costo es otro.
+    rutaReprogramar(r) {
+      const enlace = document.querySelector('.encabezado-ruta li:nth-last-child(2) a');
+      if (enlace) Object.assign(enlace, { textContent: r.folio, href: this.urlDetalle() });
+      document.querySelector('.encabezado-titulo')?.replaceChildren(...(this.sinCosto ? ['Elige tu nuevo horario'] : ['Reprogramar reserva ', folioTitulo(r.folio)]));
+    }
+
+    async reprogramar() {
+      const id = new URLSearchParams(location.search).get('id') ?? '';
+      if (!UUID.test(id)) return this.mostrar('no-encontrada');
+      let r, yo;
+      try {
+        [r, yo] = await Promise.all([obtenerReserva(id), obtenerPerfil().catch(() => null)]);
+      } catch (error) {
+        if (error.estado !== 404) throw error;
+        return this.mostrar('no-encontrada');
+      }
+      this.rol = yo?.rol ?? null;
+      this.reserva = validar(r);
+      this.sinCosto = r.estado === 'cancelada' && r.eleccion_estudio === 'pendiente';
+      this.inicioR = null;
+      this.vistaR = null;
+      this.rutaReprogramar(r);
+      if (r.estado !== 'confirmada' && !this.sinCosto) {
+        this.noPermitida('Esta reserva ya no se puede reprogramar.');
+        return null;
+      }
+      this.mostrar('datos');
+      this.minutos = Math.round((Date.parse(r.fin) - Date.parse(r.inicio)) / MINUTO);
+      const actual = (clave, texto) => (texto ? (this.querySelector(`[data-actual="${clave}"]`).textContent = texto) : this.querySelector(`[data-actual="${clave}"]`).closest('div').remove());
+      actual('folio', r.folio);
+      actual('horario', `${fecha(r)}, ${horario(r)}`);
+      actual('servicio', nombre(r.servicio));
+      actual('especialistas', (r.especialistas ?? []).map(nombre).join(', '));
+      actual('total', soles(r.precio.total));
+      actual('pagado', soles(r.pagado ?? '0.00'));
+      this.querySelector('[data-sin-costo]').hidden = !this.sinCosto;
+      this.querySelector('[data-recalculo]').hidden = this.sinCosto;
+      this.querySelector('[data-ayuda-duracion]').textContent = `Tu sesión dura ${duracionReserva(this.minutos)}: elige dónde empieza.`;
+      this.querySelector('[data-volver-reprog]').href = this.urlDetalle();
+      // La semana de la reserva, salvo que la URL traiga otra; la sala va fija y la navegación del calendario conserva el id.
+      const url = new URL(location.href);
+      if (!url.searchParams.has('fecha')) {
+        url.searchParams.set('fecha', fechaDe(r.inicio));
+        history.replaceState(null, '', url);
+      }
+      const nodo = this.querySelector('template[data-plantilla="calendario"]').content.cloneNode(true);
+      const calendario = nodo.querySelector('bugalu-calendario');
+      if (r.sala?.id) calendario.setAttribute('sala', r.sala.id);
+      calendario.setAttribute('sala-fija', '');
+      calendario.setAttribute('conservar', 'id');
+      calendario.setAttribute('excluir-reserva', r.id);
+      if (this.minutos) calendario.setAttribute('duracion', String(this.minutos));
+      this.querySelector('[data-calendario]').replaceChildren(nodo);
+      this.actualizarConfirmar();
+      return `Reprogramar reserva ${r.folio}: elige el nuevo horario.`;
+    }
+
+    // Sin calendario: la reserva ya no admite reprogramarse (la API lo dijo, o su estado no lo permite).
+    noPermitida(texto) {
+      this.mostrar('no-permitida');
+      const aviso = this.querySelector('[data-salida] .aviso');
+      llenarAviso(aviso, texto);
+      aviso.querySelector('.aviso-accion').href = this.urlDetalle();
+      this.anunciar();
+      this.enfocar();
+    }
+
+    bloquear(si) {
+      super.bloquear(si);
+      if (this.vista !== 'reprogramar') return;
+      const calendario = this.querySelector('[data-calendario]');
+      if (calendario) calendario.inert = si;
+      const volver = this.querySelector('[data-volver-reprog]');
+      if (si) volver?.setAttribute('aria-disabled', 'true');
+      else volver?.removeAttribute('aria-disabled');
+    }
+
+    actualizarConfirmar() {
+      const boton = this.querySelector('[data-confirmar-reprog]');
+      const listo = this.vistaR !== null;
+      if (listo) boton.removeAttribute('aria-disabled');
+      else boton.setAttribute('aria-disabled', 'true');
+      this.querySelector('[data-ayuda-confirmar]').hidden = listo;
+    }
+
+    // Error bajo el calendario (R1): sin vista previa.
+    errorHorario(texto) {
+      const caja = this.querySelector('[data-error-horario]');
+      caja.hidden = !texto;
+      if (!texto) return;
+      const aviso = caja.querySelector('.aviso');
+      aviso.querySelector('.aviso-titulo').textContent = texto;
+      aviso.querySelector('.aviso-texto')?.remove();
+      aviso.removeAttribute('role');
+      this.querySelector('[data-anuncio]').textContent = texto;
+    }
+
+    r2(estado) {
+      this.querySelector('[data-r2]').hidden = estado === 'nada';
+      this.querySelector('[data-r2-carga]').hidden = estado !== 'carga';
+      this.querySelector('[data-r2-datos]').hidden = estado !== 'datos';
+      if (estado === 'carga') this.querySelector('[data-r2]').setAttribute('aria-busy', 'true');
+      else this.querySelector('[data-r2]').removeAttribute('aria-busy');
+      if (estado !== 'datos') this.querySelector('[data-r2-aviso]').replaceChildren();
+      if (estado === 'carga') this.querySelector('[data-anuncio]').textContent = 'Calculando cómo queda…';
+    }
+
+    // Eligió un inicio en el calendario: valida lo que se ve sin pedir nada y, si cabe, simula.
+    alInicio({ inicio, minutosMaximos }) {
+      if (this.vista !== 'reprogramar' || !this.reserva || this.ocupado) return;
+      this.inicioR = inicio;
+      this.vistaR = null;
+      this.secuencia++;
+      limpiarAvisos(this);
+      this.errorHorario(null);
+      this.r2('nada');
+      this.actualizarConfirmar();
+      const url = new URL(location.href);
+      url.searchParams.set('inicio', inicio);
+      history.replaceState(null, '', url);
+      if (minutosMaximos < this.minutos) return this.errorHorario(`Tu sesión dura ${duracionReserva(this.minutos)} y desde las ${horaDe(inicio)} solo caben ${duracionReserva(minutosMaximos)}. Elige otro inicio.`);
+      if (Date.parse(inicio) === Date.parse(this.reserva.inicio)) return this.errorHorario('Ese es tu horario actual. Elige otro.');
+      this.simularR(inicio);
+    }
+
+    async simularR(inicio) {
+      const n = ++this.secuencia;
+      this.r2('carga');
+      let v;
+      try {
+        v = await simularReprogramacion(this.reserva.id, inicio);
+      } catch (error) {
+        if (n === this.secuencia) this.errorReprogramar(error, false);
+        return;
+      }
+      if (n !== this.secuencia) return;
+      this.vistaR = v;
+      this.pintarR2(v);
+    }
+
+    pintarR2(v) {
+      const r = this.reserva;
+      const sin = v.nivel === null || v.nivel === undefined;
+      const dia = (iso) => `${nombreDia(fechaDe(iso)).slice(0, 3).toLowerCase()} ${diaMes(fechaDe(iso))}`;
+      const fin = new Date(Date.parse(this.inicioR) + this.minutos * MINUTO).toISOString();
+      this.r2('datos');
+      this.querySelector('[data-nuevo-horario]').textContent = `Nuevo horario: ${dia(this.inicioR)}, ${horaDe(this.inicioR)}–${horaDe(fin)}`;
+      this.querySelector('[data-nivel-texto]').textContent = nivelReprogramacion(sin ? null : v.nivel);
+      pintarPartidas(this.querySelector('[data-tabla="precio"] .tabla'), v.precio, v.precio.porcentaje_adelanto);
+      const fila = (etiqueta, valor) => {
+        const tr = document.createElement('tr');
+        const td = Object.assign(document.createElement('td'), { className: 'tabla-num', textContent: valor });
+        td.dataset.etiqueta = 'Importe';
+        tr.append(Object.assign(document.createElement('th'), { scope: 'row', textContent: etiqueta }), td);
+        return tr;
+      };
+      const pct = r.politica?.porcentaje_penalizacion_nivel_2;
+      const tabla = this.querySelector('[data-tabla="saldo"] .tabla');
+      tabla.querySelector('tbody').replaceChildren(
+        fila('Nuevo total', soles(v.precio.total)),
+        ...(positivo(v.penalizacion) ? [fila(`Penalización (nivel 2${pct ? `, ${porcentaje(pct)}` : ''})`, soles(v.penalizacion))] : []),
+        fila('Ya pagaste', `− ${soles(r.pagado ?? '0.00')}`),
+      );
+      tabla.querySelector('tfoot').replaceChildren(
+        fila(positivo(v.saldo) ? 'Saldo por pagar' : 'Nada por pagar', soles(v.saldo)),
+        ...(positivo(v.credito) ? [fila('Pasa a crédito', soles(v.credito))] : []),
+      );
+      const n = Number(v.reprogramaciones_restantes);
+      oculto(this.querySelector('[data-restantes]'), sin || !Number.isFinite(n) ? null : n === 0 ? 'Después de este cambio no te quedarán más cambios de horario.' : `Después de este cambio te ${n === 1 ? 'quedará 1 cambio' : `quedarán ${n} cambios`} de horario.`);
+      this.actualizarConfirmar();
+      this.querySelector('[data-anuncio]').textContent = `Nuevo horario ${dia(this.inicioR)}, ${horaDe(this.inicioR)} a ${horaDe(fin)}: ${sin ? 'sin costo' : `nivel ${v.nivel}`}, saldo ${soles(v.saldo)}${positivo(v.credito) ? `, pasan ${soles(v.credito)} a crédito` : ''}.`;
+    }
+
+    confirmarReprogramacion() {
+      const v = this.vistaR;
+      if (!v) {
+        this.querySelector('[data-anuncio]').textContent = this.querySelector('[data-ayuda-confirmar]').textContent;
+        return;
+      }
+      const cuerpo = { inicio: this.inicioR, nivel_esperado: v.nivel ?? null, total_esperado: v.precio.total };
+      const credito = positivo(v.credito) ? v.credito : null;
+      this.enviar(this.querySelector('[data-confirmar-reprog]'), 'Reprogramando…', () => reprogramarReserva(this.reserva.id, cuerpo), () => {
+        location.href = `/app/reservas/detalle?${new URLSearchParams({ id: this.reserva.id, aviso: 'reserva-reprogramada', ...(credito && { credito }) })}`;
+      }, true);
+    }
+
+    // Errores de simular (`confirmando` false) y de confirmar; devuelve true: siempre queda tratado.
+    errorReprogramar(error, confirmando) {
+      const { estado, codigo } = error;
+      if (estado === 401 || estado === 403) this.sustituir(estado === 401 ? 'no-autenticado' : 'sin-permiso');
+      else if (estado === 404) this.sustituir('no-encontrada');
+      else if (estado === 409 && (codigo === 'reprogramacion_no_permitida' || codigo === 'limite_reprogramaciones')) this.noPermitida(sinReprogramar(codigo, this.reserva.politica));
+      else if (estado === 409 && codigo === 'tramo_no_disponible') {
+        this.inicioR = null;
+        this.vistaR = null;
+        this.secuencia++;
+        this.r2('nada');
+        this.actualizarConfirmar();
+        const url = new URL(location.href);
+        url.searchParams.delete('inicio');
+        history.replaceState(null, '', url);
+        this.querySelector('bugalu-calendario')?.reiniciar();
+        mostrarAviso(this, 'error', 'Alguien reservó ese horario hace un momento. Elige otro.');
+        this.enfocar();
+      } else if (estado === 409 && (codigo === 'nivel_cambiado' || codigo === 'precio_cambiado') && error.detalles?.precio) {
+        // Se cruzó un plazo o cambió una tarifa mientras leía: se repinta con la vista nueva y se pide confirmar otra vez.
+        this.vistaR = error.detalles;
+        this.pintarR2(error.detalles);
+        const n = error.detalles.nivel;
+        const aviso = mostrarAviso(this, 'aviso', codigo === 'nivel_cambiado' ? `Mientras revisabas pasó un plazo: ahora es ${n === 1 ? 'nivel 1, sin cargo' : n === 2 ? 'nivel 2, con penalización' : 'sin costo'}` : 'El precio de ese horario cambió mientras revisabas', codigo === 'nivel_cambiado' ? 'Revisa cómo queda y confirma de nuevo.' : 'Revisa el nuevo total y confirma de nuevo.');
+        this.querySelector('[data-r2-aviso]').replaceChildren(aviso);
+        enfocarAviso(aviso);
+      } else if (estado === 422 && FRANJA[codigo]) {
+        this.vistaR = null;
+        this.r2('nada');
+        this.actualizarConfirmar();
+        this.errorHorario(FRANJA[codigo]);
+      } else {
+        const que = confirmando ? 'reprogramar' : 'calcular cómo queda';
+        const texto = estado === 503 ? [`No pudimos ${que}: el servicio no responde`, 'Tu elección sigue aquí; inténtalo en unos minutos.']
+          : estado === 0 ? ['Sin conexión', 'Tu elección sigue aquí; revisa tu red y vuelve a intentarlo.']
+          : [`No pudimos ${que}: algo salió mal`, confirmando ? 'Tu elección sigue aquí; revisa en la reserva si el cambio se hizo antes de repetir.' : 'Elige el horario otra vez.'];
+        if (!confirmando) {
+          this.vistaR = null;
+          this.r2('nada');
+          this.actualizarConfirmar();
+        }
+        enfocarAviso(mostrarAviso(this, 'error', ...texto));
+      }
+      return true;
     }
 
     // --- No asistió ---
@@ -1100,6 +1539,21 @@ const filtros = [
   }
   .reservas-nota-precio {
     margin-block-start: var(--espacio-3);
+  }
+  .reservas-opcion,
+  .reservas-r2 {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+  }
+  .reservas-r2[hidden] {
+    display: none;
+  }
+  .reservas-pie {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    margin-block-start: var(--espacio-5);
   }
   .reservas-estados {
     display: flex;

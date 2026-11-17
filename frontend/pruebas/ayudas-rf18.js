@@ -58,3 +58,29 @@ export const devolucion = (extra = {}) => ({
   id: DV1, id_credito: CR1, id_reserva: ID, folio: 'R-2026-00001', cliente: { id: 'u3', nombre: 'Eva Soto' }, tipo: 'nivel_1', motivo: 'Prefiero el dinero porque no voy a reservar de nuevo.',
   solicitada_en: '2026-11-14T15:00:00Z', estado: 'pendiente', monto_solicitado: '100.00', ...extra,
 });
+
+// --- Reprogramar (CA-08, CA-09, CA-10, CA-13) ---
+export const SALA = { id: 'sala-1', nombre: 'Sala principal' };
+const t = (dia, hora) => `2026-12-${dia}T${hora}:00-05:00`;
+// Reserva de 2 h el vie 18 dic 15:00; la sala se ve en el calendario con ella excluida (precision 6).
+export const reservaR = (extra = {}) => reserva({ sala: SALA, ...extra });
+// Disponibilidad de la semana del 14 al 20 dic: vie 18 y sab 19 de 10:00 a 20:00, sin reservas.
+export const disponibilidad = () => ({
+  limites: { desde: '2026-11-15T10:00:00-05:00', hasta: '2027-01-15T10:00:00-05:00' },
+  franjas: [{ id: 'f1', inicio: t('18', '10:00'), fin: t('18', '20:00') }, { id: 'f2', inicio: t('19', '10:00'), fin: t('19', '20:00') }],
+  ocupados: [], cierres: [],
+  dias: ['14', '15', '16', '17', '18', '19', '20'].map((d) => ({ fecha: `2026-12-${d}`, minutos_libres: { 18: 600, 19: 600 }[d] ?? 0 })),
+});
+export const NUEVO = t('19', '10:00'); // sab 19 dic, 10:00
+export const NUEVO_UTC = '2026-12-19T15:00:00.000Z';
+const PRECIO_R = (total) => ({ lineas: [{ concepto: 'Sala de grabación', cantidad: '2.00', unidad: 'hora', monto: total }], recargos: [], total, anticipo: String(Number(total) / 2), porcentaje_adelanto: 50 });
+// VistaReprogramacion de CA-09: nivel 2 (nuevo total 240.00, penalizacion 50.00, saldo 190.00), nivel 1 (nuevo total 80.00, credito 20.00) o sin costo (null).
+export const vistaR = (nivel, extra = {}) => ({
+  nivel, penalizacion: nivel === 2 ? '50.00' : '0.00', precio: PRECIO_R(nivel === 2 ? '240.00' : nivel === 1 ? '80.00' : '200.00'),
+  saldo: nivel === 2 ? '190.00' : nivel === 1 ? '0.00' : '100.00', credito: nivel === 1 ? '20.00' : '0.00', reprogramaciones_restantes: nivel === 2 ? 0 : nivel === 1 ? 1 : 2, ...extra,
+});
+// Reserva cancelada por el estudio con la elección pendiente (pagado 100.00).
+export const delEstudio = (extra = {}) => reservaR({
+  estado: 'cancelada', motivo_cancelacion: 'administrador', eleccion_estudio: 'pendiente', cuotas: cuotasPagadas({}, { estado: 'anulada' }),
+  cancelacion: { nivel: null, aviso_en: '2026-11-15T09:00:00-05:00', por: 'estudio', pagado: '100.00', retenido: '0.00', credito: '0.00', nota: 'Falla en la consola principal.' }, ...extra,
+});

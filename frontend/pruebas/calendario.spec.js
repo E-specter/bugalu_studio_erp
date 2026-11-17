@@ -63,6 +63,7 @@ for (const tm of tamanos) {
     await page.goto(SEMANA);
     await expect(titulo(page)).toHaveText(/semana del 16 al 22 nov 2026/i);
     await expect(ver(page, 'Horario de Lima')).toBeVisible();
+    expect(vistas[0].has('excluir_reserva')).toBe(false); // solo reprogramar lo envía
     await expect(ver(page, 'SALA · LA MOLINA', { exact: false }).first()).toBeVisible();
     expect(vistas[0].get('sala')).toBe('sala-1');
     expect(vistas[0].get('desde')).toBe('2026-11-16T00:00:00-05:00');

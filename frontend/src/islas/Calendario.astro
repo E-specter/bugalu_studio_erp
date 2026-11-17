@@ -195,7 +195,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       this.estado = {
         vista,
         fecha: this.avisoFecha || !fecha ? hoy : fecha,
-        sala: p.get('sala') ?? '',
+        sala: this.getAttribute('sala') ?? p.get('sala') ?? '',
         inicio: inicioValido(this.getAttribute('inicio') ?? p.get('inicio')),
         duracion: duracionValida(this.getAttribute('duracion') ?? p.get('duracion')),
       };
@@ -204,6 +204,9 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
 
     url(e = this.estado) {
       const p = new URLSearchParams({ vista: e.vista, fecha: e.fecha });
+      // `conservar="id"`: parametros de la pantalla anfitriona que la navegacion del calendario no debe perder.
+      const actual = new URLSearchParams(location.search);
+      for (const k of (this.getAttribute('conservar') ?? '').split(',').filter(Boolean)) if (actual.has(k)) p.set(k, actual.get(k)!);
       if (e.sala && (this.salas?.length ?? 0) > 1) p.set('sala', e.sala);
       if (e.inicio) p.set('inicio', e.inicio);
       if (e.duracion) p.set('duracion', e.duracion);
@@ -350,7 +353,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
         this.pintarLista();
         return `${plural(this.reservas.length, 'reserva', 'reservas')} en este periodo.`;
       }
-      const datos = await obtenerDisponibilidad({ sala: sala.id, ...rango });
+      const datos = await obtenerDisponibilidad({ sala: sala.id, ...rango, excluirReserva: this.getAttribute('excluir-reserva') });
       this.datos = datos;
       this.propias = {};
       if (this.modo === 'reserva' && datos.ocupados.some((o: any) => o.propia) && (await obtenerToken())) {
@@ -423,7 +426,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       }));
       const salas = this.salas!;
       let sala: HTMLElement;
-      if (salas.length > 1) {
+      if (salas.length > 1 && !this.hasAttribute('sala-fija')) {
         const campo = this.pieza('selector');
         campo.querySelector('select')!.append(...salas.map((s) => h('option', { value: s.id, selected: s.id === this.sala.id }, s.nombre)));
         sala = campo;
@@ -835,6 +838,12 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       const destino = new URL(enlace.href);
       const p = destino.searchParams;
       this.ir({ vista: p.get('vista')!, fecha: p.get('fecha')! }, enlace.dataset.enlace ?? '');
+    }
+
+    // La pantalla anfitriona quita la eleccion (p. ej. el tramo ya no esta libre) y se recarga la semana.
+    reiniciar() {
+      this.estado.inicio = null;
+      this.cargar();
     }
 
     elegir(boton: HTMLElement) {

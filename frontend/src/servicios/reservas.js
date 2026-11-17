@@ -7,7 +7,8 @@ const q = (parametros) => new URLSearchParams(parametros).toString();
 export const listarSalas = () => pedir('/api/v1/salas', { sinToken: true });
 
 // `desde` y `hasta`: ISO con zona. Con token de personal o administrador, `ocupados[].detalle` trae cliente, servicio y estado.
-export const obtenerDisponibilidad = ({ sala, desde, hasta }) => pedir(`/api/v1/disponibilidad?${q({ sala, desde, hasta })}`, { sinToken: true });
+// `excluirReserva` (RF-18, reprogramar): la disponibilidad no cuenta esa reserva si es del cliente; el backend la ignora si no.
+export const obtenerDisponibilidad = ({ sala, desde, hasta, excluirReserva }) => pedir(`/api/v1/disponibilidad?${q({ sala, desde, hasta, ...(excluirReserva && { excluir_reserva: excluirReserva }) })}`, { sinToken: true });
 
 // `reserva`: {id_sala, id_servicio, inicio, fin, especialistas: [id], detalle?}
 export const crearReserva = (reserva) => pedir('/api/v1/reservas', { method: 'POST', cuerpo: reserva });
@@ -20,6 +21,10 @@ export const obtenerReserva = (id) => pedir(`/api/v1/reservas/${encodeURICompone
 export const cancelarReserva = (id, cuerpo = {}) => pedir(`/api/v1/reservas/${encodeURIComponent(id)}/cancelar`, { method: 'POST', ...(Object.keys(cuerpo).length && { cuerpo }) });
 // Vista previa de la cancelacion; solo el Administrador pasa `avisoEn` (ISO con zona).
 export const verCancelacion = (id, avisoEn) => pedir(`/api/v1/reservas/${encodeURIComponent(id)}/cancelacion${avisoEn ? `?${q({ aviso_en: avisoEn })}` : ''}`);
+// RF-18: vista previa y reprogramacion (`inicio` ISO con zona; `nivel_esperado` null tras una cancelacion del estudio) y eleccion del cliente tras ella.
+export const simularReprogramacion = (id, inicio) => pedir(`/api/v1/reservas/${encodeURIComponent(id)}/reprogramar/simular`, { method: 'POST', cuerpo: { inicio } });
+export const reprogramarReserva = (id, cuerpo) => pedir(`/api/v1/reservas/${encodeURIComponent(id)}/reprogramar`, { method: 'POST', cuerpo });
+export const elegirDevolucionEstudio = (id) => pedir(`/api/v1/reservas/${encodeURIComponent(id)}/eleccion-estudio`, { method: 'POST', cuerpo: { opcion: 'devolucion' } });
 // Personal y Administrador.
 export const marcarInasistencia = (id) => pedir(`/api/v1/reservas/${encodeURIComponent(id)}/inasistencia`, { method: 'POST' });
 // Administrador: tratar como nivel 1.

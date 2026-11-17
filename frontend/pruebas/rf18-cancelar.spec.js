@@ -38,7 +38,7 @@ for (const [nivel, textos] of EJEMPLOS) {
       await abrir(page).click();
       await expect(panel(page)).toBeVisible();
       await expect(page.getByRole('heading', { name: /Cancelar reserva R-2026-00001/ })).toBeFocused();
-      expect(vistas).toHaveLength(1);
+      expect(vistas).toHaveLength(2); // al cargar (para "Reprogramar") y al abrir
       for (const texto of textos) await expect(panel(page)).toContainText(texto);
       const dl = panel(page).locator('dl');
       await expect(dl).toContainText('Pagado');
@@ -52,7 +52,7 @@ for (const [nivel, textos] of EJEMPLOS) {
       if (nivel === 3) await expect(dl).not.toContainText('El crédito vence');
       else await expect(dl).toContainText('El crédito vence');
       if (nivel !== 3) await expect(dl).toContainText('15 dic 2026');
-      await expect(page.getByRole('link', { name: /Reprogramar/ })).toHaveCount(0);
+      await expect(panel(page).getByRole('link', { name: 'Reprogramar en lugar de cancelar' })).toHaveCount(nivel === 3 ? 0 : 1);
       await sinViolaciones(page);
       expect(consola).toEqual([]);
       if (nivel === 2) await page.screenshot({ path: `pruebas/capturas/rf18-cancelar-nivel2-${t.nombre}.png`, fullPage: true });
@@ -200,9 +200,11 @@ test('cancelar: teclado, Escape y Volver devuelven el foco al botón', async ({ 
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: /Cancelar reserva R-2026-00001/ })).toBeFocused();
   await expect(confirmar(page)).toBeVisible();
-  // Orden de foco: condiciones, Volver, Confirmar.
+  // Orden de foco: condiciones, Reprogramar en lugar de cancelar, Volver, Confirmar.
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Leer las condiciones de cancelación' })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: 'Reprogramar en lugar de cancelar' })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('button', { name: 'Volver a la reserva' })).toBeFocused();
   await page.keyboard.press('Tab');
@@ -378,13 +380,6 @@ test('detalle: el cliente no ve las acciones del Administrador', async ({ page }
   await con(page, reserva({ estado: 'no_asistio', cuotas: cuotasPagadas({}, { estado: 'anulada' }), inicio: '2026-11-14T10:00:00-05:00', fin: '2026-11-14T12:00:00-05:00' }));
   await ver(page);
   await expect(page.getByRole('button', { name: /Marcar no asistió|Tratar como nivel 1|Cancelar reserva/ })).toHaveCount(0);
-});
-
-test('detalle: no ofrece reprogramar (es de otra tarea)', async ({ page }) => {
-  await con(page, reserva());
-  await ver(page);
-  await expect(page.getByRole('link', { name: /Reprogramar/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /Reprogramar/ })).toHaveCount(0);
 });
 
 test('detalle: pre-reservada con pagos en validación se cancela con vista previa (ya no "pídelo al estudio")', async ({ page }) => {

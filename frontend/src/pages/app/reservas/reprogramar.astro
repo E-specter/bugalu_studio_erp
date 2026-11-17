@@ -1,0 +1,16 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Reservas from '../../../islas/Reservas.astro';
+---
+
+<!-- La ruta recibe el folio (y su enlace al detalle) cuando la isla carga la reserva. -->
+<LayoutApp titulo="Reprogramar reserva">
+  <EncabezadoPantalla
+    titulo="Reprogramar reserva"
+    indice="[P2] SALA / RESERVAS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Reservas', href: '/app/reservas/' }, { etiqueta: 'Reserva', href: '/app/reservas/' }, { etiqueta: 'Reprogramar' }]}
+    descripcion="Misma sala, servicio, duración y especialistas. Antes de confirmar verás cómo cambian el precio y tu saldo."
+  />
+  <Reservas vista="reprogramar" />
+</LayoutApp>
