@@ -11,15 +11,19 @@ from psycopg.types.json import Jsonb
 from bugalu.compartido.errores import (
     AvisoInvalido,
     DatosInvalidos,
+    EleccionNoDisponible,
     ErrorDeNegocio,
     ExcepcionNoAplicable,
     ExcepcionYaAplicada,
     FranjaSolapada,
+    LimiteReprogramaciones,
     NivelCambiado,
     NoAplicable,
     NoCancelable,
     NoEncontrado,
     NotaRequerida,
+    PrecioCambiado,
+    ReprogramacionNoPermitida,
     SinPermiso,
     TextoDesactualizado,
     ToleranciaNoCumplida,
@@ -31,7 +35,9 @@ from bugalu.modulos.reservas.dominio.modelos import (
     PARAMETROS,
     CancelacionReserva,
     Cierre,
+    ContextoReprogramacion,
     CuotaReserva,
+    EspecialistaAplicado,
     Excepcion,
     Franja,
     NuevaReserva,
@@ -45,6 +51,7 @@ from bugalu.modulos.reservas.dominio.modelos import (
     Sala,
     ServicioReservado,
     VistaCancelacion,
+    VistaReprogramacion,
 )
 from bugalu.modulos.reservas.dominio.reserva import cuota_pagable, estado_de_cuota
 from bugalu.modulos.reservas.infraestructura.salida.devoluciones_sql import (
@@ -115,6 +122,51 @@ def _traducir(error: Error) -> ErrorDeNegocio:
     return clase(mensaje)
 
 
+_REPROGRAMACION = {
+    "reprogramacion_no_permitida": (
+        ReprogramacionNoPermitida,
+        "La reserva no se puede reprogramar ahora.",
+    ),
+    "limite_reprogramaciones": (
+        LimiteReprogramaciones,
+        "Ya hiciste las reprogramaciones posibles.",
+    ),
+    "eleccion_no_disponible": (
+        EleccionNoDisponible,
+        "No hay una eleccion pendiente en esa reserva.",
+    ),
+}
+
+
+def _traducir_reprogramacion(error: Error) -> ErrorDeNegocio:
+    """Errores de las funciones de reprogramar y de la eleccion tras el estudio."""
+    if isinstance(error, errors.NoDataFound):
+        return NoEncontrado("No existe la reserva.")
+    if isinstance(error, errors.InsufficientPrivilege):
+        return SinPermiso("No tienes permiso para esa accion.")
+    if isinstance(error, errors.InvalidParameterValue):
+        return DatosInvalidos("Datos invalidos: inicio.", {"campo": "inicio"})
+    if isinstance(error, errors.ExclusionViolation):  # RN-01: la base decide el solape
+        return TramoNoDisponible("Ese horario ya no está disponible.")
+    codigo = error.diag.message_primary or ""
+    if codigo in ("nivel_cambiado", "precio_cambiado"):
+        d = json.loads(error.diag.message_detail or "{}")  # sin el desglose: lo suma el caso de uso
+        centimos = Decimal("0.01")
+        detalles = {
+            "nivel": d["nivel"],
+            **{
+                k: str(Decimal(d[k]).quantize(centimos))
+                for k in ("penalizacion", "saldo", "credito")
+            },
+            "reprogramaciones_restantes": d["reprogramaciones_restantes"],
+        }
+        if codigo == "nivel_cambiado":
+            return NivelCambiado("El nivel cambio: revisa la vista previa.", detalles)
+        return PrecioCambiado("El precio cambio: revisa la vista previa.", detalles)
+    clase, mensaje = _REPROGRAMACION.get(codigo, (ReprogramacionNoPermitida, "No se puede ahora."))
+    return clase(mensaje)
+
+
 def _detalle_vista(texto: str) -> list[Any]:
     d = json.loads(texto)
     return [
@@ -148,8 +200,10 @@ def _cancelacion(
     f: tuple[Any, ...], nombres: Mapping[UUID, str | None]
 ) -> CancelacionReserva | None:
     """Solo si la reserva se cancelo o se marco no asistio por la politica de RF-18."""
-    if f[20] is None:
-        return None
+    if f[20] is None or f[2] not in ("cancelada", "no_asistio"):
+        return (
+            None  # al reprogramar tras el estudio vuelve a estar viva; el registro queda en la base
+        )
 
     def quien(id_: UUID | None) -> Referencia | None:
         return Referencia(id_, nombres[id_]) if id_ is not None and id_ in nombres else None
@@ -572,3 +626,105 @@ class RepositorioReservasPostgres:
             errors.InvalidParameterValue,
         ) as e:
             raise _traducir(e) from None
+
+    async def ocupacion_excluyendo(
+        self, id_sala: UUID, desde: datetime, hasta: datetime, excluir: UUID
+    ) -> list[Tramo]:
+        filas = await self._filas(
+            "select inicio, fin_buffer from public.ocupacion_sala_excluyendo(%s, %s, %s, %s)",
+            (id_sala, desde, hasta, excluir),
+        )
+        return [Tramo(*f) for f in filas]
+
+    async def contexto_reprogramacion(self, id_reserva: UUID) -> ContextoReprogramacion:
+        try:
+            filas = await self._filas(
+                "select id_sala, id_servicio, inicio, fin, estudio, precio, total, "
+                "id_especialistas, parametros_aplicados "
+                "from public.contexto_reprogramacion(%s)",
+                (id_reserva,),
+            )
+        except (errors.NoDataFound, errors.InsufficientPrivilege, errors.RaiseException) as e:
+            raise _traducir_reprogramacion(e) from None
+        f = filas[0]
+        return ContextoReprogramacion(
+            f[0], f[1], f[2], f[3], f[4], _con_impuesto(f[5], f[8]), f[6], tuple(f[7])
+        )
+
+    async def vista_reprogramacion(
+        self, id_reserva: UUID, inicio: datetime, total: Decimal, precio: dict[str, Any]
+    ) -> VistaReprogramacion:
+        try:
+            filas = await self._filas(
+                "select nivel, penalizacion, saldo, credito, reprogramaciones_restantes "
+                "from public.vista_reprogramacion(%s, %s, %s)",
+                (id_reserva, inicio, total),
+            )
+        except (
+            errors.NoDataFound,
+            errors.InsufficientPrivilege,
+            errors.RaiseException,
+            errors.InvalidParameterValue,
+        ) as e:
+            raise _traducir_reprogramacion(e) from None
+        nivel, penalizacion, saldo, credito, restantes = filas[0]
+        centimos = Decimal("0.01")  # la base devuelve `0` sin escala en los ceros
+        return VistaReprogramacion(
+            nivel,
+            penalizacion.quantize(centimos),
+            precio,
+            saldo.quantize(centimos),
+            credito.quantize(centimos),
+            restantes,
+        )
+
+    async def reprogramar_reserva(  # noqa: PLR0913
+        self,
+        id_reserva: UUID,
+        inicio: datetime,
+        nivel_esperado: int | None,
+        total_esperado: Decimal | None,
+        id_franja: UUID,
+        precio: dict[str, Any],
+        total: Decimal,
+        especialistas: Sequence[EspecialistaAplicado],
+    ) -> None:
+        aplicados = [
+            {
+                "id": str(e.id),
+                "monto_fijo": str(e.monto_fijo),
+                "monto_variable": str(e.monto_variable),
+                "unidad": e.unidad,
+            }
+            for e in especialistas
+        ]
+        try:
+            await self._conexion.execute(
+                "select public.reprogramar_reserva(%s, %s, %s, %s, %s, %s, %s, %s)",
+                (
+                    id_reserva,
+                    inicio,
+                    nivel_esperado,
+                    total_esperado,
+                    id_franja,
+                    Jsonb(precio),
+                    total,
+                    Jsonb(aplicados),
+                ),
+            )
+        except (
+            errors.NoDataFound,
+            errors.InsufficientPrivilege,
+            errors.RaiseException,
+            errors.InvalidParameterValue,
+            errors.ExclusionViolation,
+        ) as e:
+            raise _traducir_reprogramacion(e) from None
+
+    async def elegir_estudio_devolucion(self, id_reserva: UUID) -> None:
+        try:
+            await self._conexion.execute(
+                "select public.elegir_estudio_devolucion(%s)", (id_reserva,)
+            )
+        except (errors.NoDataFound, errors.InsufficientPrivilege, errors.RaiseException) as e:
+            raise _traducir_reprogramacion(e) from None

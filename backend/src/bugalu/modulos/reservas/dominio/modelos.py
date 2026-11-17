@@ -185,6 +185,33 @@ class VistaCancelacion:
 
 
 @dataclass(frozen=True)
+class ContextoReprogramacion:
+    """Lo que se conserva al reprogramar (misma sala, servicio, duracion y especialistas).
+
+    `estudio`: la reserva espera la eleccion tras una cancelacion del estudio (sin nivel ni
+    recalculo de precio)."""
+
+    id_sala: UUID
+    id_servicio: UUID
+    inicio: datetime
+    fin: datetime
+    estudio: bool
+    precio: dict[str, Any]
+    total: Decimal
+    id_especialistas: tuple[UUID, ...]
+
+
+@dataclass(frozen=True)
+class VistaReprogramacion:
+    nivel: int | None
+    penalizacion: Decimal
+    precio: dict[str, Any]
+    saldo: Decimal
+    credito: Decimal
+    reprogramaciones_restantes: int
+
+
+@dataclass(frozen=True)
 class Reserva:
     """Reserva con sus datos de lectura; `precio` es la simulacion guardada al reservarla."""
 

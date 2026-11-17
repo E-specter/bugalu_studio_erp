@@ -19,6 +19,9 @@ from bugalu.modulos.reservas.aplicacion.cancelar_reserva.caso_de_uso import Canc
 from bugalu.modulos.reservas.aplicacion.consultar_disponibilidad.caso_de_uso import (
     ConsultarDisponibilidad,
 )
+from bugalu.modulos.reservas.aplicacion.elegir_estudio.caso_de_uso import (
+    ElegirDevolucionDelEstudio,
+)
 from bugalu.modulos.reservas.aplicacion.listar_mis_reservas.caso_de_uso import ListarMisReservas
 from bugalu.modulos.reservas.aplicacion.listar_reservas.caso_de_uso import ListarReservas
 from bugalu.modulos.reservas.aplicacion.listar_salas.caso_de_uso import ListarSalas
@@ -29,6 +32,10 @@ from bugalu.modulos.reservas.aplicacion.publicar_franjas.caso_de_uso import Publ
 from bugalu.modulos.reservas.aplicacion.quitar_cierre.caso_de_uso import QuitarCierre
 from bugalu.modulos.reservas.aplicacion.registrar_cierre.caso_de_uso import RegistrarCierre
 from bugalu.modulos.reservas.aplicacion.registrar_reserva.caso_de_uso import RegistrarReserva
+from bugalu.modulos.reservas.aplicacion.reprogramar_reserva.caso_de_uso import (
+    ReprogramarReserva,
+    SimularReprogramacion,
+)
 from bugalu.modulos.reservas.aplicacion.retirar_franja.caso_de_uso import RetirarFranja
 from bugalu.modulos.reservas.aplicacion.sugerir_franjas.caso_de_uso import SugerirFranjas
 from bugalu.modulos.reservas.aplicacion.vista_cancelacion.caso_de_uso import (
@@ -39,16 +46,20 @@ from bugalu.modulos.reservas.infraestructura.entrada.http.esquemas import (
     Cancelacion,
     Cierre,
     Disponibilidad,
+    EleccionEstudio,
     Franja,
     Instante,
     NuevaExcepcion,
     NuevaReserva,
     NuevasFranjas,
     NuevoCierre,
+    NuevoHorario,
+    Reprogramacion,
     Reserva,
     Sala,
     Tramo,
     VistaCancelacion,
+    VistaReprogramacion,
 )
 from bugalu.modulos.reservas.infraestructura.salida.cotizador_catalogo import CotizadorCatalogo
 from bugalu.modulos.reservas.infraestructura.salida.repositorio_postgres import (
@@ -104,6 +115,7 @@ async def consultar_disponibilidad(
     sala: UUID,
     desde: Annotated[Instante, Query()],
     hasta: Annotated[Instante, Query()],
+    excluir_reserva: Annotated[UUID | None, Query()] = None,
 ) -> Disponibilidad:
     ahora = datetime.now(UTC)
     if claims is None:
@@ -112,7 +124,7 @@ async def consultar_disponibilidad(
         contexto = transaccion_con_identidad(_pool(request), claims)
     async with contexto as conexion:
         resultado = await ConsultarDisponibilidad(RepositorioReservasPostgres(conexion)).ejecutar(
-            sala, desde, hasta, ahora, UUID(str(claims["sub"])) if claims else None
+            sala, desde, hasta, ahora, UUID(str(claims["sub"])) if claims else None, excluir_reserva
         )
     return Disponibilidad.desde_dominio(resultado)
 
@@ -354,5 +366,60 @@ async def aplicar_excepcion(
     async with transaccion_con_identidad(_pool(request), claims) as conexion:
         reserva = await AplicarExcepcion(RepositorioReservasPostgres(conexion)).ejecutar(
             id_reserva, cuerpo.motivo
+        )
+    return Reserva.desde_dominio(reserva)
+
+
+@router.post(
+    "/reservas/{id_reserva}/reprogramar/simular",
+    response_model=VistaReprogramacion,
+    summary="Vista previa de reprogramar: nivel, penalizacion, precio nuevo, saldo y credito; "
+    "sin cambiar nada (dueno; administrador tras una cancelacion del estudio)",
+    responses=_respuestas(401, 403, 404, 409, 422),
+)
+async def simular_reprogramacion(
+    request: Request, claims: Claims, id_reserva: UUID, cuerpo: NuevoHorario
+) -> VistaReprogramacion:
+    ahora = datetime.now(UTC)
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        vista = await SimularReprogramacion(
+            RepositorioReservasPostgres(conexion), CotizadorCatalogo(conexion)
+        ).ejecutar(id_reserva, cuerpo.inicio, ahora)
+    return VistaReprogramacion.desde_dominio(vista)
+
+
+@router.post(
+    "/reservas/{id_reserva}/reprogramar",
+    response_model=Reserva,
+    response_model_exclude_unset=True,
+    summary="Reprograma a otro horario de la misma sala con la politica de niveles (RF-18); "
+    "tras una cancelacion del estudio, sin costo (`nivel_esperado: null`)",
+    responses=_respuestas(401, 403, 404, 409, 422),
+)
+async def reprogramar_reserva(
+    request: Request, claims: Claims, id_reserva: UUID, cuerpo: Reprogramacion
+) -> Reserva:
+    ahora = datetime.now(UTC)
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        reserva = await ReprogramarReserva(
+            RepositorioReservasPostgres(conexion), CotizadorCatalogo(conexion)
+        ).ejecutar(id_reserva, cuerpo.inicio, cuerpo.nivel_esperado, cuerpo.total_esperado, ahora)
+    return Reserva.desde_dominio(reserva)
+
+
+@router.post(
+    "/reservas/{id_reserva}/eleccion-estudio",
+    response_model=Reserva,
+    response_model_exclude_unset=True,
+    summary="Tras una cancelacion del estudio, elige la devolucion integra de lo pagado "
+    "(dueno o administrador)",
+    responses=_respuestas(401, 403, 404, 409, 422),
+)
+async def elegir_devolucion_del_estudio(
+    request: Request, claims: Claims, id_reserva: UUID, cuerpo: EleccionEstudio
+) -> Reserva:
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        reserva = await ElegirDevolucionDelEstudio(RepositorioReservasPostgres(conexion)).ejecutar(
+            id_reserva
         )
     return Reserva.desde_dominio(reserva)

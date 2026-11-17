@@ -76,6 +76,38 @@ def _devolucion_realizada(datos: dict[str, Any]) -> tuple[str, str]:
     )
 
 
+def _reserva_reprogramada(datos: dict[str, Any]) -> tuple[str, str]:
+    if datos.get("sin_costo"):
+        costo = "La reprogramación es sin costo: el precio no cambia.\n"
+    else:
+        credito = Decimal(str(datos["credito"]))
+        costo = (
+            f"Nivel de reprogramación: nivel {datos['nivel']}\n"
+            f"Penalización: {_soles(datos['penalizacion'])}\n"
+            f"Saldo por pagar: {_soles(datos['saldo'])}\n"
+            + (f"Crédito a tu favor: {_soles(credito)}\n" if credito > 0 else "")
+        )
+    return (
+        f"Reprogramamos tu reserva {datos['folio']}",
+        f"Tu reserva {datos['folio']} pasó del {_fecha(_lima(datos['anterior_inicio']))} "
+        f"a {_horario(datos)} (hora de Lima).\n\n{costo}",
+    )
+
+
+def _eleccion_estudio_resuelta(datos: dict[str, Any]) -> tuple[str, str]:
+    if datos["opcion"] == "devolucion":
+        eleccion = (
+            f"eligió la devolución íntegra de {_soles(datos['monto'])}; "
+            f"el plazo es hasta el {_fecha(_lima(datos['limite']))} (hora de Lima)."
+        )
+    else:
+        eleccion = f"eligió reprogramar sin costo a {_horario(datos)} (hora de Lima)."
+    return (
+        f"Respuesta a la cancelación del estudio: reserva {datos['folio']}",
+        f"{datos['cliente'] or 'El cliente'} {eleccion}\n",
+    )
+
+
 REDACTORES_RF18: dict[str, Callable[[dict[str, Any]], tuple[str, str]]] = {
     "reserva_cancelada_con_pagos": _reserva_cancelada_con_pagos,
     "inasistencia_marcada": _inasistencia_marcada,
@@ -83,4 +115,6 @@ REDACTORES_RF18: dict[str, Callable[[dict[str, Any]], tuple[str, str]]] = {
     "devolucion_solicitada": _devolucion_solicitada,
     "devolucion_decidida": _devolucion_decidida,
     "devolucion_realizada": _devolucion_realizada,
+    "reserva_reprogramada": _reserva_reprogramada,
+    "eleccion_estudio_resuelta": _eleccion_estudio_resuelta,
 }

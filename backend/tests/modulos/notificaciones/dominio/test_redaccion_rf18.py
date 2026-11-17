@@ -87,3 +87,51 @@ def test_devolucion_realizada_lleva_la_nota() -> None:
     datos = {"monto_aprobado": 30, "nota": "Yape, operación 998877", "folio_origen": "R-1"}
     _, cuerpo = redactar("devolucion_realizada", datos)
     assert "S/ 30,00" in cuerpo and "Yape, operación 998877" in cuerpo
+
+
+def test_reprogramacion_dice_el_horario_nuevo_la_penalizacion_el_saldo_y_el_credito() -> None:
+    datos = {
+        **RESERVA,
+        "anterior_inicio": "2027-03-01T15:00:00+00:00",
+        "nivel": 2,
+        "penalizacion": 50,
+        "saldo": 190,
+        "credito": 0,
+        "sin_costo": False,
+    }
+    asunto, cuerpo = redactar("reserva_reprogramada", datos)
+    assert "R-2027-00042" in asunto
+    assert "10 de marzo de 2027" in cuerpo and "1 de marzo de 2027" in cuerpo
+    assert "S/ 50,00" in cuerpo and "S/ 190,00" in cuerpo and "nivel 2" in cuerpo
+    _, con_credito = redactar("reserva_reprogramada", {**datos, "nivel": 1, "credito": 20})
+    assert "S/ 20,00" in con_credito and "Crédito" in con_credito
+
+
+def test_reprogramacion_sin_costo_tras_la_cancelacion_del_estudio() -> None:
+    datos = {
+        **RESERVA,
+        "anterior_inicio": "2027-03-01T15:00:00+00:00",
+        "nivel": None,
+        "penalizacion": 0,
+        "saldo": 100,
+        "credito": 0,
+        "sin_costo": True,
+    }
+    _, cuerpo = redactar("reserva_reprogramada", datos)
+    assert "sin costo" in cuerpo and "penalización" not in cuerpo and "nivel" not in cuerpo
+
+
+def test_la_eleccion_tras_el_estudio_avisa_al_administrador() -> None:
+    datos = {**RESERVA, "cliente": "Ana Torres", "opcion": "devolucion", "monto": 100,
+             "limite": "2027-03-17T04:59:59+00:00"}  # fmt: skip
+    asunto, cuerpo = redactar("eleccion_estudio_resuelta", datos)
+    assert "R-2027-00042" in asunto
+    assert "Ana Torres" in cuerpo and "devolución" in cuerpo and "S/ 100,00" in cuerpo
+    assert "16 de marzo de 2027" in cuerpo
+    _, reprograma = redactar("eleccion_estudio_resuelta", {**datos, "opcion": "reprogramar"})
+    assert "reprogramar" in reprograma and "S/ 100,00" not in reprograma
+
+
+def test_el_aviso_de_cancelacion_del_estudio_ofrece_las_dos_opciones() -> None:
+    _, cuerpo = redactar("reserva_cancelada_estudio", {**RESERVA, "nota": None})
+    assert "reprogramar" in cuerpo and "sin costo" in cuerpo and "devolución" in cuerpo

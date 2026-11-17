@@ -1,12 +1,15 @@
 from collections.abc import Mapping, Sequence
 from datetime import datetime
-from typing import Protocol
+from decimal import Decimal
+from typing import Any, Protocol
 from uuid import UUID
 
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo
 from bugalu.modulos.reservas.dominio.modelos import (
     Cierre,
+    ContextoReprogramacion,
     Cotizacion,
+    EspecialistaAplicado,
     Franja,
     NuevaReserva,
     RequisitosReserva,
@@ -14,6 +17,7 @@ from bugalu.modulos.reservas.dominio.modelos import (
     ReservaVisible,
     Sala,
     VistaCancelacion,
+    VistaReprogramacion,
 )
 
 
@@ -144,4 +148,41 @@ class RepositorioReservas(Protocol):
 
     async def aplicar_excepcion(self, id_reserva: UUID, motivo: str) -> None:
         """NoEncontrado, SinPermiso, ExcepcionNoAplicable, ExcepcionYaAplicada o DatosInvalidos."""
+        ...
+
+    async def ocupacion_excluyendo(
+        self, id_sala: UUID, desde: datetime, hasta: datetime, excluir: UUID
+    ) -> list[Tramo]:
+        """Como `ocupacion`, sin la reserva `excluir` (puede solaparse con su propio horario)."""
+        ...
+
+    async def contexto_reprogramacion(self, id_reserva: UUID) -> ContextoReprogramacion:
+        """NoEncontrado (no es suya), SinPermiso (personal; administrador fuera del estudio),
+        ReprogramacionNoPermitida o LimiteReprogramaciones."""
+        ...
+
+    async def vista_reprogramacion(
+        self, id_reserva: UUID, inicio: datetime, total: Decimal, precio: dict[str, Any]
+    ) -> VistaReprogramacion:
+        """Sin cambiar nada; `precio` es el desglose que se devuelve junto a lo calculado."""
+        ...
+
+    async def reprogramar_reserva(  # noqa: PLR0913
+        self,
+        id_reserva: UUID,
+        inicio: datetime,
+        nivel_esperado: int | None,
+        total_esperado: Decimal | None,
+        id_franja: UUID,
+        precio: dict[str, Any],
+        total: Decimal,
+        especialistas: Sequence[EspecialistaAplicado],
+    ) -> None:
+        """La base calcula nivel, penalizacion, saldo y credito. Ademas de los de
+        `contexto_reprogramacion`: NivelCambiado o PrecioCambiado (con la vista nueva en
+        `detalles`), TramoNoDisponible o DatosInvalidos."""
+        ...
+
+    async def elegir_estudio_devolucion(self, id_reserva: UUID) -> None:
+        """NoEncontrado, SinPermiso o EleccionNoDisponible."""
         ...

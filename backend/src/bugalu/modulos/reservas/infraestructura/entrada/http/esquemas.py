@@ -329,6 +329,41 @@ class NuevaExcepcion(BaseModel):
     motivo: Annotated[TextoLargo, Field(min_length=10)]
 
 
+class NuevoHorario(BaseModel):
+    """Vista previa de reprogramar: solo el inicio (sala, servicio y duracion se conservan)."""
+
+    model_config = ConfigDict(extra="forbid")
+    inicio: Instante
+
+
+class Reprogramacion(NuevoHorario):
+    """Confirma lo que el cliente vio: sin `nivel_esperado` o `total_esperado` que coincidan, 409.
+    Tras una cancelacion del estudio no hay nivel (`null`) ni se recalcula el precio."""
+
+    nivel_esperado: Annotated[int, Field(ge=1, le=3)] | None = None
+    total_esperado: Annotated[Decimal, Field(ge=0, max_digits=10, decimal_places=2)] | None = None
+
+
+class EleccionEstudio(BaseModel):
+    """La reprogramacion sin costo usa `POST /reprogramar`; aqui solo la devolucion integra."""
+
+    model_config = ConfigDict(extra="forbid")
+    opcion: Literal["devolucion"]
+
+
+class VistaReprogramacion(BaseModel):
+    nivel: int | None
+    penalizacion: Decimal
+    precio: Simulacion
+    saldo: Decimal
+    credito: Decimal
+    reprogramaciones_restantes: int
+
+    @classmethod
+    def desde_dominio(cls, v: modelos.VistaReprogramacion) -> VistaReprogramacion:
+        return cls(**{**vars(v), "precio": Simulacion.model_validate(v.precio)})
+
+
 def _referencia(r: modelos.Referencia | None) -> Referencia | None:
     return Referencia(id=r.id, nombre=r.nombre) if r else None
 

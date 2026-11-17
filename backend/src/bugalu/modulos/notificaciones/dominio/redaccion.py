@@ -127,7 +127,9 @@ def _reserva_cancelada_estudio(datos: dict[str, Any]) -> tuple[str, str]:
     return (
         f"Reserva {datos['folio']} cancelada por el estudio",
         f"El estudio canceló tu reserva {datos['folio']} "
-        f"({_horario(datos)}, hora de Lima).\n{nota}",
+        f"({_horario(datos)}, hora de Lima).\n{nota}\n"
+        "Si tu reserva tenía pagos, entra a su detalle y elige: reprogramarla sin costo "
+        "a un horario libre, o la devolución íntegra de lo pagado.\n",
     )
 
 

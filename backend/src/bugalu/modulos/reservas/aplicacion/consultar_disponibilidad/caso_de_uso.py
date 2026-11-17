@@ -34,6 +34,19 @@ class ConsultarDisponibilidad:
     def __init__(self, reservas: RepositorioReservas) -> None:
         self._reservas = reservas
 
+    async def _reserva_excluible(
+        self, id_reserva: UUID | None, id_usuario: UUID | None
+    ) -> UUID | None:
+        """Solo su dueno o un administrador; en otro caso se ignora sin revelar nada."""
+        if id_reserva is None or id_usuario is None:
+            return None
+        reserva = await self._reservas.obtener_reserva(id_reserva)  # la RLS oculta las ajenas
+        if reserva is None:
+            return None
+        if reserva.id_cliente == id_usuario or await self._reservas.es_administrador():
+            return id_reserva
+        return None
+
     async def ejecutar(
         self,
         id_sala: UUID,
@@ -41,6 +54,7 @@ class ConsultarDisponibilidad:
         hasta: datetime,
         ahora: datetime,
         id_usuario: UUID | None,
+        excluir_reserva: UUID | None = None,
     ) -> Disponibilidad:
         if not timedelta(0) < hasta - desde <= timedelta(days=MAXIMO_DIAS):
             raise RangoInvalido(
@@ -53,7 +67,11 @@ class ConsultarDisponibilidad:
         ampliado = hasta + _MARGEN
         franjas = await self._reservas.franjas_en(id_sala, desde, ampliado)
         cierres = await self._reservas.cierres_en(id_sala, desde, ampliado)
-        ocupados = await self._reservas.ocupacion(id_sala, desde, ampliado)
+        excluida = await self._reserva_excluible(excluir_reserva, id_usuario)
+        if excluida is None:
+            ocupados = await self._reservas.ocupacion(id_sala, desde, ampliado)
+        else:  # el calendario de reprogramar ve libre el horario de la propia reserva
+            ocupados = await self._reservas.ocupacion_excluyendo(id_sala, desde, ampliado, excluida)
         dias = calculo.minutos_libres_por_dia(
             desde,
             hasta,

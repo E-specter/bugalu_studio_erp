@@ -182,6 +182,22 @@ class NoCancelable(Conflicto):
     codigo = "no_cancelable"
 
 
+class ReprogramacionNoPermitida(Conflicto):
+    codigo = "reprogramacion_no_permitida"
+
+
+class LimiteReprogramaciones(Conflicto):
+    codigo = "limite_reprogramaciones"
+
+
+class PrecioCambiado(Conflicto):
+    codigo = "precio_cambiado"
+
+
+class EleccionNoDisponible(Conflicto):
+    codigo = "eleccion_no_disponible"
+
+
 class AlmacenamientoNoDisponible(ErrorDeNegocio):
     codigo = "almacenamiento_no_disponible"
     estado_http = 503
