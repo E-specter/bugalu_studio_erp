@@ -1,9 +1,10 @@
 from collections.abc import Collection, Mapping, Sequence
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Protocol
 from uuid import UUID
 
+from bugalu.modulos.catalogo.dominio.cambios_sensibles import CambioRegistrado, Confirmacion
 from bugalu.modulos.catalogo.dominio.precio import (
     ConfiguracionImpuestos,
     Especialista,
@@ -48,6 +49,20 @@ class RepositorioCatalogo(Protocol):
         """IGV y parametros que una reserva guarda al crearse (RF-20 CA-07)."""
         ...
 
+    async def guardar_impuestos(self, cambios: Mapping[str, Decimal | bool]) -> None: ...
+
+    async def obtener_parametros(self) -> dict[str, int]: ...
+
+    async def guardar_parametros(self, cambios: Mapping[str, int]) -> None: ...
+
+    async def bloquear_recurso(self, recurso: str, id_recurso: UUID | None) -> None:
+        """Serializa confirmaciones concurrentes sobre el mismo recurso (RF-20 CA-06)."""
+        ...
+
+    async def contar_operaciones_vigentes(self) -> int:
+        """Reservas `pre_reservada` o `confirmada` con inicio futuro."""
+        ...
+
     async def obtener_recargos(self) -> Recargos: ...
 
     async def guardar_recargos(self, recargos: Recargos) -> None: ...
@@ -61,3 +76,35 @@ class RepositorioCatalogo(Protocol):
         ...
 
     async def eliminar_feriado(self, fecha: date) -> bool: ...
+
+
+class RepositorioCambios(Protocol):
+    """Confirmaciones de cambios sensibles y registro de cambios (RF-20)."""
+
+    async def id_usuario(self) -> UUID: ...
+
+    async def guardar_confirmacion(
+        self,
+        hash_token: str,
+        recurso: str,
+        id_recurso: UUID | None,
+        nombre_recurso: str,
+        cambios: Mapping[str, tuple[str, str]],
+        minutos: int,
+    ) -> datetime:
+        """Devuelve `expira_en`."""
+        ...
+
+    async def tomar_confirmacion(self, hash_token: str) -> Confirmacion | None:
+        """La busca por el hash de su token y la bloquea hasta el fin de la transaccion."""
+        ...
+
+    async def registrar(self, confirmacion: Confirmacion) -> list[CambioRegistrado]:
+        """Consume la confirmacion y escribe una fila por campo."""
+        ...
+
+    async def listar(
+        self, desde: datetime, hasta: datetime, recurso: str | None
+    ) -> list[CambioRegistrado]:
+        """Del mas reciente al mas antiguo; `hasta` es exclusivo."""
+        ...

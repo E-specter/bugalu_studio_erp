@@ -140,4 +140,12 @@ PARAMETROS = (
     "horas_limite_pago",
     "anticipacion_minima_horas",
     "anticipacion_maxima_semanas",
+    "porcentaje_adelanto",
+    "horas_nivel_1",
+    "horas_nivel_2",
+    "porcentaje_penalizacion_nivel_2",
+    "minutos_tolerancia_inasistencia",
+    "dias_vigencia_credito",
+    "reprogramaciones_nivel_1",
+    "reprogramaciones_nivel_2",
 )

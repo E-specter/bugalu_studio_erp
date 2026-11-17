@@ -4,6 +4,7 @@ from uuid import UUID
 
 from bugalu.compartido.errores import NoEncontrado
 from bugalu.modulos.catalogo.aplicacion.permisos import exigir_administrador
+from bugalu.modulos.catalogo.dominio import cambios_sensibles as sensibles
 from bugalu.modulos.catalogo.dominio.precio import Especialista
 from bugalu.modulos.catalogo.dominio.puertos import RepositorioCatalogo
 
@@ -16,11 +17,17 @@ class ActualizarEspecialista:
         self, id_especialista: UUID, cambios: Mapping[str, Decimal | bool | str]
     ) -> Especialista:
         await exigir_administrador(self._catalogo)
-        if cambios:
-            especialista = await self._catalogo.actualizar_especialista(id_especialista, cambios)
-        else:
-            encontrados = await self._catalogo.obtener_especialistas([id_especialista])
-            especialista = encontrados[0] if encontrados else None
-        if especialista is None:
+        encontrados = await self._catalogo.obtener_especialistas([id_especialista])
+        if not encontrados:
             raise NoEncontrado("No existe el especialista.")
+        sensibles.exigir_confirmacion(
+            "especialista",
+            sensibles.valores_especialista(encontrados[0]),
+            {k: sensibles.texto(v) for k, v in cambios.items()},
+        )
+        if not cambios:
+            return encontrados[0]
+        especialista = await self._catalogo.actualizar_especialista(id_especialista, cambios)
+        if especialista is None:
+            raise LookupError("El especialista desaparecio durante la transaccion.")
         return especialista

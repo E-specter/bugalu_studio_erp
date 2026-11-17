@@ -57,6 +57,7 @@ _DESCRIPCION = {
     404: "No encontrado",
     409: "Conflicto con el estado actual",
     422: "Datos invalidos",
+    428: "El cambio es sensible: requiere vista previa y confirmacion (RF-20)",
     503: "Servicio de autenticacion o base de datos no disponible",
 }
 
@@ -194,7 +195,7 @@ async def obtener_parametros(request: Request, claims: Claims) -> Parametros:
     "/parametros",
     response_model=Parametros,
     summary="Ajusta parametros de reserva, enteros mayores que 0 (administrador)",
-    responses=_respuestas(401, 403, 422),
+    responses=_respuestas(401, 403, 422, 428),
 )
 async def actualizar_parametros(
     request: Request, claims: Claims, cuerpo: CambiosParametros

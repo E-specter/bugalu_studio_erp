@@ -4,6 +4,7 @@ import pytest
 
 from bugalu.compartido.errores import (
     CierreConReservas,
+    ConfirmacionRequerida,
     DatosInvalidos,
     FranjaConReservas,
     FranjaSolapada,
@@ -120,12 +121,17 @@ async def test_sugerencia_con_semana_inexistente_es_422_con_su_campo() -> None:
 
 async def test_parametros_actualizan_solo_los_enviados_y_exigen_administrador() -> None:
     falso = ReservasFalso()
-    r = await ActualizarParametros(falso).ejecutar({"horas_limite_pago": 4})
-    assert r["horas_limite_pago"] == 4 and r["dias_limite_pago"] == 3
+    r = await ActualizarParametros(falso).ejecutar({"anticipacion_minima_horas": 4})
+    assert r["anticipacion_minima_horas"] == 4 and r["dias_limite_pago"] == 3
     with pytest.raises(SinPermiso):
         await ActualizarParametros(ReservasFalso(administrador=False)).ejecutar(
             {"dias_limite_pago": 9}
         )
+    # RF-20: un sensible con otro valor pide confirmacion y no cambia nada; el mismo valor pasa.
+    with pytest.raises(ConfirmacionRequerida):
+        await ActualizarParametros(falso).ejecutar({"horas_limite_pago": 4})
+    assert falso.parametros["horas_limite_pago"] == 1
+    await ActualizarParametros(falso).ejecutar({"horas_limite_pago": 1})
 
 
 async def test_disponibilidad_fuera_de_1_a_42_dias_es_rango_invalido() -> None:

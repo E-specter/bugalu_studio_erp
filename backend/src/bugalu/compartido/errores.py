@@ -162,3 +162,31 @@ class OperacionDuplicada(Conflicto):
 
 class PagoYaValidado(Conflicto):
     codigo = "pago_ya_validado"
+
+
+class ConfirmacionRequerida(ErrorDeNegocio):
+    codigo = "confirmacion_requerida"
+    estado_http = 428
+
+    def __init__(self, campos: list[str]) -> None:
+        super().__init__("Este cambio necesita vista previa y confirmación.", {"campos": campos})
+
+
+class SinCambios(DatosInvalidos):
+    codigo = "sin_cambios"
+
+
+class PlazosIncoherentes(DatosInvalidos):
+    codigo = "plazos_incoherentes"
+
+
+class PalabraIncorrecta(DatosInvalidos):
+    codigo = "palabra_incorrecta"
+
+
+class ConfirmacionNoValida(Conflicto):
+    codigo = "confirmacion_no_valida"
+
+
+class CambioDesactualizado(Conflicto):
+    codigo = "cambio_desactualizado"

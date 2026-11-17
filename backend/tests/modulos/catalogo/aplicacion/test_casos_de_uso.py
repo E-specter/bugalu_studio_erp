@@ -5,6 +5,7 @@ from uuid import uuid4
 import pytest
 
 from bugalu.compartido.errores import (
+    ConfirmacionRequerida,
     DatosInvalidos,
     FeriadoRepetido,
     NoEncontrado,
@@ -116,17 +117,27 @@ async def test_actualizar_servicio_cambia_campos_y_reemplaza_los_especialistas_p
     c = CatalogoFalso()
     nuevo = await ActualizarServicio(c).ejecutar(
         SERVICIO.id,
-        {"monto_fijo": D("12.50"), "especialistas_por_defecto": [EJECUTANTE.id, EJECUTANTE.id]},
+        {"activo": False, "especialistas_por_defecto": [EJECUTANTE.id, EJECUTANTE.id]},
     )
-    assert nuevo.monto_fijo == D("12.50") and nuevo.tarifa_hora == D("80")
+    assert nuevo.activo is False and nuevo.tarifa_hora == D("80")
     assert nuevo.especialistas_por_defecto == (EJECUTANTE.id,)
+
+
+async def test_cambiar_un_sensible_exige_confirmacion_y_no_escribe_nada() -> None:
+    c = CatalogoFalso()
+    cambios = {"monto_fijo": D("12.50"), "activo": False}
+    with pytest.raises(ConfirmacionRequerida) as error:
+        await ActualizarServicio(c).ejecutar(SERVICIO.id, cambios)
+    assert error.value.detalles == {"campos": ["monto_fijo"]}
+    assert c.escrituras == 0
+    await ActualizarServicio(c).ejecutar(SERVICIO.id, {"tarifa_hora": D("80.00")})  # mismo valor
 
 
 async def test_actualizar_servicio_con_especialista_inexistente_no_cambia_nada() -> None:
     c = CatalogoFalso()
     with pytest.raises(DatosInvalidos):
         await ActualizarServicio(c).ejecutar(
-            SERVICIO.id, {"tarifa_hora": D("1"), "especialistas_por_defecto": [uuid4()]}
+            SERVICIO.id, {"activo": False, "especialistas_por_defecto": [uuid4()]}
         )
     assert c.escrituras == 0
 

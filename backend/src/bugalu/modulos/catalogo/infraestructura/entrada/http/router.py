@@ -49,6 +49,7 @@ _DESCRIPCION = {
     404: "No encontrado",
     409: "Conflicto con el estado actual",
     422: "Datos invalidos",
+    428: "El cambio es sensible: requiere vista previa y confirmacion (RF-20)",
     503: "Servicio de autenticacion o base de datos no disponible",
 }
 
@@ -81,7 +82,7 @@ async def listar_servicios(request: Request) -> list[Servicio]:
     "/servicios/{id_servicio}",
     response_model=Servicio,
     summary="Edita tarifa, monto fijo, estado y especialistas por defecto (administrador)",
-    responses=_respuestas_admin(404, 422),
+    responses=_respuestas_admin(404, 422, 428),
 )
 async def actualizar_servicio(
     request: Request, claims: Claims, id_servicio: UUID, cuerpo: CambiosServicio
@@ -109,7 +110,7 @@ async def listar_especialistas(request: Request) -> list[Especialista]:
     "/especialistas/{id_especialista}",
     response_model=Especialista,
     summary="Edita montos, unidad y estado de un especialista (administrador)",
-    responses=_respuestas_admin(404, 422),
+    responses=_respuestas_admin(404, 422, 428),
 )
 async def actualizar_especialista(
     request: Request, claims: Claims, id_especialista: UUID, cuerpo: CambiosEspecialista
@@ -149,7 +150,7 @@ async def obtener_recargos(request: Request) -> Recargos:
     "/recargos",
     response_model=Recargos,
     summary="Reemplaza los recargos por horario (administrador)",
-    responses=_respuestas_admin(422),
+    responses=_respuestas_admin(422, 428),
 )
 async def reemplazar_recargos(request: Request, claims: Claims, cuerpo: Recargos) -> Recargos:
     async with transaccion_con_identidad(_pool(request), claims) as conexion:

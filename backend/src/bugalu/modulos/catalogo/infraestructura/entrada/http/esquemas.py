@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import date, time
+from datetime import date, datetime, time
 from decimal import Decimal
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from pydantic import (
@@ -16,6 +16,7 @@ from pydantic import (
 )
 
 from bugalu.compartido.esquemas import TextoCorto
+from bugalu.modulos.catalogo.dominio import cambios_sensibles as sensibles
 from bugalu.modulos.catalogo.dominio import precio
 from bugalu.modulos.catalogo.dominio.precio import Unidad
 
@@ -205,3 +206,109 @@ class NuevaSimulacion(BaseModel):
     inicio: AwareDatetime
     fin: AwareDatetime
     especialistas: Annotated[list[UUID], Field(max_length=20)] = []
+
+
+# --- RF-20: cambios sensibles -------------------------------------------------------------------
+
+Recurso = Literal["impuestos", "servicio", "especialista", "recargos", "parametros"]
+PorcentajeIgv = Annotated[
+    Decimal, Field(ge=0, le=Decimal("99.99"), max_digits=4, decimal_places=2, allow_inf_nan=False)
+]
+
+
+class CambiosImpuestos(_Cuerpo):
+    porcentaje_igv: PorcentajeIgv | None = None
+    precios_incluyen_igv: bool | None = None
+
+
+class SensiblesServicio(_Cuerpo):
+    tarifa_hora: Monto | None = None
+    monto_fijo: Monto | None = None
+
+
+class SensiblesEspecialista(_Cuerpo):
+    monto_fijo: Monto | None = None
+    monto_variable: Monto | None = None
+    unidad: Unidad | None = None
+
+
+class NuevaPrevisualizacion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    recurso: Recurso
+    id_recurso: UUID | None = None
+    cambios: dict[str, Any]
+
+
+class NuevaConfirmacion(BaseModel):
+    """Sin limite de largo: una palabra o un token disparatados dan 422 palabra_incorrecta o 409."""
+
+    model_config = ConfigDict(extra="forbid")
+    token: str
+    palabra: str
+
+
+class CambioPrevio(BaseModel):
+    campo: str
+    anterior: str
+    nuevo: str
+
+
+class EjemploImpacto(BaseModel):
+    concepto: str
+    antes: str
+    despues: str
+    tipo: Literal["importe", "fecha_hora", "texto"]
+
+
+class Impacto(BaseModel):
+    ejemplos: list[EjemploImpacto]
+    operaciones_vigentes: int
+
+
+class Previsualizacion(BaseModel):
+    token: str
+    expira_en: datetime
+    palabra: str = sensibles.PALABRA
+    recurso: Recurso
+    id_recurso: UUID | None
+    nombre_recurso: str
+    cambios: list[CambioPrevio]
+    impacto: Impacto
+
+
+class Autor(BaseModel):
+    id: UUID
+    nombre: str
+
+
+class CambioRegistrado(BaseModel):
+    id: UUID
+    cambiado_en: datetime
+    autor: Autor
+    recurso: Recurso
+    id_recurso: UUID | None
+    nombre_recurso: str
+    campo: str
+    anterior: str
+    nuevo: str
+
+    @classmethod
+    def desde_dominio(cls, c: sensibles.CambioRegistrado) -> CambioRegistrado:
+        return cls(
+            id=c.id,
+            cambiado_en=c.cambiado_en,
+            autor=Autor(id=c.id_autor, nombre=c.autor_nombre),
+            recurso=c.recurso,
+            id_recurso=c.id_recurso,
+            nombre_recurso=c.nombre_recurso,
+            campo=c.campo,
+            anterior=c.anterior,
+            nuevo=c.nuevo,
+        )
+
+
+class CambioConfirmado(BaseModel):
+    recurso: Recurso
+    id_recurso: UUID | None
+    valor: dict[str, Any]
+    cambios: list[CambioRegistrado]

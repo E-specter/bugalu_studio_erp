@@ -33,6 +33,27 @@ SERVICIO = {
 ESPECIALISTA = {"id", "nombre", "monto_fijo", "monto_variable", "unidad", "activo"}
 
 
+async def _cambiar(
+    cliente: AsyncClient,
+    cab: Cabeceras,
+    recurso: str,
+    cambios: dict[str, Any],
+    id_recurso: str | None = None,
+) -> None:
+    """Un cambio sensible (RF-20): vista previa y confirmacion."""
+    cuerpo: dict[str, Any] = {"recurso": recurso, "cambios": cambios}
+    if id_recurso:
+        cuerpo["id_recurso"] = id_recurso
+    p = await cliente.post("/api/v1/cambios-sensibles/previsualizar", headers=cab, json=cuerpo)
+    assert p.status_code == 200, p.text
+    c = await cliente.post(
+        "/api/v1/cambios-sensibles/confirmar",
+        headers=cab,
+        json={"token": p.json()["token"], "palabra": "CONFIRMAR"},
+    )
+    assert c.status_code == 200, c.text
+
+
 async def _servicios(cliente: AsyncClient) -> dict[str, dict[str, Any]]:
     return {s["nombre"]: s for s in (await cliente.get("/api/v1/servicios")).json()}
 
@@ -89,17 +110,20 @@ async def test_el_administrador_edita_el_servicio_y_reemplaza_sus_especialistas(
     servicios, especialistas = await _servicios(cliente), await _especialistas(cliente)
     voces = servicios["Grabación de voces"]
     ejecutante = especialistas["Ejecutante"]["id"]
-    r = await cliente.patch(
-        f"/api/v1/servicios/{voces['id']}",
-        headers=administrador,
-        json={
-            "tarifa_hora": "99.5",
-            "monto_fijo": "12.00",
-            "activo": False,
-            "especialistas_por_defecto": [ejecutante, ejecutante],
-        },
-    )
-    assert r.status_code == 200
+    cuerpo = {
+        "tarifa_hora": "99.5",
+        "monto_fijo": "12.00",
+        "activo": False,
+        "especialistas_por_defecto": [ejecutante, ejecutante],
+    }
+    r = await cliente.patch(f"/api/v1/servicios/{voces['id']}", headers=administrador, json=cuerpo)
+    assert r.status_code == 428
+    assert r.json()["error"]["detalles"] == {"campos": ["tarifa_hora", "monto_fijo"]}
+    assert (await _servicios(cliente))["Grabación de voces"] == voces  # no aplico nada
+    sensibles = {"tarifa_hora": "99.5", "monto_fijo": "12.00"}
+    await _cambiar(cliente, administrador, "servicio", sensibles, voces["id"])
+    r = await cliente.patch(f"/api/v1/servicios/{voces['id']}", headers=administrador, json=cuerpo)
+    assert r.status_code == 200, r.text
     assert r.json() == {
         **voces,
         "tarifa_hora": "99.50",
@@ -115,9 +139,9 @@ async def test_un_patch_parcial_no_toca_los_demas_campos(
 ) -> None:
     voces = (await _servicios(cliente))["Grabación de voces"]
     r = await cliente.patch(
-        f"/api/v1/servicios/{voces['id']}", headers=administrador, json={"monto_fijo": "5"}
+        f"/api/v1/servicios/{voces['id']}", headers=administrador, json={"activo": False}
     )
-    assert r.json() == {**voces, "monto_fijo": "5.00"}
+    assert r.json() == {**voces, "activo": False}
 
 
 async def test_lista_vacia_quita_todos_los_especialistas_por_defecto(
@@ -198,12 +222,18 @@ async def test_el_administrador_edita_un_especialista(
     cliente: AsyncClient, administrador: Cabeceras
 ) -> None:
     ejecutante = (await _especialistas(cliente))["Ejecutante"]
+    cuerpo = {"monto_fijo": "0", "monto_variable": "33.3", "unidad": "lapso_30", "activo": False}
     r = await cliente.patch(
-        f"/api/v1/especialistas/{ejecutante['id']}",
-        headers=administrador,
-        json={"monto_fijo": "0", "monto_variable": "33.3", "unidad": "lapso_30", "activo": False},
+        f"/api/v1/especialistas/{ejecutante['id']}", headers=administrador, json=cuerpo
     )
-    assert r.status_code == 200
+    assert r.status_code == 428
+    assert (await _especialistas(cliente))["Ejecutante"] == ejecutante  # no aplico nada
+    sensibles = {k: v for k, v in cuerpo.items() if k != "activo"}
+    await _cambiar(cliente, administrador, "especialista", sensibles, ejecutante["id"])
+    r = await cliente.patch(
+        f"/api/v1/especialistas/{ejecutante['id']}", headers=administrador, json=cuerpo
+    )
+    assert r.status_code == 200, r.text
     assert r.json() == {
         **ejecutante,
         "monto_fijo": "0.00",
@@ -262,6 +292,9 @@ async def test_el_administrador_reemplaza_los_recargos(
     cliente: AsyncClient, administrador: Cabeceras
 ) -> None:
     r = await cliente.put("/api/v1/recargos", headers=administrador, json=RECARGOS)
+    assert r.status_code == 428  # RF-20: cambia porcentajes y horas, va por la confirmacion
+    await _cambiar(cliente, administrador, "recargos", RECARGOS)
+    r = await cliente.put("/api/v1/recargos", headers=administrador, json=RECARGOS)  # mismo valor
     esperado = {
         "noche": {"porcentaje": "10.00", "desde": "22:30", "hasta": "05:00"},
         "fin_de_semana": {"porcentaje": "15.50"},
@@ -501,11 +534,15 @@ async def test_la_simulacion_con_montos_fijados_da_el_total_esperado(
 ) -> None:
     servicios, especialistas = await _servicios(cliente), await _especialistas(cliente)
     ensayo, ing = servicios["Ensayo"], especialistas["Ingeniero de sonido"]
-    await cliente.patch(
+    sql(
+        "update public.servicio set tarifa_hora = 40, monto_fijo = 10 where id = %s", ensayo["id"]
+    )  # los montos son sensibles (RF-20): se preparan directo, no por el PATCH de un paso
+    r = await cliente.patch(
         f"/api/v1/servicios/{ensayo['id']}",
         headers=administrador,
-        json={"tarifa_hora": "40", "monto_fijo": "10", "especialistas_por_defecto": [ing["id"]]},
+        json={"especialistas_por_defecto": [ing["id"]]},
     )
+    assert r.status_code == 200
     r = await cliente.post(
         "/api/v1/simulaciones",
         json={

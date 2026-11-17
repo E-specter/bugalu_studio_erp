@@ -602,6 +602,14 @@ PARAMETROS = {
     "horas_limite_pago",
     "anticipacion_minima_horas",
     "anticipacion_maxima_semanas",
+    "porcentaje_adelanto",
+    "horas_nivel_1",
+    "horas_nivel_2",
+    "porcentaje_penalizacion_nivel_2",
+    "minutos_tolerancia_inasistencia",
+    "dias_vigencia_credito",
+    "reprogramaciones_nivel_1",
+    "reprogramaciones_nivel_2",
 }
 
 
@@ -615,9 +623,18 @@ async def test_el_administrador_lee_y_ajusta_los_parametros(
         "/api/v1/parametros",
         json={"horas_limite_pago": 2, "anticipacion_minima_horas": 4},
         headers=con(administrador),
+    )  # RF-20: horas_limite_pago es sensible y no aplica nada, ni lo no sensible que trae
+    assert r.status_code == 428
+    assert r.json()["error"]["detalles"] == {"campos": ["horas_limite_pago"]}
+    actuales = await cliente.get("/api/v1/parametros", headers=con(administrador))
+    assert actuales.json()["anticipacion_minima_horas"] == 2
+    r = await cliente.patch(
+        "/api/v1/parametros",
+        json={"horas_limite_pago": 1, "anticipacion_minima_horas": 4},
+        headers=con(administrador),
     )
     assert r.status_code == 200
-    assert r.json()["horas_limite_pago"] == 2 and r.json()["anticipacion_minima_horas"] == 4
+    assert r.json()["horas_limite_pago"] == 1 and r.json()["anticipacion_minima_horas"] == 4
     assert r.json()["dias_limite_pago"] == 3  # lo no enviado no cambia
     otra = await cliente.get("/api/v1/parametros", headers=con(administrador))
     assert otra.json() == r.json()

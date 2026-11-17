@@ -5,6 +5,7 @@ from uuid import UUID
 
 from bugalu.compartido.errores import DatosInvalidos, NoEncontrado
 from bugalu.modulos.catalogo.aplicacion.permisos import exigir_administrador
+from bugalu.modulos.catalogo.dominio import cambios_sensibles as sensibles
 from bugalu.modulos.catalogo.dominio.precio import Servicio
 from bugalu.modulos.catalogo.dominio.puertos import RepositorioCatalogo
 
@@ -15,8 +16,14 @@ class ActualizarServicio:
 
     async def ejecutar(self, id_servicio: UUID, cambios: Mapping[str, Any]) -> Servicio:
         await exigir_administrador(self._catalogo)
-        if await self._catalogo.obtener_servicio(id_servicio) is None:
+        actual = await self._catalogo.obtener_servicio(id_servicio)
+        if actual is None:
             raise NoEncontrado("No existe el servicio.")
+        sensibles.exigir_confirmacion(
+            "servicio",
+            sensibles.valores_servicio(actual),
+            {k: sensibles.texto(v) for k, v in cambios.items() if k != "especialistas_por_defecto"},
+        )
         campos: dict[str, Decimal | bool] = {
             k: v for k, v in cambios.items() if k != "especialistas_por_defecto"
         }

@@ -18,6 +18,15 @@ from bugalu.modulos.catalogo.dominio.precio import (
 
 _CAMPOS_SERVICIO = frozenset({"tarifa_hora", "monto_fijo", "activo"})
 _CAMPOS_ESPECIALISTA = frozenset({"monto_fijo", "monto_variable", "unidad", "activo"})
+_CAMPOS_IMPUESTOS = frozenset({"porcentaje_igv", "precios_incluyen_igv"})
+# (consulta, lleva id): `for update` exige poder actualizar la fila, o sea ser administrador.
+_BLOQUEOS = {
+    "impuestos": ("select 1 from public.configuracion_impuestos for update", False),
+    "servicio": ("select 1 from public.servicio where id = %s for update", True),
+    "especialista": ("select 1 from public.especialista where id = %s for update", True),
+    "recargos": ("select 1 from public.recargo order by tipo for update", False),
+    "parametros": ("select 1 from public.parametro order by clave for update", False),
+}
 _SERVICIO = sql.SQL(
     "select s.id, s.nombre, s.categoria, s.ocupa_sala, s.tarifa_hora, s.monto_fijo, "
     "array(select se.id_especialista from public.servicio_especialista se "
@@ -98,17 +107,51 @@ class RepositorioCatalogoPostgres:
     async def _actualizar(
         self, tabla: str, permitidos: frozenset[str], id_fila: UUID, cambios: Mapping[str, Any]
     ) -> None:
+        await self._actualizar_columnas(tabla, permitidos, cambios, id_fila)
+
+    async def _actualizar_columnas(
+        self,
+        tabla: str,
+        permitidos: frozenset[str],
+        cambios: Mapping[str, Any],
+        id_fila: UUID | None = None,
+    ) -> None:
+        """`id_fila` nulo: la tabla tiene una sola fila (configuracion_impuestos)."""
         if not cambios.keys() <= permitidos:
             raise ValueError("Campo no editable.")
         asignaciones = sql.SQL(", ").join(
             sql.SQL("{} = %s").format(sql.Identifier(campo)) for campo in cambios
         )
-        await self._conexion.execute(
-            sql.SQL("update public.{} set {} where id = %s").format(
-                sql.Identifier(tabla), asignaciones
-            ),
-            (*(v.value if isinstance(v, Unidad) else v for v in cambios.values()), id_fila),
+        valores = [v.value if isinstance(v, Unidad) else v for v in cambios.values()]
+        consulta = sql.SQL("update public.{} set {}").format(sql.Identifier(tabla), asignaciones)
+        if id_fila is not None:
+            consulta += sql.SQL(" where id = %s")
+            valores.append(id_fila)
+        await self._conexion.execute(consulta, valores)
+
+    async def guardar_impuestos(self, cambios: Mapping[str, Decimal | bool]) -> None:
+        await self._actualizar_columnas("configuracion_impuestos", _CAMPOS_IMPUESTOS, cambios)
+
+    async def obtener_parametros(self) -> dict[str, int]:
+        filas = await self._filas("select clave, valor from public.parametro")
+        return {clave: int(valor) for clave, valor in filas}
+
+    async def guardar_parametros(self, cambios: Mapping[str, int]) -> None:
+        for clave, valor in cambios.items():
+            await self._conexion.execute(
+                "update public.parametro set valor = %s where clave = %s", (valor, clave)
+            )
+
+    async def bloquear_recurso(self, recurso: str, id_recurso: UUID | None) -> None:
+        consulta, lleva_id = _BLOQUEOS[recurso]
+        await self._conexion.execute(consulta, (id_recurso,) if lleva_id else ())
+
+    async def contar_operaciones_vigentes(self) -> int:
+        filas = await self._filas(
+            "select count(*) from public.reserva "
+            "where estado in ('pre_reservada', 'confirmada') and inicio > now()"
         )
+        return int(filas[0][0])
 
     async def obtener_impuestos(self) -> ConfiguracionImpuestos:
         porcentaje, incluido = (

@@ -116,7 +116,7 @@ def desglosar_igv_incluido(total: Decimal, porcentaje: Decimal) -> tuple[Decimal
     return base, total - base
 
 
-def _impuesto_y_total(suma: Decimal, config: ConfiguracionImpuestos) -> tuple[Impuesto, Decimal]:
+def impuesto_y_total(suma: Decimal, config: ConfiguracionImpuestos) -> tuple[Impuesto, Decimal]:
     if config.incluido:
         base, igv = desglosar_igv_incluido(suma, config.porcentaje)
         return Impuesto(config.porcentaje, True, base, igv), suma
@@ -212,7 +212,7 @@ def calcular_simulacion(
 
     montos = [*(x.monto for x in lineas), *(x.monto for x in lineas_recargo)]
     suma = sum(montos, Decimal(0)).quantize(_CENTIMO)
-    impuesto, total = _impuesto_y_total(suma, impuestos)
+    impuesto, total = impuesto_y_total(suma, impuestos)
     anticipo = _centimos(total * porcentaje_adelanto / 100)
     adelanto = Decimal(porcentaje_adelanto).quantize(_CENTIMO)
     return Simulacion(tuple(lineas), lineas_recargo, total, anticipo, impuesto, adelanto)
