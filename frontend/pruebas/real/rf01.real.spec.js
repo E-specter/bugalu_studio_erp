@@ -3,6 +3,7 @@
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { test, expect } from '@playwright/test';
+import { cargarTextos } from './ayudas.js';
 
 const SUPABASE = 'http://127.0.0.1:45621';
 const MAILPIT = process.env.URL_MAILPIT ?? 'http://127.0.0.1:45624';
@@ -20,6 +21,7 @@ const correos = [cliente.correo, interno.correo, admin.correo];
 test.describe.configure({ mode: 'serial' });
 
 test.beforeAll(async ({ browser }) => {
+  cargarTextos();
   try {
     const [auth, mail] = await Promise.all([fetch(`${SUPABASE}/auth/v1/health`), fetch(`${MAILPIT}/api/v1/info`)]);
     if (!auth.ok || !mail.ok) throw new Error(`Auth ${auth.status}, Mailpit ${mail.status}`);
@@ -80,7 +82,11 @@ test('a. registro de cliente: entra y el perfil muestra sus datos sin verificar'
   artista = await registrarArtista(await nuevaPagina(browser), cliente);
   await expect(artista.getByText('Robustez: fuerte')).toBeVisible();
   await artista.getByRole('button', { name: 'Crear cuenta de artista' }).click();
-  await artista.waitForURL('**/app/perfil?aviso=cuenta-creada');
+  await artista.waitForURL('**/acceso/textos*'); // RF-17: el alta termina aceptando los textos de registro
+  await expect(artista.getByRole('heading', { level: 1 })).toHaveText('Antes de empezar');
+  await artista.getByRole('checkbox', { name: /Acepto los Términos de uso/ }).check();
+  await artista.getByRole('button', { name: 'Aceptar y continuar' }).click();
+  await artista.waitForURL('**/app/perfil?aviso=textos-aceptados');
   await expect(artista.locator('[name="nombre"]')).toHaveValue(cliente.nombre);
   await expect(artista.locator('dl')).toContainText(cliente.correo);
   await expect(artista.locator('dl')).toContainText('SIN VERIFICAR');
@@ -132,7 +138,7 @@ test('d. solicitud interna: queda pendiente y no entra al panel del estudio', as
 test('e. el Administrador aprueba la solicitud como personal con especialidad', async ({ browser }) => {
   const p = await registrarArtista(await nuevaPagina(browser), admin);
   await p.getByRole('button', { name: 'Crear cuenta de artista' }).click();
-  await p.waitForURL('**/app/perfil?aviso=cuenta-creada');
+  await p.waitForURL('**/acceso/textos*');
   execFileSync('uv', ['run', 'python', '-m', 'bugalu.herramientas.crear_administrador', admin.correo], { cwd: BACKEND });
   await p.evaluate(() => localStorage.clear());
   await entrar(p, '/acceso/interno', admin, 'Entrar a la sala');

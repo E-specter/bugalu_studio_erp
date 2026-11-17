@@ -3,6 +3,7 @@
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { test, expect } from '@playwright/test';
+import { cargarTextos, prepararCliente, confirmarReserva, dniNuevo } from './ayudas.js';
 
 const SUPABASE = 'http://127.0.0.1:45621';
 const MAILPIT = process.env.URL_MAILPIT ?? 'http://127.0.0.1:45624';
@@ -36,6 +37,7 @@ const inicio = (d, hora) => `${ymd(d)}T${hora}:00-05:00`;
 test.describe.configure({ mode: 'serial' });
 
 test.beforeAll(async ({ browser }) => {
+  cargarTextos();
   try {
     const [auth, mail, api] = await Promise.all([fetch(`${SUPABASE}/auth/v1/health`), fetch(`${MAILPIT}/api/v1/info`), fetch(`${API}/salas`)]);
     if (!auth.ok || !mail.ok || !api.ok) throw new Error(`Auth ${auth.status}, Mailpit ${mail.status}, API ${api.status}`);
@@ -77,7 +79,9 @@ const registrar = async (browser, p) => {
   const page = await nuevaPagina(browser);
   await page.goto('/acceso/registro');
   await rellenarRegistro(page, p);
-  await page.waitForURL('**/app/perfil?aviso=cuenta-creada');
+  await page.waitForURL('**/acceso/textos*'); // desde RF-17 el alta pasa por la aceptacion de textos; aqui se resuelve por la API (rf01 y aceptaciones lo hacen por la UI)
+  await prepararCliente(page);
+  await page.goto('/app/perfil');
   return page;
 };
 
@@ -156,11 +160,18 @@ test('2. el visitante elige horario, servicio y especialista, ve la simulación 
   await captura(p, '2-acceso');
   await p.getByRole('link', { name: 'Crear cuenta de artista' }).click();
   await rellenarRegistro(p, clienteA);
+  // RF-17: sin documento ni textos aceptados, el alta vuelve por "Completa tus datos" (paso 03) y de ahi al tramo elegido.
+  await p.waitForURL(/\/reservar\/cuenta\//);
+  await expect(p.getByRole('heading', { level: 1 })).toHaveText('Completa tus datos');
+  await p.locator('[name="tipo_documento"]').selectOption('dni');
+  await p.locator('[name="numero_documento"]').fill(dniNuevo());
+  await p.getByRole('checkbox', { name: /Acepto los Términos de uso/ }).check();
+  await p.getByRole('button', { name: 'Guardar y continuar' }).click();
   await p.waitForURL(/\/reservar\/confirmar\//);
   await expect(p.getByRole('heading', { level: 1 })).toHaveText('Confirma tu reserva');
   await p.getByLabel('Qué necesitas (opcional)').fill('Voz y guitarra');
   await captura(p, '2-confirmar');
-  await p.getByRole('button', { name: 'Confirmar reserva' }).click();
+  await confirmarReserva(p);
   await p.waitForURL(/\/reservar\/listo\/\?id=/);
   await expect(p.getByRole('heading', { level: 1 })).toHaveText('Reserva registrada');
   folio = (await p.getByText(FOLIO).first().textContent()).match(FOLIO)[0];
@@ -213,7 +224,7 @@ test('5. el cliente cancela desde el detalle y el tramo vuelve a estar libre', a
 
 test('6. una reserva vencida caduca: el tramo queda libre y llega reserva_caducada', async () => {
   await paginaA.goto(`/reservar/confirmar/?inicio=${encodeURIComponent(inicio(MIERCOLES, '10:00'))}&duracion=60&sala=${idSala}&servicio=${idServicio}`);
-  await paginaA.getByRole('button', { name: 'Confirmar reserva' }).click();
+  await confirmarReserva(paginaA);
   await paginaA.waitForURL(/\/reservar\/listo\/\?id=/);
   const segunda = (await paginaA.getByText(FOLIO).first().textContent()).match(FOLIO)[0];
   expect(PY('caducar.py', segunda)).toBe('1');

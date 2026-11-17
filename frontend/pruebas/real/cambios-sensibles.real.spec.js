@@ -4,6 +4,7 @@
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { test, expect } from '@playwright/test';
+import { cargarTextos, prepararCliente, confirmarReserva } from './ayudas.js';
 
 const SUPABASE = 'http://127.0.0.1:45621';
 const MAILPIT = process.env.URL_MAILPIT ?? 'http://127.0.0.1:45624';
@@ -50,6 +51,7 @@ const servicioActual = async () => (await publico('/servicios')).find((s) => s.i
 const registro = async () => (await llamar(paginaAdmin, 'GET', '/registro-cambios')).cuerpo;
 
 test.beforeAll(async ({ browser }) => {
+  cargarTextos();
   try {
     const [auth, mail, api] = await Promise.all([fetch(`${SUPABASE}/auth/v1/health`), fetch(`${MAILPIT}/api/v1/info`), fetch(`${API}/salas`)]);
     if (!auth.ok || !mail.ok || !api.ok) throw new Error(`Auth ${auth.status}, Mailpit ${mail.status}, API ${api.status}`);
@@ -105,12 +107,14 @@ const registrar = async (browser, p) => {
   await page.getByLabel('Correo', { exact: true }).fill(p.correo);
   await page.getByLabel('Contraseña', { exact: true }).fill(CLAVE);
   await page.getByRole('button', { name: 'Crear cuenta de artista' }).click();
-  await page.waitForURL('**/app/perfil?aviso=cuenta-creada');
+  await page.waitForURL('**/acceso/textos*'); // desde RF-17 el alta pasa por la aceptacion de textos; aqui se resuelve por la API (rf01 y aceptaciones lo hacen por la UI)
+  await prepararCliente(page);
+  await page.goto('/app/perfil');
   return page;
 };
 const reservar = async (page, d, hora, duracion) => {
   await page.goto(`/reservar/confirmar/?inicio=${encodeURIComponent(inicio(d, hora))}&duracion=${duracion}&sala=${idSala}&servicio=${idServicio}`);
-  await page.getByRole('button', { name: 'Confirmar reserva' }).click();
+  await confirmarReserva(page);
   await page.waitForURL(/\/reservar\/listo\/\?id=/);
   const id = new URL(page.url()).searchParams.get('id');
   return { id, folio: (await page.getByText(FOLIO).first().textContent()).match(FOLIO)[0] };
