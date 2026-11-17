@@ -79,9 +79,9 @@ Claves `aviso` (lista cerrada): las dos de la tabla.
 | Lista: ruta e índice | Inicio / Pagos / Devoluciones · `[A11] COBROS / DEVOLUCIONES` |
 | Lista: título y descripción | DEVOLUCIONES · "Devoluciones que pidieron los clientes y las de cancelaciones del estudio. Decide cada una y márcala cuando hayas devuelto el dinero." |
 | Revisar: ruta, título y descripción | Inicio / Pagos / Devoluciones / {folio} · REVISAR DEVOLUCIÓN · "{cliente} · {tipo} de la reserva {folio}" |
-| Consecuencias de decidir | Total: "El crédito queda en S/ 0,00 y avisamos al cliente. Luego haces la devolución fuera de la app y la marcas como hecha." · Parcial: "Se descuenta {monto} del crédito; el resto sigue como crédito{, y vence 7 días después de hoy si ya había vencido}. Avisamos al cliente." · Rechazo: "El crédito sigue igual y el cliente verá tu motivo{; si ya había vencido, vence 7 días después de hoy}." Ninguna decisión se deshace |
+| Consecuencias de decidir | Total: "El crédito queda en S/ 0,00 y avisamos al cliente. Luego haces la devolución fuera de la app y la marcas como hecha." · Parcial: "Se descuenta {monto} del crédito; el resto sigue como crédito. Avisamos al cliente." · Rechazo: "El crédito sigue igual y el cliente verá tu motivo." Ninguna decisión se deshace |
 | Consecuencias de realizada | "El cliente recibe tu nota por correo y la ve en Mis créditos. No se puede deshacer." |
-| Ayudas | Motivo: "El cliente lo verá. Obligatorio si rechazas." · Nota: "Medio y número de operación. Por ejemplo: «Yape, operación 12345678»." |
+| Ayudas | Motivo: "El cliente lo verá. Obligatorio si devuelves una parte o rechazas." · Nota: "Medio y número de operación. Por ejemplo: «Yape, operación 12345678»." |
 | Columnas | RESERVA · CLIENTE · MONTO · SOLICITADA / PLAZO / DECIDIDA / REALIZADA |
 
 ## Accesibilidad
@@ -91,6 +91,8 @@ Claves `aviso` (lista cerrada): las dos de la tabla.
 - FUERA DE PLAZO lo dice en texto. Región `role="status"` estable para la carga ("3 devoluciones pendientes") y cada resultado; al fallar un envío, el foco va al aviso.
 
 ## Preguntas para leader
+
+Respuestas de leader (2026-11-17): 1, resuelta con las precisiones 3 de RF-18; 2, sí, el motivo es obligatorio en parcial y rechazo (10 a 500) y opcional en total (hasta 500, sin mínimo); 3, nota de 1 a 500; 4, no. Las consecuencias no mencionan el nuevo vencimiento porque `Devolucion` no trae el del crédito.
 
 1. `Devolucion` no trae el monto pedido (saldo del crédito o lo pagado en las del estudio) ni el folio, y no hay `GET /devoluciones/{id}`. Propuesta: sumar `monto`, `folio` y el endpoint de lectura. Sin ellos, Revisar carga la lista y busca el `id`, y el monto sale de `GET /creditos?id_cliente=`.
 2. ¿El motivo es obligatorio también en la devolución parcial? El copy lo deja opcional (solo el rechazo lo exige).
