@@ -284,13 +284,19 @@ test.describe('04 Confirmar con condiciones', () => {
     ['autorizacion_menor_pendiente', {}],
   ]) {
     test(`409 ${codigo}: el detalle escrito sobrevive y vuelve al paso 04`, async ({ page }) => {
-      const vistas = await montarReserva(page, { crear: (r) => r.fulfill(json(409, { error: { codigo, mensaje: 'x', detalles } })) });
+      let falto = false;
+      const vistas = await montarReserva(page, { crear: (r) => { falto = true; return r.fulfill(json(409, { error: { codigo, mensaje: 'x', detalles } })); } });
+      // Tras el 409 el perfil falta algo: el paso 03 se queda quieto en vez de saltar solo al 04.
+      await page.unroute(`${API}/perfil`);
+      await page.route(`${API}/perfil`, (r) => r.fulfill(falto ? perfilApi({ datos_para_reservar: false, telefono: null }) : perfilApi()));
       await page.goto(PASO4);
       await page.getByLabel('Qué necesitas (opcional)').fill('Voz y guitarra');
       await condiciones(page).check();
       await reservar(page).click();
       await expect(page).toHaveURL(/\/reservar\/cuenta\//);
       if (codigo === 'reaceptacion_requerida') await page.screenshot({ path: 'pruebas/capturas/reservar-03-textos-pendientes-1440.png', fullPage: true });
+      await expect(page.locator('bugalu-reserva [data-formulario-cuenta]:not([hidden]), bugalu-reserva [data-cuenta-estado] .aviso').first()).toBeVisible();
+      falto = false;
       await page.goto(PASO4);
       await expect(page.getByLabel('Qué necesitas (opcional)')).toHaveValue('Voz y guitarra');
       expect(vistas.crear).toHaveLength(1);
