@@ -13,7 +13,7 @@ depende_de: [RF-17, RF-01, ADR-012, RN-25, pantalla-rf-01-perfil, diseno-brief, 
 | Actores | Artista/Cliente. Personal y Administrador conservan el [perfil de RF-01](RF-01-perfil.md) sin cambios |
 | Estructura | App, portal ([estructura de app](../patrones/estructura-app.md#app)) |
 | Ruta | `/app/perfil` (amplía la [spec de RF-01](RF-01-perfil.md)) y `/app/perfil/privacidad` (nueva). URL: `aviso` |
-| Isla | `<bugalu-perfil vista="datos\|privacidad">` (existente; suma la vista y los campos) |
+| Isla | `<bugalu-perfil>` (existente; suma los campos de A3 a A5) en `/app/perfil` y `<bugalu-privacidad>` (nueva, isla propia) en `/app/perfil/privacidad`. **Decisión del brief** (TAREA-RF17-8): la privacidad no comparte isla con los datos porque no comparte formulario, estados ni guardado |
 
 ## Recorrido
 
@@ -45,8 +45,8 @@ depende_de: [RF-17, RF-01, ADR-012, RN-25, pantalla-rf-01-perfil, diseno-brief, 
 | Datos | Avisos | [aviso](../componentes/aviso.md) | Existentes + Información "Para reservar te falta: {lista}." si `datos_para_reservar` es `false` + Aviso de menor (Estados) |
 | Datos | Principal (un `<form>`) | [paneles](../componentes/panel.md) `A1 TUS DATOS` (existente) → `A3 IDENTIDAD` (modalidad, documento, menor) → `A4 INTEGRANTES` (solo agrupación: filas + declaración) → `A5 DOMICILIO Y REDES` | Primario "Guardar cambios" al final, como hoy |
 | Datos | Lateral | panel Lateral `A2 CUENTA` (existente) | Suma el enlace "Privacidad y textos aceptados" |
-| Privacidad | Principal (un `<form>`) | panel `P1 PROMOCIONES` (resumen legal Opcional, enlace a la política, casillas correo y WhatsApp) → panel `P2 USOS PROMOCIONALES` (resumen legal Opcional, enlace a las condiciones, casillas fotos y videos, excluir mi material) | Primario "Guardar preferencias" |
-| Privacidad | Principal | panel `P3 TEXTOS ACEPTADOS` + [tabla](../componentes/tabla.md) Compacta | TEXTO (nombre + versión enlazada) · DÓNDE (Registro · Reserva, enlazada a su detalle · Pago · Promociones · Usos promocionales) · FECHA · ESTADO ("Retirado el 3 dic 2026" o "—") |
+| Privacidad | Principal (un `<form>`) | panel `P1 PROMOCIONES` (resumen legal Opcional con título POLÍTICA DE PRIVACIDAD, enlace a la política, casillas correo y WhatsApp) → panel `P2 USOS PROMOCIONALES` (resumen legal Opcional con título CONDICIONES DE CONTRATACIÓN, enlace a las condiciones, casillas fotos y videos, excluir mi material) | Primario "Guardar preferencias". El título del resumen es el **nombre del texto** ([ficha](../componentes/resumen-legal.md#anatomía)), no repite el del panel |
+| Privacidad | Principal | panel `P3 TEXTOS ACEPTADOS` + [tabla](../componentes/tabla.md) Compacta | TEXTO (nombre + versión enlazada) · DÓNDE (Registro · Reserva, enlazada a su detalle por `Aceptacion.id_operacion`: `/app/reservas/detalle?id={id_operacion}`; sin `id_operacion`, texto sin enlace · Pago · Promociones · Usos promocionales) · FECHA · ESTADO ("Retirado el 3 dic 2026" o "—") |
 
 Marcar y desmarcar cuestan lo mismo y se guardan con el mismo botón: retirar un consentimiento es desmarcar y guardar (CA-12, CA-13). Las casillas de modalidad no cambian lo ya escrito: al pasar a Individual, A4 se oculta pero sus filas se conservan hasta guardar. Adaptabilidad: como RF-01; filas repetibles en una columna < `punto-quiebre-tableta`.
 
