@@ -18,6 +18,7 @@ from bugalu.modulos.catalogo.aplicacion.listar_especialistas.caso_de_uso import 
 )
 from bugalu.modulos.catalogo.aplicacion.listar_feriados.caso_de_uso import ListarFeriados
 from bugalu.modulos.catalogo.aplicacion.listar_servicios.caso_de_uso import ListarServicios
+from bugalu.modulos.catalogo.aplicacion.obtener_impuestos.caso_de_uso import ObtenerImpuestos
 from bugalu.modulos.catalogo.aplicacion.obtener_recargos.caso_de_uso import ObtenerRecargos
 from bugalu.modulos.catalogo.aplicacion.reemplazar_recargos.caso_de_uso import ReemplazarRecargos
 from bugalu.modulos.catalogo.aplicacion.simular_precio.caso_de_uso import SimularPrecio
@@ -27,6 +28,7 @@ from bugalu.modulos.catalogo.infraestructura.entrada.http.esquemas import (
     CambiosServicio,
     Especialista,
     Feriado,
+    Impuestos,
     NuevaSimulacion,
     NuevoFeriado,
     Recargos,
@@ -117,6 +119,18 @@ async def actualizar_especialista(
             id_especialista, cuerpo.model_dump(exclude_unset=True)
         )
     return Especialista.desde_dominio(especialista)
+
+
+@router.get(
+    "/impuestos",
+    response_model=Impuestos,
+    summary="IGV y si los precios lo incluyen (publico)",
+    responses=_respuestas(),
+)
+async def obtener_impuestos(request: Request) -> Impuestos:
+    async with transaccion_publica(_pool(request)) as conexion:
+        impuestos = await ObtenerImpuestos(RepositorioCatalogoPostgres(conexion)).ejecutar()
+    return Impuestos.desde_dominio(impuestos)
 
 
 @router.get(

@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 
 from bugalu.modulos.catalogo.dominio.precio import (
+    ConfiguracionImpuestos,
     Especialista,
     Recargos,
     Servicio,
@@ -437,6 +438,8 @@ async def _motor(
         datetime.fromisoformat(fin),
         recargos,
         feriados,
+        ConfiguracionImpuestos(D("18.00"), True),
+        50,
     )
 
 
@@ -452,6 +455,11 @@ def _esperado(sim: Any) -> dict[str, Any]:
         ],
         "total": str(sim.total),
         "anticipo": str(sim.anticipo),
+        "porcentaje_adelanto": "50.00",
+        "impuesto": {
+            "nombre": "IGV", "porcentaje": "18.00", "incluido": True,
+            "base": str(sim.impuesto.base), "monto": str(sim.impuesto.monto),
+        },
     }  # fmt: skip
 
 

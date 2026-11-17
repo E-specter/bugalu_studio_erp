@@ -29,6 +29,7 @@ class ReservaResumen:
     folio: str
     inicio: datetime
     estado: str
+    porcentaje_igv: Decimal  # el guardado en la reserva al crearla (RF-20 CA-03)
 
 
 @dataclass(frozen=True)

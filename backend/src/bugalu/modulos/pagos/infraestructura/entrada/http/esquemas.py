@@ -8,6 +8,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, SerializerFunctionWrapHandler, model_serializer
 
 from bugalu.compartido.esquemas import TextoLargo
+from bugalu.modulos.catalogo.dominio.precio import desglosar_igv_incluido
 from bugalu.modulos.pagos.dominio import modelos
 from bugalu.modulos.pagos.dominio.instrucciones import Instruccion
 from bugalu.modulos.reservas.dominio.disponibilidad import LIMA
@@ -31,6 +32,12 @@ class ClienteDelPago(BaseModel):
     nombre: str | None
 
 
+class ImpuestoDelPago(BaseModel):
+    porcentaje: Decimal
+    base: Decimal
+    monto: Decimal
+
+
 class Pago(BaseModel):
     id: UUID
     estado: str
@@ -43,6 +50,7 @@ class Pago(BaseModel):
     monto_coincide: bool
     cuota: CuotaDelPago
     reserva: ReservaDelPago
+    impuesto: ImpuestoDelPago
     cliente: ClienteDelPago | None = None
 
     @model_serializer(mode="wrap")
@@ -56,6 +64,7 @@ class Pago(BaseModel):
 
     @classmethod
     def desde_dominio(cls, p: modelos.Pago) -> Pago:
+        base, monto = desglosar_igv_incluido(p.monto, p.reserva.porcentaje_igv)
         return cls(
             id=p.id,
             estado=p.estado,
@@ -73,6 +82,7 @@ class Pago(BaseModel):
                 inicio=p.reserva.inicio.astimezone(LIMA),
                 estado=p.reserva.estado,
             ),
+            impuesto=ImpuestoDelPago(porcentaje=p.reserva.porcentaje_igv, base=base, monto=monto),
             cliente=ClienteDelPago(id=p.cliente.id, nombre=p.cliente.nombre) if p.cliente else None,
         )
 

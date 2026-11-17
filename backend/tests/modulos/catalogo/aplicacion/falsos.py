@@ -2,10 +2,12 @@ from collections.abc import Collection, Mapping, Sequence
 from dataclasses import replace
 from datetime import date, time
 from decimal import Decimal
+from typing import Any
 from uuid import UUID, uuid4
 
 from bugalu.compartido.errores import FeriadoRepetido
 from bugalu.modulos.catalogo.dominio.precio import (
+    ConfiguracionImpuestos,
     Especialista,
     Feriado,
     Recargos,
@@ -72,6 +74,19 @@ class CatalogoFalso:
             self.especialistas[id_especialista], **cambios
         )
         return self.especialistas[id_especialista]
+
+    async def obtener_impuestos(self) -> ConfiguracionImpuestos:
+        return ConfiguracionImpuestos(D("18.00"), True)
+
+    async def parametros_vigentes(self) -> dict[str, Any]:
+        return {
+            "porcentaje_igv": "18.00",
+            "precios_incluyen_igv": True,
+            "horas_limite_pago": 1,
+            "horas_nivel_1": 48,
+            "horas_nivel_2": 24,
+            "porcentaje_adelanto": 50,
+        }
 
     async def obtener_recargos(self) -> Recargos:
         return self.recargos

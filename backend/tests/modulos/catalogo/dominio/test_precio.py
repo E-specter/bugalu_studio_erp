@@ -7,17 +7,21 @@ import pytest
 
 from bugalu.compartido.errores import ServicioNoReservable, TramoInvalido
 from bugalu.modulos.catalogo.dominio.precio import (
+    ConfiguracionImpuestos,
     Especialista,
+    Impuesto,
     Linea,
     Recargos,
     Servicio,
     Simulacion,
     Unidad,
     calcular_simulacion,
+    desglosar_igv_incluido,
 )
 
 LIMA = timezone(timedelta(hours=-5))
 D = Decimal
+IGV_INCLUIDO = ConfiguracionImpuestos(D("18.00"), True)
 
 
 def lima(dia: int, hora: int, minuto: int = 0) -> datetime:
@@ -60,9 +64,19 @@ def calcular(
     elegidos: tuple[Especialista, ...] = (),
     recargos: Recargos = RECARGOS,
     feriados: tuple[date, ...] = (),
+    impuestos: ConfiguracionImpuestos = IGV_INCLUIDO,
+    adelanto: int = 50,
 ) -> Simulacion:
     return calcular_simulacion(
-        svc or servicio(), defecto, elegidos, inicio, fin, recargos, frozenset(feriados)
+        svc or servicio(),
+        defecto,
+        elegidos,
+        inicio,
+        fin,
+        recargos,
+        frozenset(feriados),
+        impuestos,
+        adelanto,
     )
 
 
@@ -224,3 +238,66 @@ def test_el_tramo_se_interpreta_en_hora_de_lima_aunque_llegue_en_utc() -> None:
     utc = UTC
     s = calcular(datetime(2026, 11, 19, 2, 0, tzinfo=utc), datetime(2026, 11, 19, 3, 0, tzinfo=utc))
     assert s.recargos[0].tipo == "noche"  # 21:00 a 22:00 en Lima
+
+
+# --- IGV (RF-20 CA-02) ---
+
+
+def test_igv_incluido_150_al_18_es_base_127_12_e_igv_22_88() -> None:
+    assert desglosar_igv_incluido(D("150.00"), D("18.00")) == (D("127.12"), D("22.88"))
+
+
+def test_igv_incluido_75_al_18_es_base_63_56_e_igv_11_44() -> None:
+    assert desglosar_igv_incluido(D("75.00"), D("18.00")) == (D("63.56"), D("11.44"))
+
+
+def test_igv_incluido_redondea_la_base_mitad_hacia_arriba() -> None:
+    # 0.01 / 2 = 0.005 exacto: sube a 0.01 y el IGV queda en 0.00
+    assert desglosar_igv_incluido(D("0.01"), D("100")) == (D("0.01"), D("0.00"))
+
+
+def test_igv_incluido_con_0_por_ciento_no_hay_igv() -> None:
+    assert desglosar_igv_incluido(D("150.00"), D("0")) == (D("150.00"), D("0.00"))
+
+
+def test_igv_incluido_base_mas_igv_siempre_es_el_total() -> None:
+    for centimos in range(1, 3000, 7):
+        total = D(centimos) / 100
+        base, igv = desglosar_igv_incluido(total, D("18.00"))
+        assert base + igv == total and igv >= 0
+
+
+def test_simulacion_con_igv_incluido_no_cambia_lineas_ni_total() -> None:
+    s = calcular(lima(18, 10), lima(18, 12))
+    assert s.total == D("160.00") and s.lineas[0].monto == D("160.00")
+    assert s.impuesto == Impuesto(D("18.00"), True, D("135.59"), D("24.41"))
+
+
+def test_simulacion_sin_igv_incluido_suma_el_igv_a_las_lineas() -> None:
+    s = calcular(lima(18, 10), lima(18, 12), impuestos=ConfiguracionImpuestos(D("18.00"), False))
+    assert s.lineas[0].monto == D("160.00")
+    assert s.impuesto == Impuesto(D("18.00"), False, D("160.00"), D("28.80"))
+    assert (s.total, s.anticipo) == (D("188.80"), D("94.40"))
+
+
+def test_simulacion_sin_igv_redondea_el_igv_mitad_hacia_arriba() -> None:
+    # 0.25 x 18 % = 0.045 -> 0.05 (el servicio de 0.50 por hora cuesta 0.25 en 30 min)
+    s = calcular(
+        lima(18, 10),
+        lima(18, 10, 30),
+        svc=servicio("0.50"),
+        impuestos=ConfiguracionImpuestos(D("18.00"), False),
+    )
+    assert (s.impuesto.base, s.impuesto.monto, s.total) == (D("0.25"), D("0.05"), D("0.30"))
+
+
+def test_el_anticipo_sale_del_porcentaje_de_adelanto_sobre_el_total() -> None:
+    s = calcular(lima(18, 10), lima(18, 12), adelanto=30)
+    assert s.anticipo == D("48.00") and s.porcentaje_adelanto == D("30.00")
+    con_igv_aparte = calcular(
+        lima(18, 10),
+        lima(18, 12),
+        impuestos=ConfiguracionImpuestos(D("18.00"), False),
+        adelanto=25,
+    )
+    assert con_igv_aparte.anticipo == D("47.20")  # 25 % del total con IGV (188.80)

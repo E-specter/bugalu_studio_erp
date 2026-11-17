@@ -35,7 +35,7 @@ select is((select count(*)::int from public.servicio_especialista se join public
   where e.nombre = 'Ingeniero de sonido'), 4, 'ingeniero por defecto en grabacion y live');
 select is((select count(*)::int from public.recargo), 3, 'tres recargos');
 select is((select string_agg(clave || '=' || valor, ',' order by clave) from public.parametro),
-  'anticipacion_maxima_semanas=8,anticipacion_minima_horas=2,dias_limite_pago=3,horas_limite_pago=1', 'parametros iniciales');
+  'anticipacion_maxima_semanas=8,anticipacion_minima_horas=2,dias_limite_pago=3,dias_vigencia_credito=30,horas_limite_pago=1,horas_nivel_1=48,horas_nivel_2=24,minutos_tolerancia_inasistencia=15,porcentaje_adelanto=50,porcentaje_penalizacion_nivel_2=25,reprogramaciones_nivel_1=2,reprogramaciones_nivel_2=1', 'parametros iniciales');
 
 -- anon: lee lo publico, no parametro, no escribe
 set local role anon;
@@ -67,7 +67,7 @@ select is((select count(*)::int from public.feriado), 1, 'feriado intacto tras e
 -- administrador
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ad","role":"authenticated"}', true);
-select is((select count(*)::int from public.parametro), 4, 'admin lee parametro');
+select is((select count(*)::int from public.parametro), 12, 'admin lee parametro');
 select lives_ok($$update public.servicio set tarifa_hora = 99.00 where nombre = 'Ensayo'$$, 'admin actualiza tarifa');
 select is((select tarifa_hora from public.servicio where nombre = 'Ensayo'), 99.00, 'la tarifa cambio');
 select lives_ok($$update public.parametro set valor = 5 where clave = 'dias_limite_pago'$$, 'admin actualiza parametro');

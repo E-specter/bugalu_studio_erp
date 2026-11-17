@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -39,7 +40,8 @@ _INDICES = {
 _PAGO = (
     "select p.id, p.estado, p.metodo, p.monto, p.numero_operacion, p.motivo_rechazo, "
     "p.registrado_en, p.validado_en, p.ruta_captura, p.tipo_captura, c.id, c.hito, c.monto, "
-    "r.id, r.folio, r.inicio, r.estado, p.id_cliente, u.nombre "
+    "r.id, r.folio, r.inicio, r.estado, p.id_cliente, u.nombre, "
+    "r.parametros_aplicados->>'porcentaje_igv' "
     "from public.comprobante_pago p join public.cuota c on c.id = p.id_cuota "
     "join public.reserva r on r.id = c.id_reserva "
     "left join public.usuario u on u.id = p.id_cliente "
@@ -108,7 +110,7 @@ class RepositorioPagosPostgres:
             ruta,
             tipo,
             CuotaResumen(*fila[10:13]),
-            ReservaResumen(*fila[13:17]),
+            ReservaResumen(fila[13], fila[14], fila[15], fila[16], Decimal(fila[19])),
             cliente,
         )
 

@@ -36,4 +36,5 @@ class CotizadorCatalogo:
                 EspecialistaAplicado(e.id, e.monto_fijo, e.monto_variable, e.unidad.value)
                 for e in c.especialistas
             ),
+            parametros_aplicados=c.parametros_aplicados,
         )

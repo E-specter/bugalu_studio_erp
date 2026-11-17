@@ -8,6 +8,7 @@ from psycopg import AsyncConnection, errors, sql
 
 from bugalu.compartido.errores import FeriadoRepetido
 from bugalu.modulos.catalogo.dominio.precio import (
+    ConfiguracionImpuestos,
     Especialista,
     Feriado,
     Recargos,
@@ -108,6 +109,18 @@ class RepositorioCatalogoPostgres:
             ),
             (*(v.value if isinstance(v, Unidad) else v for v in cambios.values()), id_fila),
         )
+
+    async def obtener_impuestos(self) -> ConfiguracionImpuestos:
+        porcentaje, incluido = (
+            await self._filas(
+                "select porcentaje_igv, precios_incluyen_igv from public.configuracion_impuestos"
+            )
+        )[0]
+        return ConfiguracionImpuestos(porcentaje, incluido)
+
+    async def parametros_vigentes(self) -> dict[str, Any]:
+        vigentes: dict[str, Any] = (await self._filas("select public.parametros_vigentes()"))[0][0]
+        return vigentes
 
     async def obtener_recargos(self) -> Recargos:
         filas = {

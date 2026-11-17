@@ -1,5 +1,6 @@
 from collections.abc import Mapping, Sequence
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -16,6 +17,7 @@ from bugalu.compartido.errores import (
     TienePagos,
     TramoNoDisponible,
 )
+from bugalu.modulos.catalogo.dominio.precio import desglosar_igv_incluido
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo
 from bugalu.modulos.reservas.dominio.modelos import (
     PARAMETROS,
@@ -37,10 +39,27 @@ _RESERVA = (
     "select r.id, r.folio, r.estado, r.motivo_cancelacion, r.inicio, r.fin, r.fin_buffer, "
     "r.precio, r.vence_pago, r.id_cliente, sa.id, sa.nombre, se.id, se.nombre, se.categoria, "
     "case when r.id_cliente = (select auth.uid()) or public.es_administrador() "
-    "then r.nota_cancelacion end, public.hay_pago_por_validar(r.id) "
+    "then r.nota_cancelacion end, public.hay_pago_por_validar(r.id), r.parametros_aplicados "
     "from public.reserva r join public.sala_tecnica sa on sa.id = r.id_sala "
     "join public.servicio se on se.id = r.id_servicio "
 )
+
+
+def _con_impuesto(precio: dict[str, Any], aplicados: dict[str, Any]) -> dict[str, Any]:
+    """Las reservas anteriores a RF-20 no guardaron el desglose: sale del total con IGV incluido."""
+    if "impuesto" in precio:
+        return precio
+    porcentaje = Decimal(aplicados["porcentaje_igv"])
+    base, monto = desglosar_igv_incluido(Decimal(precio["total"]), porcentaje)
+    impuesto = {
+        "nombre": "IGV",
+        "porcentaje": str(porcentaje),
+        "incluido": True,
+        "base": str(base),
+        "monto": str(monto),
+    }
+    adelanto = str(Decimal(aplicados["porcentaje_adelanto"]).quantize(Decimal("0.01")))
+    return {**precio, "impuesto": impuesto, "porcentaje_adelanto": adelanto}
 
 
 class RepositorioReservasPostgres:
@@ -205,8 +224,9 @@ class RepositorioReservasPostgres:
         try:
             filas = await self._filas(
                 "insert into public.reserva (id_cliente, id_sala, id_servicio, id_franja, inicio, "
-                "fin, precio, total, vence_pago, detalle) "
-                "values ((select auth.uid()), %s, %s, %s, %s, %s, %s, %s, %s, %s) returning id",
+                "fin, precio, total, vence_pago, detalle, parametros_aplicados) "
+                "values ((select auth.uid()), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                "returning id",
                 (
                     nueva.id_sala,
                     nueva.id_servicio,
@@ -217,6 +237,7 @@ class RepositorioReservasPostgres:
                     nueva.cotizacion.total,
                     nueva.vence_pago,
                     nueva.detalle,
+                    Jsonb(nueva.cotizacion.parametros_aplicados),
                 ),
             )
         except errors.ExclusionViolation:  # RN-01: la base es quien decide el solape
@@ -290,7 +311,7 @@ class RepositorioReservasPostgres:
                 inicio=f[4],
                 fin=f[5],
                 fin_buffer=f[6],
-                precio=f[7],
+                precio=_con_impuesto(f[7], f[17]),
                 vence_pago=f[8],
                 id_cliente=f[9],
                 sala=Referencia(f[10], f[11]),

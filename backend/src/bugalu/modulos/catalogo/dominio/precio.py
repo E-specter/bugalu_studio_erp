@@ -83,15 +83,45 @@ class LineaRecargo:
 
 
 @dataclass(frozen=True)
+class ConfiguracionImpuestos:
+    porcentaje: Decimal
+    incluido: bool  # los precios del catalogo ya traen el IGV (ADR-013)
+
+
+@dataclass(frozen=True)
+class Impuesto:
+    porcentaje: Decimal
+    incluido: bool
+    base: Decimal
+    monto: Decimal
+
+
+@dataclass(frozen=True)
 class Simulacion:
     lineas: tuple[Linea, ...]
     recargos: tuple[LineaRecargo, ...]
     total: Decimal
     anticipo: Decimal
+    impuesto: Impuesto
+    porcentaje_adelanto: Decimal  # el que dio el anticipo, con dos decimales
 
 
 def _centimos(monto: Decimal) -> Decimal:
     return monto.quantize(_CENTIMO, rounding=ROUND_HALF_UP)
+
+
+def desglosar_igv_incluido(total: Decimal, porcentaje: Decimal) -> tuple[Decimal, Decimal]:
+    """(base, igv) de un total que ya incluye el IGV (RF-20 CA-02); base + igv = total."""
+    base = _centimos(total / (1 + porcentaje / 100))
+    return base, total - base
+
+
+def _impuesto_y_total(suma: Decimal, config: ConfiguracionImpuestos) -> tuple[Impuesto, Decimal]:
+    if config.incluido:
+        base, igv = desglosar_igv_incluido(suma, config.porcentaje)
+        return Impuesto(config.porcentaje, True, base, igv), suma
+    igv = _centimos(suma * config.porcentaje / 100)
+    return Impuesto(config.porcentaje, False, suma, igv), suma + igv
 
 
 def combinar_especialistas(
@@ -144,6 +174,8 @@ def calcular_simulacion(
     fin: datetime,
     recargos: Recargos,
     feriados: Collection[date],
+    impuestos: ConfiguracionImpuestos,
+    porcentaje_adelanto: int,
 ) -> Simulacion:
     if not (servicio.ocupa_sala and servicio.activo):
         raise ServicioNoReservable("El servicio no se reserva en el calendario.")
@@ -179,5 +211,8 @@ def calcular_simulacion(
     )
 
     montos = [*(x.monto for x in lineas), *(x.monto for x in lineas_recargo)]
-    total = sum(montos, Decimal(0)).quantize(_CENTIMO)
-    return Simulacion(tuple(lineas), lineas_recargo, total, _centimos(total / 2))
+    suma = sum(montos, Decimal(0)).quantize(_CENTIMO)
+    impuesto, total = _impuesto_y_total(suma, impuestos)
+    anticipo = _centimos(total * porcentaje_adelanto / 100)
+    adelanto = Decimal(porcentaje_adelanto).quantize(_CENTIMO)
+    return Simulacion(tuple(lineas), lineas_recargo, total, anticipo, impuesto, adelanto)

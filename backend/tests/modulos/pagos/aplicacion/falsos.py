@@ -37,7 +37,9 @@ class PagosFalso:
             ruta_captura=nuevo.ruta_captura,
             tipo_captura=nuevo.tipo_captura,
             cuota=CuotaResumen(nuevo.id_cuota, "al_reservar", Decimal("50.00")),
-            reserva=ReservaResumen(UUID(int=1), "R-2027-00001", datetime.now(UTC), "pre_reservada"),
+            reserva=ReservaResumen(
+                UUID(int=1), "R-2027-00001", datetime.now(UTC), "pre_reservada", Decimal("18.00")
+            ),
             cliente=ClienteResumen(nuevo.id_cliente, "Ana") if self.administrador else None,
         )
 

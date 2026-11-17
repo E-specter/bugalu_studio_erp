@@ -119,6 +119,7 @@ class Cotizacion:
     total: Decimal
     anticipo: Decimal
     especialistas: tuple[EspecialistaAplicado, ...]
+    parametros_aplicados: dict[str, Any]  # IGV y parametros vigentes al cotizar (RF-20 CA-07)
 
 
 @dataclass(frozen=True)

@@ -80,6 +80,7 @@ def sql(configuracion: Configuracion) -> Callable[..., list[tuple[Any, ...]]]:
 
     def consultar(consulta: str, *parametros: Any) -> list[tuple[Any, ...]]:
         with psycopg.connect(configuracion.url_base_datos_admin) as c:
-            return c.execute(consulta, parametros).fetchall()
+            cursor = c.execute(consulta, parametros)
+            return cursor.fetchall() if cursor.description else []
 
     return consultar

@@ -1,10 +1,13 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from bugalu.compartido.errores import DatosInvalidos
 from bugalu.modulos.catalogo.dominio.precio import (
+    ConfiguracionImpuestos,
     Especialista,
     Servicio,
     Simulacion,
@@ -22,6 +25,7 @@ class Cotizacion:
     servicio: Servicio
     especialistas: tuple[Especialista, ...]
     simulacion: Simulacion
+    parametros_aplicados: dict[str, Any]  # los mismos con los que se calculo el precio
 
 
 class SimularPrecio:
@@ -67,6 +71,9 @@ class SimularPrecio:
         ]
         fechas = {b.date() for b in bloques_del_tramo(inicio, fin)}  # valida el tramo
         extra = [conocidos[i] for i in elegidos]
+        vigentes = (
+            await self._catalogo.parametros_vigentes()
+        )  # una lectura: precio y reserva coinciden
         simulacion = calcular_simulacion(
             servicio,
             por_defecto,
@@ -75,5 +82,11 @@ class SimularPrecio:
             fin,
             await self._catalogo.obtener_recargos(),
             await self._catalogo.feriados_en(fechas),
+            ConfiguracionImpuestos(
+                Decimal(vigentes["porcentaje_igv"]), vigentes["precios_incluyen_igv"]
+            ),
+            vigentes["porcentaje_adelanto"],
         )
-        return Cotizacion(servicio, tuple(combinar_especialistas(por_defecto, extra)), simulacion)
+        return Cotizacion(
+            servicio, tuple(combinar_especialistas(por_defecto, extra)), simulacion, vigentes
+        )

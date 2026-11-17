@@ -1,10 +1,16 @@
 from collections.abc import Collection, Mapping, Sequence
 from datetime import date
 from decimal import Decimal
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID
 
-from bugalu.modulos.catalogo.dominio.precio import Especialista, Feriado, Recargos, Servicio
+from bugalu.modulos.catalogo.dominio.precio import (
+    ConfiguracionImpuestos,
+    Especialista,
+    Feriado,
+    Recargos,
+    Servicio,
+)
 
 
 class RepositorioCatalogo(Protocol):
@@ -35,6 +41,12 @@ class RepositorioCatalogo(Protocol):
     async def actualizar_especialista(
         self, id_especialista: UUID, cambios: Mapping[str, Decimal | bool | str]
     ) -> Especialista | None: ...
+
+    async def obtener_impuestos(self) -> ConfiguracionImpuestos: ...
+
+    async def parametros_vigentes(self) -> dict[str, Any]:
+        """IGV y parametros que una reserva guarda al crearse (RF-20 CA-07)."""
+        ...
 
     async def obtener_recargos(self) -> Recargos: ...
 

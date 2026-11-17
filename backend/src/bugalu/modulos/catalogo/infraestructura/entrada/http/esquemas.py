@@ -81,11 +81,30 @@ class LineaRecargo(BaseModel):
     monto: Decimal
 
 
+class Impuestos(BaseModel):
+    porcentaje_igv: Decimal
+    precios_incluyen_igv: bool
+
+    @classmethod
+    def desde_dominio(cls, c: precio.ConfiguracionImpuestos) -> Impuestos:
+        return cls(porcentaje_igv=c.porcentaje, precios_incluyen_igv=c.incluido)
+
+
+class Impuesto(BaseModel):
+    nombre: str = "IGV"
+    porcentaje: Decimal
+    incluido: bool
+    base: Decimal
+    monto: Decimal
+
+
 class Simulacion(BaseModel):
     lineas: list[Linea]
     recargos: list[LineaRecargo]
     total: Decimal
     anticipo: Decimal
+    impuesto: Impuesto
+    porcentaje_adelanto: Decimal
 
     @classmethod
     def desde_dominio(cls, s: precio.Simulacion) -> Simulacion:
@@ -94,6 +113,8 @@ class Simulacion(BaseModel):
             recargos=[LineaRecargo(**vars(x)) for x in s.recargos],
             total=s.total,
             anticipo=s.anticipo,
+            impuesto=Impuesto(**vars(s.impuesto)),
+            porcentaje_adelanto=s.porcentaje_adelanto,
         )
 
 
