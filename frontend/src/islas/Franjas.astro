@@ -234,7 +234,11 @@ const errorLimite = (nombre) => {
         aviso('error', `No puedes cerrar ese horario: tiene ${plural(reservas.length, 'reserva vigente', 'reservas vigentes')}`, 'Resuélvelas antes de cerrarlo.', {
           enlaces: reservas.map((r) => ({ texto: `${r.folio} · ${diaMes(fechaDe(r.inicio))}, ${horaDe(r.inicio)} · ${r.cliente}`, href: `/app/reservas/detalle?id=${encodeURIComponent(r.id)}` })),
         });
-      } else if (error.estado === 428 && error.codigo === 'confirmacion_requerida' && this.ctx) this.revisar(this.ctx); // red de seguridad: el backend exige la revision
+      } else if (error.estado === 428 && error.codigo === 'confirmacion_requerida' && this.ctx) {
+        // Red de seguridad: sin cambios sensibles propios, el sensible lo cambio otro administrador; revisar `{}` mentiria.
+        if (Object.keys(this.ctx.peticion.cambios).length) this.revisar(this.ctx);
+        else this.cargar().then(() => aviso('aviso', 'Otro administrador cambió los parámetros', 'Revisa los valores y vuelve a guardar.'));
+      }
       else if (error.estado === 422 && error.codigo === 'sin_cambios') aviso('informacion', 'Ya tiene esos valores. No hay nada que cambiar.');
       else if (error.estado === 422 && error.codigo === 'plazos_incoherentes') this.plazosIncoherentes();
       else if (error.estado === 404) {
@@ -526,7 +530,7 @@ const errorLimite = (nombre) => {
         },
       };
       if (sensibles.length) this.revisar(this.ctx);
-      else this.enviar(boton, 'Guardando…', () => guardarParametros(cuerpo), exito);
+      else this.enviar(boton, 'Guardando…', () => guardarParametros(cambiados.length ? Object.fromEntries(cambiados.map((n) => [n, cuerpo[n]])) : cuerpo), exito);
     }
   }
 

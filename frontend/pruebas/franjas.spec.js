@@ -351,7 +351,7 @@ for (const t of tamanos) {
     await page.getByLabel('Anticipación mínima (horas)').fill('3'); // la anticipacion no es sensible: se guarda en un paso
     await page.getByRole('button', { name: 'Guardar parámetros' }).click();
     await expect(page.getByText('Parámetros guardados. La anticipación ya vale en el calendario; los plazos de pago, en las reservas nuevas.')).toBeVisible();
-    expect(parches[0].cuerpo).toEqual({ ...PARAMETROS, anticipacion_minima_horas: 3 });
+    expect(parches[0].cuerpo).toEqual({ anticipacion_minima_horas: 3 });
     await expect(page.getByRole('link', { name: 'Ver en el registro de cambios' })).toHaveCount(0);
     await expect(page.getByLabel('Anticipación mínima (horas)')).toHaveValue('3');
     await sinViolaciones(page);

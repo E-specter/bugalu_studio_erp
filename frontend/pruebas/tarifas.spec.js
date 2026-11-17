@@ -112,7 +112,7 @@ test('servicio: edita tarifa, monto fijo, especialistas por defecto y activo', a
   await page.getByLabel('Activo').uncheck();
   await page.getByRole('button', { name: 'Guardar servicio' }).click();
   await expect(page.getByText('Servicio actualizado. El precio nuevo se aplica')).toBeVisible();
-  expect(parches[0].cuerpo).toEqual({ tarifa_hora: '120.00', monto_fijo: '15.00', activo: false, especialistas_por_defecto: ['e1', 'e2'] });
+  expect(parches[0].cuerpo).toEqual({ activo: false, especialistas_por_defecto: ['e1', 'e2'] });
   expect(consola).toEqual([]);
 });
 
@@ -182,7 +182,7 @@ test('especialista: edita fijo, variable, unidad y activo', async ({ page }) => 
   await page.getByLabel('Activo').check();
   await page.getByRole('button', { name: 'Guardar especialista' }).click();
   await expect(page.getByText('Especialista actualizado. El precio nuevo se aplica')).toBeVisible();
-  expect(parches[0].cuerpo).toEqual({ monto_fijo: '100.00', monto_variable: '40.00', unidad: 'lapso_30', activo: true });
+  expect(parches[0].cuerpo).toEqual({ activo: true });
 });
 
 test('especialista: id desconocido y importe invalido', async ({ page }) => {

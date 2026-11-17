@@ -190,14 +190,29 @@ test('parametros: 422 sin_cambios avisa que ya tiene esos valores', async ({ pag
   await dice(page, 'Ya tiene esos valores. No hay nada que cambiar.');
 });
 
-test('parametros: 428 del endpoint de siempre abre la revision (red de seguridad)', async ({ page }) => {
+test('parametros: 428 sin cambios sensibles propios recarga y avisa, sin revision engañosa', async ({ page }) => {
   const v = await base(page);
   await simular(page, 'PATCH', '/parametros', json(428, { error: { codigo: 'confirmacion_requerida', mensaje: 'x', detalles: { campos: ['porcentaje_adelanto'] } } }));
+  let lecturas = 0;
+  page.on('request', (r) => r.method() === 'GET' && r.url().includes('/parametros') && lecturas++);
   await page.goto('/app/franjas/parametros');
+  const antes = lecturas;
   await page.getByLabel('Anticipación mínima (horas)').fill('4');
-  await guardar(page).click(); // solo anticipacion: un paso -> el servidor responde 428
-  await expect(page.getByRole('heading', { name: /Qué cambia/i })).toBeFocused();
-  expect(v.previas).toHaveLength(1);
+  await guardar(page).click(); // solo anticipacion: un paso -> otro administrador cambio un sensible y el servidor responde 428
+  await dice(page, 'Otro administrador cambió los parámetros. Revisa los valores y vuelve a guardar.');
+  expect(lecturas).toBeGreaterThan(antes);
+  expect(v.patches).toHaveLength(0); // el 428 simulado reemplaza al PATCH de base
+  expect(v.previas).toHaveLength(0);
+  await expect(page.getByText('Ya tiene esos valores')).toHaveCount(0);
+});
+
+test('parametros: la ruta sin revision envia solo los campos cambiados', async ({ page }) => {
+  const v = await base(page);
+  await page.goto('/app/franjas/parametros');
+  await page.getByLabel('Anticipación máxima (semanas)').fill('10');
+  await guardar(page).click();
+  await dice(page, 'Parámetros guardados');
+  expect(v.patches[0].cuerpo).toEqual({ anticipacion_maxima_semanas: 10 });
 });
 
 test('parametros: cambio_desactualizado vuelve a pedir la vista previa y vacia la palabra', async ({ page }) => {

@@ -236,6 +236,10 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
   const ERROR_IMPORTE = 'Escribe un importe de 0 o más, con hasta dos decimales, como 120,50.';
   const ERROR_PORCENTAJE = 'Escribe un porcentaje de 0 o más.';
 
+  // Solo los campos que difieren de lo cargado: un campo no tocado nunca viaja, para no deshacer el cambio de otro administrador.
+  const diferentes = (nuevo, cargado, normalizar = (v) => leerImporte(v)) => Object.fromEntries(Object.entries(nuevo).filter(([n, v]) => v !== normalizar(cargado[n], n)));
+  const hh = (t) => String(t).slice(0, 5);
+
   class BugaluTarifas extends IslaGestion {
     avisosUrl = {
       'servicio-actualizado': ['Servicio actualizado', 'El precio nuevo se aplica a las simulaciones y reservas desde ahora.'],
@@ -376,8 +380,8 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       const boton = formulario.querySelector('[data-envio]');
       const activo = formulario.querySelector('[name="activo"]').checked;
       const defecto = [...formulario.querySelectorAll('[name="especialistas_por_defecto"]:checked')].map((c) => c.value);
-      const cambios = { tarifa_hora: valores.tarifa_hora, monto_fijo: valores.monto_fijo };
-      const sensible = cambios.tarifa_hora !== leerImporte(s.tarifa_hora) || cambios.monto_fijo !== leerImporte(s.monto_fijo);
+      const cambios = diferentes(valores, s);
+      const sensible = Object.keys(cambios).length > 0;
       const nombres = [activo !== s.activo && 'Activo', [...defecto].sort().join() !== [...s.especialistas_por_defecto].sort().join() && 'Especialistas por defecto'].filter(Boolean);
       const exito = () => location.assign('/app/tarifas?aviso=servicio-actualizado');
       this.ctx = { formulario, peticion: { recurso: 'servicio', id_recurso: this.registro, cambios }, resto: nombres.length ? () => actualizarServicio(this.registro, { activo, especialistas_por_defecto: defecto }) : null, restoNombre: nombres.join(' / '), exito };
@@ -408,8 +412,9 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       if (!this.validar(errores)) return;
       const e = this.cargado;
       const activo = formulario.querySelector('[name="activo"]').checked;
-      const cambios = { ...valores, unidad: formulario.querySelector('[name="unidad"]:checked').value };
-      const sensible = cambios.monto_fijo !== leerImporte(e.monto_fijo) || cambios.monto_variable !== leerImporte(e.monto_variable) || cambios.unidad !== e.unidad;
+      const unidad = formulario.querySelector('[name="unidad"]:checked').value;
+      const cambios = { ...diferentes(valores, e), ...(unidad !== e.unidad && { unidad }) };
+      const sensible = Object.keys(cambios).length > 0;
       const exito = () => location.assign('/app/tarifas?aviso=especialista-actualizado');
       this.ctx = { formulario, peticion: { recurso: 'especialista', id_recurso: this.registro, cambios }, resto: activo !== e.activo ? () => actualizarEspecialista(this.registro, { activo }) : null, restoNombre: 'Activo', exito };
       if (sensible) return this.revisar(this.ctx);
@@ -479,10 +484,14 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       };
       if (!this.validar(errores)) return;
       const r = this.cargado;
-      const hh = (t) => String(t).slice(0, 5);
-      const sensible = cuerpo.noche.porcentaje !== leerImporte(r.noche.porcentaje) || hh(cuerpo.noche.desde) !== hh(r.noche.desde) || hh(cuerpo.noche.hasta) !== hh(r.noche.hasta)
-        || cuerpo.fin_de_semana.porcentaje !== leerImporte(r.fin_de_semana.porcentaje) || cuerpo.feriado.porcentaje !== leerImporte(r.feriado.porcentaje);
-      this.ctx = { formulario, peticion: { recurso: 'recargos', cambios: cuerpo }, exito: async () => { await this.cargar(); this.avisar('Recargos guardados.', '', 'recargos'); } };
+      const normalizar = (v, n) => (n === 'porcentaje' ? leerImporte(v) : hh(v));
+      const cambios = {};
+      for (const grupo of Object.keys(cuerpo)) {
+        const d = diferentes(cuerpo[grupo], r[grupo], normalizar);
+        if (Object.keys(d).length) cambios[grupo] = d;
+      }
+      const sensible = Object.keys(cambios).length > 0;
+      this.ctx = { formulario, peticion: { recurso: 'recargos', cambios }, exito: async () => { await this.cargar(); this.avisar('Recargos guardados.', '', 'recargos'); } };
       if (sensible) return this.revisar(this.ctx);
       this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => guardarRecargos(cuerpo), () => this.avisar('Recargos guardados.'));
     }
@@ -510,7 +519,8 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       const valor = leerImporte(entrada.value);
       if (valor === null || Number(valor) > 99.99) return this.validar([{ entrada, mensaje: ERROR_IGV, texto: this.etiqueta(entrada) }]);
       this.validar([]);
-      const cambios = { porcentaje_igv: valor, precios_incluyen_igv: formulario.querySelector('[name="precios_incluyen_igv"]:checked').value === 'si' };
+      const nuevo = { porcentaje_igv: valor, precios_incluyen_igv: formulario.querySelector('[name="precios_incluyen_igv"]:checked').value === 'si' };
+      const cambios = diferentes(nuevo, this.cargado, (v, n) => (n === 'porcentaje_igv' ? leerImporte(v) : v));
       this.revisar({ formulario, peticion: { recurso: 'impuestos', cambios }, exito: async () => { await this.cargar(); this.avisar('IGV actualizado', 'Rige para las simulaciones y reservas nuevas.', 'impuestos'); } });
     }
 

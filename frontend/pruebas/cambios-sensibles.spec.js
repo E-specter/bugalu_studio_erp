@@ -46,7 +46,7 @@ for (const t of tamanos) {
     await page.setViewportSize({ width: t.ancho, height: t.alto });
     const v = await base(page);
     await aRevision(page);
-    expect(v.previas[0].cuerpo).toEqual({ recurso: 'servicio', id_recurso: 's1', cambios: { tarifa_hora: '150.00', monto_fijo: '15.00' } });
+    expect(v.previas[0].cuerpo).toEqual({ recurso: 'servicio', id_recurso: 's1', cambios: { tarifa_hora: '150.00' } });
     const c1 = page.getByRole('table', { name: 'Qué cambia' });
     await expect(c1).toContainText('TARIFA POR HORA');
     await expect(c1).toContainText('S/ 120,00');
@@ -163,7 +163,7 @@ test('confirmacion_no_valida: renueva la vista previa y conserva la palabra', as
 
 test('cambio_desactualizado: nueva vista previa, aviso y campo vacio', async ({ page }) => {
   let n = 0;
-  await base(page, {
+  const v = await base(page, {
     previsualizar: (r) => r.fulfill(json(200, previa(`t${++n}`, n > 1 ? { cambios: [{ campo: 'tarifa_hora', anterior: '130.00', nuevo: '150.00' }] } : {}))),
     confirmar: (r) => r.fulfill(errorApi(409, 'cambio_desactualizado')),
   });
@@ -173,6 +173,9 @@ test('cambio_desactualizado: nueva vista previa, aviso y campo vacio', async ({ 
   await dice(page, 'Otro administrador cambió Grabación de voces mientras revisabas.');
   await expect(palabra(page)).toHaveValue('');
   await expect(page.getByRole('table', { name: 'Qué cambia' })).toContainText('S/ 130,00');
+  // La renovada lleva solo lo que el usuario tocó: no revierte el monto fijo de otro administrador.
+  expect(v.previas).toHaveLength(2);
+  for (const p of v.previas) expect(p.cuerpo.cambios).toEqual({ tarifa_hora: '150.00' });
   await sinViolaciones(page);
 });
 
@@ -250,6 +253,15 @@ test('red de seguridad: un 428 del endpoint de siempre abre la revision', async 
   expect(v.previas).toHaveLength(1);
 });
 
+test('especialista: la vista previa lleva solo el campo sensible tocado', async ({ page }) => {
+  const v = await base(page);
+  await page.goto('/app/tarifas/especialista?id=e1');
+  await page.getByLabel('Por media hora').check();
+  await page.getByRole('button', { name: 'Guardar especialista' }).click();
+  await expect(page.getByRole('heading', { name: /Qué cambia/i })).toBeFocused();
+  expect(v.previas[0].cuerpo.cambios).toEqual({ unidad: 'lapso_30' });
+});
+
 test('especialista: la unidad se muestra como Por hora / Por media hora', async ({ page }) => {
   await base(page, { previsualizar: json(200, previa('t1', { recurso: 'especialista', cambios: [{ campo: 'unidad', anterior: 'hora', nuevo: 'lapso_30' }] })) });
   await page.goto('/app/tarifas/especialista?id=e1');
@@ -266,7 +278,7 @@ test('recargos: cambio de porcentaje revisa, confirma y ofrece el registro de ca
   await page.goto('/app/tarifas/recargos?anio=2026');
   await page.getByRole('group', { name: 'Noche' }).getByLabel('Recargo (%)').fill('30');
   await page.getByRole('button', { name: 'Guardar recargos' }).click();
-  expect(v.previas[0].cuerpo.cambios.noche.porcentaje).toBe('30.00');
+  expect(v.previas[0].cuerpo.cambios).toEqual({ noche: { porcentaje: '30.00' } });
   await expect(page.getByRole('table', { name: 'Qué cambia' })).toContainText('NOCHE (%)');
   await palabra(page).fill('CONFIRMAR');
   await aplicar(page).click();
