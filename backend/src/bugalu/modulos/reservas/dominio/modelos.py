@@ -98,10 +98,21 @@ class Reserva:
     cliente: Referencia | None = None  # solo para personal y administrador
     nota_cancelacion: str | None = None  # solo el dueno y el administrador la reciben
     en_validacion: bool = False  # dato de la base: el personal no ve los pagos, solo si hay uno
+    version_condiciones: str | None = None  # RF-17: solo la ven el dueno y el administrador
 
     @property
     def pago_por_validar(self) -> bool:
         return self.en_validacion or any(c.estado == "en_validacion" for c in self.cuotas)
+
+
+@dataclass(frozen=True)
+class RequisitosReserva:
+    """Lo que el perfil del cliente debe cumplir antes de reservar (RF-17, CA-05, CA-07)."""
+
+    pendientes: tuple[dict[str, str], ...]  # textos del registro por aceptar
+    campos_faltantes: tuple[str, ...]
+    es_menor: bool
+    condiciones_vigentes: dict[str, str] | None  # {tipo, version, vigente_desde}
 
 
 @dataclass(frozen=True)

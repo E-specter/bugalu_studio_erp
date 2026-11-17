@@ -3,11 +3,18 @@
 from collections.abc import Mapping
 from dataclasses import replace
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from bugalu.compartido.errores import UltimoAdministrador
 from bugalu.modulos.identidad.dominio.solicitud import EstadoSolicitud, Solicitud
-from bugalu.modulos.identidad.dominio.usuario import Rol, Usuario
+from bugalu.modulos.identidad.dominio.usuario import (
+    CONSENTIMIENTOS,
+    Documento,
+    Pendiente,
+    Rol,
+    Usuario,
+)
 
 
 def usuario(rol: Rol = Rol.CLIENTE, **campos: object) -> Usuario:
@@ -33,18 +40,46 @@ def solicitud(**campos: object) -> Solicitud:
 class UsuariosFalsos:
     def __init__(self, *usuarios: Usuario) -> None:
         self.usuarios = {u.id: u for u in usuarios}
+        self.textos_pendientes: list[Pendiente] = []
+        self.faltantes: list[str] = []
+        self.activos: set[str] = set()
+        self.cambios_de_consentimiento: list[tuple[str, bool]] = []
 
     async def obtener_por_id(self, id_usuario: UUID) -> Usuario | None:
         return self.usuarios.get(id_usuario)
 
-    async def listar(self, rol: Rol | None) -> list[Usuario]:
-        return [u for u in self.usuarios.values() if rol is None or u.rol is rol]
+    async def listar(
+        self, rol: Rol | None, documento_repetido: bool | None = None
+    ) -> list[Usuario]:
+        return [
+            u
+            for u in self.usuarios.values()
+            if (rol is None or u.rol is rol)
+            and (documento_repetido is None or u.documento_repetido is documento_repetido)
+        ]
 
-    async def actualizar_perfil(
-        self, id_usuario: UUID, cambios: Mapping[str, str | None]
-    ) -> Usuario:
+    async def actualizar_perfil(self, id_usuario: UUID, cambios: Mapping[str, Any]) -> Usuario:
+        cambios = dict(cambios)
+        if "documento" in cambios:
+            cambios["documento"] = Documento(**cambios["documento"])
+        for campo in ("redes", "integrantes"):
+            if campo in cambios:
+                cambios[campo] = tuple(cambios[campo])
         self.usuarios[id_usuario] = replace(self.usuarios[id_usuario], **cambios)
         return self.usuarios[id_usuario]
+
+    async def pendientes(self) -> list[Pendiente]:
+        return list(self.textos_pendientes)
+
+    async def campos_faltantes_para_reservar(self) -> list[str]:
+        return list(self.faltantes)
+
+    async def consentimientos(self, id_usuario: UUID) -> dict[str, bool]:
+        return {c: c in self.activos for c in CONSENTIMIENTOS}
+
+    async def cambiar_consentimiento(self, consentimiento: str, dar: bool) -> None:
+        self.cambios_de_consentimiento.append((consentimiento, dar))
+        (self.activos.add if dar else self.activos.discard)(consentimiento)
 
     async def marcar_correo_verificado(self, id_usuario: UUID) -> bool:
         self.usuarios[id_usuario] = replace(self.usuarios[id_usuario], correo_confirmado=True)

@@ -210,3 +210,23 @@ class VersionVigente(Conflicto):
 
 class TextoDesactualizado(Conflicto):
     codigo = "texto_desactualizado"
+
+
+class DeclaracionRequerida(Conflicto):
+    codigo = "declaracion_requerida"
+
+
+class ReaceptacionRequerida(Conflicto):
+    codigo = "reaceptacion_requerida"
+
+
+class PerfilIncompleto(Conflicto):
+    codigo = "perfil_incompleto"
+
+
+class AutorizacionMenorPendiente(Conflicto):
+    codigo = "autorizacion_menor_pendiente"
+
+
+class TelefonoRequerido(DatosInvalidos):
+    codigo = "telefono_requerido"

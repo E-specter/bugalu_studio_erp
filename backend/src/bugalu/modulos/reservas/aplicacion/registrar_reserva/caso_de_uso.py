@@ -25,8 +25,12 @@ class RegistrarReserva:
         fin: datetime,
         id_especialistas: Sequence[UUID],
         detalle: str | None,
+        version_condiciones: str,
         ahora: datetime,
     ) -> Reserva:
+        reglas.exigir_requisitos(
+            await self._reservas.requisitos_para_reservar(), version_condiciones
+        )
         reglas.exigir_duracion(inicio, fin)
         await self._reservas.bloquear_sala(id_sala)  # antes de leer franjas, cierres y ocupacion
         cotizacion = await self._cotizador.cotizar(
@@ -55,6 +59,9 @@ class RegistrarReserva:
                 tuple(reglas.cuotas_de(cotizacion.total, cotizacion.anticipo)),
             )
         )
+        await self._reservas.aceptar_condiciones(
+            id_reserva, version_condiciones
+        )  # misma transaccion
         await self._reservas.encolar_aviso_reserva(id_reserva)
         creada = await self._reservas.obtener_reserva(id_reserva)
         if creada is None:  # no deberia pasar: la acaba de insertar el propio usuario

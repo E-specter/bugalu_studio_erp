@@ -229,6 +229,7 @@ async def registrar_reserva(request: Request, claims: Claims, cuerpo: NuevaReser
             cuerpo.fin,
             cuerpo.especialistas,
             cuerpo.detalle,
+            cuerpo.version_condiciones,
             ahora,
         )
     return Reserva.desde_dominio(reserva)

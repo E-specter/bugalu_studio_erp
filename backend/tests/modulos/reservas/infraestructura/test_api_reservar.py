@@ -52,6 +52,7 @@ async def reservar(
         "inicio": inicio,
         "fin": fin,
         "especialistas": [],
+        "version_condiciones": "1.0.0",
         **extra,
     }
     return await cliente.post(RESERVAS, json=cuerpo, headers=con(usuario) if usuario else None)
@@ -232,7 +233,14 @@ async def test_cada_422_del_contrato(
     cuerpo = {"id_servicio": catalogo["Grabación de voces"], **cambios}
     r = await cliente.post(
         RESERVAS,
-        json={"id_sala": sala, "inicio": INICIO, "fin": FIN, "especialistas": [], **cuerpo},
+        json={
+            "id_sala": sala,
+            "inicio": INICIO,
+            "fin": FIN,
+            "especialistas": [],
+            "version_condiciones": "1.0.0",
+            **cuerpo,
+        },
         headers=con(cliente_a),
     )
     assert r.status_code == 422, r.text
@@ -608,7 +616,11 @@ async def test_ver_una_reserva_segun_quien_la_pide(
         r = await cliente.get(url, headers=con(staff))
         assert r.status_code == 200
         assert r.json()["cliente"] == {"id": str(cliente_a.id), "nombre": "Ana Torres"}
-        assert {k: v for k, v in r.json().items() if k != "cliente"} == propia.json()
+        assert {k: v for k, v in r.json().items() if k != "cliente"} == {
+            **propia.json(),
+            # solo el dueno y el administrador ven la version aceptada
+            "version_condiciones": r.json()["version_condiciones"],
+        }
     ajena = await cliente.get(url, headers=con(cliente_b))
     assert ajena.status_code == 403 and codigo(ajena) == "sin_permiso"
     assert id_ not in ajena.text and "Ana" not in ajena.text

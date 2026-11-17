@@ -22,13 +22,25 @@ def _con(token: str | None) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"} if token else {}
 
 
+BASE = {
+    "id",
+    "correo",
+    "correo_confirmado",
+    "nombre",
+    "telefono",
+    "nombre_artistico",
+    "rol",
+    "especialidad",
+}
+
+
 async def test_200_devuelve_el_perfil_del_usuario(
     cliente: AsyncClient, crear_usuario: Callable[[], UsuarioDePrueba]
 ) -> None:
     a = crear_usuario()
     r = await cliente.get("/api/v1/perfil", headers=_con(a.token))
     assert r.status_code == 200
-    assert r.json() == {
+    assert {k: v for k, v in r.json().items() if k in BASE} == {
         "id": str(a.id),
         "correo": a.correo,
         "correo_confirmado": False,

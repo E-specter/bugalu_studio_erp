@@ -8,13 +8,39 @@ from typing import Protocol
 from bugalu.compartido.errores import (
     AnticipacionExcesiva,
     AnticipacionInsuficiente,
+    AutorizacionMenorPendiente,
     DuracionInvalida,
     FueraDeFranja,
+    PerfilIncompleto,
+    ReaceptacionRequerida,
+    TextoDesactualizado,
 )
 from bugalu.modulos.reservas.dominio.disponibilidad import LIMA, PASO, Limites
-from bugalu.modulos.reservas.dominio.modelos import PagoCuota
+from bugalu.modulos.reservas.dominio.modelos import PagoCuota, RequisitosReserva
 
 MAXIMA_DURACION = timedelta(hours=8)
+
+
+def exigir_requisitos(requisitos: RequisitosReserva, version_condiciones: str) -> None:
+    """RF-17: registro al dia, perfil completo, no menor (etapa A) y condiciones vigentes."""
+    if requisitos.pendientes:
+        raise ReaceptacionRequerida(
+            "Acepta los textos pendientes para reservar.", {"textos": list(requisitos.pendientes)}
+        )
+    if requisitos.campos_faltantes:
+        raise PerfilIncompleto(
+            "Completa tus datos para reservar.", {"campos": list(requisitos.campos_faltantes)}
+        )
+    if requisitos.es_menor:
+        raise AutorizacionMenorPendiente(
+            "Una persona menor de edad reserva con la autorizacion de su tutor."
+        )
+    vigente = requisitos.condiciones_vigentes
+    if vigente is None or vigente["version"] != version_condiciones:
+        raise TextoDesactualizado(
+            f"La version {version_condiciones} de las condiciones no es la vigente.",
+            {"vigente": vigente},
+        )
 
 
 def exigir_duracion(inicio: datetime, fin: datetime) -> None:

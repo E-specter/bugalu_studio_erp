@@ -45,7 +45,13 @@ async def _reservar(
     voces = sql("select id from public.servicio where nombre = 'Grabación de voces'")[0][0]
     return await cliente.post(
         RESERVAS,
-        json={"id_sala": sala, "id_servicio": str(voces), "inicio": INICIO, "fin": FIN},
+        json={
+            "id_sala": sala,
+            "id_servicio": str(voces),
+            "inicio": INICIO,
+            "fin": FIN,
+            "version_condiciones": "1.0.0",
+        },
         headers=con(usuario),
     )
 

@@ -14,6 +14,7 @@ from bugalu.compartido.errores import (
     NoEncontrado,
     NotaRequerida,
     SinPermiso,
+    TextoDesactualizado,
     TienePagos,
     TramoNoDisponible,
 )
@@ -27,6 +28,7 @@ from bugalu.modulos.reservas.dominio.modelos import (
     NuevaReserva,
     PagoCuota,
     Referencia,
+    RequisitosReserva,
     Reserva,
     ReservaVisible,
     Sala,
@@ -39,7 +41,9 @@ _RESERVA = (
     "select r.id, r.folio, r.estado, r.motivo_cancelacion, r.inicio, r.fin, r.fin_buffer, "
     "r.precio, r.vence_pago, r.id_cliente, sa.id, sa.nombre, se.id, se.nombre, se.categoria, "
     "case when r.id_cliente = (select auth.uid()) or public.es_administrador() "
-    "then r.nota_cancelacion end, public.hay_pago_por_validar(r.id), r.parametros_aplicados "
+    "then r.nota_cancelacion end, public.hay_pago_por_validar(r.id), r.parametros_aplicados, "
+    "(select a.version from public.aceptacion a "
+    "where a.contexto = 'reserva' and a.id_operacion = r.id) "
     "from public.reserva r join public.sala_tecnica sa on sa.id = r.id_sala "
     "join public.servicio se on se.id = r.id_servicio "
 )
@@ -260,6 +264,45 @@ class RepositorioReservasPostgres:
     async def encolar_aviso_reserva(self, id_reserva: UUID) -> None:
         await self._conexion.execute("select public.encolar_aviso_reserva(%s)", (id_reserva,))
 
+    async def requisitos_para_reservar(self) -> RequisitosReserva:
+        pendientes = await self._filas(
+            "select tipo, version, contexto, motivo from public.mis_pendientes()"
+        )
+        faltantes = (await self._filas("select public.campos_faltantes_para_reservar()"))[0][0]
+        menor = await self._filas(
+            "select es_menor from public.usuario where id = (select auth.uid())"
+        )
+        vigente = await self._filas(
+            "select tipo, version, vigente_desde from public.textos_vigentes() "
+            "where tipo = 'condiciones_contratacion'"
+        )
+        return RequisitosReserva(
+            tuple(
+                {"tipo": t, "version": v, "contexto": c, "motivo": m} for t, v, c, m in pendientes
+            ),
+            tuple(faltantes or ()),
+            bool(menor and menor[0][0]),
+            {
+                "tipo": vigente[0][0],
+                "version": vigente[0][1],
+                "vigente_desde": vigente[0][2].isoformat(),
+            }
+            if vigente
+            else None,
+        )
+
+    async def aceptar_condiciones(self, id_reserva: UUID, version: str) -> None:
+        try:
+            await self._conexion.execute(
+                "select public.aceptar_condiciones('reserva', %s, %s)", (id_reserva, version)
+            )
+        except errors.RaiseException as error:
+            if error.diag.message_primary == "texto_desactualizado":  # carrera con una publicacion
+                raise TextoDesactualizado(
+                    "Las condiciones dejaron de ser la version vigente."
+                ) from None
+            raise
+
     async def _reservas(self, condicion: str, parametros: Sequence[Any]) -> list[Reserva]:
         filas = await self._filas(
             f"{_RESERVA} where {condicion} order by r.inicio, r.folio", parametros
@@ -318,6 +361,7 @@ class RepositorioReservasPostgres:
                 servicio=ServicioReservado(f[12], f[13], f[14]),
                 nota_cancelacion=f[15],
                 en_validacion=f[16],
+                version_condiciones=f[18],
                 especialistas=tuple(especialistas.get(f[0], [])),
                 cuotas=tuple(cuotas.get(f[0], [])),
             )

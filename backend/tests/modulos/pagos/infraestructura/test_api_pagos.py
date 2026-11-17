@@ -88,6 +88,32 @@ async def test_registra_un_png_y_el_objeto_queda_en_storage(
     assert objetos(sql, cliente_a) == [f"{cliente_a.id}/{pago['id']}.png"]
 
 
+async def test_el_pago_registra_la_version_vigente_de_las_condiciones_sin_recibirla(
+    cliente: AsyncClient, cliente_a: UsuarioDePrueba, cuota_de: Cuota, sql: Ejecutar
+) -> None:
+    r = await pagar(cliente, cliente_a, cuota_de(cliente_a))
+    assert r.status_code == 201, r.text
+    filas = sql(
+        "select tipo, version, id_operacion from public.aceptacion "
+        "where id_usuario = %s and contexto = 'pago'",
+        cliente_a.id,
+    )
+    assert [(t, v, str(o)) for t, v, o in filas] == [
+        ("condiciones_contratacion", "1.0.0", r.json()["id"])
+    ]
+
+
+async def test_un_pago_rechazado_no_deja_aceptacion(
+    cliente: AsyncClient, cliente_a: UsuarioDePrueba, cuota_de: Cuota, sql: Ejecutar
+) -> None:
+    r = await pagar(cliente, cliente_a, cuota_de(cliente_a), b"no es una imagen")
+    assert r.status_code == 422
+    assert sql(
+        "select count(*) from public.aceptacion where contexto = 'pago' and id_usuario = %s",
+        cliente_a.id,
+    ) == [(0,)]
+
+
 async def test_registra_un_pdf_y_un_monto_distinto_no_coincide(
     cliente: AsyncClient, cliente_a: UsuarioDePrueba, cuota_de: Cuota, sql: Ejecutar
 ) -> None:

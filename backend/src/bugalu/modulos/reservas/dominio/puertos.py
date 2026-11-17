@@ -9,6 +9,7 @@ from bugalu.modulos.reservas.dominio.modelos import (
     Cotizacion,
     Franja,
     NuevaReserva,
+    RequisitosReserva,
     Reserva,
     ReservaVisible,
     Sala,
@@ -98,6 +99,12 @@ class RepositorioReservas(Protocol):
         ...
 
     async def encolar_aviso_reserva(self, id_reserva: UUID) -> None: ...
+
+    async def requisitos_para_reservar(self) -> RequisitosReserva: ...
+
+    async def aceptar_condiciones(self, id_reserva: UUID, version: str) -> None:
+        """Registra la aceptacion de las condiciones vigentes ligada a la reserva (CA-08)."""
+        ...
 
     async def obtener_reserva(self, id_reserva: UUID) -> Reserva | None:
         """Solo las que la RLS deja ver."""

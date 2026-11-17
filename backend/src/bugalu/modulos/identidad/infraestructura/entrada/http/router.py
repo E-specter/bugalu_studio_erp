@@ -6,9 +6,13 @@ from fastapi import APIRouter, Depends, Request
 from bugalu.compartido.autenticacion import obtener_claims
 from bugalu.compartido.base_datos import transaccion_con_identidad
 from bugalu.compartido.esquemas import RespuestaError
+from bugalu.modulos.identidad.aplicacion.actualizar_consentimientos.caso_de_uso import (
+    ActualizarConsentimientos,
+)
 from bugalu.modulos.identidad.aplicacion.actualizar_perfil.caso_de_uso import ActualizarPerfil
 from bugalu.modulos.identidad.aplicacion.actualizar_usuario.caso_de_uso import ActualizarUsuario
 from bugalu.modulos.identidad.aplicacion.aprobar_solicitud.caso_de_uso import AprobarSolicitud
+from bugalu.modulos.identidad.aplicacion.armar_perfil.caso_de_uso import ArmarPerfil
 from bugalu.modulos.identidad.aplicacion.crear_solicitud.caso_de_uso import CrearSolicitud
 from bugalu.modulos.identidad.aplicacion.listar_solicitudes.caso_de_uso import ListarSolicitudes
 from bugalu.modulos.identidad.aplicacion.listar_usuarios.caso_de_uso import ListarUsuarios
@@ -22,10 +26,13 @@ from bugalu.modulos.identidad.dominio.solicitud import EstadoSolicitud
 from bugalu.modulos.identidad.dominio.usuario import Rol
 from bugalu.modulos.identidad.infraestructura.entrada.http.esquemas import (
     Aprobacion,
+    CambiosConsentimientos,
     CambiosPerfil,
     CambiosUsuario,
+    Consentimientos,
     NuevaSolicitud,
     Perfil,
+    PerfilListado,
     Rechazo,
     Solicitud,
 )
@@ -68,22 +75,42 @@ def _yo(claims: dict[str, Any]) -> UUID:
 )
 async def obtener_perfil(request: Request, claims: Claims) -> Perfil:
     async with transaccion_con_identidad(request.app.state.pool, claims) as conexion:
-        usuario = await ObtenerPerfil(RepositorioPostgres(conexion)).ejecutar(_yo(claims))
-    return Perfil.desde_dominio(usuario, claims.get("email"))
+        repositorio = RepositorioPostgres(conexion)
+        usuario = await ObtenerPerfil(repositorio).ejecutar(_yo(claims))
+        perfil = await ArmarPerfil(repositorio).ejecutar(usuario)
+    return Perfil.desde_dominio(perfil, claims.get("email"))
 
 
 @router.patch(
     "/perfil",
     response_model=Perfil,
-    summary="Cambia nombre, telefono y (el cliente) nombre artistico",
-    responses=_respuestas(404, 422),
+    summary="Cambia los datos del perfil (modalidad, documento, domicilio, redes, integrantes...)",
+    responses=_respuestas(404, 409, 422),
 )
 async def actualizar_perfil(request: Request, claims: Claims, cuerpo: CambiosPerfil) -> Perfil:
     async with transaccion_con_identidad(request.app.state.pool, claims) as conexion:
-        usuario = await ActualizarPerfil(RepositorioPostgres(conexion)).ejecutar(
+        repositorio = RepositorioPostgres(conexion)
+        usuario = await ActualizarPerfil(repositorio).ejecutar(
             _yo(claims), cuerpo.model_dump(exclude_unset=True)
         )
-    return Perfil.desde_dominio(usuario, claims.get("email"))
+        perfil = await ArmarPerfil(repositorio).ejecutar(usuario)
+    return Perfil.desde_dominio(perfil, claims.get("email"))
+
+
+@router.put(
+    "/perfil/consentimientos",
+    response_model=Consentimientos,
+    summary="Da o retira los consentimientos opcionales; solo se registran los que cambian",
+    responses=_respuestas(404, 409, 422),
+)
+async def actualizar_consentimientos(
+    request: Request, claims: Claims, cuerpo: CambiosConsentimientos
+) -> Consentimientos:
+    async with transaccion_con_identidad(request.app.state.pool, claims) as conexion:
+        finales = await ActualizarConsentimientos(RepositorioPostgres(conexion)).ejecutar(
+            _yo(claims), cuerpo.model_dump(exclude_unset=True)
+        )
+    return Consentimientos(**finales)
 
 
 @router.post(
@@ -94,8 +121,10 @@ async def actualizar_perfil(request: Request, claims: Claims, cuerpo: CambiosPer
 )
 async def verificar_correo(request: Request, claims: Claims) -> Perfil:
     async with transaccion_con_identidad(request.app.state.pool, claims) as conexion:
-        usuario = await VerificarCorreo(RepositorioPostgres(conexion)).ejecutar(_yo(claims))
-    return Perfil.desde_dominio(usuario, claims.get("email"))
+        repositorio = RepositorioPostgres(conexion)
+        usuario = await VerificarCorreo(repositorio).ejecutar(_yo(claims))
+        perfil = await ArmarPerfil(repositorio).ejecutar(usuario)
+    return Perfil.desde_dominio(perfil, claims.get("email"))
 
 
 @router.post(
@@ -177,27 +206,34 @@ async def rechazar_solicitud(
 
 @router.get(
     "/usuarios",
-    response_model=list[Perfil],
-    summary="Usuarios, opcionalmente por rol (administrador)",
+    response_model=list[PerfilListado],
+    summary="Usuarios, por rol o con documento repetido (administrador)",
     responses=_respuestas(403, 422),
 )
-async def listar_usuarios(request: Request, claims: Claims, rol: Rol | None = None) -> list[Perfil]:
+async def listar_usuarios(
+    request: Request,
+    claims: Claims,
+    rol: Rol | None = None,
+    documento_repetido: bool | None = None,
+) -> list[PerfilListado]:
     async with transaccion_con_identidad(request.app.state.pool, claims) as conexion:
-        usuarios = await ListarUsuarios(RepositorioPostgres(conexion)).ejecutar(_yo(claims), rol)
-    return [Perfil.desde_dominio(u) for u in usuarios]
+        usuarios = await ListarUsuarios(RepositorioPostgres(conexion)).ejecutar(
+            _yo(claims), rol, documento_repetido
+        )
+    return [PerfilListado.desde_dominio(u) for u in usuarios]
 
 
 @router.patch(
     "/usuarios/{id_usuario}",
-    response_model=Perfil,
+    response_model=PerfilListado,
     summary="Cambia rol y especialidad de un usuario (administrador)",
     responses=_respuestas(403, 404, 409, 422),
 )
 async def actualizar_usuario(
     request: Request, claims: Claims, id_usuario: UUID, cuerpo: CambiosUsuario
-) -> Perfil:
+) -> PerfilListado:
     async with transaccion_con_identidad(request.app.state.pool, claims) as conexion:
         usuario = await ActualizarUsuario(RepositorioPostgres(conexion)).ejecutar(
             _yo(claims), id_usuario, cuerpo.model_dump(exclude_unset=True)
         )
-    return Perfil.desde_dominio(usuario)
+    return PerfilListado.desde_dominio(usuario)

@@ -92,6 +92,10 @@ class RepositorioPagosPostgres:
             raise NoEncontrado("No existe la cuota.") from None
         except errors.CheckViolation:
             raise DatosInvalidos("Datos invalidos.") from None
+        # RF-17: la version vigente de las condiciones queda ligada al pago (sin cliente).
+        await self._conexion.execute(
+            "select public.aceptar_condiciones('pago', %s, null)", (nuevo.id,)
+        )
 
     @staticmethod
     def _pago(fila: tuple[Any, ...], cliente: ClienteResumen | None) -> Pago:

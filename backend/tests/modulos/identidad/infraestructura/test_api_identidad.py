@@ -23,10 +23,12 @@ pytestmark = pytest.mark.integracion
 CrearUsuario = Callable[[], UsuarioDePrueba]
 PonerRol = Callable[[UsuarioDePrueba, str, str | None], None]
 
-PERFIL = {
+PERFIL_BASICO = {
     "id", "correo", "correo_confirmado", "nombre", "telefono", "nombre_artistico", "rol",
-    "especialidad",
+    "especialidad", "modalidad", "documento", "domicilio", "redes", "integrantes", "es_menor",
 }  # fmt: skip
+PERFIL = PERFIL_BASICO | {"consentimientos", "pendientes", "datos_para_reservar"}
+LISTADO = PERFIL_BASICO | {"documento_repetido"}
 SOLICITUD = {
     "id", "id_usuario", "nombre", "correo", "especialidad", "mensaje", "estado", "motivo",
     "creada_en", "revisada_en",
@@ -431,7 +433,7 @@ async def test_listar_usuarios_por_rol(
     assert r.status_code == 200
     por_id = {u["id"]: u for u in r.json()}
     assert str(p.id) in por_id and str(c.id) not in por_id
-    assert set(por_id[str(p.id)]) == PERFIL and por_id[str(p.id)]["correo"] == p.correo
+    assert set(por_id[str(p.id)]) == LISTADO and por_id[str(p.id)]["correo"] == p.correo
     todos = {u["id"] for u in (await _llamar(cliente, "GET", "/usuarios", admin)).json()}
     assert {str(p.id), str(c.id), str(admin.id)} <= todos
     assert (await _llamar(cliente, "GET", "/usuarios?rol=jefe", admin)).status_code == 422
@@ -444,7 +446,7 @@ async def test_patch_usuario_cambia_rol_y_especialidad_sin_tocar_a_otros(
     r = await _llamar(
         cliente, "PATCH", f"/usuarios/{a.id}", admin, {"rol": "personal", "especialidad": "mezcla"}
     )
-    assert r.status_code == 200 and set(r.json()) == PERFIL
+    assert r.status_code == 200 and set(r.json()) == LISTADO
     assert (r.json()["rol"], r.json()["especialidad"]) == ("personal", "mezcla")
     solo = await _llamar(
         cliente, "PATCH", f"/usuarios/{a.id}", admin, {"especialidad": "mastering"}

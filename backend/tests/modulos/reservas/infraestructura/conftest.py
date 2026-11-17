@@ -106,17 +106,18 @@ def personal(
 
 @pytest.fixture
 def cliente_a(
-    crear_usuario: Callable[[], UsuarioDePrueba], configuracion: Configuracion
+    crear_usuario: Callable[[], UsuarioDePrueba],
+    completar_perfil: Callable[..., UsuarioDePrueba],
 ) -> UsuarioDePrueba:
-    u = crear_usuario()
-    with psycopg.connect(configuracion.url_base_datos_admin) as c:
-        c.execute("update public.usuario set nombre = 'Ana Torres' where id = %s", (u.id,))
-    return u
+    return completar_perfil(crear_usuario(), "Ana Torres")
 
 
 @pytest.fixture
-def cliente_b(crear_usuario: Callable[[], UsuarioDePrueba]) -> UsuarioDePrueba:
-    return crear_usuario()
+def cliente_b(
+    crear_usuario: Callable[[], UsuarioDePrueba],
+    completar_perfil: Callable[..., UsuarioDePrueba],
+) -> UsuarioDePrueba:
+    return completar_perfil(crear_usuario(), "Beto Ríos")
 
 
 def con(usuario: UsuarioDePrueba) -> dict[str, str]:

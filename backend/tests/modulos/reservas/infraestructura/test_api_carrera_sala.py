@@ -52,6 +52,7 @@ def peticion(
         "inicio": INICIO,
         "fin": FIN,
         "especialistas": [],
+        "version_condiciones": "1.0.0",
     }
     return {
         "reservar": lambda: cliente.post("/api/v1/reservas", json=reserva, headers=con(cliente_a)),

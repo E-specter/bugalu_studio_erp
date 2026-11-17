@@ -195,3 +195,52 @@ def textos_aislados(configuracion: Configuracion) -> Iterator[None]:
         c.execute("insert into public.texto_legal select * from copia_texto")
         c.execute("insert into public.aceptacion select * from copia_aceptacion")
         c.execute("insert into public.notificacion select * from copia_aviso")
+
+
+@pytest.fixture
+def textos_de_prueba(textos_aislados: None, configuracion: Configuracion) -> None:
+    """Solo pruebas: los cuatro textos publicables en 1.0.0, vigentes (se restaura lo que habia)."""
+    with psycopg.connect(configuracion.url_base_datos_admin, autocommit=True) as c:
+        for tipo in (
+            "terminos_uso",
+            "politica_privacidad",
+            "condiciones_contratacion",
+            "declaracion_agrupacion",
+        ):
+            c.execute(
+                "insert into public.texto_legal (tipo, version, tipo_cambio, contenido, resumenes, "
+                "vigente_desde) values (%s, '1.0.0', 'mayor', 'Contenido de prueba', '{}', "
+                "now() - interval '1 day')",
+                (tipo,),
+            )
+
+
+@pytest.fixture
+def completar_perfil(
+    configuracion: Configuracion, textos_de_prueba: None
+) -> Callable[..., UsuarioDePrueba]:
+    """Solo pruebas: deja un perfil listo para reservar (nombre, telefono, documento) y con el
+    registro aceptado (terminos y politica; con `agrupacion` tambien la declaracion)."""
+
+    def completar(
+        usuario: UsuarioDePrueba, nombre: str = "Ana Torres", agrupacion: bool = False
+    ) -> UsuarioDePrueba:
+        dni = str(uuid.uuid4().int % 10**8).zfill(8)
+        tipos = ["terminos_uso", "politica_privacidad"] + (
+            ["declaracion_agrupacion"] if agrupacion else []
+        )
+        with psycopg.connect(configuracion.url_base_datos_admin) as c:
+            c.execute(
+                "update public.usuario set nombre = %s, telefono = '987654321', "
+                "documento_tipo = 'dni', documento_numero = %s, modalidad = %s where id = %s",
+                (nombre, dni, "agrupacion" if agrupacion else "individual", usuario.id),
+            )
+            c.execute(
+                "insert into public.aceptacion (id_usuario, tipo, version, contexto) "
+                "select %s, tipo, version, 'registro' from public.textos_vigentes() "
+                "where tipo = any(%s)",
+                (usuario.id, tipos),
+            )
+        return usuario
+
+    return completar

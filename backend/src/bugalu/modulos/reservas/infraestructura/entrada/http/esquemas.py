@@ -11,6 +11,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    StringConstraints,
     field_validator,
     model_validator,
 )
@@ -190,6 +191,7 @@ class NuevaReserva(BaseModel):
     fin: Instante
     especialistas: Annotated[list[UUID], Field(max_length=20)] = []
     detalle: TextoLargo | None = None
+    version_condiciones: Annotated[str, StringConstraints(pattern=r"^[0-9]+\.[0-9]+\.[0-9]+$")]
 
 
 class Referencia(BaseModel):
@@ -239,6 +241,7 @@ class Reserva(BaseModel):
     vence_pago: datetime | None
     cliente: Referencia | None = None
     nota_cancelacion: str | None = None
+    version_condiciones: str | None = None
 
     @classmethod
     def desde_dominio(cls, r: modelos.Reserva) -> Reserva:
@@ -273,6 +276,7 @@ class Reserva(BaseModel):
             ],
             pago_por_validar=r.pago_por_validar,
             nota_cancelacion=r.nota_cancelacion,
+            version_condiciones=r.version_condiciones,
             vence_pago=lima(r.vence_pago),
             **(
                 {"cliente": Referencia(id=r.cliente.id, nombre=r.cliente.nombre)}

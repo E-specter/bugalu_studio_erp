@@ -1,21 +1,31 @@
 from collections.abc import Mapping, Sequence
 from datetime import datetime
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID
 
 from bugalu.modulos.identidad.dominio.solicitud import EstadoSolicitud, Solicitud
 from bugalu.modulos.identidad.dominio.textos_legales import Aceptacion, TextoLegal
-from bugalu.modulos.identidad.dominio.usuario import Rol, Usuario
+from bugalu.modulos.identidad.dominio.usuario import Pendiente, Rol, Usuario
 
 
 class RepositorioUsuarios(Protocol):
     async def obtener_por_id(self, id_usuario: UUID) -> Usuario | None: ...
 
-    async def listar(self, rol: Rol | None) -> list[Usuario]: ...
+    async def listar(
+        self, rol: Rol | None, documento_repetido: bool | None = None
+    ) -> list[Usuario]: ...
 
-    async def actualizar_perfil(
-        self, id_usuario: UUID, cambios: Mapping[str, str | None]
-    ) -> Usuario: ...
+    async def actualizar_perfil(self, id_usuario: UUID, cambios: Mapping[str, Any]) -> Usuario: ...
+
+    async def pendientes(self) -> list[Pendiente]:
+        """Textos del registro que falta aceptar al usuario de la transaccion."""
+        ...
+
+    async def campos_faltantes_para_reservar(self) -> list[str]: ...
+
+    async def consentimientos(self, id_usuario: UUID) -> dict[str, bool]: ...
+
+    async def cambiar_consentimiento(self, consentimiento: str, dar: bool) -> None: ...
 
     async def marcar_correo_verificado(self, id_usuario: UUID) -> bool: ...
 

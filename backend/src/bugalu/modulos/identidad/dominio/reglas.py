@@ -1,15 +1,35 @@
 """Reglas de RF-01 como funciones puras."""
 
 from collections.abc import Mapping
+from typing import Any
 
-from bugalu.compartido.errores import CampoNoPermitido, Conflicto
+from bugalu.compartido.errores import CampoNoPermitido, Conflicto, DatosInvalidos
 from bugalu.modulos.identidad.dominio.solicitud import EstadoSolicitud, Solicitud
 from bugalu.modulos.identidad.dominio.usuario import Rol, Usuario
 
 
-def validar_cambios_de_perfil(usuario: Usuario, cambios: Mapping[str, str | None]) -> None:
+def _agrupacion_resultante(usuario: Usuario, cambios: Mapping[str, Any]) -> bool:
+    return bool(cambios.get("modalidad", usuario.modalidad) == "agrupacion")
+
+
+def validar_cambios_de_perfil(usuario: Usuario, cambios: Mapping[str, Any]) -> None:
     if "nombre_artistico" in cambios and usuario.rol is not Rol.CLIENTE:
         raise CampoNoPermitido("Solo el cliente tiene nombre artistico.")
+    if _agrupacion_resultante(usuario, cambios):
+        integrantes = cambios.get("integrantes", usuario.integrantes)
+        if ("modalidad" in cambios or "integrantes" in cambios) and not integrantes:
+            raise DatosInvalidos(
+                "Una agrupacion registra de 1 a 20 integrantes.", {"campo": "integrantes"}
+            )
+    elif cambios.get("integrantes"):
+        raise DatosInvalidos("Solo una agrupacion registra integrantes.", {"campo": "integrantes"})
+
+
+def exige_declaracion(usuario: Usuario, cambios: Mapping[str, Any]) -> bool:
+    """Registrar una agrupacion o sus integrantes pide la declaracion de agrupacion (CA-06)."""
+    return _agrupacion_resultante(usuario, cambios) and bool(
+        {"modalidad", "integrantes"} & cambios.keys()
+    )
 
 
 def validar_solicitud_nueva(usuario: Usuario) -> None:
