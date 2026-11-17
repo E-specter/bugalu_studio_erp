@@ -108,3 +108,4 @@ Consecuencias del Administrador con pagos: "El horario se libera al momento. La 
 ## Pendientes
 
 - **dev-backend:** qué pasa con un pago en validación de una reserva que el Administrador cancela (propuesta: queda en la lista de pagos y se puede rechazar con motivo "reserva cancelada"; aprobarlo no reabre la reserva).
+- **Ampliada por RF-17 y RF-20:** D1 suma la versión de las condiciones ([aceptaciones](RF-17-registro-y-aceptaciones.md#copy)) y D2 el desglose de IGV ([cambios sensibles](RF-20-cambios-sensibles.md#desglose-de-igv)).

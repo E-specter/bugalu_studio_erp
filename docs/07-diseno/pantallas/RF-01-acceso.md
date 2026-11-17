@@ -115,3 +115,4 @@ Etiquetas (con `//` del layout): CORREO, CONTRASEÑA, NOMBRE, TELÉFONO, NOMBRE 
 - **Decidido (usuario, [ADR-009](../../00-proyecto/decisiones/ADR-009-reservas-tarifas-y-caducidad.md)):** sin casilla de condiciones hasta que el estudio tenga el texto legal; la pantalla solo informa.
 - **Usuario:** quien entra con Google no da teléfono ni nombre artístico; por ahora los completa en el [perfil](RF-01-perfil.md).
 - **leader:** registrar `<bugalu-acceso>` en [frontend-islas](../../01-arquitectura/frontend-islas.md) (fuera del alcance de diseño).
+- **Ampliada por RF-17:** tras registrarse o ingresar con textos pendientes, va a `/acceso/textos` ([aceptaciones](RF-17-registro-y-aceptaciones.md#recorrido)); el pie suma los enlaces legales ([pie público](../componentes/pie-publico.md)).

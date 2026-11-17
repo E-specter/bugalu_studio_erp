@@ -109,3 +109,4 @@ Etiquetas: ROL · ESPECIALIDAD · MOTIVO DEL RECHAZO. Ayudas: especialidad "Pued
 
 - **leader:** el contador de pendientes en la navegación ([navegación lateral](../componentes/navegacion-lateral.md), etiqueta Alerta) queda fuera: pediría una llamada en cada vista. Registrar `<bugalu-solicitudes>` en [frontend-islas](../../01-arquitectura/frontend-islas.md).
 - **leader:** la especialidad `asesoria` es texto libre hasta que RF-07 cierre la lista.
+- **Ampliada por RF-17:** documento, filtro de documentos repetidos y textos aceptados de la persona ([textos legales](RF-17-textos-legales.md#administrador-documentos-repetidos)).

@@ -93,3 +93,4 @@ Ayudas (supuestos de [ADR-009](../../00-proyecto/decisiones/ADR-009-reservas-tar
 
 - **Usuario (vía leader):** confirmar los supuestos de ADR-009 que reflejan las ayudas: unidad por especialista, monto fijo una vez por reserva, recargo solo sobre la parte variable.
 - **leader:** destino TARIFAS (`tag`); registrar `<bugalu-tarifas>` en [frontend-islas](../../01-arquitectura/frontend-islas.md).
+- **Ampliada por RF-20:** los cambios de importes, unidad y recargos pasan por la revisión con confirmación escrita, y Lista suma "Impuestos" ([cambios sensibles](RF-20-cambios-sensibles.md#integración-sin-rehacer-las-pantallas)).

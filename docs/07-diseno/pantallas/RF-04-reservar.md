@@ -111,3 +111,4 @@ Los errores al confirmar van en un aviso arriba del paso, con el foco en él ([f
 
 - **leader:** el paso 2 de Listo ("registra tu comprobante") llega con [RF-05](../../03-requerimientos/RF-05.md); hasta entonces ninguna reserva puede detener su caducidad.
 - **Decidido (usuario, [ADR-009](../../00-proyecto/decisiones/ADR-009-reservas-tarifas-y-caducidad.md)):** sin casilla de condiciones hasta que el estudio tenga el texto legal; la pantalla solo informa.
+- **Ampliada por RF-17 y RF-20:** paso 03 con página cuando faltan datos o textos, `R4 CONDICIONES` con casilla (sustituye la decisión anterior de no tener casilla) ([aceptaciones](RF-17-registro-y-aceptaciones.md)) y desglose de IGV ([cambios sensibles](RF-20-cambios-sensibles.md#desglose-de-igv)).

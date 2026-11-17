@@ -15,6 +15,7 @@ Origen: brief del proyecto (`141:28788`), accesos (`112:286`, `112:385`), panel 
 2. Dentro del panel, [campos](../componentes/campo.md) en filas de 2 o 3 columnas solo cuando los datos son hermanos (nombre + correo; fecha + formato + duración); el resto a ancho completo. En móvil, una columna.
 3. Opciones: [casilla](../componentes/casilla.md) para múltiple, [tarjeta de opción](../componentes/tarjeta-opcion.md) para única con explicación, `<select>` para listas largas cerradas, [etiquetas](../componentes/etiqueta-tecnica.md) Filtro para etiquetado rápido (dirección sonora), como casillas nativas: marcada = Activa + `check`.
 4. Adjuntos con [carga de archivos](../componentes/carga-archivos.md).
+5. **Filas repetibles** (integrantes, redes, franjas de un día): un `<fieldset>` con su `<legend>`; cada fila agrupa sus campos con etiqueta visible y un "Quitar {fila}" Secundario de solo icono `x` con el objeto en el nombre accesible; "Añadir {fila}" Secundario al pie, oculto al llegar al máximo con la ayuda "Máximo {n}.". Al añadir, el foco va al primer campo de la fila nueva; al quitar, a "Añadir". Origen: editor de [franjas](../pantallas/RF-03-franjas.md#composición).
 5. Cierra con [barra de acciones](../componentes/barra-acciones.md) si hay dos o más acciones; con una sola, con el [botón](../componentes/boton.md) Primario ([cuándo se usa la barra](../componentes/barra-acciones.md#cuándo-se-usa)).
 
 ## Validación
@@ -33,6 +34,8 @@ Origen: brief del proyecto (`141:28788`), accesos (`112:286`, `112:385`), panel 
 
 - Valores por defecto razonables y formatos en la ayuda (`DD/MM/AAAA`).
 - Acciones irreversibles (cancelar reserva, rechazar pago, publicar versión) piden confirmación en un paso o página propia con resumen de consecuencias, y usan el botón Peligro.
+- **Cambios sensibles** (impuestos, tarifas, recargos y plazos, [RN-24](../../02-dominio/reglas-negocio.md)): vista previa con antes, después e impacto, y confirmación escrita ("CONFIRMAR"), con el flujo de [cambios sensibles](../pantallas/RF-20-cambios-sensibles.md#flujo-con-barreras).
+- **Aceptaciones legales:** [resumen legal](../componentes/resumen-legal.md) con casilla sin marcar; rechazar o dejarlo para después es una acción del mismo tamaño que aceptar.
 - Envío protegido contra doble clic (botón en estado Carga).
 - Formularios largos guardan avance ([indicador](../componentes/indicador-estado.md) "GUARDADO HACE 1 MIN" en la cabecera).
 

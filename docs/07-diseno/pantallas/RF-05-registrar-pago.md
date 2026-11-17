@@ -102,3 +102,4 @@ Permisos: solo el dueño; la API es la barrera (403). Un Administrador no regist
 ## Pendientes
 
 - Ninguno. El contacto del estudio y los límites de `numero_operacion` los fija [RF-05](../../03-requerimientos/RF-05.md) (revisión visual de pagos, 2026-11-16).
+- **Ampliada por RF-17 y RF-20:** resumen legal de lectura antes de "Registrar pago" ([aceptaciones](RF-17-registro-y-aceptaciones.md#composición)) y "Incluye IGV" en el lateral ([cambios sensibles](RF-20-cambios-sensibles.md#desglose-de-igv)).

@@ -35,17 +35,21 @@ frontend/
 |---|---|
 | Calendario de sala: reserva y agenda (`<bugalu-calendario>`) | [RF-02](../03-requerimientos/RF-02.md), [RF-03](../03-requerimientos/RF-03.md), [RF-04](../03-requerimientos/RF-04.md) |
 | Agenda de asesoría | [RF-15](../03-requerimientos/RF-15.md) |
-| Registro de pago con captura (`<bugalu-pago>`, `islas/Pago.astro`, [spec](../07-diseno/pantallas/RF-05-registrar-pago.md)) | [RF-05](../03-requerimientos/RF-05.md), [RF-11](../03-requerimientos/RF-11.md) |
+| Registro de pago con captura (`<bugalu-pago>`, `islas/Pago.astro`, [spec](../07-diseno/pantallas/RF-05-registrar-pago.md); suma el resumen legal de pago) | [RF-05](../03-requerimientos/RF-05.md), [RF-11](../03-requerimientos/RF-11.md), [RF-17](../03-requerimientos/RF-17.md) |
 | Pagos por validar, ficha del pago y datos para pagar del Administrador (`<bugalu-pagos vista="lista\|revisar\|datos">`, `islas/Pagos.astro`, [spec](../07-diseno/pantallas/RF-05-pagos.md)) | [RF-05](../03-requerimientos/RF-05.md) |
 | Contraseña: mostrar u ocultar y medidor de robustez (`<bugalu-contrasena>`) | [RF-01](../03-requerimientos/RF-01.md) |
 | Acceso: iniciar sesión, registrarse, solicitar acceso interno, recuperar y restablecer (`<bugalu-acceso>`) | [RF-01](../03-requerimientos/RF-01.md) |
 | Estado de la solicitud de acceso interno (`<bugalu-solicitud>`) | [RF-01](../03-requerimientos/RF-01.md) |
-| Reserva por pasos (`<bugalu-reserva>`) | [RF-02](../03-requerimientos/RF-02.md), [RF-04](../03-requerimientos/RF-04.md) |
+| Reserva por pasos (`<bugalu-reserva>`; paso `cuenta` y casilla de condiciones, [spec](../07-diseno/pantallas/RF-17-registro-y-aceptaciones.md)) | [RF-02](../03-requerimientos/RF-02.md), [RF-04](../03-requerimientos/RF-04.md), [RF-17](../03-requerimientos/RF-17.md) |
 | Mis reservas y agenda (`<bugalu-reservas>`) | [RF-04](../03-requerimientos/RF-04.md) |
-| Publicación de franjas, cierres y parámetros (`<bugalu-franjas>`) | [RF-03](../03-requerimientos/RF-03.md) |
-| Tarifas, recargos y feriados (`<bugalu-tarifas>`) | [RF-02](../03-requerimientos/RF-02.md) |
-| Bandeja de solicitudes y usuarios del Administrador (`<bugalu-solicitudes>`) | [RF-01](../03-requerimientos/RF-01.md) |
-| Perfil propio, editable (`<bugalu-perfil>`) | [RF-01](../03-requerimientos/RF-01.md) |
+| Publicación de franjas, cierres y parámetros (`<bugalu-franjas>`; los parámetros sensibles pasan por `<bugalu-cambio-sensible>`) | [RF-03](../03-requerimientos/RF-03.md), [RF-20](../03-requerimientos/RF-20.md) |
+| Tarifas, recargos, feriados e impuestos (`<bugalu-tarifas vista="…\|impuestos">`; los cambios sensibles pasan por `<bugalu-cambio-sensible>`) | [RF-02](../03-requerimientos/RF-02.md), [RF-20](../03-requerimientos/RF-20.md) |
+| Vista previa y confirmación escrita de un cambio sensible (`<bugalu-cambio-sensible>`, la montan `<bugalu-tarifas>` y `<bugalu-franjas>`, [spec](../07-diseno/pantallas/RF-20-cambios-sensibles.md)) | [RF-20](../03-requerimientos/RF-20.md) |
+| Registro de cambios del Administrador (`<bugalu-registro-cambios>`, [spec](../07-diseno/pantallas/RF-20-registro-cambios.md)) | [RF-20](../03-requerimientos/RF-20.md) |
+| Bandeja de solicitudes y usuarios del Administrador (`<bugalu-solicitudes>`; suma documentos repetidos y textos aceptados) | [RF-01](../03-requerimientos/RF-01.md), [RF-17](../03-requerimientos/RF-17.md) |
+| Perfil propio, editable (`<bugalu-perfil vista="datos\|privacidad">`, [spec de RF-17](../07-diseno/pantallas/RF-17-perfil.md)) | [RF-01](../03-requerimientos/RF-01.md), [RF-17](../03-requerimientos/RF-17.md) |
+| Aceptación de textos pendientes tras registrarse o ingresar (`<bugalu-aceptacion>`, `/acceso/textos`) | [RF-17](../03-requerimientos/RF-17.md) |
+| Texto legal público por versión (`<bugalu-texto-legal>`, `/legal/*`) y textos del Administrador (`<bugalu-textos-legales>`, [spec](../07-diseno/pantallas/RF-17-textos-legales.md)) | [RF-17](../03-requerimientos/RF-17.md) |
 | Aviso descartable (`<bugalu-aviso>`) | Transversal ([aviso](../07-diseno/componentes/aviso.md)) |
 | Carga de entregables y capturas (`<bugalu-carga-archivos>`, `islas/CargaArchivos.astro`; primero la variante `captura`, dentro de `<bugalu-pago>`) | [RF-05](../03-requerimientos/RF-05.md), [RF-09](../03-requerimientos/RF-09.md) |
 | Reproductor con forma de onda y comentarios por timestamp (`<bugalu-reproductor>`) | [RF-10](../03-requerimientos/RF-10.md) |

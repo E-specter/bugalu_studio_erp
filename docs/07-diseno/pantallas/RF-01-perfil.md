@@ -107,3 +107,4 @@ Permisos: cada uno ve y edita solo su perfil (CA-09); nadie ve aquí un control 
 ## Pendientes
 
 Ninguno. El de `enable_confirmations` quedó resuelto con la verificación propia ([RF-01](../../03-requerimientos/RF-01.md), notas de implementación).
+- **Ampliada por RF-17** para el cliente: identidad, agrupación, domicilio, redes y privacidad ([perfil reforzado](RF-17-perfil.md)).

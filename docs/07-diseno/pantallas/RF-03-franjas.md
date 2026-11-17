@@ -102,3 +102,4 @@ Etiquetas y ayudas ([RN-17](../../02-dominio/reglas-negocio.md), [RN-18](../../0
 
 - **leader / dev-backend:** `Disponibilidad.cierres` no trae `id`, y sin él no se puede llamar a `DELETE /cierres/{id}`; proponemos añadirlo. Nombre de los campos de las reservas en el cuerpo del 409 `cierre_con_reservas` (propuesta: `detalles.reservas[].{id, folio, inicio, cliente}`).
 - **leader:** destino FRANJAS (`calendar-cog`); registrar `<bugalu-franjas>` en [frontend-islas](../../01-arquitectura/frontend-islas.md).
+- **Ampliada por RF-20:** panel `P3 CANCELACIÓN Y ADELANTO` y revisión con confirmación escrita de los parámetros sensibles ([cambios sensibles](RF-20-cambios-sensibles.md#integración-sin-rehacer-las-pantallas)).
