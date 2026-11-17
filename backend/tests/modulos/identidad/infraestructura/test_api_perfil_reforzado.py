@@ -327,9 +327,59 @@ def test_dos_cuentas_que_guardan_el_mismo_documento_a_la_vez_quedan_marcadas(
         hilo.join(10)
     with psycopg.connect(url) as c:
         filas = c.execute(
-            "select documento_repetido from public.usuario where id = any(%s)", ([a.id, b.id],)
+            "select count(*) > 1 from public.usuario where documento_numero = '55443322'"
         ).fetchall()
-    assert filas == [(True,), (True,)]
+    assert filas == [(True,)]  # ambas guardaron el documento sin esperar ni perder la escritura
+
+
+async def test_dos_cuentas_que_intercambian_documentos_a_la_vez_no_se_interbloquean(
+    cliente: AsyncClient,
+    configuracion: Configuracion,
+    crear_usuario: Crear,
+    administrador: UsuarioDePrueba,
+) -> None:
+    a, b = crear_usuario(), crear_usuario()
+    x, y, p, q = "11110001", "11110002", "11110003", "11110004"
+    cambio = "update public.usuario set documento_tipo = 'dni', documento_numero = %s where id = %s"
+    url = configuracion.url_base_datos_admin
+    errores: list[Exception] = []
+    with psycopg.connect(url) as ca, psycopg.connect(url) as cb:
+        ca.execute(cambio, (x, a.id))
+        cb.execute(cambio, (y, b.id))
+        ca.commit()
+        cb.commit()
+        ca.execute(cambio, (p, a.id))  # cada transaccion toca dos documentos, en orden cruzado
+        cb.execute(cambio, (q, b.id))
+
+        def segundo(con: psycopg.Connection[Any], numero: str, id_: Any) -> None:
+            try:
+                con.execute(cambio, (numero, id_))
+                con.commit()
+            except psycopg.errors.DeadlockDetected as error:
+                errores.append(error)
+
+        hilo = threading.Thread(target=segundo, args=(ca, y, a.id))
+        hilo.start()
+        time.sleep(0.5)  # A ya espera a B si el cambio de documento toma bloqueos por documento
+        segundo(cb, x, b.id)
+        hilo.join(15)
+    assert errores == []
+    r = await cliente.get("/api/v1/usuarios?documento_repetido=true", headers=_con(administrador))
+    assert not ({str(a.id), str(b.id)} & {u["id"] for u in r.json()})  # ahora x e y no se repiten
+
+
+async def test_la_marca_de_documento_repetido_se_calcula_al_leer(
+    cliente: AsyncClient, crear_usuario: Crear, administrador: UsuarioDePrueba, sql: Sql
+) -> None:
+    a, b = crear_usuario(), crear_usuario()
+    cambio = "update public.usuario set documento_tipo = 'dni', documento_numero = '11110009'"
+    sql(cambio + " where id = any(%s)", [a.id, b.id])
+    r = await cliente.get("/api/v1/usuarios?documento_repetido=true", headers=_con(administrador))
+    assert {str(a.id), str(b.id)} <= {u["id"] for u in r.json()}
+    assert not sql(
+        "select 1 from pg_attribute where attrelid = 'public.usuario'::regclass "
+        "and attname = 'documento_repetido' and not attisdropped"
+    )  # ya no hay columna guardada ni trigger que toque filas ajenas
 
 
 async def test_el_filtro_de_documento_repetido_es_del_administrador(

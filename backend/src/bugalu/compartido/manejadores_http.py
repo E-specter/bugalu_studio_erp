@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from psycopg import DataError, IntegrityError, OperationalError  # incluye PoolTimeout
+from psycopg.errors import DeadlockDetected, SerializationFailure
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from bugalu.compartido.errores import ErrorDeNegocio
@@ -71,6 +72,13 @@ def registrar_manejadores(app: FastAPI) -> None:
             "datos_invalidos",
             f"Datos invalidos: {', '.join(campos)}.",
             detalles={"campo": next(iter(campos))},
+        )
+
+    @app.exception_handler(DeadlockDetected)
+    @app.exception_handler(SerializationFailure)
+    async def _cruce(_: Request, __: Exception) -> JSONResponse:
+        return respuesta_de_error(
+            409, "conflicto", "Otro cambio se cruzó con el tuyo. Vuelve a intentarlo."
         )
 
     @app.exception_handler(OperationalError)

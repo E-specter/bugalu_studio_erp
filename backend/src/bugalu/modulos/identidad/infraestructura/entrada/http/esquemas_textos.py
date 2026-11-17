@@ -37,7 +37,7 @@ Resumen = Annotated[str, StringConstraints(min_length=1, max_length=2000, patter
 
 class NuevoTexto(BaseModel):
     tipo: Tipo
-    version: Annotated[str, StringConstraints(max_length=20)]  # el formato lo valida el dominio
+    version: Annotated[str, StringConstraints(max_length=29)]  # el formato lo valida el dominio
     tipo_cambio: TipoCambio
     contenido: Markdown
     resumenes: dict[str, Resumen] = {}
@@ -95,7 +95,7 @@ class TextoLegal(TextoResumen):
 
 class TextoAceptado(BaseModel):
     tipo: Tipo
-    version: Annotated[str, StringConstraints(max_length=20)]
+    version: Annotated[str, StringConstraints(max_length=29)]
 
 
 class NuevaAceptacion(BaseModel):

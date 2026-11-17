@@ -8,7 +8,7 @@ values
   ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pr1@t.pe', '{}'),
   ('00000000-0000-0000-0000-0000000000d2', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pr2@t.pe', '{}');
 
-select has_column('public', 'usuario', 'documento_repetido', 'usuario.documento_repetido');
+select hasnt_column('public', 'usuario', 'documento_repetido', 'la marca ya no se guarda: se calcula al leer');
 select has_column('public', 'usuario', 'integrantes', 'usuario.integrantes');
 select has_column('public', 'aceptacion', 'consentimiento', 'aceptacion.consentimiento');
 select has_function('public', 'mis_pendientes', 'existe mis_pendientes');
@@ -49,22 +49,18 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000d1","role":"authenticated"}', true);
 select lives_ok($$update public.usuario set modalidad = 'agrupacion', documento_tipo = 'dni', documento_numero = '12345678', domicilio = 'Av. Lima 1', redes = '[{"red":"instagram","valor":"@x"}]', integrantes = '[{"nombre":"A","rol":"voz"}]', es_menor = false where id = '00000000-0000-0000-0000-0000000000d1'$$,
   'el cliente edita su perfil reforzado');
-select throws_ok($$update public.usuario set documento_repetido = true where id = '00000000-0000-0000-0000-0000000000d1'$$,
-  '42501', null, 'el cliente no escribe documento_repetido');
+select hasnt_trigger('public', 'usuario', 'usuario_documento_repetido', 'sin trigger que toque filas ajenas');
 update public.usuario set domicilio = 'HACKEADO' where id = '00000000-0000-0000-0000-0000000000d2';
 reset role;
 select is((select domicilio from public.usuario where id = '00000000-0000-0000-0000-0000000000d2'), null, 'el perfil ajeno queda intacto');
 
 -- Documento repetido: no bloquea, marca a ambos; se recalcula.
 update public.usuario set documento_tipo = 'dni', documento_numero = '12345678' where id = '00000000-0000-0000-0000-0000000000d2';
-select is((select count(*)::int from public.usuario where documento_repetido and id in
-  ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000d2')), 2, 'ambas cuentas quedan marcadas');
+select is((select count(*)::int from public.usuario u where u.id in ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000d2') and exists (select 1 from public.usuario o where o.documento_tipo = u.documento_tipo and o.documento_numero = u.documento_numero and o.id <> u.id)), 2, 'ambas cuentas quedan marcadas');
 update public.usuario set documento_numero = '87654321' where id = '00000000-0000-0000-0000-0000000000d2';
-select is((select count(*)::int from public.usuario where documento_repetido and id in
-  ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000d2')), 0, 'al cambiar el documento se desmarcan');
+select is((select count(*)::int from public.usuario u where u.id in ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000d2') and exists (select 1 from public.usuario o where o.documento_tipo = u.documento_tipo and o.documento_numero = u.documento_numero and o.id <> u.id)), 0, 'al cambiar el documento se desmarcan');
 update public.usuario set documento_tipo = 'ce', documento_numero = '12345678' where id = '00000000-0000-0000-0000-0000000000d2';
-select is((select count(*)::int from public.usuario where documento_repetido and id in
-  ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000d2')), 0, 'otro tipo no es el mismo documento');
+select is((select count(*)::int from public.usuario u where u.id in ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000d2') and exists (select 1 from public.usuario o where o.documento_tipo = u.documento_tipo and o.documento_numero = u.documento_numero and o.id <> u.id)), 0, 'otro tipo no es el mismo documento');
 
 -- Pendientes: agrupacion sin aceptar nada.
 set local role authenticated;

@@ -98,6 +98,31 @@ async def test_pool_sin_base_responde_503_en_lugar_de_500(
     assert r.json()["error"]["codigo"] == "base_de_datos_no_disponible"
 
 
+@pytest.mark.parametrize(
+    "error", [psycopg.errors.DeadlockDetected, psycopg.errors.SerializationFailure]
+)
+async def test_interbloqueo_o_fallo_de_serializacion_es_409_conflicto(
+    error: type[psycopg.OperationalError],
+) -> None:
+    app = FastAPI()
+    registrar_manejadores(app)
+
+    @app.get("/cruce")
+    def cruce() -> None:
+        raise error("detalle-interno")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+        r = await c.get("/cruce")
+    assert r.status_code == 409
+    assert r.json() == {
+        "error": {
+            "codigo": "conflicto",
+            "mensaje": "Otro cambio se cruzó con el tuyo. Vuelve a intentarlo.",
+        }
+    }
+    assert "detalle-interno" not in r.text
+
+
 async def test_data_error_de_psycopg_es_422_sin_filtrar_detalles(cliente: AsyncClient) -> None:
     r = await cliente.get("/dato-invalido")
     assert r.status_code == 422

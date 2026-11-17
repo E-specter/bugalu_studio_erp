@@ -8,7 +8,7 @@ from markdown_it.token import Token
 
 _MD = MarkdownIt("commonmark", {"html": False})  # el HTML crudo sale escapado como texto
 _ATRIBUTO = {"link_open": "href", "image": "src"}
-_CORREO = re.compile(r"[^\s:,;?#/<>@]+@[^\s:,;?#/<>@]+")  # una sola direccion, sin parametros
+_CORREO = re.compile(r"[^\s:,;?#/<>@%]+@[^\s:,;?#/<>@%]+")  # una sola direccion, sin parametros
 
 
 def _permitido(destino: str) -> bool:

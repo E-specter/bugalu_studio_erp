@@ -45,6 +45,9 @@ def test_el_html_crudo_sale_escapado(entrada: str) -> None:
         "MAILTO:javascript:alert(1)",
         "mailto:a@b.pe?body=x",
         "mailto:a@b.pe,c@d.pe",
+        "mailto:a@b.pe%2Cc%40d.pe",
+        "mailto:a@b.pe%3Fbcc=x@y.pe",
+        "<mailto:a @b.pe>",
         "//evil.example/x",
     ],
 )

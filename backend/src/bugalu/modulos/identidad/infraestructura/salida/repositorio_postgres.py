@@ -34,7 +34,9 @@ _SELECT = sql.SQL(
     "select u.id, u.nombre, u.rol, u.especialidad, u.telefono, u.nombre_artistico, "
     "public.correo_de_usuario(u.id), u.correo_verificado_en is not null, u.modalidad, "
     "u.documento_tipo, u.documento_numero, u.domicilio, u.redes, u.integrantes, u.es_menor, "
-    "u.documento_repetido "
+    "u.documento_numero is not null and exists (select 1 from public.usuario o "
+    "where o.documento_tipo = u.documento_tipo and o.documento_numero = u.documento_numero "
+    "and o.id <> u.id) as documento_repetido "
     "from public.usuario u"
 )
 
@@ -56,14 +58,16 @@ class RepositorioPostgres:
     ) -> list[Usuario]:
         async with self._conexion.cursor() as cursor:
             await cursor.execute(
-                _SELECT
-                + sql.SQL(
-                    " where (%s::text is null or u.rol = %s)"
-                    " and (%s::boolean is null or u.documento_repetido = %s) order by u.creado_en"
-                ),
-                (rol, rol, documento_repetido, documento_repetido),
+                _SELECT + sql.SQL(" where (%s::text is null or u.rol = %s) order by u.creado_en"),
+                (rol, rol),
             )
-            return [_usuario(fila) for fila in await cursor.fetchall()]
+            usuarios = [_usuario(fila) for fila in await cursor.fetchall()]
+        # shortcut: marca calculada al leer, filtrada aqui; subir a SQL si la lista crece.
+        return [
+            u
+            for u in usuarios
+            if documento_repetido is None or u.documento_repetido == documento_repetido
+        ]
 
     async def actualizar_perfil(self, id_usuario: UUID, cambios: Mapping[str, Any]) -> Usuario:
         if not cambios.keys() <= _EDITABLES:

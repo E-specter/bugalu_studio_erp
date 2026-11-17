@@ -168,6 +168,15 @@ async def test_una_parte_de_la_version_con_mas_de_nueve_cifras_es_422_y_no_rompe
     assert (await cliente.get(BASE)).status_code == 200
 
 
+async def test_el_parche_maximo_de_29_caracteres_pasa_la_forma_y_se_rige_por_las_reglas(
+    cliente: AsyncClient, administrador: Cabeceras
+) -> None:
+    for version in ("999999999.0.999999999", "999999999.999999999.999999999"):
+        r = await _publicar(cliente, administrador, version=version, tipo_cambio="parche")
+        assert r.status_code != 422 or r.json()["error"]["codigo"] != "datos_invalidos", version
+    assert r.status_code == 422 and r.json()["error"]["codigo"] == "version_invalida"
+
+
 @pytest.mark.parametrize(
     "cambios",
     [
