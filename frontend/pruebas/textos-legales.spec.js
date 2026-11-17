@@ -110,6 +110,31 @@ test('publico: el contenido no ejecuta scripts ni atributos de evento aunque lle
   await expect(page.locator('.prosa a[href^="javascript"]')).toHaveCount(0);
 });
 
+test('publico: el saneado del navegador deja solo atributos permitidos y rutas propias', async ({ page }) => {
+  const sucio = [
+    '<h2>Ok</h2>',
+    '<p id="a" name="b" style="position:fixed" title="t" class="x" data-k="1">párrafo</p>',
+    '<button formaction="https://mal.example" form="f">botón</button>',
+    '<img src="https://bugalu.studio/a.png" srcset="https://mal.example/a.png 2x" alt="logo" onerror="window.__xss = 1">',
+    '<a href="https://bugalu.studio/x" ping="https://mal.example/p" target="_blank" rel="x">fuera</a>',
+    '<a href="/\\otro.sitio">barra invertida</a><a href="//otro.sitio">protocolo relativo</a><a href="/legal/">propia</a>',
+    '<svg><a href="https://mal.example"><text>svg</text></a></svg>',
+    '<table><tr><td colspan="2" rowspan="1" scope="col" style="x:y">celda</td></tr></table>',
+  ].join('');
+  await publica(page, { version: (r) => r.fulfill(json(200, texto({ contenido_html: sucio }))) });
+  await page.goto('/legal/terminos-de-uso/');
+  await expect(page.getByRole('heading', { level: 2, name: 'Ok' })).toBeVisible();
+  const prosa = page.locator('.prosa');
+  for (const mal of ['[style]', '[formaction]', '[form]', '[id]', '[name]', '[class]', '[data-k]', '[srcset]', '[ping]', '[target]', '[rel]', '[onerror]', 'svg', 'a[href^="//"]']) await expect(prosa.locator(mal), mal).toHaveCount(0);
+  await expect(prosa.locator('p')).toHaveAttribute('title', 't');
+  await expect(prosa.locator('img')).toHaveAttribute('alt', 'logo');
+  await expect(prosa.locator('img')).toHaveAttribute('src', 'https://bugalu.studio/a.png');
+  await expect(prosa.locator('td')).toHaveAttribute('colspan', '2');
+  await expect(prosa.locator('td')).toHaveAttribute('scope', 'col');
+  await expect(prosa.locator('a[href="/legal/"]')).toHaveCount(1);
+  await expect(prosa.getByText('barra invertida')).not.toHaveAttribute('href', /.+/);
+});
+
 for (const f of fallos.filter((x) => !['401', '403'].includes(x.n))) {
   test(`publico: ${f.n} al cargar muestra el error con Reintentar y se recupera`, async ({ page }) => {
     const consola = vigilarConsola(page);
@@ -672,3 +697,69 @@ test('ficha: sin aceptaciones y con error en U3 (el resto sigue usable)', async 
   await expect(otra.getByRole('button', { name: 'Reintentar' })).toBeVisible();
   await expect(otra.getByRole('button', { name: 'Guardar rol y especialidad' })).toBeEnabled();
 });
+
+// --- Cobertura permanente (auditoria B, ronda 1) ---
+test('publico: la región viva anuncia una sola vez el error y tras Reintentar, y el aviso no es vivo', async ({ page }) => {
+  let falla = true;
+  await publica(page, { version: (r) => (falla ? r.fulfill(errorApi(503, 'x')) : r.fulfill(json(200, texto()))) });
+  await page.addInitScript(() => {
+    window.__anuncios = [];
+    document.addEventListener('DOMContentLoaded', () => {
+      const vivo = document.querySelector('[data-anuncio]');
+      new MutationObserver(() => vivo.textContent && window.__anuncios.push(vivo.textContent)).observe(vivo, { childList: true, characterData: true, subtree: true });
+    });
+  });
+  await page.goto('/legal/terminos-de-uso/');
+  await expect(page.getByRole('button', { name: 'Reintentar' })).toBeVisible();
+  await expect(page.locator('[data-salida] [role]')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__anuncios)).toEqual(['No pudimos cargar el texto. Inténtalo de nuevo en unos minutos.']);
+  falla = false;
+  await page.getByRole('button', { name: 'Reintentar' }).click();
+  await expect(page.getByRole('heading', { level: 2, name: 'Quiénes somos' })).toBeVisible();
+  await expect(page.locator('[data-salida] [role]')).toHaveCount(0);
+  expect((await page.evaluate(() => window.__anuncios)).length).toBe(2);
+});
+
+test.describe('directorio sin JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
+  test('explica qué falta y da el contacto', async ({ page }) => {
+    await page.goto('/legal/');
+    await expect(page.locator('noscript .aviso-titulo')).toHaveText('Esta lista necesita JavaScript para mostrarse.');
+    await expect(page.locator('noscript a[href^="mailto:somos.bugalu.studio@gmail.com"]')).toBeVisible();
+    await expect(page.getByText('Cargando…')).toBeHidden();
+  });
+});
+
+test('admin: motivos y resúmenes con HTML hostil se pintan como texto', async ({ page }) => {
+  const mal = '<img src=x onerror="window.__xss = 1"><b>negrita</b>';
+  await admin(page, { lista: json(200, LISTA.map((x) => ({ ...x, resumenes: { registro: mal, pago: mal }, resumen_cambios: mal }))) });
+  await page.goto('/app/textos');
+  await expect(page.getByRole('table', { name: 'Textos' })).toBeVisible();
+  await expect(page.locator('main').locator('img, b')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+});
+
+test('ficha: nombre, domicilio, redes e integrantes con HTML hostil se pintan como texto', async ({ page }) => {
+  const mal = '<img src=x onerror="window.__xss = 1"><b>negrita</b>';
+  await comoAdministrador(page);
+  await simular(page, 'GET', '/usuarios', json(200, [{ ...FICHA, nombre: mal, nombre_artistico: mal, domicilio: mal, redes: [{ red: 'instagram', valor: mal }], integrantes: [{ nombre: mal, rol: mal }] }]));
+  await simular(page, 'GET', `/usuarios/${UID}/aceptaciones`, json(200, ACEPTADOS));
+  await page.goto(`/app/usuarios/editar?id=${UID}`);
+  const persona = page.getByRole('region', { name: /Persona/ });
+  await expect(persona).toContainText('<img src=x');
+  await expect(page.locator('main').locator('img, b')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+});
+
+for (const f of fallos) {
+  test(`ficha: los textos aceptados fallan (${f.n}) con mensaje y el resto sigue usable`, async ({ page }) => {
+    const consola = vigilarConsola(page);
+    await fichaApi(page, f.r);
+    await page.goto(`/app/usuarios/editar?id=${UID}`);
+    await expect(page.getByRole('region', { name: /Persona/ })).toContainText('DNI 12345678');
+    await expect(page.getByText(/No pudimos cargar los textos aceptados|Tu sesión no es válida|solo para el Administrador/).first()).toBeVisible();
+    if (f.reintentar) await expect(page.getByRole('button', { name: 'Reintentar' })).toBeVisible();
+    await sinViolaciones(page);
+    expect(consola).toEqual([]);
+  });
+}

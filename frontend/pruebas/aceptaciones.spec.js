@@ -144,6 +144,41 @@ test.describe('/acceso/textos', () => {
     await expect(page.getByRole('button', { name: 'Reintentar' })).toBeVisible();
   });
 
+  test.describe('foco', () => {
+    const enFoco = (page) => page.evaluate(() => { const a = document.activeElement; return { etiqueta: a.tagName, texto: a.textContent.trim().slice(0, 40) }; });
+    test('Reintentar con éxito deja el foco en el título', async ({ page }) => {
+      await montar(page, { perfilR: PENDIENTES });
+      let fallar = true;
+      await page.unroute(`${API}/textos-legales`);
+      await page.route(`${API}/textos-legales`, (r) => (fallar ? r.fulfill(errorApi(503, 'x')) : r.fulfill(json(200, TEXTOS))));
+      await page.goto('/acceso/textos/');
+      await expect(page.getByRole('button', { name: 'Reintentar' })).toBeVisible();
+      fallar = false;
+      await page.getByRole('button', { name: 'Reintentar' }).click();
+      await expect(casilla(page)).toBeVisible();
+      expect(await enFoco(page)).toMatchObject({ etiqueta: 'H1' });
+    });
+    test('el error de textos lleva el foco al aviso, también tras Reintentar', async ({ page }) => {
+      await montar(page, { perfilR: PENDIENTES, textos: errorApi(503, 'x') });
+      await page.goto('/acceso/textos/');
+      await expect(page.getByText('No pudimos cargar los textos.')).toBeVisible();
+      expect(await enFoco(page)).toMatchObject({ texto: expect.stringContaining('No pudimos cargar los textos.') });
+      await page.screenshot({ path: 'pruebas/capturas/acceso-textos-error-foco-1440.png', fullPage: true });
+      await page.getByRole('button', { name: 'Reintentar' }).click();
+      await expect(page.getByText('No pudimos cargar los textos.')).toBeVisible();
+      expect(await enFoco(page)).toMatchObject({ texto: expect.stringContaining('No pudimos cargar los textos.') });
+    });
+    test('el error de perfil lleva el foco al aviso, también tras Reintentar', async ({ page }) => {
+      await montar(page, { perfilR: errorApi(503, 'x') });
+      await page.goto('/acceso/textos/');
+      await expect(page.getByText('No pudimos cargar tus datos.')).toBeVisible();
+      expect(await enFoco(page)).toMatchObject({ texto: expect.stringContaining('No pudimos cargar tus datos.') });
+      await page.getByRole('button', { name: 'Reintentar' }).click();
+      await expect(page.getByText('No pudimos cargar tus datos.')).toBeVisible();
+      expect(await enFoco(page)).toMatchObject({ texto: expect.stringContaining('No pudimos cargar tus datos.') });
+    });
+  });
+
   test.describe('sin JavaScript', () => {
     test.use({ javaScriptEnabled: false });
     test('explica qué falta y no deja la carga indefinida', async ({ page }) => {
@@ -227,7 +262,7 @@ test.describe('04 Confirmar con condiciones', () => {
   }
 
   for (const [codigo, detalles, destino, texto] of [
-    ['reaceptacion_requerida', { textos: [{ tipo: 'terminos_uso', version: '1.0.0' }] }, /\/acceso\/textos\/?\?volver=/, null],
+    ['reaceptacion_requerida', { textos: [{ tipo: 'terminos_uso', version: '1.0.0' }] }, /\/reservar\/cuenta\/\?.*aviso=textos-pendientes/, 'Antes de confirmar necesitamos que aceptes los términos actualizados.'],
     ['perfil_incompleto', { campos: ['documento'] }, /\/reservar\/cuenta\/\?.*aviso=faltan-datos/, 'Antes de confirmar necesitamos tus datos.'],
   ]) {
     test(`409 ${codigo} lleva a donde se resuelve`, async ({ page }) => {
@@ -240,9 +275,38 @@ test.describe('04 Confirmar con condiciones', () => {
       await reservar(page).click();
       await expect(page).toHaveURL(destino);
       if (texto) await expect(page.getByText(texto)).toBeVisible();
-      if (codigo === 'reaceptacion_requerida') expect(new URL(page.url()).searchParams.get('volver')).toBe(PASO4);
     });
   }
+
+  for (const [codigo, detalles] of [
+    ['reaceptacion_requerida', { textos: [{ tipo: 'terminos_uso', version: '1.0.0' }] }],
+    ['perfil_incompleto', { campos: ['documento'] }],
+    ['autorizacion_menor_pendiente', {}],
+  ]) {
+    test(`409 ${codigo}: el detalle escrito sobrevive y vuelve al paso 04`, async ({ page }) => {
+      const vistas = await montarReserva(page, { crear: (r) => r.fulfill(json(409, { error: { codigo, mensaje: 'x', detalles } })) });
+      await page.goto(PASO4);
+      await page.getByLabel('Qué necesitas (opcional)').fill('Voz y guitarra');
+      await condiciones(page).check();
+      await reservar(page).click();
+      await expect(page).toHaveURL(/\/reservar\/cuenta\//);
+      if (codigo === 'reaceptacion_requerida') await page.screenshot({ path: 'pruebas/capturas/reservar-03-textos-pendientes-1440.png', fullPage: true });
+      await page.goto(PASO4);
+      await expect(page.getByLabel('Qué necesitas (opcional)')).toHaveValue('Voz y guitarra');
+      expect(vistas.crear).toHaveLength(1);
+    });
+  }
+
+  test('el detalle se borra al reservar con éxito', async ({ page }) => {
+    await montarReserva(page);
+    await page.goto(PASO4);
+    await page.getByLabel('Qué necesitas (opcional)').fill('Voz y guitarra');
+    await condiciones(page).check();
+    await reservar(page).click();
+    await expect(page).toHaveURL(/\/reservar\/listo\//);
+    await page.goto(PASO4);
+    await expect(page.getByLabel('Qué necesitas (opcional)')).toHaveValue('');
+  });
 
   test('409 autorizacion_menor_pendiente muestra el mensaje de la spec', async ({ page }) => {
     await montarReserva(page, { crear: (r) => r.fulfill(errorApi(409, 'autorizacion_menor_pendiente')) });
@@ -420,3 +484,93 @@ test('app: sin pendientes no hay aviso', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.getByText('Tienes textos por aceptar')).toHaveCount(0);
 });
+
+// --- Cobertura permanente (auditoria B, ronda 1): axe en ambos anchos, textos hostiles y fallos del resumen del pago ---
+const HOSTIL = '<img src=x onerror="window.__xss = 1"><b>negrita</b> <script>window.__xss = 2</script>';
+const sinHtml = async (page, ambito) => {
+  await expect(ambito.locator('img, b, script')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+};
+
+for (const tm of tamanos) {
+  test(`04 Confirmar: sin violaciones de axe a ${tm.nombre}`, async ({ page }) => {
+    await page.setViewportSize({ width: tm.ancho, height: tm.alto });
+    await montarReserva(page);
+    await page.goto(PASO4);
+    await expect(page.getByText('Pagas el adelanto para confirmar.')).toBeVisible();
+    await sinViolaciones(page);
+  });
+  test(`pago: resumen legal sin violaciones de axe a ${tm.nombre}`, async ({ page }) => {
+    const C1 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    await page.setViewportSize({ width: tm.ancho, height: tm.alto });
+    await montar(page);
+    await simular(page, 'GET', `/reservas/${R1}`, json(200, { ...RESERVA, cuotas: [{ id: C1, hito: 'al_reservar', monto: '120.00', estado: 'pendiente', pagable: true, pagos: [] }] }));
+    await simular(page, 'GET', '/instrucciones-pago', json(200, [{ metodo: 'yape', texto: 'Yape al 999 888 777', activo: true }]));
+    await page.goto(`/app/reservas/pagar?id=${R1}&cuota=${C1}`);
+    await expect(page.getByText('Revisamos tu pago a mano.')).toBeVisible();
+    await sinViolaciones(page);
+  });
+  test(`app: aviso de textos pendientes sin violaciones de axe a ${tm.nombre}`, async ({ page }) => {
+    await page.setViewportSize({ width: tm.ancho, height: tm.alto });
+    await montar(page, { perfilR: PENDIENTES });
+    await page.route(`${API}/reservas/mias`, (r) => r.fulfill(json(200, [])));
+    await page.goto('/app/reservas/');
+    await expect(page.getByText('Tienes textos por aceptar')).toBeVisible();
+    await sinViolaciones(page);
+  });
+  test(`libro de reclamaciones sin violaciones de axe a ${tm.nombre}`, async ({ page }) => {
+    await page.setViewportSize({ width: tm.ancho, height: tm.alto });
+    await page.goto('/libro-de-reclamaciones/');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await sinViolaciones(page);
+  });
+}
+
+test.describe('resúmenes con HTML hostil se pintan como texto', () => {
+  const textosHostiles = TEXTOS.map((x) => ({ ...x, resumenes: Object.fromEntries(Object.entries(x.resumenes).map(([k]) => [k, `${HOSTIL} resumen ${k}`])) }));
+  test('/acceso/textos', async ({ page }) => {
+    await montar(page, { perfilR: PENDIENTES, textos: json(200, textosHostiles) });
+    await page.goto('/acceso/textos/');
+    await expect(page.getByText('<img src=x', { exact: false }).first()).toBeVisible();
+    await sinHtml(page, page.locator('bugalu-aceptacion'));
+  });
+  test('04 Confirmar', async ({ page }) => {
+    await montarReserva(page, { textos: json(200, textosHostiles) });
+    await page.goto(PASO4);
+    await expect(page.getByText('<img src=x', { exact: false }).first()).toBeVisible();
+    await sinHtml(page, page.locator('bugalu-reserva'));
+  });
+  test('pago', async ({ page }) => {
+    const C1 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    await montar(page, { textos: json(200, textosHostiles) });
+    await simular(page, 'GET', `/reservas/${R1}`, json(200, { ...RESERVA, cuotas: [{ id: C1, hito: 'al_reservar', monto: '120.00', estado: 'pendiente', pagable: true, pagos: [] }] }));
+    await simular(page, 'GET', '/instrucciones-pago', json(200, [{ metodo: 'yape', texto: 'Yape al 999 888 777', activo: true }]));
+    await page.goto(`/app/reservas/pagar?id=${R1}&cuota=${C1}`);
+    await expect(page.locator('.resumen-legal-lectura').getByText('<img src=x', { exact: false })).toBeVisible();
+    await sinHtml(page, page.locator('.resumen-legal-lectura'));
+  });
+});
+
+// El resumen del pago es un extra: si no carga, se puede pagar igual y no hay error de consola.
+for (const [nombre, resp] of [
+  ['401', (r) => r.fulfill(errorApi(401, 'no_autenticado'))],
+  ['403', (r) => r.fulfill(errorApi(403, 'sin_permiso'))],
+  ['503', (r) => r.fulfill(errorApi(503, 'x'))],
+  ['red', (r) => r.abort()],
+  ['no JSON', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<p>x</p>' })],
+]) {
+  test(`pago: el resumen legal falla (${nombre}) y el pago sigue disponible`, async ({ page }) => {
+    const consola = vigilarConsola(page);
+    const C1 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    await montar(page);
+    await page.unroute(`${API}/textos-legales`);
+    await page.route(`${API}/textos-legales`, resp);
+    await simular(page, 'GET', `/reservas/${R1}`, json(200, { ...RESERVA, cuotas: [{ id: C1, hito: 'al_reservar', monto: '120.00', estado: 'pendiente', pagable: true, pagos: [] }] }));
+    await simular(page, 'GET', '/instrucciones-pago', json(200, [{ metodo: 'yape', texto: 'Yape al 999 888 777', activo: true }]));
+    await page.goto(`/app/reservas/pagar?id=${R1}&cuota=${C1}`);
+    await expect(page.getByText('Yape al 999 888 777').first()).toBeVisible();
+    await expect(page.locator('.resumen-legal-lectura')).toHaveCount(0);
+    await sinViolaciones(page);
+    expect(consola).toEqual([]);
+  });
+}

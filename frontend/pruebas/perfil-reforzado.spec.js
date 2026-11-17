@@ -319,3 +319,80 @@ test.describe('/app/perfil/privacidad', () => {
     });
   });
 });
+
+// --- Cobertura permanente (auditoria B, ronda 1) ---
+test.describe('filas repetibles con teclado', () => {
+  const tecla = async (page, nombre, tecla) => {
+    await page.getByRole('button', { name: nombre }).last().focus();
+    await page.keyboard.press(tecla);
+  };
+  const enFoco = (page) => page.evaluate(() => { const a = document.activeElement; return a.closest('.perfil-fila') ? `fila:${[...a.closest('.perfil-fila').parentElement.children].indexOf(a.closest('.perfil-fila'))}:${a.tagName}` : a.textContent.trim(); });
+  test('redes: Enter añade con el foco en la fila nueva; Espacio quita y devuelve el foco', async ({ page }) => {
+    await montar(page);
+    await page.goto('/app/perfil');
+    await tecla(page, 'Añadir red', 'Enter');
+    expect(await enFoco(page)).toBe('fila:0:SELECT');
+    await tecla(page, 'Añadir red', 'Enter');
+    expect(await enFoco(page)).toBe('fila:1:SELECT');
+    await expect(page.getByLabel('Red', { exact: true })).toHaveCount(2);
+    await tecla(page, 'Quitar red', 'Space');
+    await expect(page.getByLabel('Red', { exact: true })).toHaveCount(1);
+    expect(await enFoco(page)).toBe('fila:0:SELECT');
+    await tecla(page, 'Quitar red', 'Enter');
+    await expect(page.getByLabel('Red', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Añadir red' })).toBeFocused();
+  });
+  test('integrantes: Enter añade con el foco en la fila nueva; quitar devuelve el foco', async ({ page }) => {
+    await montar(page);
+    await page.goto('/app/perfil');
+    await page.getByRole('radio', { name: /Agrupación/ }).check();
+    await page.getByRole('button', { name: 'Añadir integrante' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByLabel('Nombre del integrante')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Quitar integrante' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByLabel('Nombre del integrante')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Añadir integrante' })).toBeFocused();
+  });
+  test('en el tope de 5 redes, quitar por teclado devuelve el foco a una fila y reaparece Añadir', async ({ page }) => {
+    await montar(page);
+    await page.goto('/app/perfil');
+    for (let i = 0; i < 5; i++) await tecla(page, 'Añadir red', 'Enter');
+    await expect(page.getByRole('button', { name: 'Añadir red' })).toBeHidden();
+    await page.getByRole('button', { name: 'Quitar red' }).last().focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Añadir red' })).toBeVisible();
+    expect(await enFoco(page)).toBe('fila:3:SELECT');
+  });
+});
+
+test('perfil: nombre artístico, domicilio, redes e integrantes con HTML hostil se pintan como texto', async ({ page }) => {
+  const mal = '<img src=x onerror="window.__xss = 1"><b>x</b>';
+  await montar(page, { perfilR: perfilApi({ modalidad: 'agrupacion', domicilio: mal, redes: [{ red: 'instagram', valor: mal }], integrantes: [{ nombre: mal, rol: mal }] }) });
+  await page.goto('/app/perfil');
+  await expect(page.getByLabel('Nombre del integrante')).toHaveValue(mal);
+  await expect(page.getByLabel(/Usuario o enlace/)).toHaveValue(mal);
+  await expect(page.getByRole('textbox', { name: 'Domicilio' })).toHaveValue(mal);
+  await expect(page.locator('bugalu-perfil').locator('img, b, script')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+});
+
+test('privacidad: la región viva anuncia una sola vez y el aviso clonado no tiene rol vivo', async ({ page }) => {
+  let llamadas = 0;
+  await montar(page);
+  await page.unroute(`${API}/perfil`);
+  await page.route(`${API}/perfil`, (r) => (++llamadas === 1 ? r.fulfill(errorApi(503, 'x')) : r.fulfill(perfilApi())));
+  await page.goto('/app/perfil/privacidad/');
+  await expect(page.locator('bugalu-privacidad [data-salida] .aviso')).toBeVisible();
+  await expect(page.locator('bugalu-privacidad [data-salida] [role]')).toHaveCount(0);
+  await page.evaluate(() => {
+    window.__anuncios = [];
+    const vivo = document.querySelector('bugalu-privacidad [data-anuncio]');
+    new MutationObserver(() => vivo.textContent && window.__anuncios.push(vivo.textContent)).observe(vivo, { childList: true, characterData: true, subtree: true });
+  });
+  await page.getByRole('button', { name: 'Reintentar' }).click();
+  await expect(page.getByRole('checkbox', { name: /promociones por correo/ })).toBeVisible();
+  expect(await page.evaluate(() => window.__anuncios)).toEqual(['Privacidad cargada.']);
+});

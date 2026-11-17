@@ -83,14 +83,16 @@ const directorio = tipo === 'directorio';
   import { listarTextosLegales, obtenerVersionTexto, tipos, esVersion, delTipo } from '../servicios/textos-legales.js';
   import { llenarAviso, formatearFecha } from '../servicios/formulario.js';
 
+  const PERMITIDOS = ['href', 'src', 'alt', 'title', 'colspan', 'rowspan', 'scope'];
   // El backend ya sanea el HTML; esto es una segunda barrera en el navegador: DOMParser no ejecuta nada y se quita lo activo.
   function limpiar(html) {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     doc.querySelectorAll('script, style, iframe, object, embed, form, link, meta, base, svg, math').forEach((n) => n.remove());
     doc.body.querySelectorAll('*').forEach((n) => {
       for (const a of [...n.attributes]) {
-        const url = ['href', 'src'].includes(a.name) && !/^(https?:|mailto:|#|\/)/i.test(a.value.trim());
-        if (/^on/i.test(a.name) || url) n.removeAttribute(a.name);
+        // Solo atributos permitidos; los enlaces, a https, correo, ancla o ruta propia (no `//x` ni `/\x`).
+        const url = ['href', 'src'].includes(a.name) && !/^(https?:|mailto:|#|\/(?![/\\]))/i.test(a.value.trim());
+        if (!PERMITIDOS.includes(a.name) || url) n.removeAttribute(a.name);
       }
     });
     // Un texto con <h1> compite con el de la pagina: sus encabezados bajan un nivel (a11y: el contenido empieza en <h2>).

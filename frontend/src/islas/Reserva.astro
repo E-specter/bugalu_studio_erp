@@ -287,6 +287,7 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
   const RUTAS: Record<string, string> = { horario: '/reservar/', servicio: '/reservar/servicio/', cuenta: '/reservar/cuenta/', confirmar: '/reservar/confirmar/' };
   const ERROR_TERMINOS = 'Marca la casilla para aceptar los términos; sin ella no podemos activar tus reservas.';
   const ERROR_CONDICIONES = 'Marca la casilla para aceptar las condiciones; sin ella no podemos registrar tu reserva.';
+  const CLAVE_DETALLE = 'bugalu:reserva-detalle';
   const DESCRIPCION: Record<string, string> = {
     grabacion: 'Graba voces, instrumentos o tu banda en vivo.',
     ensayo: 'Ensaya en sala. Disponible si ya tienes una sesión confirmada con nosotros.',
@@ -624,6 +625,10 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
       }
       if (this.paso === 'confirmar') {
         this.q('[data-confirmar]')!.setAttribute('disabled', '');
+        // El detalle escrito sobrevive a ir al paso 03 y volver; se borra al reservar (CA-13).
+        const area = this.q<HTMLTextAreaElement>('textarea[name="detalle"]')!;
+        try { area.value = sessionStorage.getItem(CLAVE_DETALLE) ?? ''; } catch {}
+        area.addEventListener('input', () => { try { sessionStorage.setItem(CLAVE_DETALLE, area.value); } catch {} });
         this.cargarCondiciones();
       }
       this.resumen();
@@ -792,6 +797,7 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
           ...(detalle && { detalle }),
           version_condiciones: this.condVersion,
         });
+        try { sessionStorage.removeItem(CLAVE_DETALLE); } catch {}
         location.href = `/reservar/listo/?${new URLSearchParams({ id: reserva.id })}`;
         return;
       } catch (error) {
@@ -815,7 +821,7 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
         duracion_invalida: 'La duración va de 30 min a 8 h, en bloques de 30 min.',
       };
       // Orden del contrato: reaceptacion_requerida, perfil_incompleto, autorizacion_menor_pendiente, texto_desactualizado.
-      if (estado === 409 && codigo === 'reaceptacion_requerida') return void location.assign(`/acceso/textos?${new URLSearchParams({ volver: this.url('confirmar') })}`);
+      if (estado === 409 && codigo === 'reaceptacion_requerida') return void location.assign(this.url('cuenta', {}, 'textos-pendientes'));
       if (estado === 409 && codigo === 'perfil_incompleto') return void location.assign(this.url('cuenta', {}, 'faltan-datos'));
       if (estado === 409 && codigo === 'autorizacion_menor_pendiente') return void location.assign(this.url('cuenta', {}, 'menor'));
       if (estado === 409 && codigo === 'texto_desactualizado') {

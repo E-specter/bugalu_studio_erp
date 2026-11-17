@@ -65,7 +65,7 @@ import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLeg
     async connectedCallback() {
       this.volver = rutaPropia(new URLSearchParams(location.search).get('volver')) ?? '/app/';
       this.addEventListener('click', (e) => {
-        if (e.target.closest('[data-reintentar]')) this.cargar(true);
+        if (e.target.closest('[data-reintentar]')) this.cargar();
         if (e.target.closest('[data-ahora-no]')) location.assign(this.volver);
       });
       this.addEventListener('submit', (e) => {
@@ -81,6 +81,10 @@ import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLeg
     mostrar(estado) {
       this.querySelector('[data-salida]').replaceChildren(this.plantilla(estado));
     }
+    // El boton Reintentar desaparece al repintar: el foco va al aviso (error) o al titulo (exito).
+    enfocarError(contenedor) {
+      enfocarAviso(contenedor.querySelector('.aviso'));
+    }
     enfocarTitulo() {
       const h1 = document.querySelector('h1');
       h1.tabIndex = -1;
@@ -90,7 +94,7 @@ import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLeg
       location.replace(`/acceso?${new URLSearchParams({ volver: location.pathname + location.search })}`);
     }
 
-    async cargar(reintento = false) {
+    async cargar() {
       limpiarAvisos(this);
       if (!(await obtenerToken())) return this.alAcceso();
       this.mostrar('cargando');
@@ -99,7 +103,8 @@ import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLeg
         perfil = await obtenerPerfil();
       } catch (error) {
         if (error.estado === 401) return this.alAcceso();
-        return this.mostrar('error-perfil');
+        this.mostrar('error-perfil');
+        return this.enfocarError(this.querySelector('[data-salida]'));
       }
       this.pendientes = pendientesDe(perfil, 'registro');
       if (!this.pendientes.length) return location.replace(this.volver);
@@ -109,8 +114,7 @@ import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLeg
       this.querySelector('[data-descripcion]').textContent = actualizacion
         ? 'Cambiamos los términos de uso. Para hacer reservas nuevas, léelos y acéptalos. Tus reservas actuales siguen con las condiciones que aceptaste.'
         : 'Lee el resumen y acepta los términos para reservar con nosotros.';
-      await this.cargarTextos();
-      if (!reintento) this.enfocarTitulo();
+      if (await this.cargarTextos()) this.enfocarTitulo();
     }
 
     // `aviso`: {clave: texto} para los bloques que cambiaron de version.
@@ -128,7 +132,8 @@ import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLeg
         bloques.replaceChildren(this.plantilla('error-textos'));
         aceptarBoton.disabled = true;
         motivo.hidden = false;
-        return;
+        this.enfocarError(bloques);
+        return false;
       }
       aceptarBoton.disabled = false;
       motivo.hidden = true;
@@ -140,6 +145,7 @@ import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLeg
           return raiz;
         }),
       );
+      return true;
     }
 
     async aceptar() {
