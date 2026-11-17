@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-17-perfil
 titulo: Pantalla — Perfil reforzado, consentimientos y textos aceptados (etapa A)
-estado: borrador
+estado: aprobado
 depende_de: [RF-17, RF-01, ADR-012, RN-25, pantalla-rf-01-perfil, diseno-brief, patron-formularios, patron-estados-sistema, comp-resumen-legal, comp-campo, comp-casilla, comp-panel, comp-tabla, comp-aviso, comp-boton, comp-etiqueta-tecnica]
 ---
 

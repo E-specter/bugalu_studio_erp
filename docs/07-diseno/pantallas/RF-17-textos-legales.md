@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-17-textos-legales
 titulo: Pantalla — Textos legales públicos, publicación de versiones y documentos repetidos
-estado: borrador
+estado: aprobado
 depende_de: [RF-17, RF-16, ADR-012, diseno-brief, patron-estructura-app, patron-formularios, patron-tablas-y-tableros, patron-estados-sistema, comp-pie-publico, comp-tabla, comp-panel, comp-campo, comp-casilla, comp-barra-acciones, comp-aviso, comp-boton, comp-etiqueta-tecnica]
 ---
 

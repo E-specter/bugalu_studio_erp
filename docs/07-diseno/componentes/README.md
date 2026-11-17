@@ -64,6 +64,8 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Registro de cambios | [registro de cambios](../pantallas/RF-20-registro-cambios.md) | isla `<bugalu-registro-cambios>` (`islas/RegistroCambios.astro`) | Implementado |
 | Texto legal público | [textos legales](../pantallas/RF-17-textos-legales.md#páginas-públicas) | isla `<bugalu-texto-legal tipo="…\|directorio">` (`islas/TextoLegal.astro`; páginas `/legal/` y `/legal/{slug}/`) | Implementado |
 | Textos legales del Administrador | [textos legales](../pantallas/RF-17-textos-legales.md#administrador-textos) | isla `<bugalu-textos-legales vista="lista\|publicar">` (`islas/TextosLegales.astro`) | Implementado |
+| Aceptación de textos | [registro y aceptaciones](../pantallas/RF-17-registro-y-aceptaciones.md) | isla `<bugalu-aceptacion>` (`islas/Aceptacion.astro`; `/acceso/textos`) | Implementado |
+| Privacidad y consentimientos | [perfil](../pantallas/RF-17-perfil.md) | isla `<bugalu-privacidad>` (`islas/Privacidad.astro`; `/app/perfil/privacidad`) | Implementado |
 
 Rutas relativas a `frontend/src/`. Islas en `islas/<Nombre>.astro`.
 

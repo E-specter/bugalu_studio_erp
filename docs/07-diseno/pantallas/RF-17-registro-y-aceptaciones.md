@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-17-registro-y-aceptaciones
 titulo: Pantalla — Aceptación de textos legales en el registro, la reserva y el pago (etapa A)
-estado: borrador
+estado: aprobado
 depende_de: [RF-17, RF-01, RF-04, RF-05, ADR-012, ADR-015, RN-25, RN-26, diseno-brief, patron-flujo-por-pasos, patron-formularios, patron-estados-sistema, comp-resumen-legal, comp-casilla, comp-campo, comp-aviso, comp-barra-acciones, comp-boton, comp-panel]
 ---
 
