@@ -1,43 +1,20 @@
 """Redaccion pura de los correos: texto plano en espanol, hora de Lima, montos `S/ 1.234,50`."""
 
 from collections.abc import Callable, Sequence
-from datetime import datetime, timedelta, timezone
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 from typing import Any
 
-# Lima no tiene horario de verano (UTC-5 todo el anio), asi que no hace falta base de zonas.
-LIMA = timezone(timedelta(hours=-5))
-_DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
-_MESES = [
-    "enero", "febrero", "marzo", "abril", "mayo", "junio",
-    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
-]  # fmt: skip
-
-
-def formatear_soles(monto: Decimal) -> str:
-    entero, decimales = f"{monto.quantize(Decimal('0.01'), ROUND_HALF_UP):,.2f}".split(".")
-    return f"S/ {entero.replace(',', ' ')},{decimales}"
-
-
-def _lima(iso: str) -> datetime:
-    return datetime.fromisoformat(iso).astimezone(LIMA)
-
-
-def _fecha(f: datetime) -> str:
-    return f"{_DIAS[f.weekday()]} {f.day} de {_MESES[f.month - 1]} de {f.year}"
-
-
-def _horario(datos: dict[str, Any]) -> str:
-    inicio, fin = _lima(datos["inicio"]), _lima(datos["fin"])
-    return f"{_fecha(inicio)}, de {inicio:%H:%M} a {fin:%H:%M}"
-
+from bugalu.modulos.notificaciones.dominio.formato import (
+    _fecha,
+    _horario,
+    _lima,
+    _soles,
+    formatear_soles,
+)
+from bugalu.modulos.notificaciones.dominio.redaccion_rf18 import REDACTORES_RF18
 
 Instrucciones = Sequence[tuple[str, str]]  # (metodo, texto) de los metodos activos
 _HITOS = {"al_reservar": "al reservar", "al_terminar": "al terminar"}
-
-
-def _soles(valor: Any) -> str:
-    return formatear_soles(Decimal(str(valor)))
 
 
 def _datos_para_pagar(instrucciones: Instrucciones) -> str:
@@ -188,9 +165,7 @@ def redactar(
         return _reserva_creada(datos, instrucciones)
     if tipo == "reserva_finalizada_saldo":
         return _reserva_finalizada_saldo(datos, instrucciones)
-    from bugalu.modulos.notificaciones.dominio.redaccion_rf18 import REDACTORES_RF18
-
-    if tipo in REDACTORES_RF18:  # importacion tardia: ese modulo usa los ayudantes de este
+    if tipo in REDACTORES_RF18:
         return REDACTORES_RF18[tipo](datos)
     if tipo not in _REDACTORES:
         raise ValueError(f"tipo de notificacion desconocido: {tipo}")

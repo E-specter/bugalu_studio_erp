@@ -324,6 +324,22 @@ async def test_cancelar_por_el_estudio_con_pagos_pide_nota_y_deja_la_eleccion_pe
     assert sql("select count(*) from public.credito") == [(0,)]
 
 
+@pytest.mark.parametrize("motivo", ["cliente", "caducada"])
+async def test_solo_las_cancelaciones_de_la_politica_traen_cancelacion(
+    cliente: AsyncClient,
+    cliente_a: UsuarioDePrueba,
+    reserva_con_pagos: Callable[..., str],
+    sql: Ejecutar,
+    motivo: str,
+) -> None:
+    """Una cancelada anterior a RF-18 (sin `aviso_en`) o por caducidad no lleva `cancelacion`."""
+    id_ = reserva_con_pagos(cliente_a, 1, estado="cancelada", pagada=False)
+    sql("update public.reserva set motivo_cancelacion = %s where id = %s", motivo, UUID(id_))
+    r = await cliente.get(f"{RESERVAS}/{id_}", headers=con(cliente_a))
+    assert r.status_code == 200, r.text
+    assert r.json()["estado"] == "cancelada" and "cancelacion" not in r.json()
+
+
 async def test_la_reserva_trae_pagado_politica_y_reprogramaciones(
     cliente: AsyncClient, cliente_a: UsuarioDePrueba, reserva_con_pagos: Callable[..., str]
 ) -> None:

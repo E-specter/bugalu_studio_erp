@@ -4,7 +4,7 @@ from collections.abc import Callable
 from decimal import Decimal
 from typing import Any
 
-from bugalu.modulos.notificaciones.dominio.redaccion import _fecha, _horario, _lima, _soles
+from bugalu.modulos.notificaciones.dominio.formato import _fecha, _horario, _lima, _soles
 
 
 def _reserva_cancelada_con_pagos(datos: dict[str, Any]) -> tuple[str, str]:
