@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(72);
+select plan(79);
 
 -- RF-17 (etapa A): textos legales versionados e inmutables y aceptaciones inmutables.
 insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data)
@@ -160,5 +160,25 @@ select throws_ok($$select public.publicar_texto_legal('condiciones_contratacion'
   'P0001', 'aviso_insuficiente', 'una mayor con fecha pasada no se publica por SQL');
 select throws_ok($$select public.publicar_texto_legal('condiciones_contratacion', '1.1.0', 'menor', 'x', '{}', null, now() + interval '14 days')$$,
   'P0001', 'aviso_insuficiente', 'una menor exige 15 dias de aviso');
+-- Baja del administrador autor (ADR-015): el set null de id_autor es lo unico que el trigger admite.
+reset role;
+insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data)
+values ('00000000-0000-0000-0000-0000000000ae', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'ae@t.pe', '{}');
+update public.usuario set rol = 'administrador' where id = '00000000-0000-0000-0000-0000000000ae';
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ae","role":"authenticated"}', true);
+set local role authenticated;
+select lives_ok($$select public.publicar_texto_legal('declaracion_agrupacion', '1.0.0', 'mayor', 'contenido', '{}', null, now())$$, 'ae publica');
+reset role;
+select throws_ok($$update public.texto_legal set id_autor = '00000000-0000-0000-0000-0000000000ad' where tipo = 'declaracion_agrupacion'$$,
+  'P0001', 'Una version publicada no se edita ni se borra.', 'cambiar el autor a otro usuario sigue bloqueado');
+select throws_ok($$update public.texto_legal set id_autor = null, contenido = 'otro' where tipo = 'declaracion_agrupacion'$$,
+  'P0001', 'Una version publicada no se edita ni se borra.', 'anular el autor junto con otra columna sigue bloqueado');
+set local role authenticated;
+select throws_ok($$update public.texto_legal set id_autor = null where tipo = 'declaracion_agrupacion'$$,
+  '42501', null, 'un administrador autenticado no anula el autor');
+reset role;
+select lives_ok($$delete from auth.users where id = '00000000-0000-0000-0000-0000000000ae'$$, 'borrar al administrador autor funciona');
+select is((select id_autor from public.texto_legal where tipo = 'declaracion_agrupacion'), null, 'el autor queda nulo');
+select is((select contenido from public.texto_legal where tipo = 'declaracion_agrupacion'), 'contenido', 'el contenido queda intacto');
 select * from finish();
 rollback;

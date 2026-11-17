@@ -25,11 +25,6 @@ with psycopg.connect(Configuracion().url_base_datos_admin) as conexion:
     conexion.execute("delete from public.cierre_sala where id_autor = any(%s)", (ids,))
     trigger = "alter table public.usuario {} trigger usuario_conserva_administrador"
     conexion.execute(trigger.format("disable"))
-    # Las versiones publicadas son inmutables y no se borran, pero su FK `id_autor ... on delete set null` choca con su propio trigger
-    # (ver docs/06-operacion/pruebas-locales.md): se anula el autor con ese trigger apagado un instante, como textos_aislados.
-    conexion.execute("alter table public.texto_legal disable trigger texto_legal_sin_edicion")
-    conexion.execute("update public.texto_legal set id_autor = null where id_autor = any(%s)", (ids,))
-    conexion.execute("alter table public.texto_legal enable trigger texto_legal_sin_edicion")
     conexion.execute("delete from public.solicitud_acceso where id_usuario = any(%s) or id_revisor = any(%s)", (ids, ids))
     conexion.execute("delete from auth.users where id = any(%s)", (ids,))
     conexion.execute(trigger.format("enable"))
