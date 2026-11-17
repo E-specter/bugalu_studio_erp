@@ -54,7 +54,7 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Comentario | [comentario](comentario.md) | `componentes/Comentario.astro` | Borrador |
 | Marco de registro | [marco-registro](marco-registro.md) | `componentes/MarcoRegistro.astro` | Implementado |
 | Resumen legal | [resumen-legal](resumen-legal.md) | `componentes/ResumenLegal.astro` | Borrador (RF-17) |
-| Pie público | [pie-publico](pie-publico.md) | `componentes/PiePublico.astro` | Borrador (RF-17) |
+| Pie público | [pie-publico](pie-publico.md) | `componentes/PiePublico.astro` | Implementado (variante Completa en `LayoutPublico`; Acceso existe y se monta con la tarea de aceptaciones) |
 | Calendario | [calendario](calendario.md) | isla `<bugalu-calendario>` | Implementado |
 | Reproductor | [reproductor](reproductor.md) | isla `<bugalu-reproductor>` | Borrador |
 | Carga de archivos | [carga-archivos](carga-archivos.md) | isla `<bugalu-carga-archivos>` (`islas/CargaArchivos.astro`) | Implementado (Captura de pago; audio y referencias entran con su RF) |
@@ -62,6 +62,8 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Pagos del Administrador | [pagos](../pantallas/RF-05-pagos.md) | isla `<bugalu-pagos>` (`islas/Pagos.astro`) | Implementado |
 | Cambio sensible | [cambios sensibles](../pantallas/RF-20-cambios-sensibles.md) | isla `<bugalu-cambio-sensible>` (`islas/CambioSensible.astro`; la montan `<bugalu-tarifas>` y `<bugalu-franjas>`) | Implementado |
 | Registro de cambios | [registro de cambios](../pantallas/RF-20-registro-cambios.md) | isla `<bugalu-registro-cambios>` (`islas/RegistroCambios.astro`) | Implementado |
+| Texto legal público | [textos legales](../pantallas/RF-17-textos-legales.md#páginas-públicas) | isla `<bugalu-texto-legal tipo="…\|directorio">` (`islas/TextoLegal.astro`; páginas `/legal/` y `/legal/{slug}/`) | Implementado |
+| Textos legales del Administrador | [textos legales](../pantallas/RF-17-textos-legales.md#administrador-textos) | isla `<bugalu-textos-legales vista="lista\|publicar">` (`islas/TextosLegales.astro`) | Implementado |
 
 Rutas relativas a `frontend/src/`. Islas en `islas/<Nombre>.astro`.
 
@@ -77,6 +79,7 @@ Rutas relativas a `frontend/src/`. Islas en `islas/<Nombre>.astro`.
 
 | Pieza | Qué es | La usan |
 |---|---|---|
+| `ContactoEstudio.astro` | Canales del estudio (correo, WhatsApp, sede) de las páginas sin JS y del Libro de Reclamaciones provisional | `TextoLegal`, `/libro-de-reclamaciones/` |
 | `Icono.astro` + `lucide.js` | SVG en línea de un icono de la [tabla de iconos](../fundamentos/iconografia-imagen.md#iconos), decorativo (`aria-hidden`), `medida-icono-sm` o `-md` | Todos los que llevan icono |
 | `MensajeError.astro` | Mensaje de error con `alert-triangle` en `color-texto-alerta` ([estados comunes](#estados-comunes), Error) | [campo](campo.md), [casilla](casilla.md) (error de grupo) |
 

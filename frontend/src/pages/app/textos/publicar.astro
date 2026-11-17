@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import TextosLegales from '../../../islas/TextosLegales.astro';
+---
+
+<LayoutApp titulo="Publicar versión">
+  <EncabezadoPantalla
+    titulo="Publicar versión"
+    indice="[A10] CONTROL / TEXTOS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Textos', href: '/app/textos' }, { etiqueta: 'Publicar versión' }]}
+    descripcion="Elige el tipo de cambio y desde cuándo rige."
+  />
+  <TextosLegales vista="publicar" />
+</LayoutApp>

@@ -1,0 +1,418 @@
+---
+import Panel from '../componentes/Panel.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Casilla from '../componentes/Casilla.astro';
+import Tabla from '../componentes/Tabla.astro';
+import BarraAcciones from '../componentes/BarraAcciones.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+
+interface Props {
+  vista: 'lista' | 'publicar';
+}
+const { vista } = Astro.props;
+// Panel de la vista mientras carga o falla (codigos y titulos de la spec RF-17-textos-legales).
+const principal = { lista: { titulo: 'Textos' }, publicar: { codigo: 'P1', titulo: 'Versión' } }[vista];
+const cambios = [
+  { valor: 'mayor', etiqueta: 'Mayor', detalle: 'Cambia derechos u obligaciones. Avisa por correo; los términos se vuelven a aceptar.' },
+  { valor: 'menor', etiqueta: 'Menor', detalle: 'Aclara o añade sin cambiar lo esencial. Avisa por correo.' },
+  { valor: 'parche', etiqueta: 'Parche', detalle: 'Erratas y formato. Rige al publicarla, sin aviso.' },
+];
+---
+
+<EstilosGestion />
+
+<!-- Un bloque por estado (estados-sistema): la isla clona el que toca. Sin JS, el noscript oculta la carga y avisa. -->
+<bugalu-textos-legales class="textos" data-gestion vista={vista}>
+  <div data-avisos></div>
+  <!-- Region viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  <div data-salida><Panel {...principal} cargando /></div>
+  <div data-revision hidden></div>
+
+  <EstadosIsla principal={principal} noEncontrada={vista === 'publicar' ? { etiqueta: 'Volver a textos', href: '/app/textos' } : undefined} />
+
+  {vista === 'lista' && (
+    <>
+      <template data-estado="datos">
+        <Panel titulo="Textos">
+          <Tabla titulo="Textos" columnas={['Texto', 'Vigente', 'Programada', '']} />
+        </Panel>
+      </template>
+      <template data-fila>
+        <tr>
+          <th scope="row" data-nombre></th>
+          <td data-etiqueta="Vigente" data-vigente></td>
+          <td data-etiqueta="Programada" data-programada></td>
+          <td>
+            <div class="textos-acciones">
+              <Boton variante="secundario" href="#" data-publicar>Publicar versión<span class="visualmente-oculto" data-objeto></span></Boton>
+              <Boton variante="peligro" data-retirar hidden><span data-etiqueta-retiro></span><span class="visualmente-oculto" data-objeto></span></Boton>
+            </div>
+          </td>
+        </tr>
+      </template>
+      <template data-sello="sin-publicar"><EtiquetaTecnica variante="aviso" texto="SIN PUBLICAR" /></template>
+      <template data-estado="retirar">
+        <Panel titulo="Retirar versión">
+          <p>Se borra el contenido y no se puede recuperar. La versión vigente sigue rigiendo.</p>
+          <BarraAcciones variante="decision">
+            <Boton slot="secundaria" variante="secundario" data-volver>Volver</Boton>
+            <Boton slot="principal" variante="peligro" data-envio data-confirmar-retiro>Retirar versión</Boton>
+          </BarraAcciones>
+        </Panel>
+      </template>
+    </>
+  )}
+
+  {vista === 'publicar' && (
+    <>
+      <template data-estado="datos">
+        <form novalidate method="post" class="gestion-formulario" data-formulario="publicar">
+          <Panel codigo="P1" titulo="Versión">
+            <div class="gestion-formulario">
+              <dl class="gestion-datos">
+                <div><dt>Texto</dt><dd data-campo="nombre"></dd></div>
+                <div><dt>Última versión</dt><dd data-campo="ultima"></dd></div>
+              </dl>
+              <div class="campo">
+                <fieldset class="gestion-grupo">
+                  <legend>Tipo de cambio</legend>
+                  {cambios.map((c) => <Casilla tipo="radio" nombre="tipo_cambio" valor={c.valor} etiqueta={c.etiqueta} detalle={c.detalle} id={`cambio-${c.valor}`} />)}
+                </fieldset>
+              </div>
+              <Campo nombre="version" etiqueta="Versión" ayuda="Tres números separados por puntos, como 1.2.0." obligatorio autocomplete="off" />
+              <div data-fecha>
+                <Campo tipo="date" nombre="vigente_desde" etiqueta="Vigente desde" ayuda="Mayor y menor avisan por correo: la fecha debe dar 15 días de aviso." obligatorio />
+              </div>
+              <p class="gestion-ayuda" data-rige-ya hidden>Rige al publicarla.</p>
+            </div>
+          </Panel>
+          <Panel codigo="P2" titulo="Contenido">
+            <div class="gestion-formulario">
+              <Campo tipo="area" nombre="contenido" etiqueta="Contenido" ayuda="Texto completo en Markdown: # para títulos y - para listas." obligatorio rows="14" />
+              <fieldset class="gestion-grupo" data-contextos>
+                <legend>Resumen por paso</legend>
+                <p class="gestion-ayuda">Lo que verá la persona antes de aceptar. Frases cortas, en segunda persona. El primero es obligatorio; los demás, opcionales. Sin datos de una reserva concreta.</p>
+              </fieldset>
+              <Campo tipo="area" nombre="resumen_cambios" etiqueta="Resumen de cambios" ayuda="Qué cambia respecto de la versión anterior. Opcional." rows="3" />
+              <div><Boton tipo="submit" data-revisar>Revisar y publicar</Boton></div>
+            </div>
+          </Panel>
+        </form>
+      </template>
+      <template data-campo-contexto><Campo tipo="area" nombre="contexto" etiqueta=" " rows="3" /></template>
+      <template data-estado="revision">
+        <Panel codigo="R1" titulo="Revisa antes de publicar">
+          <div class="gestion-formulario">
+            <dl class="gestion-datos">
+              <div><dt>Texto</dt><dd data-campo="nombre"></dd></div>
+              <div><dt>Tipo de cambio</dt><dd data-campo="tipo_cambio"></dd></div>
+              <div><dt>Versión</dt><dd data-campo="version"></dd></div>
+              <div><dt>Vigente desde</dt><dd data-campo="vigente_desde"></dd></div>
+            </dl>
+            <div class="textos-consecuencias" data-consecuencias></div>
+            <dl class="gestion-datos">
+              <div><dt>Resumen</dt><dd class="textos-plano" data-campo="resumen"></dd></div>
+              <div><dt id="revision-contenido">Contenido</dt><dd><div class="textos-plano textos-desplazable" role="region" aria-labelledby="revision-contenido" tabindex="0" data-campo="contenido"></div></dd></div>
+            </dl>
+            <BarraAcciones variante="formulario">
+              <Boton slot="secundaria" variante="secundario" data-volver-editar>Volver a editar</Boton>
+              <Boton slot="principal" data-envio data-publicar-version>Publicar versión</Boton>
+            </BarraAcciones>
+          </div>
+        </Panel>
+      </template>
+    </>
+  )}
+</bugalu-textos-legales>
+
+<script>
+  // @ts-nocheck
+  import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { listarTextosLegales, publicarTexto, retirarVersion, tipos, contextos, delTipo, esVersion, siguienteVersion } from '../servicios/textos-legales.js';
+  import { formatearFecha, mostrarAviso, enfocarAviso, quitarError } from '../servicios/formulario.js';
+  import { hoyLima, sumarDias, esFecha, instante, diaMesAnio } from '../servicios/formatos.js';
+
+  const nombresCambio = { mayor: 'Mayor', menor: 'Menor', parche: 'Parche' };
+
+  class BugaluTextosLegales extends IslaGestion {
+    avisosUrl = {
+      'version-publicada': ['Versión publicada.'],
+      'version-retirada': ['Versión retirada.'],
+    };
+
+    iniciar() {
+      this.noEncontrada = ['No encontramos este texto.'];
+      this.addEventListener('click', (e) => {
+        const retirar = e.target.closest('[data-retirar]');
+        if (retirar) this.confirmarRetiro(retirar.dataset.tipo, retirar.dataset.version);
+        else if (e.target.closest('[data-volver]')) this.volverALista();
+        else if (e.target.closest('[data-confirmar-retiro]')) this.retirar();
+        else if (e.target.closest('[data-volver-editar]')) this.volverAEditar();
+        else if (e.target.closest('[data-publicar-version]')) this.publicarVersion();
+      });
+      this.addEventListener('change', (e) => e.target.name === 'tipo_cambio' && this.alCambiarTipo());
+      this.addEventListener('input', (e) => e.target.name === 'version' && (this.versionEscrita = e.target.value !== ''));
+    }
+
+    alEnviar(formulario) {
+      if (formulario.dataset.formulario === 'publicar') this.revisar_(formulario);
+    }
+
+    // Un 401 o 403 sustituye la vista entera, incluida la revision.
+    sustituir(estado) {
+      this.querySelector('[data-revision]').hidden = true;
+      this.querySelector('[data-salida]').hidden = false;
+      super.sustituir(estado);
+    }
+
+    // --- Lista ---
+
+    async lista() {
+      this.textos = await listarTextosLegales();
+      this.mostrar('datos');
+      this.pintarLista();
+      return `${Object.keys(tipos).length} textos`;
+    }
+
+    pintarLista() {
+      const modelo = this.querySelector('template[data-fila]');
+      this.querySelector('tbody').replaceChildren(...Object.entries(tipos).map(([tipo, { slug, nombre }]) => {
+        const { vigente, programada } = delTipo(this.textos, tipo);
+        const fila = modelo.content.cloneNode(true);
+        fila.querySelector('[data-nombre]').textContent = nombre;
+        const celdaVigente = fila.querySelector('[data-vigente]');
+        if (vigente) celdaVigente.append(this.enlaceVersion(slug, vigente, 'versión'));
+        else celdaVigente.append(this.querySelector('template[data-sello="sin-publicar"]').content.cloneNode(true));
+        const celdaProgramada = fila.querySelector('[data-programada]');
+        celdaProgramada.textContent = programada ? `${programada.version} · desde ${formatearFecha(programada.vigente_desde)}` : '—';
+        const publicar = fila.querySelector('[data-publicar]');
+        publicar.href = `/app/textos/publicar?tipo=${encodeURIComponent(tipo)}`;
+        publicar.querySelector('[data-objeto]').textContent = ` de ${nombre}`;
+        const retirar = fila.querySelector('[data-retirar]');
+        if (programada) {
+          retirar.hidden = false;
+          retirar.dataset.tipo = tipo;
+          retirar.dataset.version = programada.version;
+          retirar.querySelector('[data-etiqueta-retiro]').textContent = `Retirar versión ${programada.version}`;
+          retirar.querySelector('[data-objeto]').textContent = ` de ${nombre}`;
+        } else retirar.remove();
+        return fila;
+      }));
+    }
+
+    enlaceVersion(slug, t, palabra) {
+      const enlace = document.createElement('a');
+      enlace.href = `/legal/${slug}/?version=${encodeURIComponent(t.version)}`;
+      enlace.textContent = `${palabra} ${t.version} · desde ${formatearFecha(t.vigente_desde)}`;
+      return enlace;
+    }
+
+    confirmarRetiro(tipo, version) {
+      this.retiro = { tipo, version };
+      this.mostrar('retirar');
+      this.querySelector('[data-salida] .panel-titulo').textContent = `Retirar versión ${version} de ${tipos[tipo].nombre}`;
+      this.anunciar(`Retirar la versión ${version} de ${tipos[tipo].nombre}`);
+      this.enfocar();
+    }
+
+    volverALista() {
+      const { tipo } = this.retiro;
+      this.mostrar('datos');
+      this.pintarLista();
+      this.anunciar('Textos');
+      this.querySelector(`[data-publicar][href$="tipo=${tipo}"]`).focus();
+    }
+
+    retirar() {
+      const { tipo, version } = this.retiro;
+      this.enviar(this.querySelector('[data-confirmar-retiro]'), 'Retirando…', () => retirarVersion(tipo, version), () => location.assign('/app/textos?aviso=version-retirada'), true);
+    }
+
+    // La API ya no la tiene (404) o ya rige (409): se recarga la lista y se explica.
+    async tras(error) {
+      await this.cargar();
+      const vigente = error.estado !== 404;
+      enfocarAviso(mostrarAviso(this, vigente ? 'error' : 'informacion', vigente ? 'Esa versión ya está vigente y no se puede retirar.' : 'Esa versión ya no existe.'));
+    }
+
+    errorEnvio(error) {
+      if (this.vista === 'lista') {
+        if (error.codigo !== 'version_vigente' && error.estado !== 404) return false;
+        this.tras(error);
+        return true;
+      }
+      const f = this.formulario;
+      if (error.codigo === 'version_invalida') {
+        this.volverAEditar(false);
+        this.validar([{ entrada: f.querySelector('[name="version"]'), mensaje: `Para un cambio ${this.valores.tipo_cambio} la versión debe ser ${siguienteVersion(this.ultima, this.valores.tipo_cambio)}${this.ultima ? `, mayor que la última (${this.ultima})` : ''}.`, texto: 'Versión' }]);
+      } else if (error.codigo === 'aviso_insuficiente') {
+        this.volverAEditar(false);
+        this.validar([{ entrada: f.querySelector('[name="vigente_desde"]'), mensaje: `Elige una fecha desde el ${diaMesAnio(this.fechaMinima)}: los clientes necesitan 15 días de aviso.`, texto: 'Vigente desde' }]);
+      } else if (error.codigo === 'version_programada') this.yaProgramada();
+      else if (error.codigo === 'conflicto') enfocarAviso(mostrarAviso(this, 'error', 'Alguien publicó una versión de este texto hace un momento. Revisa la lista antes de seguir.'));
+      else return false;
+      return true;
+    }
+
+    // Con la programada a la vista el unico camino es volver: se esconde el formulario y queda un solo boton primario.
+    async yaProgramada() {
+      let { programada } = delTipo(this.textos, this.tipoTexto);
+      try {
+        programada = delTipo(await listarTextosLegales(), this.tipoTexto).programada ?? programada;
+      } catch {}
+      const cual = programada ? ` (${programada.version}, desde ${formatearFecha(programada.vigente_desde)})` : '';
+      this.querySelector('[data-revision]').hidden = true;
+      this.querySelector('[data-salida]').hidden = true;
+      enfocarAviso(mostrarAviso(this, 'error', `Ya hay una versión programada de este texto${cual}. Retírala antes de publicar otra.`, '', { enlace: { texto: 'Volver a textos', href: '/app/textos' } }));
+    }
+
+    // --- Publicar ---
+
+    async publicar() {
+      const tipo = new URLSearchParams(location.search).get('tipo');
+      if (!Object.hasOwn(tipos, tipo)) return this.mostrar('no-encontrada');
+      this.textos = await listarTextosLegales();
+      this.tipoTexto = tipo;
+      const { vigente, programada } = delTipo(this.textos, tipo);
+      this.ultima = (programada ?? vigente)?.version ?? null;
+      this.versionEscrita = false;
+      const hoy = hoyLima();
+      this.fechaMinima = this.ultima ? sumarDias(hoy, 15) : hoy; // la primera version de un texto rige sin aviso previo
+      this.mostrar('datos');
+      this.formulario = this.querySelector('form');
+      this.querySelector('[data-campo="nombre"]').textContent = tipos[tipo].nombre;
+      this.querySelector('[data-campo="ultima"]').textContent = this.ultima ?? '—';
+      this.formulario.querySelector('[name="vigente_desde"]').min = this.fechaMinima;
+      const modelo = this.querySelector('template[data-campo-contexto]');
+      this.querySelector('[data-contextos]').append(...tipos[tipo].contextos.map((c, i) => {
+        const nodo = modelo.content.cloneNode(true);
+        nodo.querySelector('label').firstChild.textContent = contextos[c];
+        if (i === 0) nodo.querySelector('label').append(Object.assign(document.createElement('span'), { textContent: ' (obligatorio)' }));
+        const area = nodo.querySelector('textarea');
+        area.name = `resumen_${c}`;
+        area.id = `campo-resumen_${c}`;
+        nodo.querySelector('label').htmlFor = area.id;
+        return nodo;
+      }));
+      this.encabezado(`${tipos[tipo].nombre}: elige el tipo de cambio y desde cuándo rige.`);
+      return `Publicar versión de ${tipos[tipo].nombre}`;
+    }
+
+    get cambio() {
+      return this.formulario.querySelector('[name="tipo_cambio"]:checked')?.value ?? '';
+    }
+
+    alCambiarTipo() {
+      const cambio = this.cambio;
+      const version = this.formulario.querySelector('[name="version"]');
+      if (!this.versionEscrita) version.value = siguienteVersion(this.ultima, cambio);
+      const parche = cambio === 'parche';
+      this.formulario.querySelector('[data-fecha]').hidden = parche;
+      this.formulario.querySelector('[data-rige-ya]').hidden = !parche;
+    }
+
+    // Lee y valida el formulario; devuelve los valores o null.
+    leer(f) {
+      const campo = (n) => f.querySelector(`[name="${n}"]`);
+      const errores = [];
+      const cambio = this.cambio;
+      const cambioEntrada = f.querySelector('#cambio-mayor');
+      const primero = campo(`resumen_${tipos[this.tipoTexto].contextos[0]}`);
+      [cambioEntrada, campo('version'), campo('vigente_desde'), primero, campo('contenido')].forEach(quitarError);
+      if (!cambio) errores.push({ entrada: cambioEntrada, mensaje: 'Elige el tipo de cambio.', texto: 'Tipo de cambio' });
+      const version = campo('version').value.trim();
+      if (!esVersion(version)) errores.push({ entrada: campo('version'), mensaje: 'Escribe la versión como 1.2.0.', texto: 'Versión' });
+      const fecha = campo('vigente_desde').value;
+      if (cambio !== 'parche') {
+        if (!esFecha(fecha)) errores.push({ entrada: campo('vigente_desde'), mensaje: 'Elige desde cuándo rige.', texto: 'Vigente desde' });
+        else if (fecha < this.fechaMinima) errores.push({ entrada: campo('vigente_desde'), mensaje: `Elige una fecha desde el ${diaMesAnio(this.fechaMinima)}: los clientes necesitan 15 días de aviso.`, texto: 'Vigente desde' });
+      }
+      if (!primero.value.trim()) errores.push({ entrada: primero, mensaje: 'Escribe el resumen.', texto: 'Resumen' });
+      const contenido = campo('contenido').value.trim();
+      if (!contenido) errores.push({ entrada: campo('contenido'), mensaje: 'Escribe el contenido.', texto: 'Contenido' });
+      if (!this.validar(errores, ['campo', 'campos'])) return null;
+      const resumenes = Object.fromEntries(tipos[this.tipoTexto].contextos.map((c) => [c, campo(`resumen_${c}`).value.trim()]).filter(([, v]) => v));
+      const cambios = campo('resumen_cambios').value.trim();
+      return {
+        tipo: this.tipoTexto, version, tipo_cambio: cambio, contenido, resumenes,
+        ...(cambios && { resumen_cambios: cambios }),
+        ...(cambio !== 'parche' && { vigente_desde: instante(fecha, '00:00') }),
+      };
+    }
+
+    revisar_(formulario) {
+      if (this.ocupado) return;
+      const valores = this.leer(formulario);
+      if (!valores) return;
+      this.valores = valores;
+      const revision = this.querySelector('[data-revision]');
+      revision.replaceChildren(this.querySelector('template[data-estado="revision"]').content.cloneNode(true));
+      const dato = (n, t) => (revision.querySelector(`[data-campo="${n}"]`).textContent = t);
+      dato('nombre', tipos[valores.tipo].nombre);
+      dato('tipo_cambio', nombresCambio[valores.tipo_cambio]);
+      dato('version', valores.version);
+      const parche = valores.tipo_cambio === 'parche';
+      const fecha = parche ? null : valores.vigente_desde.slice(0, 10);
+      dato('vigente_desde', parche ? 'Al publicarla' : diaMesAnio(fecha));
+      dato('resumen', Object.entries(valores.resumenes).map(([c, t]) => `${contextos[c]}: ${t}`).join('\n\n'));
+      dato('contenido', valores.contenido);
+      const consecuencias = parche
+        ? ['Al publicarla no podrás editarla ni retirarla, y rige desde ahora.']
+        : [`Al publicarla no podrás editarla. Avisaremos por correo a todos los clientes y regirá desde el ${diaMesAnio(fecha)} para las operaciones nuevas.`, ...(valores.tipo === 'terminos_uso' && valores.tipo_cambio === 'mayor' ? ['Cada cliente tendrá que aceptarlos de nuevo para reservar.'] : [])];
+      revision.querySelector('[data-consecuencias]').replaceChildren(...consecuencias.map((t) => Object.assign(document.createElement('p'), { textContent: t })));
+      this.querySelector('[data-salida]').hidden = true;
+      revision.hidden = false;
+      this.anunciar('Revisa antes de publicar');
+      const titulo = revision.querySelector('.panel-titulo');
+      titulo.tabIndex = -1;
+      titulo.focus();
+    }
+
+    // `enfocar`: false cuando un error sigue con su propio foco.
+    volverAEditar(enfocar = true) {
+      this.querySelector('[data-revision]').hidden = true;
+      this.querySelector('[data-revision]').replaceChildren();
+      this.querySelector('[data-salida]').hidden = false;
+      if (enfocar) this.querySelector('[data-revisar]').focus();
+    }
+
+    publicarVersion() {
+      this.enviar(this.querySelector('[data-publicar-version]'), 'Publicando…', () => publicarTexto(this.valores), () => location.assign('/app/textos?aviso=version-publicada'), true);
+    }
+  }
+
+  if (!customElements.get('bugalu-textos-legales')) customElements.define('bugalu-textos-legales', BugaluTextosLegales);
+</script>
+
+<style>
+  .textos {
+    display: block;
+  }
+  .textos :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  .textos :global(.textos-acciones) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+  }
+  .textos :global(.textos-consecuencias) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+  }
+  .textos :global(.textos-plano) {
+    white-space: pre-wrap;
+  }
+  .textos :global(.textos-desplazable) {
+    max-block-size: calc(var(--espacio-20) * 4);
+    overflow: auto;
+    padding: var(--espacio-3);
+    background: var(--color-fondo-claro);
+    border: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+  }
+</style>

@@ -1,0 +1,26 @@
+---
+import LayoutPublico from '../../layouts/LayoutPublico.astro';
+import ContactoEstudio from '../../componentes/internos/ContactoEstudio.astro';
+---
+
+<!-- Provisional hasta que RF-16 tenga pantalla: la ley pide el enlace siempre visible. -->
+<LayoutPublico titulo="Libro de Reclamaciones">
+  <h1>Libro de Reclamaciones</h1>
+  <div class="reclamos">
+    <p>El Libro de Reclamaciones virtual de Bugalú Studio estará disponible aquí muy pronto. Mientras tanto, presenta tu reclamo o queja por cualquiera de estos canales:</p>
+    <ContactoEstudio />
+    <p>Te respondemos en un plazo máximo de 15 días hábiles. Presentarlo no te impide acudir al Indecopi.</p>
+  </div>
+</LayoutPublico>
+
+<style>
+  .reclamos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    max-inline-size: var(--medida-linea-lectura);
+    margin-block-start: var(--espacio-6);
+    font-size: var(--fuente-tamano-lectura);
+    line-height: var(--fuente-interlineado-lectura);
+  }
+</style>

@@ -429,7 +429,7 @@ test('navegacion (escritorio): PAGOS tercero con contador y texto accesible', as
   await page.setViewportSize({ width: 1440, height: 900 });
   await base(page);
   await page.goto('/app/');
-  expect(await visibles(page)).toEqual(['Inicio', 'Agenda', 'Pagos', 'Accesos', 'Usuarios', 'Franjas', 'Tarifas', 'Cambios']);
+  expect(await visibles(page)).toEqual(['Inicio', 'Agenda', 'Pagos', 'Accesos', 'Usuarios', 'Franjas', 'Tarifas', 'Cambios', 'Textos']);
   const enlace = page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: /Pagos/ });
   await expect(enlace).toHaveAttribute('href', '/app/pagos/');
   await expect(enlace).toHaveAccessibleName('Pagos 2 pagos por validar');

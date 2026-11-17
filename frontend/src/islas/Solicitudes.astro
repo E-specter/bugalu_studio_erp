@@ -19,6 +19,7 @@ const filtros = [
   { clave: 'cliente', texto: 'Clientes', href: '/app/usuarios?rol=cliente' },
   { clave: 'personal', texto: 'Personal', href: '/app/usuarios?rol=personal' },
   { clave: 'administrador', texto: 'Administradores', href: '/app/usuarios?rol=administrador' },
+  { clave: 'documento', texto: 'Documento repetido', href: '/app/usuarios?documento=repetido' },
 ];
 const opcionesRol = (cliente: boolean) => [
   ...(cliente ? [{ valor: 'cliente', etiqueta: 'Cliente', detalle: 'Solo ve su portal de artista.' }] : []),
@@ -32,7 +33,7 @@ const opcionesRol = (cliente: boolean) => [
   <div data-avisos></div>
   <!-- Región viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
   <p class="visualmente-oculto" role="status" data-anuncio></p>
-  {vista === 'usuarios' && <nav class="filtros" aria-label="Filtrar por rol" data-filtros hidden></nav>}
+  {vista === 'usuarios' && <nav class="filtros" aria-label="Filtrar" data-filtros hidden></nav>}
   <div data-salida>
     <Panel {...principal} cargando />
   </div>
@@ -125,6 +126,7 @@ const opcionesRol = (cliente: boolean) => [
         <template data-filtro={f.clave} data-aplicado="no"><EtiquetaTecnica variante="filtro" texto={f.texto} href={f.href} /></template>,
         <template data-filtro={f.clave} data-aplicado="si"><EtiquetaTecnica variante="filtro" texto={f.texto} href={f.href} aplicado /></template>,
       ])}
+      <template data-sello="repetido"><EtiquetaTecnica variante="aviso" texto="REPETIDO" /></template>
       <template data-estado="vacio">
         <Panel titulo="Cuentas">
           <p class="vacio-titulo" data-vacio></p>
@@ -134,12 +136,13 @@ const opcionesRol = (cliente: boolean) => [
       <template data-estado="datos">
         <Panel titulo="Cuentas">
           <p class="total" data-total></p>
-          <Tabla titulo="Cuentas del estudio" columnas={['Persona', 'Rol', 'Especialidad', '']} />
+          <Tabla titulo="Cuentas del estudio" columnas={['Persona', 'Documento', 'Rol', 'Especialidad', '']} />
         </Panel>
       </template>
       <template data-fila>
         <tr>
           <th scope="row"><span class="persona-nombre" data-nombre></span><span class="persona-correo" data-correo></span></th>
+          <td data-etiqueta="Documento"><span data-documento></span></td>
           <td data-etiqueta="Rol"><EtiquetaTecnica texto="Rol" /></td>
           <td data-etiqueta="Especialidad" data-especialidad></td>
           <td><Boton variante="secundario" href="#" data-accion>Cambiar rol<span class="visualmente-oculto" data-objeto></span></Boton></td>
@@ -360,24 +363,32 @@ const opcionesRol = (cliente: boolean) => [
 
     async usuarios() {
       const rol = new URLSearchParams(location.search).get('rol');
+      const repetidos = new URLSearchParams(location.search).get('documento') === 'repetido';
       const filtro = rol && Object.hasOwn(roles, rol) ? rol : '';
+      const activo = repetidos ? 'documento' : filtro;
       const nav = this.querySelector<HTMLElement>('[data-filtros]')!;
       nav.replaceChildren(
-        ...['', ...Object.keys(roles)].map((clave) => this.querySelector<HTMLTemplateElement>(`template[data-filtro="${clave || 'todos'}"][data-aplicado="${clave === filtro ? 'si' : 'no'}"]`)!.content.cloneNode(true)),
+        ...['', ...Object.keys(roles), 'documento'].map((clave) => this.querySelector<HTMLTemplateElement>(`template[data-filtro="${clave || 'todos'}"][data-aplicado="${clave === activo ? 'si' : 'no'}"]`)!.content.cloneNode(true)),
       );
       nav.hidden = false;
-      const lista = await listarUsuarios(filtro);
+      const lista = await listarUsuarios(repetidos ? '' : filtro, repetidos);
       if (!lista.length) {
         this.mostrar('vacio');
-        this.querySelector('[data-vacio]')!.textContent = filtro ? 'No hay usuarios con ese rol.' : 'Todavía no hay usuarios.';
-        if (!filtro) this.querySelector('[data-quitar]')!.remove();
-        return filtro ? 'No hay usuarios con ese rol' : 'Todavía no hay usuarios';
+        this.querySelector('[data-vacio]')!.textContent = repetidos ? 'No hay documentos repetidos.' : filtro ? 'No hay usuarios con ese rol.' : 'Todavía no hay usuarios.';
+        if (!filtro && !repetidos) this.querySelector('[data-quitar]')!.remove();
+        return repetidos ? 'No hay documentos repetidos' : filtro ? 'No hay usuarios con ese rol' : 'Todavía no hay usuarios';
       }
       lista.forEach((u: any) => rolValido(u.rol));
+      // Con el filtro, las cuentas que comparten documento quedan juntas.
+      const documento = (u: any) => (u.documento ? `${u.documento.tipo} ${u.documento.numero}` : '');
+      if (repetidos) lista.sort((a: any, b: any) => documento(a).localeCompare(documento(b)) || (a.nombre ?? '').localeCompare(b.nombre ?? ''));
       this.mostrar('datos');
       this.pintarTabla(lista, (fila, u) => {
         fila.querySelector('.etiqueta span:last-child')!.textContent = roles[u.rol];
         fila.querySelector('[data-especialidad]')!.textContent = u.especialidad ?? '—';
+        const celda = fila.querySelector('[data-documento]')!;
+        celda.textContent = u.documento ? `${String(u.documento.tipo).toUpperCase()} ${u.documento.numero}` : '—';
+        if (u.documento_repetido) celda.after(' ', this.querySelector<HTMLTemplateElement>('template[data-sello="repetido"]')!.content.cloneNode(true));
         fila.querySelector('[data-objeto]')!.textContent = ` de ${u.nombre ?? u.correo}`;
         fila.querySelector<HTMLAnchorElement>('[data-accion]')!.href = `/app/usuarios/editar?id=${encodeURIComponent(u.id)}`;
       });

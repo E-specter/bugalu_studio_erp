@@ -478,12 +478,12 @@ test.describe('navegacion por rol', () => {
     expect(await visibles(page)).toEqual(['Inicio', 'Agenda']);
   });
 
-  test('administrador (escritorio): Agenda, Pagos, Accesos, Usuarios, Franjas, Tarifas y Cambios', async ({ page }) => {
+  test('administrador (escritorio): Agenda, Pagos, Accesos, Usuarios, Franjas, Tarifas, Cambios y Textos', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await montar(page, { rol: 'administrador' });
     await page.goto('/app/');
-    await expect(page.locator('.lateral-destino:visible')).toHaveCount(8);
-    expect(await visibles(page)).toEqual(['Inicio', 'Agenda', 'Pagos', 'Accesos', 'Usuarios', 'Franjas', 'Tarifas', 'Cambios']);
+    await expect(page.locator('.lateral-destino:visible')).toHaveCount(9);
+    expect(await visibles(page)).toEqual(['Inicio', 'Agenda', 'Pagos', 'Accesos', 'Usuarios', 'Franjas', 'Tarifas', 'Cambios', 'Textos']);
     const nav = page.getByRole('navigation', { name: 'Principal' });
     await expect(nav.getByRole('link', { name: 'Franjas' })).toHaveAttribute('href', '/app/franjas/');
     await expect(nav.getByRole('link', { name: 'Tarifas' })).toHaveAttribute('href', '/app/tarifas/');
@@ -507,7 +507,7 @@ test.describe('navegacion por rol', () => {
     await montar(page, { rol: 'administrador', retraso: 800 });
     await page.goto('/app/');
     expect(await visibles(page)).toEqual(['Inicio']);
-    await expect(page.locator('.lateral-destino:visible')).toHaveCount(8);
+    await expect(page.locator('.lateral-destino:visible')).toHaveCount(9);
   });
 });
 

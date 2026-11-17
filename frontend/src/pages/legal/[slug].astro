@@ -1,0 +1,16 @@
+---
+import LayoutPublico from '../../layouts/LayoutPublico.astro';
+import TextoLegal from '../../islas/TextoLegal.astro';
+import { tipos } from '../../servicios/textos-legales.js';
+
+// Una pagina por texto: /legal/terminos-de-uso/, /legal/privacidad/... (la version llega por ?version=).
+export function getStaticPaths() {
+  return Object.entries(tipos).map(([tipo, { slug, nombre }]) => ({ params: { slug }, props: { tipo, nombre } }));
+}
+const { tipo, nombre } = Astro.props;
+const { slug } = Astro.params;
+---
+
+<LayoutPublico titulo={nombre}>
+  <TextoLegal tipo={tipo} titulo={nombre} slug={slug} />
+</LayoutPublico>

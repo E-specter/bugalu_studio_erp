@@ -1,0 +1,312 @@
+---
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Tabla from '../componentes/Tabla.astro';
+import ContactoEstudio from '../componentes/internos/ContactoEstudio.astro';
+
+interface Props {
+  tipo: string; // clave de la API (terminos_uso...) o 'directorio'
+  titulo: string;
+  slug?: string;
+}
+const { tipo, titulo, slug } = Astro.props;
+const directorio = tipo === 'directorio';
+---
+
+<!-- Un bloque por estado (estados-sistema): la isla clona el que toca. Sin JS, el noscript oculta la carga y da el contacto del estudio. -->
+<bugalu-texto-legal class="texto" tipo={tipo} data-slug={slug}>
+  <header class="texto-cabecera">
+    <h1>{titulo}</h1>
+    {directorio && <p class="texto-descripcion">Las reglas con las que trabajamos. Cada texto indica su versión y desde cuándo rige.</p>}
+    <p class="texto-linea" data-linea hidden></p>
+  </header>
+  <!-- Región viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  <div data-salida><p class="texto-cargando" aria-busy="true">Cargando…</p></div>
+
+  <template data-estado="cargando"><p class="texto-cargando" aria-busy="true">Cargando…</p></template>
+
+  <template data-estado="error">
+    <Aviso variante="error" titulo="No pudimos cargar el texto. Inténtalo de nuevo en unos minutos.">
+      <div class="texto-reintentar"><Boton variante="secundario" data-reintentar>Reintentar</Boton></div>
+    </Aviso>
+  </template>
+
+  <template data-estado="no-encontrada">
+    <Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Leer la versión vigente', href: '#' }} />
+  </template>
+
+  <template data-estado="sin-publicar">
+    <Aviso variante="informacion" titulo="Este texto aún no está publicado." />
+  </template>
+
+  <template data-estado="aviso-version">
+    <Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: ' ', href: '#' }} />
+  </template>
+
+  {directorio ? (
+    <>
+      <template data-estado="datos">
+        <Tabla titulo="Textos legales" columnas={['Texto', 'Versión', 'Vigente desde', 'Próxima versión']} />
+      </template>
+      <template data-fila>
+        <tr>
+          <th scope="row"><a data-enlace></a></th>
+          <td data-etiqueta="Versión" data-version></td>
+          <td data-etiqueta="Vigente desde" data-vigente></td>
+          <td data-etiqueta="Próxima versión" data-proxima></td>
+        </tr>
+      </template>
+    </>
+  ) : (
+    <template data-estado="datos">
+      <div class="texto-cuerpo">
+        <div class="texto-avisos" data-avisos></div>
+        <Panel titulo="En pocas palabras" variante="destacado"><p data-resumen></p></Panel>
+        <div class="prosa" data-contenido></div>
+      </div>
+    </template>
+  )}
+
+  <noscript>
+    <style is:inline>[data-salida] { display: none; }</style>
+    <Aviso variante="informacion" titulo={directorio ? 'Esta lista necesita JavaScript para mostrarse.' : 'Este texto necesita JavaScript para mostrarse.'}>
+      <p>Pídelo por cualquiera de estos canales y te lo enviamos:</p>
+      <ContactoEstudio />
+    </Aviso>
+  </noscript>
+</bugalu-texto-legal>
+
+<script>
+  // @ts-nocheck
+  import { listarTextosLegales, obtenerVersionTexto, tipos, esVersion, delTipo } from '../servicios/textos-legales.js';
+  import { llenarAviso, formatearFecha } from '../servicios/formulario.js';
+
+  // El backend ya sanea el HTML; esto es una segunda barrera en el navegador: DOMParser no ejecuta nada y se quita lo activo.
+  function limpiar(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    doc.querySelectorAll('script, style, iframe, object, embed, form, link, meta, base, svg, math').forEach((n) => n.remove());
+    doc.body.querySelectorAll('*').forEach((n) => {
+      for (const a of [...n.attributes]) {
+        const url = ['href', 'src'].includes(a.name) && !/^(https?:|mailto:|#|\/)/i.test(a.value.trim());
+        if (/^on/i.test(a.name) || url) n.removeAttribute(a.name);
+      }
+    });
+    // Un texto con <h1> compite con el de la pagina: sus encabezados bajan un nivel (a11y: el contenido empieza en <h2>).
+    if (doc.body.querySelector('h1')) {
+      [...doc.body.querySelectorAll('h1, h2, h3, h4, h5')].reverse().forEach((h) => {
+        const nuevo = doc.createElement(`h${Number(h.tagName[1]) + 1}`);
+        nuevo.append(...h.childNodes);
+        h.replaceWith(nuevo);
+      });
+    }
+    return [...doc.body.childNodes];
+  }
+
+  class BugaluTextoLegal extends HTMLElement {
+    connectedCallback() {
+      this.tipo = this.getAttribute('tipo');
+      this.addEventListener('click', (e) => e.target.closest('[data-reintentar]') && this.cargar(true));
+      this.cargar();
+    }
+
+    mostrar(estado) {
+      this.querySelector('[data-salida]').replaceChildren(this.querySelector(`template[data-estado="${estado}"]`).content.cloneNode(true));
+    }
+
+    // El aviso clonado pierde su rol vivo: la region estable lo anuncia una sola vez.
+    anunciar(texto) {
+      this.querySelectorAll('[data-salida] [role]').forEach((e) => e.removeAttribute('role'));
+      this.querySelector('[data-anuncio]').textContent = texto;
+    }
+
+    async cargar(reintento = false) {
+      this.querySelector('[data-anuncio]').textContent = '';
+      this.querySelector('[data-linea]').hidden = true;
+      this.mostrar('cargando');
+      let texto;
+      try {
+        texto = this.tipo === 'directorio' ? await this.directorio() : await this.texto();
+      } catch {
+        this.mostrar('error');
+        texto = 'No pudimos cargar el texto. Inténtalo de nuevo en unos minutos.';
+      }
+      this.anunciar(texto);
+      if (reintento) {
+        const titulo = this.querySelector('h1');
+        titulo.tabIndex = -1;
+        titulo.focus();
+      }
+    }
+
+    // Aviso con enlace, clonado de su plantilla.
+    aviso(titulo, etiqueta, href) {
+      const nodo = this.querySelector('template[data-estado="aviso-version"]').content.cloneNode(true);
+      const aviso = nodo.querySelector('.aviso');
+      llenarAviso(aviso, titulo);
+      const enlace = aviso.querySelector('.aviso-accion');
+      enlace.textContent = etiqueta;
+      enlace.href = href;
+      aviso.removeAttribute('role');
+      return aviso;
+    }
+
+    async directorio() {
+      const lista = await listarTextosLegales();
+      this.mostrar('datos');
+      const modelo = this.querySelector('template[data-fila]');
+      this.querySelector('tbody').replaceChildren(...Object.entries(tipos).map(([tipo, { slug, nombre }]) => {
+        const { vigente, programada } = delTipo(lista, tipo);
+        const fila = modelo.content.cloneNode(true);
+        const enlace = fila.querySelector('[data-enlace]');
+        enlace.textContent = nombre;
+        enlace.href = `/legal/${slug}/`;
+        fila.querySelector('[data-version]').textContent = vigente?.version ?? '—';
+        fila.querySelector('[data-vigente]').textContent = vigente ? formatearFecha(vigente.vigente_desde) : '—';
+        fila.querySelector('[data-proxima]').textContent = programada ? `${programada.version} desde el ${formatearFecha(programada.vigente_desde)}` : '—';
+        return fila;
+      }));
+      return 'Textos legales cargados';
+    }
+
+    async texto() {
+      const { slug, nombre } = tipos[this.tipo];
+      const raiz = `/legal/${slug}/`;
+      const pedida = new URLSearchParams(location.search).get('version');
+      const lista = await listarTextosLegales();
+      const { vigente, programada } = delTipo(lista, this.tipo);
+      const noEncontrada = (v) => {
+        this.mostrar('no-encontrada');
+        const aviso = this.querySelector('[data-salida] .aviso');
+        llenarAviso(aviso, `No existe la versión ${v} de este texto.`);
+        const enlace = aviso.querySelector('.aviso-accion');
+        if (vigente) enlace.href = raiz;
+        else enlace.remove();
+        return `No existe la versión ${v} de ${nombre}`;
+      };
+      if (pedida !== null && !esVersion(pedida)) return noEncontrada(pedida);
+      const version = pedida ?? vigente?.version;
+      if (!version) {
+        this.mostrar('sin-publicar');
+        return 'Este texto aún no está publicado.';
+      }
+      let t;
+      try {
+        t = await obtenerVersionTexto(this.tipo, version);
+      } catch (error) {
+        if (error.estado === 404) return noEncontrada(version);
+        throw error;
+      }
+      this.mostrar('datos');
+      const linea = this.querySelector('[data-linea]');
+      linea.textContent = `VERSIÓN ${t.version} · VIGENTE DESDE ${formatearFecha(t.vigente_desde)}`.toUpperCase();
+      linea.hidden = false;
+      const avisos = this.querySelector('[data-avisos]');
+      if (vigente && t.version !== vigente.version) {
+        const aun = programada?.version === t.version;
+        avisos.append(this.aviso(`Estás leyendo la versión ${t.version}, que ${aun ? 'aún no está vigente' : 'ya no está vigente'}.`, `Leer la versión vigente (${vigente.version})`, raiz));
+      } else if (programada && programada.version !== t.version) {
+        avisos.append(this.aviso(`Desde el ${formatearFecha(programada.vigente_desde)} rige la versión ${programada.version}.`, `Leer la versión ${programada.version}`, `${raiz}?version=${encodeURIComponent(programada.version)}`));
+      }
+      // El resumen de la pagina es el del primer paso del texto que lo tenga (resumenes por contexto, RF-17).
+      const resumen = tipos[this.tipo].contextos.map((c) => t.resumenes?.[c]).find(Boolean) ?? Object.values(t.resumenes ?? {})[0];
+      this.querySelector('[data-resumen]').textContent = resumen ?? '';
+      this.querySelector('[data-resumen]').closest('.panel').hidden = !resumen;
+      this.querySelector('[data-contenido]').replaceChildren(...limpiar(t.contenido_html ?? ''));
+      return `${nombre}, versión ${t.version}`;
+    }
+  }
+
+  if (!customElements.get('bugalu-texto-legal')) customElements.define('bugalu-texto-legal', BugaluTextoLegal);
+</script>
+
+<style>
+  .texto {
+    display: block;
+  }
+  .texto-cabecera {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    margin-block-end: var(--espacio-6);
+  }
+  .texto-descripcion {
+    max-inline-size: var(--medida-linea-lectura);
+    color: var(--color-texto-cuerpo);
+    font-size: var(--fuente-tamano-lectura);
+    line-height: var(--fuente-interlineado-lectura);
+  }
+  .texto-linea {
+    margin: 0;
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-pequeno);
+  }
+  .texto-linea[hidden] {
+    display: none;
+  }
+  .texto-cargando {
+    margin: 0;
+    color: var(--color-texto-secundario);
+  }
+  .texto-reintentar {
+    margin-block-start: var(--espacio-2);
+  }
+  .texto :global(.texto-cuerpo) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-6);
+    max-inline-size: var(--medida-linea-lectura);
+  }
+  .texto :global(.texto-avisos:empty) {
+    display: none;
+  }
+  /* Prosa (fuente-tamano-lectura, ancho medida-linea-lectura): el HTML llega del backend, asi que sus etiquetas se estilan desde aqui. */
+  .texto :global(.prosa) {
+    color: var(--color-texto-cuerpo);
+    font-size: var(--fuente-tamano-lectura);
+    line-height: var(--fuente-interlineado-lectura);
+    overflow-wrap: anywhere;
+  }
+  .texto :global(.prosa > * + *) {
+    margin-block-start: var(--espacio-4);
+  }
+  .texto :global(.prosa :is(h2, h3, h4)) {
+    margin-block-start: var(--espacio-8);
+    text-transform: none;
+  }
+  .texto :global(.prosa h2) {
+    font-size: var(--fuente-tamano-titulo-sm);
+  }
+  .texto :global(.prosa :is(h3, h4)) {
+    font-size: var(--fuente-tamano-lectura);
+  }
+  .texto :global(.prosa :is(ul, ol)) {
+    padding-inline-start: var(--espacio-6);
+  }
+  .texto :global(.prosa a) {
+    color: var(--color-texto-principal);
+    text-decoration: underline;
+  }
+  .texto :global(.prosa blockquote) {
+    margin-inline: 0;
+    padding-inline-start: var(--espacio-4);
+    border-inline-start: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+  }
+  .texto :global(.prosa table) {
+    display: block;
+    max-inline-size: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+  }
+  .texto :global(.prosa :is(th, td)) {
+    padding: var(--espacio-2) var(--espacio-3);
+    border: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+    text-align: start;
+  }
+  .texto :global(.prosa img) {
+    max-inline-size: 100%;
+    block-size: auto;
+  }
+</style>

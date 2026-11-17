@@ -9,8 +9,11 @@ export const aprobarSolicitud = (id, { rol, especialidad }) =>
 export const rechazarSolicitud = (id, motivo) =>
   pedir(`/api/v1/solicitudes-acceso/${encodeURIComponent(id)}/rechazar`, { method: 'POST', cuerpo: { motivo } });
 
-// `rol` vacio = todos.
-export const listarUsuarios = (rol) => pedir(`/api/v1/usuarios${rol ? `?rol=${encodeURIComponent(rol)}` : ''}`);
+// `rol` vacio = todos; `documentoRepetido` (RF-17, decision 4) deja solo las cuentas que comparten documento.
+export const listarUsuarios = (rol, documentoRepetido = false) => {
+  const consulta = new URLSearchParams({ ...(rol && { rol }), ...(documentoRepetido && { documento_repetido: 'true' }) }).toString();
+  return pedir(`/api/v1/usuarios${consulta ? `?${consulta}` : ''}`);
+};
 
 export const cambiarUsuario = (id, { rol, especialidad }) =>
   pedir(`/api/v1/usuarios/${encodeURIComponent(id)}`, { method: 'PATCH', cuerpo: { rol, especialidad } });

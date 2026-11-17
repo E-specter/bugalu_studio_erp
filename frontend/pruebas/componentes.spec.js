@@ -186,3 +186,15 @@ test('isla de contraseña: botón accesible con JS y campo funcional sin JS', as
   await expect(paginaSinJs.locator('#campo-cat-clave')).toHaveValue('secreta');
   await sinJs.close();
 });
+
+test('hidden oculta cualquier componente aunque fije su propio display', async ({ page }) => {
+  await page.goto('/catalogo');
+  const mostrados = await page.evaluate(() => {
+    const clases = ['.boton', '.aviso', '.etiqueta', '.campo', '.casilla', '.panel', '.tabla'];
+    return clases.flatMap((c) => [...document.querySelectorAll(c)].slice(0, 1).map((e) => {
+      e.hidden = true;
+      return getComputedStyle(e).display === 'none' ? null : c;
+    })).filter(Boolean);
+  });
+  expect(mostrados).toEqual([]);
+});

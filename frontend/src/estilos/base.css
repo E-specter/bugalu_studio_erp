@@ -109,3 +109,8 @@ main:focus {
   white-space: nowrap;
   border: 0;
 }
+
+/* `hidden` siempre oculta: los componentes fijan su propio display (.boton, .aviso, .campo…) y, con la misma especificidad, el orden de las hojas del bundle decidiria. */
+[hidden] {
+  display: none !important;
+}

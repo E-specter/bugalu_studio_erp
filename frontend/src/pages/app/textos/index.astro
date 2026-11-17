@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import TextosLegales from '../../../islas/TextosLegales.astro';
+---
+
+<LayoutApp titulo="Textos legales">
+  <EncabezadoPantalla
+    titulo="Textos legales"
+    indice="[A10] CONTROL / TEXTOS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Textos' }]}
+    descripcion="Publica nuevas versiones de los términos, la privacidad y las condiciones. Las publicadas no se editan."
+  />
+  <TextosLegales vista="lista" />
+</LayoutApp>

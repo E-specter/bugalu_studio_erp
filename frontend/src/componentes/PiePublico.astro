@@ -1,0 +1,75 @@
+---
+interface Props {
+  variante?: 'completa' | 'acceso';
+}
+const { variante = 'completa', class: clase } = Astro.props as Props & { class?: string };
+const enlaces = [
+  { texto: 'Términos de uso', href: '/legal/terminos-de-uso/' },
+  { texto: 'Política de privacidad', href: '/legal/privacidad/' },
+  { texto: 'Condiciones de contratación', href: '/legal/condiciones-de-contratacion/' },
+  { texto: 'Textos legales', href: '/legal/' },
+  { texto: 'Libro de Reclamaciones', href: '/libro-de-reclamaciones/' },
+];
+---
+
+<footer class:list={['pie', `pie-${variante}`, clase]}>
+  <div class="pie-contenido">
+    <nav aria-label="Legal">
+      <ul class="pie-enlaces">
+        {enlaces.map((e) => <li><a href={e.href}>{e.texto}</a></li>)}
+      </ul>
+    </nav>
+    {variante === 'completa' && (
+      <>
+        <p class="pie-tecnica">AURAL PERÚ EIRL · RUC 20615656128 · AV. JAVIER PRADO ESTE 5920, LA MOLINA, LIMA</p>
+        <p class="pie-tecnica">BUGALÚ STUDIO © 2026</p>
+      </>
+    )}
+  </div>
+</footer>
+
+<style>
+  .pie {
+    padding: var(--espacio-6) var(--espacio-4);
+    background: var(--color-fondo-lienzo);
+    border-block-start: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+  }
+  .pie-contenido {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    max-inline-size: var(--medida-contenedor-max);
+    margin-inline: auto;
+  }
+  .pie-enlaces {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .pie-enlaces a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--medida-control-tactil);
+    color: var(--color-texto-principal);
+    font-size: var(--fuente-tamano-pequeno);
+    text-decoration: underline;
+  }
+  .pie-acceso .pie-enlaces a {
+    font-size: var(--fuente-tamano-micro);
+  }
+  .pie-tecnica {
+    margin: 0;
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+  }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta: en fila */
+    .pie-enlaces {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: var(--espacio-4);
+    }
+  }
+</style>
