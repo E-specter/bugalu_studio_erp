@@ -10,7 +10,7 @@ interface Props {
 }
 const { titulo } = Astro.props;
 // Los destinos con `solo` (roles separados por espacio) nacen ocultos y el script los muestra según el rol del perfil (la API es la barrera real: 403).
-// Etiquetas de 9 caracteres como máximo (navegación táctil). Orden de navegacion-lateral.md#variantes; la barra táctil admite cinco: el sexto y el séptimo del Administrador (Franjas y Tarifas) van al menú de la cabecera.
+// Etiquetas de 9 caracteres como máximo (navegación táctil). Orden de navegacion-lateral.md#variantes; la barra táctil admite cinco: el sexto, séptimo y octavo del Administrador (Franjas, Tarifas y Cambios) van al menú de la cabecera.
 const destinos = [
   { etiqueta: 'Inicio', href: '/app/', icono: 'house' as const },
   { etiqueta: 'Reservas', href: '/app/reservas/', icono: 'calendar-check' as const, solo: 'cliente' },
@@ -20,6 +20,7 @@ const destinos = [
   { etiqueta: 'Usuarios', href: '/app/usuarios/', icono: 'users' as const, solo: 'administrador' },
   { etiqueta: 'Franjas', href: '/app/franjas/', icono: 'calendar-cog' as const, solo: 'administrador' },
   { etiqueta: 'Tarifas', href: '/app/tarifas/', icono: 'tag' as const, solo: 'administrador' },
+  { etiqueta: 'Cambios', href: '/app/cambios/', icono: 'history' as const, solo: 'administrador' },
 ];
 // Un destino queda actual también en sus subrutas (Revisar solicitud); gana la coincidencia más larga.
 const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.pathname || (href !== '/app/' && Astro.url.pathname.startsWith(href))).sort((a, b) => b.length - a.length)[0] ?? Astro.url.pathname;
@@ -30,14 +31,15 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
     <CabeceraApp variante="estudio" producto="Bugalú Studio" area="Panel interno" neutro>
       <a slot="menu" href="/app/perfil">Mi perfil</a>
       <!-- El destino que no cabe en la barra táctil; solo < punto-quiebre-escritorio. Nace oculto hasta conocer el rol. -->
-      <a slot="menu" class="menu-solo-movil" href="/app/franjas/" data-solo="administrador" hidden>Franjas</a>
-      <a slot="menu" class="menu-solo-movil" href="/app/tarifas/" data-solo="administrador" hidden>Tarifas</a>
+      {destinos.slice(-3).map((d) => (
+        <a slot="menu" class="menu-solo-movil" href={d.href} data-solo={d.solo} aria-current={d.href === actual ? 'page' : undefined} hidden>{d.etiqueta}</a>
+      ))}
       <!-- Sin JS no sirve: nace oculto y lo muestra el script. -->
       <div slot="menu"><Boton variante="secundario" data-cerrar-sesion hidden>Cerrar sesión</Boton></div>
     </CabeceraApp>
 
     <!-- < punto-quiebre-escritorio: fija bajo la fila 1 de la cabecera (estructura-app, "Lo fijo") -->
-    <div class="app-nav-tactil"><NavegacionTactil destinos={destinos.slice(0, -2)} {actual} /></div>
+    <div class="app-nav-tactil"><NavegacionTactil destinos={destinos.slice(0, -3)} {actual} /></div>
 
     <!-- >= punto-quiebre-escritorio -->
     <div class="app-nav-lateral"><NavegacionLateral {destinos} {actual} neutro /></div>

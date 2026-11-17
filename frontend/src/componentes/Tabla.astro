@@ -39,7 +39,7 @@ const partidas = variante === 'partidas';
     border-block-end: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
   }
   /* El IGV es informativo, no un total. */
-  .tabla :global(.tabla-igv > *) {
+  .tabla-partidas tfoot :global(.tabla-igv > *) {
     font-weight: var(--fuente-peso-regular);
   }
   .tabla :global(tbody tr:last-child) {
@@ -159,7 +159,7 @@ const partidas = variante === 'partidas';
     .tabla-compacta:not(.tabla-partidas) :global(td) {
       padding: var(--espacio-3);
     }
-    .tabla :global(td[data-etiqueta]:not([data-etiqueta='']):not(:empty)::before) {
+    .tabla:not(.tabla-partidas) :global(td[data-etiqueta]:not([data-etiqueta='']):not(:empty)::before) {
       content: none;
     }
     .tabla :global(tbody tr) {

@@ -1,0 +1,221 @@
+---
+// <bugalu-registro-cambios>: registro de auditoria de cambios sensibles (spec RF-20-registro-cambios). Solo consulta.
+import Panel from '../componentes/Panel.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Tabla from '../componentes/Tabla.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+
+const principal = { titulo: 'Cambios' };
+const recursos = [['', 'Todos'], ['impuestos', 'Impuestos'], ['servicio', 'Servicios'], ['especialista', 'Especialistas'], ['recargos', 'Recargos'], ['parametros', 'Parámetros']];
+---
+
+<EstilosGestion />
+
+<!-- Un bloque por estado (estados-sistema): la isla clona el que toca. Sin JS, el noscript oculta la carga y avisa. -->
+<bugalu-registro-cambios class="registro" data-gestion vista="cambios">
+  <div data-avisos></div>
+  <!-- Region viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  <div data-salida><Panel {...principal} cargando /></div>
+
+  <EstadosIsla principal={principal} />
+
+  <template data-estado="datos">
+    <div class="gestion-principal">
+      <!-- GET: el filtro vive en la URL y se puede compartir. -->
+      <form novalidate method="get" action="/app/cambios" class="gestion-formulario" data-formulario="filtro">
+        <div class="gestion-fila-campos">
+          <Campo tipo="date" nombre="desde" etiqueta="Desde" />
+          <Campo tipo="date" nombre="hasta" etiqueta="Hasta" />
+          <Campo tipo="selector" nombre="recurso" etiqueta="Recurso">
+            {recursos.map(([valor, texto]) => <option value={valor}>{texto}</option>)}
+          </Campo>
+        </div>
+        <div class="registro-acciones">
+          <Boton tipo="submit" variante="secundario" data-envio>Filtrar</Boton>
+          <Boton variante="secundario" href="/app/cambios" data-por-defecto hidden>Ver los últimos 30 días</Boton>
+        </div>
+      </form>
+      <div data-resultados>
+        <Panel titulo="Cambios" ayuda="Nadie puede editar ni borrar este registro.">
+          <div data-vacio hidden>
+            <p class="gestion-vacio-titulo" data-vacio-titulo></p>
+            <p data-vacio-texto></p>
+          </div>
+          <Tabla titulo="Cambios" variante="compacta" columnas={['Fecha', 'Autor', 'Recurso', 'Campo', 'Antes', 'Después']} />
+        </Panel>
+      </div>
+    </div>
+  </template>
+
+  <template data-fila>
+    <tr>
+      <th scope="row"><time data-fecha></time></th>
+      <td data-etiqueta="Autor" data-autor></td>
+      <td data-etiqueta="Recurso"><span data-recurso></span><span class="registro-sello" data-sello><EtiquetaTecnica texto=" " /></span></td>
+      <td data-etiqueta="Campo" data-campo></td>
+      <td data-etiqueta="Antes" data-anterior></td>
+      <td data-etiqueta="Después" data-nuevo></td>
+    </tr>
+  </template>
+</bugalu-registro-cambios>
+
+<script>
+  // @ts-nocheck
+  import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { listarCambios } from '../servicios/catalogo.js';
+  import { formatearCambio } from '../servicios/campos-cambio.js';
+  import { hoyLima, esFecha, sumarDias, fechaDe, horaDe, diaMes, diaMesAnio } from '../servicios/formatos.js';
+  import { mostrarAviso, enfocarAviso, quitarError } from '../servicios/formulario.js';
+
+  const RECURSOS = { impuestos: 'IMPUESTOS', servicio: 'SERVICIO', especialista: 'ESPECIALISTA', recargos: 'RECARGOS', parametros: 'PARÁMETROS' };
+  const ERROR_RANGO = 'Elige una fecha final igual o posterior a la inicial, con hasta 366 días de diferencia.';
+  const DIA_MS = 864e5;
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  const rangoValido = (desde, hasta) => {
+    const dias = (Date.parse(hasta) - Date.parse(desde)) / DIA_MS;
+    return dias >= 0 && dias <= 366;
+  };
+
+  // "hace 5 min" / "hace 3 h" / "hace 2 días" por debajo de 7 días; null si toca la fecha absoluta.
+  function relativa(iso) {
+    const min = Math.floor((Date.now() - Date.parse(iso)) / 60000);
+    if (min >= 7 * 1440) return null;
+    if (min < 1) return 'ahora';
+    if (min < 60) return `hace ${min} min`;
+    if (min < 1440) return `hace ${Math.floor(min / 60)} h`;
+    const dias = Math.floor(min / 1440);
+    return `hace ${dias} ${dias === 1 ? 'día' : 'días'}`;
+  }
+  const absoluta = (iso) => `${diaMesAnio(fechaDe(iso))}, ${horaDe(iso)}`;
+
+  class BugaluRegistroCambios extends IslaGestion {
+    // Lee los filtros de la URL; lo desconocido se ignora y se avisa. `pedir` lleva solo lo que el enlace fijo (la API tiene sus valores por defecto).
+    filtros() {
+      const p = new URLSearchParams(location.search);
+      const hoy = hoyLima();
+      let invalido = false;
+      const leer = (clave, valido) => {
+        const v = p.get(clave);
+        if (!v) return '';
+        if (valido(v)) return v;
+        invalido = true;
+        return '';
+      };
+      const recurso = leer('recurso', (v) => Object.hasOwn(RECURSOS, v));
+      let desde = leer('desde', esFecha);
+      let hasta = leer('hasta', esFecha);
+      if (desde && hasta && !rangoValido(desde, hasta)) {
+        invalido = true;
+        desde = hasta = '';
+      }
+      const finEfectivo = hasta || hoy;
+      const inicioEfectivo = desde || sumarDias(finEfectivo, -30);
+      // Un solo extremo fijado puede dar un rango fuera de limites: se descarta igual que un enlace malo.
+      if (!rangoValido(inicioEfectivo, finEfectivo)) {
+        invalido = true;
+        desde = hasta = '';
+      }
+      const fin = hasta || hoy;
+      const inicio = desde || sumarDias(fin, -30);
+      const pedir = Object.fromEntries(Object.entries({ desde, hasta, recurso }).filter(([, v]) => v));
+      return { recurso, desde: inicio, hasta: fin, pedir, invalido, porDefecto: !recurso && inicio === sumarDias(hoy, -30) && fin === hoy };
+    }
+
+    async cambios() {
+      const f = this.filtros();
+      if (f.invalido) mostrarAviso(this, 'informacion', 'El enlace traía un filtro no válido', 'Te mostramos los últimos 30 días.');
+      let lista = [];
+      let rango = false;
+      try {
+        lista = await listarCambios(f.pedir);
+      } catch (error) {
+        if (error.estado !== 422 || error.codigo !== 'rango_invalido') throw error;
+        rango = true;
+      }
+      this.mostrar('datos');
+      this.querySelector('[name="desde"]').value = f.desde;
+      this.querySelector('[name="hasta"]').value = f.hasta;
+      this.querySelector('[name="recurso"]').value = f.recurso;
+      this.querySelector('[data-por-defecto]').hidden = f.porDefecto;
+      if (rango) {
+        this.querySelector('[data-resultados]').hidden = true;
+        this.errorRango();
+        return null;
+      }
+      const periodo = `del ${diaMes(f.desde)} al ${diaMes(f.hasta)}`;
+      this.pintar(lista, f, periodo);
+      return `${plural(lista.length, 'cambio', 'cambios')} ${periodo}`;
+    }
+
+    pintar(lista, f, periodo) {
+      const tabla = this.querySelector('[data-resultados] .tabla');
+      const vacio = this.querySelector('[data-vacio]');
+      vacio.hidden = lista.length > 0;
+      tabla.hidden = lista.length === 0;
+      if (!lista.length) {
+        this.querySelector('[data-vacio-titulo]').textContent = f.porDefecto ? 'No hay cambios en los últimos 30 días' : 'No hay cambios con estos filtros.';
+        const texto = this.querySelector('[data-vacio-texto]');
+        texto.hidden = !f.porDefecto;
+        texto.textContent = 'Aquí aparece cada cambio de impuestos, tarifas, recargos y plazos, con quién lo hizo.';
+      }
+      tabla.querySelector('caption').textContent = `Cambios ${periodo}`;
+      const modelo = this.querySelector('template[data-fila]');
+      tabla.querySelector('tbody').replaceChildren(...lista.map((c) => {
+        const fila = modelo.content.cloneNode(true).firstElementChild;
+        const fecha = fila.querySelector('[data-fecha]');
+        const cercana = relativa(c.cambiado_en);
+        fecha.dateTime = c.cambiado_en;
+        fecha.textContent = cercana ?? absoluta(c.cambiado_en);
+        if (cercana) fecha.title = absoluta(c.cambiado_en);
+        const cambio = formatearCambio(c);
+        fila.querySelector('[data-autor]').textContent = c.autor.nombre;
+        fila.querySelector('[data-recurso]').textContent = c.nombre_recurso;
+        fila.querySelector('[data-sello] span:last-child').textContent = RECURSOS[c.recurso] ?? String(c.recurso).toUpperCase();
+        fila.querySelector('[data-campo]').textContent = cambio.etiqueta;
+        fila.querySelector('[data-anterior]').textContent = cambio.anterior;
+        fila.querySelector('[data-nuevo]').textContent = cambio.nuevo;
+        return fila;
+      }));
+    }
+
+    errorRango() {
+      this.validar([{ entrada: this.querySelector('[name="hasta"]'), mensaje: ERROR_RANGO, texto: 'Hasta' }]);
+    }
+
+    // Validacion local: con fechas validas el envio sigue como GET (el filtro va a la URL); si no, error bajo el campo.
+    alEnviar(formulario) {
+      const desde = formulario.querySelector('[name="desde"]');
+      const hasta = formulario.querySelector('[name="hasta"]');
+      [desde, hasta].forEach(quitarError);
+      const errores = [];
+      if (!esFecha(desde.value)) errores.push({ entrada: desde, mensaje: 'Elige la fecha inicial.', texto: 'Desde' });
+      if (!esFecha(hasta.value)) errores.push({ entrada: hasta, mensaje: 'Elige la fecha final.', texto: 'Hasta' });
+      else if (esFecha(desde.value) && !rangoValido(desde.value, hasta.value)) errores.push({ entrada: hasta, mensaje: ERROR_RANGO, texto: 'Hasta' });
+      if (this.validar(errores)) formulario.submit();
+    }
+  }
+
+  if (!customElements.get('bugalu-registro-cambios')) customElements.define('bugalu-registro-cambios', BugaluRegistroCambios);
+</script>
+
+<style>
+  .registro {
+    display: block;
+  }
+  .registro :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  .registro :global(.registro-acciones) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-3);
+  }
+  .registro :global(.registro-sello) {
+    display: block;
+    margin-block-start: var(--espacio-1);
+  }
+</style>

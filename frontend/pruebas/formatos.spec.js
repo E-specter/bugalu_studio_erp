@@ -18,6 +18,7 @@ test('partidasPrecio: un solo formato para reservar y mis reservas', () => {
     recargos: [{ tipo: 'noche', bloques: 2, monto: '20.00' }],
     total: '365.00',
     anticipo: '182.50',
+    porcentaje_adelanto: 50,
   });
   expect(filas).toEqual([
     ['Grabación', '2 h', 'S/ 240,00'],

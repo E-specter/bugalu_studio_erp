@@ -478,19 +478,19 @@ test.describe('navegacion por rol', () => {
     expect(await visibles(page)).toEqual(['Inicio', 'Agenda']);
   });
 
-  test('administrador (escritorio): Agenda, Pagos, Accesos, Usuarios, Franjas y Tarifas', async ({ page }) => {
+  test('administrador (escritorio): Agenda, Pagos, Accesos, Usuarios, Franjas, Tarifas y Cambios', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await montar(page, { rol: 'administrador' });
     await page.goto('/app/');
-    await expect(page.locator('.lateral-destino:visible')).toHaveCount(7);
-    expect(await visibles(page)).toEqual(['Inicio', 'Agenda', 'Pagos', 'Accesos', 'Usuarios', 'Franjas', 'Tarifas']);
+    await expect(page.locator('.lateral-destino:visible')).toHaveCount(8);
+    expect(await visibles(page)).toEqual(['Inicio', 'Agenda', 'Pagos', 'Accesos', 'Usuarios', 'Franjas', 'Tarifas', 'Cambios']);
     const nav = page.getByRole('navigation', { name: 'Principal' });
     await expect(nav.getByRole('link', { name: 'Franjas' })).toHaveAttribute('href', '/app/franjas/');
     await expect(nav.getByRole('link', { name: 'Tarifas' })).toHaveAttribute('href', '/app/tarifas/');
     for (const e of await visibles(page)) expect(e.trim().length).toBeLessThanOrEqual(9);
   });
 
-  test('administrador (movil): cinco destinos en la barra y Tarifas en el menu', async ({ page }) => {
+  test('administrador (movil): cinco destinos en la barra y Tarifas y Cambios en el menu', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await montar(page, { rol: 'administrador' });
     await page.goto('/app/');
@@ -507,7 +507,7 @@ test.describe('navegacion por rol', () => {
     await montar(page, { rol: 'administrador', retraso: 800 });
     await page.goto('/app/');
     expect(await visibles(page)).toEqual(['Inicio']);
-    await expect(page.locator('.lateral-destino:visible')).toHaveCount(7);
+    await expect(page.locator('.lateral-destino:visible')).toHaveCount(8);
   });
 });
 

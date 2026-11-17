@@ -12,7 +12,11 @@ const FRANJAS = [
 const OCUPADOS = [{ inicio: '2026-11-18T10:00:00-05:00', fin: '2026-11-18T12:30:00-05:00', propia: false, detalle: { id_reserva: 'r1', cliente: 'Eva Soto', servicio: 'Grabación de voces', estado: 'Confirmada' } }];
 const CIERRES = [{ id: 'c1', inicio: '2026-11-20T00:00:00-05:00', fin: '2026-11-21T00:00:00-05:00', motivo: 'Mantenimiento' }];
 const disp = (extra = {}) => json(200, { limites: { desde: '2026-11-16T00:00:00-05:00', hasta: '2027-05-01T00:00:00-05:00' }, franjas: FRANJAS, ocupados: OCUPADOS, cierres: CIERRES, dias: [], ...extra });
-const PARAMETROS = { dias_limite_pago: 3, horas_limite_pago: 24, anticipacion_minima_horas: 2, anticipacion_maxima_semanas: 8 };
+const PARAMETROS = {
+  dias_limite_pago: 3, horas_limite_pago: 24, anticipacion_minima_horas: 2, anticipacion_maxima_semanas: 8,
+  porcentaje_adelanto: 50, horas_nivel_1: 48, horas_nivel_2: 24, porcentaje_penalizacion_nivel_2: 25, minutos_tolerancia_inasistencia: 15,
+  dias_vigencia_credito: 30, reprogramaciones_nivel_1: 2, reprogramaciones_nivel_2: 1,
+};
 
 async function base(page, { disponibilidad = disp(), sugerencia = json(200, []) } = {}) {
   await page.clock.setFixedTime(new Date('2026-11-15T15:00:00Z')); // "hoy" fijo: el domingo 15 nov 2026
@@ -333,7 +337,7 @@ for (const t of tamanos) {
     await page.setViewportSize({ width: t.ancho, height: t.alto });
     await comoAdministrador(page);
     await simular(page, 'GET', '/parametros', json(200, PARAMETROS));
-    const parches = await simular(page, 'PATCH', '/parametros', json(200, { ...PARAMETROS, horas_limite_pago: 12 }));
+    const parches = await simular(page, 'PATCH', '/parametros', json(200, { ...PARAMETROS, anticipacion_minima_horas: 3 }));
     await page.goto('/app/franjas/parametros');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/parámetros de reserva/i);
     await expect(page.getByRole('link', { name: 'Volver a franjas' })).toHaveAttribute('href', '/app/franjas');
@@ -344,11 +348,12 @@ for (const t of tamanos) {
     await expect(page.getByText('Lo más tarde que se puede reservar antes del inicio.')).toBeVisible();
     await sinViolaciones(page);
     await page.screenshot({ path: `pruebas/capturas/franjas-parametros-${t.nombre}.png`, fullPage: true });
-    await page.getByLabel('Horas desde la solicitud').fill('12');
+    await page.getByLabel('Anticipación mínima (horas)').fill('3'); // la anticipacion no es sensible: se guarda en un paso
     await page.getByRole('button', { name: 'Guardar parámetros' }).click();
     await expect(page.getByText('Parámetros guardados. La anticipación ya vale en el calendario; los plazos de pago, en las reservas nuevas.')).toBeVisible();
-    expect(parches[0].cuerpo).toEqual({ dias_limite_pago: 3, horas_limite_pago: 12, anticipacion_minima_horas: 2, anticipacion_maxima_semanas: 8 });
-    await expect(page.getByLabel('Horas desde la solicitud')).toHaveValue('12');
+    expect(parches[0].cuerpo).toEqual({ ...PARAMETROS, anticipacion_minima_horas: 3 });
+    await expect(page.getByRole('link', { name: 'Ver en el registro de cambios' })).toHaveCount(0);
+    await expect(page.getByLabel('Anticipación mínima (horas)')).toHaveValue('3');
     await sinViolaciones(page);
     expect(consola).toEqual([]);
   });

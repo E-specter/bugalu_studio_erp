@@ -34,34 +34,14 @@ import BarraAcciones from '../componentes/BarraAcciones.astro';
 <script>
   // @ts-nocheck
   import { confirmarCambio, previsualizarCambio } from '../servicios/catalogo.js';
-  import { soles, porcentaje, fechaDe, horaDe, diaMes } from '../servicios/formatos.js';
+  import { soles, fechaDe, horaDe, diaMes } from '../servicios/formatos.js';
+  import { formatearCambio } from '../servicios/campos-cambio.js';
   import { ponerError, quitarError, mostrarAviso, enfocarAviso } from '../servicios/formulario.js';
   import { mensajeError } from '../servicios/isla-gestion.js';
 
   const PALABRA = 'CONFIRMAR';
   const ERROR_PALABRA = 'Escribe CONFIRMAR, en mayúsculas, para aplicar el cambio.';
-  const dias = (v) => `${v} días`;
-  const horas = (v) => `${v} h`;
   const sinFormato = (v) => v;
-  // campo del contrato -> [etiqueta en C1, formato]. `anterior` y `nuevo` llegan como texto: aqui solo se formatean.
-  const CAMPOS = {
-    tarifa_hora: ['TARIFA POR HORA', soles],
-    monto_fijo: ['MONTO FIJO', soles],
-    monto_variable: ['MONTO VARIABLE', soles],
-    unidad: ['UNIDAD', (v) => ({ hora: 'Por hora', lapso_30: 'Por media hora' })[v] ?? v],
-    'noche.porcentaje': ['NOCHE (%)', porcentaje],
-    'noche.desde': ['NOCHE DESDE', sinFormato],
-    'noche.hasta': ['NOCHE HASTA', sinFormato],
-    'fin_de_semana.porcentaje': ['FIN DE SEMANA (%)', porcentaje],
-    'feriado.porcentaje': ['FERIADO (%)', porcentaje],
-    porcentaje_igv: ['PORCENTAJE DE IGV', porcentaje],
-    precios_incluyen_igv: ['LOS PRECIOS INCLUYEN IGV', (v) => (String(v) === 'true' ? 'Sí' : 'No')],
-    dias_limite_pago: ['DÍAS ANTES DEL INICIO', dias],
-    horas_limite_pago: ['HORAS DESDE LA SOLICITUD', horas],
-    horas_nivel_1: ['LÍMITE DEL NIVEL 1', horas],
-    horas_nivel_2: ['LÍMITE DEL NIVEL 2', horas],
-    porcentaje_adelanto: ['ADELANTO PARA CONFIRMAR', porcentaje],
-  };
   const IMPACTO = {
     importe: soles,
     fecha_hora: (v) => `${diaMes(fechaDe(v))}, ${horaDe(v)}`,
@@ -137,8 +117,8 @@ import BarraAcciones from '../componentes/BarraAcciones.astro';
         return f;
       };
       c1.replaceChildren(...previa.cambios.map((c) => {
-        const [etiqueta, dar] = CAMPOS[c.campo] ?? [c.campo.toUpperCase(), sinFormato];
-        return tr(th(etiqueta), td('Antes', dar(c.anterior), 'tabla-num'), td('Después', dar(c.nuevo), 'tabla-num cs-despues'));
+        const f = formatearCambio(c);
+        return tr(th(f.etiqueta), td('Antes', f.anterior, 'tabla-num'), td('Después', f.nuevo, 'tabla-num cs-despues'));
       }));
       c2.replaceChildren(...previa.impacto.ejemplos.map((e) => {
         const dar = IMPACTO[e.tipo] ?? sinFormato;

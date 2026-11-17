@@ -23,3 +23,5 @@ export const simular = (cuerpo) => pedir('/api/v1/simulaciones', { method: 'POST
 export const obtenerImpuestos = () => pedir('/api/v1/impuestos', { sinToken: true });
 export const previsualizarCambio = (peticion) => pedir('/api/v1/cambios-sensibles/previsualizar', { method: 'POST', cuerpo: peticion });
 export const confirmarCambio = (cuerpo) => pedir('/api/v1/cambios-sensibles/confirmar', { method: 'POST', cuerpo });
+// Registro de auditoria (Administrador): `filtros` {desde?, hasta?, recurso?} (solo lo que el usuario fijo) -> [CambioRegistrado], del mas reciente al mas antiguo.
+export const listarCambios = (filtros = {}) => pedir(`/api/v1/registro-cambios${Object.keys(filtros).length ? `?${new URLSearchParams(filtros)}` : ''}`);

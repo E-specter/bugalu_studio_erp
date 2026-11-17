@@ -17,6 +17,7 @@ const SIMULACION = {
   recargos: [{ tipo: 'noche', bloques: 2, monto: '25.00' }],
   total: '415.00',
   anticipo: '207.50',
+  porcentaje_adelanto: 50,
 };
 const reserva = (extra = {}) => ({
   id: ID, folio: 'R-2026-00001', estado: 'pre_reservada', motivo_cancelacion: null,

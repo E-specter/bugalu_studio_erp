@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import RegistroCambios from '../../../islas/RegistroCambios.astro';
+---
+
+<LayoutApp titulo="Registro de cambios">
+  <EncabezadoPantalla
+    titulo="Registro de cambios"
+    indice="[A9] CONTROL / CAMBIOS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Cambios' }]}
+    descripcion="Quién cambió impuestos, tarifas, recargos y plazos, cuándo, y qué valor tenían antes."
+  />
+  <RegistroCambios />
+</LayoutApp>

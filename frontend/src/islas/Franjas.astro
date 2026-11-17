@@ -7,6 +7,7 @@ import Casilla from '../componentes/Casilla.astro';
 import Tabla from '../componentes/Tabla.astro';
 import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
 import Icono from '../componentes/internos/Icono.astro';
+import CambioSensible from './CambioSensible.astro';
 import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
 import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
 
@@ -15,6 +16,7 @@ interface Props {
 }
 const { vista } = Astro.props;
 // Panel de la vista mientras carga o falla (codigos y titulos de la spec RF-03-franjas).
+const ayudaCambio = 'Si cambias un plazo, un porcentaje o un límite, te mostraremos el impacto y te pediremos confirmarlo.';
 const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : { codigo: 'P1', titulo: 'Plazo para pagar' };
 ---
 
@@ -26,6 +28,7 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
   <!-- Region viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
   <p class="visualmente-oculto" role="status" data-anuncio></p>
   <div data-salida><Panel {...principal} cargando /></div>
+  {vista === 'parametros' && <CambioSensible />}
 
   <EstadosIsla principal={principal} />
 
@@ -139,8 +142,20 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
               <Campo tipo="number" nombre="anticipacion_maxima_semanas" etiqueta="Anticipación máxima (semanas)" ayuda="Lo más lejos que se puede reservar." obligatorio min="1" step="1" inputmode="numeric" />
             </div>
           </Panel>
+          <Panel codigo="P3" titulo="Cancelación y adelanto">
+            <div class="gestion-formulario">
+              <Campo tipo="number" nombre="porcentaje_adelanto" etiqueta="Adelanto para confirmar (%)" ayuda="Parte del total que se paga para confirmar la reserva." obligatorio min="1" max="100" step="1" inputmode="numeric" />
+              <Campo tipo="number" nombre="horas_nivel_1" etiqueta="Límite del nivel 1 (horas)" ayuda="Con más horas de aviso, la cancelación o reprogramación no tiene cargo." obligatorio min="1" step="1" inputmode="numeric" />
+              <Campo tipo="number" nombre="horas_nivel_2" etiqueta="Límite del nivel 2 (horas)" ayuda="Entre este límite y el del nivel 1 se aplica la penalización. Debe ser menor que el nivel 1." obligatorio min="1" step="1" inputmode="numeric" />
+              <Campo tipo="number" nombre="porcentaje_penalizacion_nivel_2" etiqueta="Penalización del nivel 2 (%)" ayuda="Parte del valor de la reserva que se retiene en el nivel 2." obligatorio min="0" max="100" step="1" inputmode="numeric" />
+              <Campo tipo="number" nombre="minutos_tolerancia_inasistencia" etiqueta="Tolerancia de inasistencia (min)" ayuda="Minutos de espera antes de contar una inasistencia." obligatorio min="0" step="1" inputmode="numeric" />
+              <Campo tipo="number" nombre="dias_vigencia_credito" etiqueta="Vigencia del crédito (días)" ayuda="Cuánto dura el crédito que deja una reserva cancelada o reprogramada." obligatorio min="1" step="1" inputmode="numeric" />
+              <Campo tipo="number" nombre="reprogramaciones_nivel_1" etiqueta="Reprogramaciones del nivel 1" ayuda="Cuántas veces se puede reprogramar sin cargo." obligatorio min="0" step="1" inputmode="numeric" />
+              <Campo tipo="number" nombre="reprogramaciones_nivel_2" etiqueta="Reprogramaciones del nivel 2" ayuda="Cuántas veces se puede reprogramar con penalización." obligatorio min="0" step="1" inputmode="numeric" />
+            </div>
+          </Panel>
         </div>
-        <div><Boton tipo="submit" data-envio>Guardar parámetros</Boton></div>
+        <div><Boton tipo="submit" data-envio>Guardar parámetros</Boton><p class="gestion-ayuda">{ayudaCambio}</p></div>
       </form>
     </template>
   )}
@@ -161,7 +176,18 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
   // HASTA 00:00 es la medianoche del dia siguiente.
   const finEnMinutos = (hasta) => minutos(hasta) || 1440;
   const finInstante = (fecha, hasta) => (finEnMinutos(hasta) === 1440 ? instante(sumarDias(fecha, 1), '00:00') : instante(fecha, hasta));
-  const PARAMETROS = ['dias_limite_pago', 'horas_limite_pago', 'anticipacion_minima_horas', 'anticipacion_maxima_semanas'];
+  // nombre -> [minimo, maximo]. Solo la anticipacion no es sensible: los demas pasan por la revision con confirmacion escrita (RF-20).
+const LIMITES = {
+  dias_limite_pago: [1], horas_limite_pago: [1], anticipacion_minima_horas: [1], anticipacion_maxima_semanas: [1],
+  porcentaje_adelanto: [1, 100], horas_nivel_1: [1], horas_nivel_2: [1], porcentaje_penalizacion_nivel_2: [0, 100],
+  minutos_tolerancia_inasistencia: [0], dias_vigencia_credito: [1], reprogramaciones_nivel_1: [0], reprogramaciones_nivel_2: [0],
+};
+const PARAMETROS = Object.keys(LIMITES);
+const esSensible = (nombre) => !nombre.startsWith('anticipacion_');
+const errorLimite = (nombre) => {
+  const [min, max] = LIMITES[nombre];
+  return max ? `Escribe un número entero de ${min} a ${max}.` : min ? 'Escribe un número entero mayor que 0.' : 'Escribe un número entero de 0 o más.';
+};
 
   class BugaluFranjas extends IslaGestion {
     contador = 0;
@@ -208,12 +234,15 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
         aviso('error', `No puedes cerrar ese horario: tiene ${plural(reservas.length, 'reserva vigente', 'reservas vigentes')}`, 'Resuélvelas antes de cerrarlo.', {
           enlaces: reservas.map((r) => ({ texto: `${r.folio} · ${diaMes(fechaDe(r.inicio))}, ${horaDe(r.inicio)} · ${r.cliente}`, href: `/app/reservas/detalle?id=${encodeURIComponent(r.id)}` })),
         });
-      } else if (error.estado === 404) {
+      } else if (error.estado === 428 && error.codigo === 'confirmacion_requerida' && this.ctx) this.revisar(this.ctx); // red de seguridad: el backend exige la revision
+      else if (error.estado === 422 && error.codigo === 'sin_cambios') aviso('informacion', 'Ya tiene esos valores. No hay nada que cambiar.');
+      else if (error.estado === 422 && error.codigo === 'plazos_incoherentes') this.plazosIncoherentes();
+      else if (error.estado === 404) {
         this.cargar().then(() => aviso('informacion', `${this.sujeto} ya no existe`, 'Actualizamos la semana.'));
       } else if (error.estado === 422 && error.detalles?.campo) {
         const entrada = this.querySelector(`[name="${error.detalles.campo}"]`);
         if (!entrada) return false;
-        this.validar([{ entrada, mensaje: 'Escribe un número entero mayor que 0.', texto: this.etiqueta(entrada) }]);
+        this.validar([{ entrada, mensaje: LIMITES[entrada.name] ? errorLimite(entrada.name) : 'Escribe un número entero mayor que 0.', texto: this.etiqueta(entrada) }]);
       } else return false;
       return true;
     }
@@ -451,21 +480,53 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
     }
 
     llenarParametros(datos) {
+      this.cargado = datos;
       PARAMETROS.forEach((nombre) => (this.querySelector(`[name="${nombre}"]`).value = datos[nombre]));
+    }
+
+    plazosIncoherentes() {
+      const uno = this.querySelector('[name="horas_nivel_1"]').value;
+      this.validar([{ entrada: this.querySelector('[name="horas_nivel_2"]'), mensaje: `Debe ser menor que el límite del nivel 1 (${uno} h).`, texto: 'Límite del nivel 2' }]);
     }
 
     guardar(formulario) {
       if (this.ocupado) return;
       const campos = PARAMETROS.map((nombre) => formulario.querySelector(`[name="${nombre}"]`));
       campos.forEach(quitarError);
-      const errores = campos.filter((c) => !/^\d+$/.test(c.value.trim()) || Number(c.value) < 1).map((entrada) => ({ entrada, mensaje: 'Escribe un número entero mayor que 0.', texto: this.etiqueta(entrada) }));
+      const errores = campos.filter((c) => {
+        const [min, max = Infinity] = LIMITES[c.name];
+        return !/^\d+$/.test(c.value.trim()) || Number(c.value) < min || Number(c.value) > max;
+      }).map((entrada) => ({ entrada, mensaje: errorLimite(entrada.name), texto: this.etiqueta(entrada) }));
+      const [nivel1, nivel2] = ['horas_nivel_1', 'horas_nivel_2'].map((n) => formulario.querySelector(`[name="${n}"]`));
+      if (!errores.some((e) => e.entrada === nivel1 || e.entrada === nivel2) && Number(nivel2.value) >= Number(nivel1.value)) {
+        errores.push({ entrada: nivel2, mensaje: `Debe ser menor que el límite del nivel 1 (${nivel1.value} h).`, texto: this.etiqueta(nivel2) });
+      }
       if (!this.validar(errores)) return;
       const cuerpo = Object.fromEntries(campos.map((c) => [c.name, Number(c.value)]));
-      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => guardarParametros(cuerpo), (datos) => {
+      const cambiados = PARAMETROS.filter((n) => cuerpo[n] !== Number(this.cargado[n]));
+      const sensibles = cambiados.filter(esSensible);
+      const boton = formulario.querySelector('[data-envio]');
+      const exito = (datos, conEnlace = false) => {
         this.llenarParametros(datos ?? cuerpo);
         limpiarAvisos(this);
-        enfocarAviso(mostrarAviso(this, 'exito', 'Parámetros guardados', 'La anticipación ya vale en el calendario; los plazos de pago, en las reservas nuevas.'));
-      });
+        const enlace = conEnlace ? { enlace: { texto: 'Ver en el registro de cambios', href: '/app/cambios?recurso=parametros' } } : undefined;
+        enfocarAviso(mostrarAviso(this, 'exito', 'Parámetros guardados', 'La anticipación ya vale en el calendario; los plazos de pago, en las reservas nuevas.', enlace));
+      };
+      const resto = cambiados.filter((n) => !esSensible(n));
+      this.ctx = {
+        formulario,
+        cuerpo,
+        peticion: { recurso: 'parametros', cambios: Object.fromEntries(sensibles.map((n) => [n, cuerpo[n]])) },
+        resto: resto.length ? () => guardarParametros(Object.fromEntries(resto.map((n) => [n, cuerpo[n]]))) : null,
+        restoNombre: 'Anticipación',
+        cambiado: 'Los parámetros se cambiaron',
+        exito: async () => {
+          await this.cargar();
+          exito(this.cargado, true);
+        },
+      };
+      if (sensibles.length) this.revisar(this.ctx);
+      else this.enviar(boton, 'Guardando…', () => guardarParametros(cuerpo), exito);
     }
   }
 

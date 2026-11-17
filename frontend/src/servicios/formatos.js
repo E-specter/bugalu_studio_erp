@@ -88,8 +88,8 @@ const cantidadPartida = (cantidad, unidad) =>
   : String(Number(cantidad));
 // "18.00" -> "18 %", "12.50" -> "12,5 %" (estructura-app, formato de datos).
 export const porcentaje = (p) => `${Number(p)} %`.replace('.', ',');
-// shortcut: sin `porcentaje_adelanto` en la respuesta (reservas viejas en mocks) cae en 50; el backend siempre lo envia.
-const etiquetaAnticipo = (adelanto) => `Anticipo ${porcentaje(adelanto ?? 50)}`;
+// El porcentaje del adelanto lo dicta el backend (`porcentaje_adelanto` de la simulacion o de los parametros aplicados de la reserva).
+const etiquetaAnticipo = (adelanto) => `Anticipo ${porcentaje(adelanto)}`;
 // Desglose de IGV que dicta el backend (nunca se calcula aqui). `precio.impuesto` puede faltar: sin desglose.
 // Resumen: bajo el total, "Incluye IGV (18 %)" o "Más IGV (18 %)".
 export const filasPrecio = (precio, adelanto = precio.porcentaje_adelanto) => [

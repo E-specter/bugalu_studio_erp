@@ -21,6 +21,7 @@ const SIM = {
   recargos: [{ tipo: 'noche', bloques: 2, monto: '20.00' }],
   total: '290.00',
   anticipo: '145.00',
+  porcentaje_adelanto: 50,
 };
 const RESERVA = { id: R1, folio: 'R-2026-00013', estado: 'pre_reservada', motivo_cancelacion: null, inicio: INI, fin: t('19', '12:00'), fin_buffer: t('19', '12:30'), sala: 'La Molina', servicio: 'Grabación', especialistas: [{ id: 'e1', nombre: 'Ingeniero de sonido' }], precio: SIM, cuotas: [], vence_pago: '2026-11-17T10:00:00-05:00' };
 const DISP = {
@@ -41,6 +42,7 @@ async function montar(page, { sesion = true, sim = (r) => r.fulfill(json(200, SI
   if (sesion) await page.route(`${API}/perfil`, (r) => r.fulfill(perfil()));
   await page.route(`${API}/salas`, (r) => r.fulfill(json(200, [{ id: 'sala-1', nombre: 'La Molina' }])));
   await page.route(`${API}/disponibilidad?**`, (r) => r.fulfill(json(200, DISP)));
+  await page.route(`${API}/impuestos`, (r) => r.fulfill(json(200, { porcentaje_igv: '18.00', precios_incluyen_igv: true })));
   await page.route(`${API}/servicios`, (r) => r.fulfill(servicios()));
   await page.route(`${API}/especialistas`, (r) => r.fulfill(especialistas()));
   await page.route(`${API}/simulaciones`, (r) => { envios.sim.push(r.request().postDataJSON()); return sim(r); });

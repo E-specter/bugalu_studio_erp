@@ -64,6 +64,7 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
               <>
                 <fieldset class="res-grupo">
                   <legend>Servicio</legend>
+                  <p class="res-ayuda" data-ayuda-igv hidden></p>
                   <div data-lista-servicios class="res-lista"></div>
                 </fieldset>
                 <fieldset class="res-grupo">
@@ -214,9 +215,9 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
 <script>
   import { obtenerToken, obtenerCliente } from '../servicios/sesion.js';
   import { listarSalas, crearReserva, obtenerReserva } from '../servicios/reservas.js';
-  import { listarServicios, listarEspecialistas, simular } from '../servicios/catalogo.js';
+  import { listarServicios, listarEspecialistas, obtenerImpuestos, simular } from '../servicios/catalogo.js';
   import { ErrorApi } from '../servicios/api.js';
-  import { soles, filasPrecio, fechaDe, horaDe, instante, nombreDia, diaMes, duracionReserva, pintarPartidas, esFecha, inicioValido, duracionValida } from '../servicios/formatos.js';
+  import { soles, porcentaje, filasPrecio, fechaDe, horaDe, instante, nombreDia, diaMes, duracionReserva, pintarPartidas, esFecha, inicioValido, duracionValida } from '../servicios/formatos.js';
 
   const RUTAS: Record<string, string> = { horario: '/reservar/', servicio: '/reservar/servicio/', confirmar: '/reservar/confirmar/' };
   const DESCRIPCION: Record<string, string> = {
@@ -519,7 +520,9 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
       this.q('[data-datos]')!.hidden = true;
       salida.replaceChildren(this.plantilla('cargando'));
       try {
-        const [servicios, especialistas] = await Promise.all([listarServicios(), listarEspecialistas()]);
+        // Los impuestos son solo una ayuda: si no responden, el paso sigue sin ella.
+        const [servicios, especialistas, impuestos] = await Promise.all([listarServicios(), listarEspecialistas(), this.paso === 'servicio' ? obtenerImpuestos().catch(() => null) : null]);
+        if (impuestos) this.ayudaIgv(impuestos);
         this.servicios = servicios.filter((s: any) => s.ocupa_sala && s.activo);
         this.especialistas = especialistas.filter((x: any) => x.activo);
       } catch {
@@ -538,6 +541,12 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
       if (this.e.servicio) this.calcular();
       else this.pintarPrecio('vacio');
       if (this.paso !== 'listo' && this.paso !== 'horario' && !this.q('h1:focus')) this.titulo().focus();
+    }
+    ayudaIgv({ porcentaje_igv, precios_incluyen_igv }: { porcentaje_igv: string; precios_incluyen_igv: boolean }) {
+      const ayuda = this.q('[data-ayuda-igv]')!;
+      const p = porcentaje(porcentaje_igv);
+      ayuda.textContent = precios_incluyen_igv ? `Precios con IGV incluido (${p}).` : `Precios sin IGV: el IGV (${p}) se suma al total.`;
+      ayuda.hidden = false;
     }
     pintarServicios() {
       this.q('[data-lista-servicios]')!.replaceChildren(

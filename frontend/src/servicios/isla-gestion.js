@@ -3,6 +3,7 @@
 // La subclase define un metodo por vista (this[vista]() devuelve el texto del anuncio o null), `alEnviar(formulario)` y,
 // opcionalmente, `iniciar()`, `errorEnvio(error)` (true = ya lo trato) y `noEncontrada` ([titulo, texto]).
 import { ponerError, mostrarAviso, enfocarAviso, limpiarAvisos, llenarAviso } from './formulario.js';
+import { previsualizarCambio } from './catalogo.js';
 
 const textos = {
   'no-autenticado': ['Tu sesión no es válida', 'Inicia sesión para continuar.'],
@@ -173,5 +174,37 @@ export class IslaGestion extends HTMLElement {
       this.fallo(error);
       this.anunciar();
     }
+  }
+
+  // --- Cambios sensibles (RF-20): vista previa, revision en <bugalu-cambio-sensible> (la isla de la vista la monta) y, al confirmar, lo no sensible ---
+
+  // ctx: {formulario, peticion, resto?: () => Promise, restoNombre?, cambiado?, exito(resultado)}
+  revisar(ctx) {
+    this.ctx = ctx;
+    const boton = ctx.formulario.querySelector('[data-envio]');
+    this.enviar(boton, 'Calculando impacto…', () => previsualizarCambio(ctx.peticion), (previa) => this.abrirRevision(previa, ctx, boton));
+  }
+
+  async abrirRevision(previa, ctx, boton) {
+    const salida = this.querySelector('[data-salida]');
+    salida.hidden = true;
+    limpiarAvisos(this);
+    const r = await this.querySelector('bugalu-cambio-sensible').abrir(previa, ctx.peticion);
+    salida.hidden = false;
+    if (r.estado === 'cancelado') {
+      mostrarAviso(this, 'informacion', 'No se aplicó ningún cambio.');
+      boton.focus();
+    } else if (r.estado === 'volver') {
+      if (r.recargar) await this.cargar();
+      enfocarAviso(mostrarAviso(this, r.aviso[0], r.aviso[1], r.aviso[2]));
+    } else if (ctx.resto) {
+      try {
+        await ctx.resto();
+      } catch {
+        await this.cargar();
+        return enfocarAviso(mostrarAviso(this, 'error', `${ctx.cambiado ?? 'La tarifa se cambió'}, pero no pudimos guardar ${ctx.restoNombre}`, 'Vuelve a guardar.'));
+      }
+      await ctx.exito(r.resultado);
+    } else await ctx.exito(r.resultado);
   }
 }
