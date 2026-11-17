@@ -117,7 +117,7 @@ test('publico: el saneado del navegador deja solo atributos permitidos y rutas p
     '<button formaction="https://mal.example" form="f">botón</button>',
     '<img src="https://bugalu.studio/a.png" srcset="https://mal.example/a.png 2x" alt="logo" onerror="window.__xss = 1">',
     '<a href="https://bugalu.studio/x" ping="https://mal.example/p" target="_blank" rel="x">fuera</a>',
-    '<a href="/\\otro.sitio">barra invertida</a><a href="//otro.sitio">protocolo relativo</a><a href="/legal/">propia</a>',
+    '<a href="/\\otro.sitio">barra invertida</a><a href="//otro.sitio">protocolo relativo</a><a href="/&#9;/otro.sitio">tab</a><a href="/&#10;/otro.sitio">salto</a><a href="/legal/">propia</a>',
     '<svg><a href="https://mal.example"><text>svg</text></a></svg>',
     '<table><tr><td colspan="2" rowspan="1" scope="col" style="x:y">celda</td></tr></table>',
   ].join('');
@@ -133,6 +133,7 @@ test('publico: el saneado del navegador deja solo atributos permitidos y rutas p
   await expect(prosa.locator('td')).toHaveAttribute('scope', 'col');
   await expect(prosa.locator('a[href="/legal/"]')).toHaveCount(1);
   await expect(prosa.getByText('barra invertida')).not.toHaveAttribute('href', /.+/);
+  for (const t of ['tab', 'salto']) await expect(prosa.getByText(t, { exact: true })).not.toHaveAttribute('href', /.+/);
 });
 
 for (const f of fallos.filter((x) => !['401', '403'].includes(x.n))) {

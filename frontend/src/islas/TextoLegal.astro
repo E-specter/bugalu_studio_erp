@@ -91,7 +91,7 @@ const directorio = tipo === 'directorio';
     doc.body.querySelectorAll('*').forEach((n) => {
       for (const a of [...n.attributes]) {
         // Solo atributos permitidos; los enlaces, a https, correo, ancla o ruta propia (no `//x` ni `/\x`).
-        const url = ['href', 'src'].includes(a.name) && !/^(https?:|mailto:|#|\/(?![/\\]))/i.test(a.value.trim());
+        const url = ['href', 'src'].includes(a.name) && !/^(https?:|mailto:|#|\/(?![/\\]))/i.test(a.value.replace(/[\t\n\r ]/g, ''));
         if (!PERMITIDOS.includes(a.name) || url) n.removeAttribute(a.name);
       }
     });

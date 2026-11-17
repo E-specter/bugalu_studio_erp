@@ -287,7 +287,8 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
   const RUTAS: Record<string, string> = { horario: '/reservar/', servicio: '/reservar/servicio/', cuenta: '/reservar/cuenta/', confirmar: '/reservar/confirmar/' };
   const ERROR_TERMINOS = 'Marca la casilla para aceptar los términos; sin ella no podemos activar tus reservas.';
   const ERROR_CONDICIONES = 'Marca la casilla para aceptar las condiciones; sin ella no podemos registrar tu reserva.';
-  const CLAVE_DETALLE = 'bugalu:reserva-detalle';
+  // La clave lleva la elección: otra sala u horario empieza vacío. `cerrarSesion` borra por este prefijo.
+  const claveDetalle = ({ sala, inicio, duracion }: any) => `bugalu:reserva-detalle:${sala ?? ''}|${inicio}|${duracion}`;
   const DESCRIPCION: Record<string, string> = {
     grabacion: 'Graba voces, instrumentos o tu banda en vivo.',
     ensayo: 'Ensaya en sala. Disponible si ya tienes una sesión confirmada con nosotros.',
@@ -336,7 +337,8 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
       });
       this.addEventListener('change', (ev) => this.alCambiar(ev));
       this.addEventListener('calendario-inicio', (ev) => this.alElegirInicio((ev as CustomEvent).detail));
-      this.q('[data-cuerpo]')!.hidden = false;
+      // Hijo directo: el calendario ya pintado trae su propio [data-cuerpo] antes en el DOM.
+      this.q('.res-principal > [data-cuerpo]')!.hidden = false;
       const lateral = this.q('[data-cuerpo-lateral]');
       if (lateral) lateral.hidden = false;
       this.enlazarPasos();
@@ -627,8 +629,8 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
         this.q('[data-confirmar]')!.setAttribute('disabled', '');
         // El detalle escrito sobrevive a ir al paso 03 y volver; se borra al reservar (CA-13).
         const area = this.q<HTMLTextAreaElement>('textarea[name="detalle"]')!;
-        try { area.value = sessionStorage.getItem(CLAVE_DETALLE) ?? ''; } catch {}
-        area.addEventListener('input', () => { try { sessionStorage.setItem(CLAVE_DETALLE, area.value); } catch {} });
+        try { area.value = sessionStorage.getItem(claveDetalle(this.e)) ?? ''; } catch {}
+        area.addEventListener('input', () => { try { sessionStorage.setItem(claveDetalle(this.e), area.value); } catch {} });
         this.cargarCondiciones();
       }
       this.resumen();
@@ -797,7 +799,7 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
           ...(detalle && { detalle }),
           version_condiciones: this.condVersion,
         });
-        try { sessionStorage.removeItem(CLAVE_DETALLE); } catch {}
+        try { sessionStorage.removeItem(claveDetalle(this.e)); } catch {}
         location.href = `/reservar/listo/?${new URLSearchParams({ id: reserva.id })}`;
         return;
       } catch (error) {

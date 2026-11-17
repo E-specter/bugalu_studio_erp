@@ -314,6 +314,51 @@ test.describe('04 Confirmar con condiciones', () => {
     await expect(page.getByLabel('Qué necesitas (opcional)')).toHaveValue('');
   });
 
+  test('otra elección (duración) no hereda el detalle', async ({ page }) => {
+    await montarReserva(page);
+    await page.goto(PASO4);
+    await page.getByLabel('Qué necesitas (opcional)').fill('Voz y guitarra');
+    await page.goto(PASO4.replace('duracion=120', 'duracion=60'));
+    await expect(condiciones(page)).toBeVisible(); // el detalle se restaura al cargar el paso
+    await expect(page.getByLabel('Qué necesitas (opcional)')).toHaveValue('');
+    await page.goto(PASO4);
+    await expect(page.getByLabel('Qué necesitas (opcional)')).toHaveValue('Voz y guitarra');
+  });
+
+  test('cerrar sesión borra el detalle guardado', async ({ page }) => {
+    await montarReserva(page);
+    await page.goto(PASO4);
+    await page.getByLabel('Qué necesitas (opcional)').fill('Voz y guitarra');
+    expect(await page.evaluate(() => Object.keys(sessionStorage).length)).toBeGreaterThan(0);
+    await page.goto('/app/perfil');
+    await page.locator('.cabecera-menu > summary').click();
+    await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+    await page.waitForURL('**/acceso?aviso=sesion-cerrada');
+    expect(await page.evaluate(() => Object.keys(sessionStorage).filter((k) => k.startsWith('bugalu:reserva-detalle')))).toEqual([]);
+  });
+
+  test('camino real de reaceptacion_requerida: 409, acepta en el 03, vuelve al 04 con el detalle y reserva con él', async ({ page }) => {
+    let falto = false;
+    const vistas = await montarReserva(page, { crear: (r) => { if (falto) return r.fulfill(json(201, RESERVA)); falto = true; return r.fulfill(json(409, { error: { codigo: 'reaceptacion_requerida', mensaje: 'x', detalles: { textos: [{ tipo: 'terminos_uso', version: '1.0.0' }] } } })); } });
+    await page.unroute(`${API}/perfil`);
+    await page.route(`${API}/perfil`, (r) => r.fulfill(falto && !vistas.aceptar.length ? perfilApi({ datos_para_reservar: false, pendientes: [P('terminos_uso', '1.0.0', 'actualizado')] }) : perfilApi()));
+    await page.goto(PASO4);
+    await page.getByLabel('Qué necesitas (opcional)').fill('Voz y guitarra');
+    await condiciones(page).check();
+    await reservar(page).click();
+    await expect(page).toHaveURL(/\/reservar\/cuenta\/\?.*aviso=textos-pendientes/);
+    await expect(page.getByText('Antes de confirmar necesitamos que aceptes los términos actualizados.')).toBeVisible();
+    await page.getByRole('checkbox', { name: /Acepto los Términos de uso/ }).check();
+    await page.getByRole('button', { name: 'Guardar y continuar' }).click();
+    await expect(page).toHaveURL(/\/reservar\/confirmar\//);
+    await expect(page.getByLabel('Qué necesitas (opcional)')).toHaveValue('Voz y guitarra');
+    await condiciones(page).check();
+    await reservar(page).click();
+    await expect(page).toHaveURL(/\/reservar\/listo\//);
+    expect(vistas.crear).toHaveLength(2);
+    expect(vistas.crear[1].cuerpo.detalle).toBe('Voz y guitarra');
+  });
+
   test('409 autorizacion_menor_pendiente muestra el mensaje de la spec', async ({ page }) => {
     await montarReserva(page, { crear: (r) => r.fulfill(errorApi(409, 'autorizacion_menor_pendiente')) });
     await page.goto(PASO4);

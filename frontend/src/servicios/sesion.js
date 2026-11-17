@@ -189,4 +189,10 @@ export async function cerrarSesion() {
   } catch {
     // Sin almacenamiento no hay sesion que borrar.
   }
+  try {
+    // El detalle de una reserva a medias es de esta sesion (RF-17).
+    Object.keys(sessionStorage).filter((k) => k.startsWith('bugalu:reserva-detalle')).forEach((k) => sessionStorage.removeItem(k));
+  } catch {
+    // Sin almacenamiento no queda nada.
+  }
 }
