@@ -2,16 +2,16 @@
 id: legal-condiciones-propiedad-intelectual
 titulo: Condiciones de contratación — propiedad intelectual de las grabaciones
 estado: borrador
-version: 0.1.0
+version: 0.2.0
 vigente_desde: por definir
-depende_de: [ADR-012, RN-06, RN-07]
+depende_de: [ADR-012, ADR-015, RN-06, RN-07]
 ---
 
 # Propiedad intelectual de las grabaciones
 
 > **Borrador para revisión legal. No es asesoría legal ni está vigente.** Lo redactó el equipo del proyecto para que lo revise un abogado colegiado en el Perú antes de publicarlo ([ADR-012](../00-proyecto/decisiones/ADR-012-textos-legales-y-consentimientos.md)). "[verificar]" marca datos o normas por confirmar; "[cifra por confirmar]", valores que el estudio aún no decide.
 
-**Versión 0.1.0 · Vigente desde: [fecha por definir]**
+**Versión 0.2.0 · Vigente desde: [fecha por definir]**
 
 Esta sección forma parte de las [Condiciones de contratación](condiciones-de-contratacion.md). Explica de quién es cada material que se produce en el estudio y qué puede hacer el estudio con él para promocionarse.
 
@@ -25,12 +25,12 @@ Esta sección forma parte de las [Condiciones de contratación](condiciones-de-c
 
 | Material | Titular | Qué significa |
 |---|---|---|
-| **Másteres y entregables pactados** (los que figuran en tu reserva, cotización o proyecto) | **Tú** (el artista o la agrupación) | Los publicas, distribuyes, vendes, licencias y monetizas libremente, sin pagarnos nada más |
-| **El resto de la grabación:** multipistas, tomas descartadas, pruebas de sonido, registros de ensayo y las fotos y videos del proceso que haga el estudio | **El estudio** | Los conservamos y solo los usamos como dice la sección siguiente. Si quieres una copia de tus multipistas, pídela: [cifra por confirmar: incluida o con precio] |
+| **Másteres y entregables pactados** (los que figuran en tu reserva, cotización o proyecto, incluidas las multipistas WAV de tu sesión) | **Tú** (el artista o la agrupación) | Los publicas, distribuyes, vendes, licencias y monetizas libremente, sin pagarnos nada más |
+| **El resto de la grabación:** tomas descartadas, pruebas de sonido, registros de ensayo y las fotos y videos del proceso que haga el estudio | **El estudio** | Los conservamos y solo los usamos como dice la sección siguiente |
 
 Sobre los másteres y entregables pactados, el estudio te cede, de forma exclusiva, para todo el mundo y por todo el plazo de protección, los derechos que pudiera tener como productor de la grabación, para todas sus formas de uso [verificar arts. 89 y 90 del D. Leg. 822: la cesión debe ser expresa y escrita por cada forma de uso].
 
-**Qué entregables recibes** lo indica cada servicio antes de contratarlo. En una sesión de grabación sin posproducción, recibes [verificar con el estudio: por ejemplo, las pistas de la sesión en WAV] cuando pagas el saldo.
+**Qué entregables recibes** lo indica cada servicio antes de contratarlo. En una sesión de grabación recibes las multipistas WAV de la sesión cuando pagas el saldo [verificar con el estudio si se cede su titularidad o solo se entrega una copia]; los másteres solo existen si contratas posproducción.
 
 Que el estudio sea titular de una grabación no le permite explotar comercialmente tu interpretación ni tus obras: para eso siempre necesita tu autorización escrita.
 
@@ -38,10 +38,10 @@ Que el estudio sea titular de una grabación no le permite explotar comercialmen
 
 Nos autorizas, sin pago adicional y sin exclusividad, a usar el material de tu proyecto para promocionar al estudio, solo en estos casos:
 
-1. **Fragmentos en redes y en la web del estudio:** clips de audio o video de hasta [cifra por confirmar] segundos, del proceso o del resultado, con tu nombre artístico. Solo después de tu lanzamiento oficial o, si aún no lanzas, con tu visto bueno previo.
+1. **Fragmentos en redes y en la web del estudio:** clips de audio o video de hasta 30 segundos, del proceso o del resultado, con tu nombre artístico. Solo después de tu lanzamiento oficial o, si aún no lanzas, con tu visto bueno previo.
 2. **Portafolio:** mencionar tu nombre artístico, el título de la obra y los servicios que hicimos, con un enlace a tu lanzamiento oficial y su portada.
 3. **Testimonios:** solo si nos das uno y nos autorizas expresamente a publicarlo con tu nombre o imagen.
-4. **Fotos y videos del proceso en la sala:** solo si nos autorizas en la sesión [verificar forma de la autorización]. Si apareces con otras personas, cada una debe autorizar.
+4. **Fotos y videos del proceso en la sala:** solo si nos autorizas aparte, con una casilla que nunca viene marcada. Si apareces con otras personas, cada una debe autorizar.
 5. **Muestras privadas:** hacer escuchar fragmentos a clientes interesados dentro del estudio [verificar si es comunicación pública].
 
 Si eres menor de edad, cualquiera de estos usos requiere además la autorización expresa de tu madre, padre o tutor.
@@ -56,7 +56,7 @@ Si eres menor de edad, cualquiera de estos usos requiere además la autorizació
 
 ## Retiro a pedido
 
-Puedes pedirnos que retiremos cualquier publicación con tu material escribiéndonos por cualquiera de nuestros canales. La retiramos de nuestras cuentas y de nuestra web en un máximo de [cifra por confirmar] días hábiles y no la volvemos a publicar. No podemos borrar las copias que terceros hayan compartido. También puedes pedirnos desde el inicio que no usemos tu material [verificar con el estudio].
+Puedes pedirnos que retiremos cualquier publicación con tu material escribiéndonos por cualquiera de nuestros canales. La retiramos de nuestras cuentas y de nuestra web en un máximo de 10 días hábiles y no la volvemos a publicar. No podemos borrar las copias que terceros hayan compartido. También puedes pedirnos desde el inicio que no usemos tu material, y lo respetamos desde ese momento.
 
 ## Lo que te toca a ti
 
@@ -65,4 +65,4 @@ Puedes pedirnos que retiremos cualquier publicación con tu material escribiénd
 
 ## Trazabilidad (no se publica)
 
-[ADR-012](../00-proyecto/decisiones/ADR-012-textos-legales-y-consentimientos.md) (propiedad intelectual y usos promocionales); [reglas de negocio](../02-dominio/reglas-negocio.md) (descarga del máster tras el último pago y enlace de 7 días). Normas: D. Leg. 822, arts. 2 (num. 14 y 33: fonograma y productor de fonogramas), 16, 88 a 92, 131 a 139; Ley 28131, del Artista Intérprete y Ejecutante; Código Civil, art. 15 [verificar].
+[ADR-012](../00-proyecto/decisiones/ADR-012-textos-legales-y-consentimientos.md) (propiedad intelectual y usos promocionales); [ADR-015](../00-proyecto/decisiones/ADR-015-cancelacion-conservacion-y-correcciones.md) (multipistas, fragmentos, autorización aparte y retiro); [reglas de negocio](../02-dominio/reglas-negocio.md) (descarga del máster tras el último pago y enlace de 7 días). Normas: D. Leg. 822, arts. 2 (num. 14 y 33: fonograma y productor de fonogramas), 16, 88 a 92, 131 a 139; Ley 28131, del Artista Intérprete y Ejecutante; Código Civil, art. 15 [verificar].

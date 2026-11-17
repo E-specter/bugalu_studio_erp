@@ -2,16 +2,16 @@
 id: legal-politica-de-privacidad
 titulo: Política de privacidad
 estado: borrador
-version: 0.1.0
+version: 0.2.0
 vigente_desde: por definir
-depende_de: [ADR-003, ADR-010, ADR-011, ADR-012, ADR-014, RF-17, RF-19]
+depende_de: [ADR-003, ADR-010, ADR-011, ADR-012, ADR-014, ADR-015, RF-17, RF-19]
 ---
 
 # Política de privacidad de Bugalú Studio
 
 > **Borrador para revisión legal. No es asesoría legal ni está vigente.** Lo redactó el equipo del proyecto para que lo revise un abogado colegiado en el Perú antes de publicarlo ([ADR-012](../00-proyecto/decisiones/ADR-012-textos-legales-y-consentimientos.md)). "[verificar]" marca datos o normas por confirmar; "[cifra por confirmar]", valores que el estudio aún no decide.
 
-**Versión 0.1.0 · Vigente desde: [fecha por definir]**
+**Versión 0.2.0 · Vigente desde: [fecha por definir]**
 
 Aquí te contamos qué datos tuyos tratamos, para qué, con quién los compartimos, cuánto tiempo los guardamos y cómo ejercer tus derechos, conforme a la Ley 29733, Ley de Protección de Datos Personales, y su reglamento (Decreto Supremo 016-2024-JUS).
 
@@ -27,7 +27,7 @@ Tus datos se guardan en el banco de datos "Usuarios y clientes de la plataforma"
 |---|---|
 | Identificación | Nombre, nombre artístico, tipo y número de documento de identidad (DNI, carné de extranjería o pasaporte) y domicilio |
 | Contacto | Correo, teléfono y redes sociales |
-| Agrupación | Nombre del grupo y nombres de sus integrantes [verificar qué datos de integrantes se piden] |
+| Agrupación | Nombre del grupo, su responsable titular y, de cada integrante, nombre y rol |
 | Cuenta | Correo de acceso, fecha de verificación del correo y, si entras con Google o Facebook, el nombre, correo y foto que ese proveedor nos comparte [verificar campos]. Tu contraseña la cifra el servicio de autenticación: nadie del estudio la ve |
 | Menores de edad | Datos del menor y, de su madre, padre o tutor: nombre, documento, domicilio y relación con el menor, más la autorización firmada |
 | Reservas y asesorías | Fechas, servicios, especialistas, precios, cuotas, estados, las notas que escribes, las notas internas del profesional, la constancia de asistencia y el enlace de videollamada |
@@ -40,7 +40,7 @@ Tus datos se guardan en el banco de datos "Usuarios y clientes de la plataforma"
 
 No te pedimos datos sensibles (salud, origen étnico, ingresos, opiniones políticas o religiosas, vida sexual). No los incluyas en tus notas.
 
-Cada formulario indica qué datos son obligatorios. Sin ellos no podemos crear tu cuenta ni prestarte el servicio; los opcionales no condicionan nada [verificar si domicilio y redes son indispensables: art. 3.2 del reglamento].
+Son obligatorios tu nombre, tu documento de identidad (antes de tu primera reserva), tu teléfono y tu correo: sin ellos no podemos prestarte el servicio. El domicilio y las redes son opcionales y no condicionan nada (art. 3.2 del reglamento).
 
 ## Para qué los usamos
 
@@ -71,7 +71,7 @@ No vendemos tus datos. Los comparten solo estas personas y empresas, y solo para
 
 - **El personal del estudio**, según su función: el personal asignado ve tu nombre y tu servicio; solo el Administrador ve tus pagos y capturas.
 - **Nuestro propio servidor.** La base de datos, la autenticación y el almacenamiento de archivos funcionan con el software Supabase instalado en un servidor del estudio en Lima; la empresa Supabase no recibe tus datos [verificar si cambia el alojamiento]. Las páginas públicas pueden alojarse en un servicio de hosting estático [verificar proveedor: vería tu dirección IP].
-- **Google LLC (Estados Unidos):** envía nuestros correos (Gmail), guarda los eventos de tus reservas y asesorías en el calendario del estudio (nombre, servicio, fecha y hora [verificar si se invita a tu correo]), genera las videollamadas de Meet y, si lo eliges, te identifica al entrar con Google.
+- **Google LLC (Estados Unidos):** envía nuestros correos (Gmail), guarda los eventos de tus reservas y asesorías en el calendario del estudio (nombre, servicio, fecha y hora; no te invitamos desde Google: el evento te llega como archivo `.ics` en nuestro correo), genera las videollamadas de Meet y, si lo eliges, te identifica al entrar con Google.
 - **Meta Platforms, Inc. (Estados Unidos):** te identifica si entras con Facebook y transmite nuestras conversaciones si nos escribes por WhatsApp.
 - **Tu banco o billetera digital:** pagas directamente con ellos; nosotros solo recibimos la captura.
 - **Autoridades** como la SUNAT, el Indecopi, la Autoridad Nacional de Protección de Datos Personales o el Poder Judicial, cuando la ley lo exige; y nuestro proveedor de comprobantes electrónicos [verificar proveedor].
@@ -82,21 +82,21 @@ Google y Meta tratan datos fuera del Perú. Ese envío es necesario para prestar
 
 | Datos | Plazo |
 |---|---|
-| Cuenta y perfil | Mientras tu cuenta esté activa; al cerrarla, los suprimimos en [cifra por confirmar] días, salvo lo que debamos conservar |
+| Cuenta y perfil | Mientras tu cuenta esté activa; al cerrarla, la anonimizamos a los 90 días, salvo lo que la ley nos obligue a conservar |
 | Reservas, asesorías, pagos y comprobantes | [verificar plazo tributario] desde la operación |
-| Capturas de pago | **Indefinidamente**, como evidencia de cada pago, con las medidas de seguridad de abajo [verificar: el art. 8 de la Ley 29733 exige conservar solo el tiempo necesario] |
+| Capturas de pago | 5 años desde el pago, como evidencia; luego borramos solo las capturas y conservamos los demás datos del pago |
 | Libro de Reclamaciones | [verificar plazo del reglamento del Libro de Reclamaciones] |
-| Aceptaciones y consentimientos | Mientras dure tu relación con el estudio y [cifra por confirmar] años después, como prueba |
-| Autorización de menores | Lo mismo que la cuenta del menor, más [cifra por confirmar] |
-| Archivos de audio | Según las [Condiciones de contratación](condiciones-de-contratacion.md) |
-| Registros técnicos | [cifra por confirmar] |
+| Aceptaciones y consentimientos | 12 meses en la plataforma y luego archivadas en una copia de respaldo fuera de ella, como prueba [verificar si el plazo basta] |
+| Autorización de menores | Igual que las aceptaciones: 12 meses en la plataforma y luego en el respaldo [verificar si el plazo basta] |
+| Archivos de audio | 12 meses en la plataforma desde la última entrega, con aviso previo; luego, en una copia de respaldo fuera de ella ([Condiciones de contratación](condiciones-de-contratacion.md)) |
+| Registros técnicos | 90 días |
 | Promociones | Hasta que retires tu consentimiento |
 
 ## Cómo los protegemos
 
 - Cada persona ve solo lo que su rol permite; el control se aplica en la base de datos.
-- Las capturas de pago se guardan en un almacenamiento privado: nadie las borra ni las reemplaza, y se ven con enlaces temporales de pocos minutos. Podemos archivarlas en un formato más liviano sin cambiar lo que muestran [verificar].
-- Las conexiones van cifradas (HTTPS), hacemos copias de seguridad y registramos quién cambia tarifas, plazos e impuestos.
+- Las capturas de pago se guardan en un almacenamiento privado: nadie las reemplaza, solo se borran al cumplir su plazo y se ven con enlaces temporales de pocos minutos. Podemos archivarlas en un formato más liviano sin cambiar lo que muestran [verificar].
+- Las conexiones van cifradas (HTTPS), hacemos copias de seguridad (las de fuera de la plataforma, con acceso solo del Administrador [verificar]) y registramos quién cambia tarifas, plazos e impuestos.
 - Los enlaces de descarga de tus entregables están cifrados, exigen sesión y caducan a los 7 días.
 - Si ocurre un incidente de seguridad relevante, lo notificamos a la Autoridad Nacional de Protección de Datos Personales en un máximo de 48 horas y te avisamos si te afecta (art. 34 del reglamento).
 
@@ -120,8 +120,8 @@ No usamos cookies de publicidad ni de analítica, y no cargamos recursos de terc
 
 ## Cambios a esta política
 
-Cada versión tiene número y fecha de vigencia. Si cambia algo importante, te avisamos por correo y en la plataforma antes de aplicarlo, y si una finalidad nueva necesita tu consentimiento, te lo pedimos.
+Cada versión tiene número y fecha de vigencia. Si cambia algo importante, te avisamos por correo y en la plataforma con al menos 15 días de anticipación, y si una finalidad nueva necesita tu consentimiento, te lo pedimos.
 
 ## Trazabilidad (no se publica)
 
-[ADR-003](../00-proyecto/decisiones/ADR-003-almacenamiento-supabase-storage.md), [ADR-010](../00-proyecto/decisiones/ADR-010-pagos-estados-y-cancelacion.md), [ADR-011](../00-proyecto/decisiones/ADR-011-correo-gmail-del-estudio.md), [ADR-012](../00-proyecto/decisiones/ADR-012-textos-legales-y-consentimientos.md), [ADR-014](../00-proyecto/decisiones/ADR-014-alojamiento-inicial-local.md), [modelo-datos](../01-arquitectura/modelo-datos.md), [RF-17](../03-requerimientos/RF-17.md), [RF-19](../03-requerimientos/RF-19.md). Normas: Ley 29733, arts. 2.5, 8, 13, 14, 15, 18 a 24; DS 016-2024-JUS, arts. 3, 5, 6, 7, 9, 10, 18 a 26, 34, 42, 69 a 71; Ley 29571, art. 58.1 e.
+[ADR-003](../00-proyecto/decisiones/ADR-003-almacenamiento-supabase-storage.md), [ADR-010](../00-proyecto/decisiones/ADR-010-pagos-estados-y-cancelacion.md), [ADR-011](../00-proyecto/decisiones/ADR-011-correo-gmail-del-estudio.md), [ADR-012](../00-proyecto/decisiones/ADR-012-textos-legales-y-consentimientos.md), [ADR-014](../00-proyecto/decisiones/ADR-014-alojamiento-inicial-local.md), [ADR-015](../00-proyecto/decisiones/ADR-015-cancelacion-conservacion-y-correcciones.md), [modelo-datos](../01-arquitectura/modelo-datos.md), [RF-17](../03-requerimientos/RF-17.md), [RF-19](../03-requerimientos/RF-19.md). Normas: Ley 29733, arts. 2.5, 8, 13, 14, 15, 18 a 24; DS 016-2024-JUS, arts. 3, 5, 6, 7, 9, 10, 18 a 26, 34, 42, 69 a 71; Ley 29571, art. 58.1 e.

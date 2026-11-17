@@ -2,20 +2,20 @@
 id: legal-terminos-de-uso
 titulo: Términos de uso de la plataforma
 estado: borrador
-version: 0.1.0
+version: 0.2.0
 vigente_desde: por definir
-depende_de: [ADR-008, ADR-012, ADR-014, RF-01, RF-16, RF-17]
+depende_de: [ADR-008, ADR-012, ADR-014, ADR-015, RF-01, RF-16, RF-17]
 ---
 
 # Términos de uso de la plataforma Bugalú Studio
 
 > **Borrador para revisión legal. No es asesoría legal ni está vigente.** Lo redactó el equipo del proyecto para que lo revise un abogado colegiado en el Perú antes de publicarlo ([ADR-012](../00-proyecto/decisiones/ADR-012-textos-legales-y-consentimientos.md)). "[verificar]" marca datos o normas por confirmar; "[cifra por confirmar]", valores que el estudio aún no decide.
 
-**Versión 0.1.0 · Vigente desde: [fecha por definir]**
+**Versión 0.2.0 · Vigente desde: [fecha por definir]**
 
 ## Quiénes somos
 
-La plataforma web de Bugalú Studio ("la plataforma") es de **Aural Perú E.I.R.L.**, RUC 20615656128, con domicilio fiscal en Av. Javier Prado Este 5920, La Molina, Lima, Perú ("el estudio" o "nosotros"). Bugalú Studio es el nombre comercial con el que operamos [verificar registro de la marca ante Indecopi].
+La plataforma web de Bugalú Studio ("la plataforma") es de **Aural Perú E.I.R.L.**, RUC 20615656128, con domicilio fiscal en Av. Javier Prado Este 5920, La Molina, Lima, Perú ("el estudio" o "nosotros"). Bugalú Studio es el nombre comercial con el que operamos [la marca aún no está registrada ante el Indecopi].
 
 Puedes escribirnos por cualquiera de estos canales:
 
@@ -39,7 +39,7 @@ Debes ser mayor de 18 años para aceptarlos por ti. Si eres menor de edad, tu ma
 ## Tu cuenta
 
 - **Modalidad.** Te registras como persona individual o como agrupación (banda, dúo, colectivo). En una agrupación, una persona la representa: declara que los demás integrantes la autorizaron a contratar por el grupo y a darnos sus datos, y que conocen estos textos. Esa persona es nuestra interlocutora.
-- **Datos veraces.** Te pedimos documento de identidad, nombre, nombre artístico, correo, teléfono, domicilio y redes sociales [verificar cuáles son obligatorios y cuáles opcionales]. Deben ser verdaderos y estar al día; puedes corregirlos desde tu perfil.
+- **Datos veraces.** Te pedimos nombre, documento de identidad (DNI, carné de extranjería o pasaporte, antes de tu primera reserva), teléfono y correo; el nombre artístico, el domicilio y las redes sociales son opcionales. Deben ser verdaderos y estar al día; puedes corregirlos desde tu perfil.
 - **Acceso.** Entras con correo y contraseña, o con tu cuenta de Google o Facebook. Verificas tu correo antes de tu primer pago.
 - **Una cuenta por persona.** Tus credenciales son personales. Si alguien usa tu cuenta sin permiso, avísanos de inmediato.
 - **Roles.** Hay tres: cliente o artista; personal del estudio, que solicita acceso y el Administrador aprueba; y Administrador. Nadie cambia su propio rol.
@@ -61,7 +61,7 @@ Según la gravedad, te pedimos corregir, suspendemos tu cuenta por un tiempo o l
 
 ## Cerrar tu cuenta
 
-Puedes pedir el cierre de tu cuenta cuando quieras. Primero resolvemos tus reservas, pagos o entregables pendientes; luego suprimimos tus datos, salvo los que la ley nos obliga a conservar ([Política de privacidad](politica-de-privacidad.md)).
+Puedes pedir el cierre de tu cuenta cuando quieras. Primero resolvemos tus reservas, pagos o entregables pendientes; a los 90 días anonimizamos tus datos, salvo los que la ley nos obliga a conservar ([Política de privacidad](politica-de-privacidad.md)).
 
 ## Disponibilidad de la plataforma
 
@@ -93,7 +93,7 @@ Te escribimos por correo para lo necesario: tu cuenta, reservas, pagos, recordat
 
 ## Cambios a estos términos
 
-Cada versión tiene número y fecha de vigencia, y publicamos un resumen de lo que cambia. Si un cambio afecta tus derechos u obligaciones, te avisamos por correo y en la plataforma con al menos [cifra por confirmar] días de anticipación y te pedimos aceptarlo en tu siguiente ingreso; si no lo aceptas, puedes cerrar tu cuenta sin costo. Los servicios que ya contrataste mantienen las condiciones que aceptaste al contratarlos.
+Cada versión tiene número y fecha de vigencia, y publicamos un resumen de lo que cambia. Si un cambio afecta tus derechos u obligaciones, te avisamos por correo y en la plataforma con al menos 15 días de anticipación y te pedimos aceptarlo en tu siguiente ingreso; si no lo aceptas, puedes cerrar tu cuenta sin costo. Los servicios que ya contrataste mantienen las condiciones que aceptaste al contratarlos.
 
 ## Ley aplicable y reclamos
 
@@ -109,4 +109,4 @@ Estos textos están en castellano. Si una cláusula resulta inválida, las demá
 
 ## Trazabilidad (no se publica)
 
-Decisiones: [ADR-008](../00-proyecto/decisiones/ADR-008-acceso-y-roles-v1.md), [ADR-012](../00-proyecto/decisiones/ADR-012-textos-legales-y-consentimientos.md), [ADR-014](../00-proyecto/decisiones/ADR-014-alojamiento-inicial-local.md). Requerimientos: [RF-01](../03-requerimientos/RF-01.md), [RF-16](../03-requerimientos/RF-16.md), [RF-17](../03-requerimientos/RF-17.md). Normas: Ley 29571, arts. 2, 24.1, 47 (c, e, f), 50, 56.1 h, 150 y 151 (texto actualizado al 12/02/2026); Ley 29733.
+Decisiones: [ADR-008](../00-proyecto/decisiones/ADR-008-acceso-y-roles-v1.md), [ADR-012](../00-proyecto/decisiones/ADR-012-textos-legales-y-consentimientos.md), [ADR-014](../00-proyecto/decisiones/ADR-014-alojamiento-inicial-local.md), [ADR-015](../00-proyecto/decisiones/ADR-015-cancelacion-conservacion-y-correcciones.md). Requerimientos: [RF-01](../03-requerimientos/RF-01.md), [RF-16](../03-requerimientos/RF-16.md), [RF-17](../03-requerimientos/RF-17.md). Normas: Ley 29571, arts. 2, 24.1, 47 (c, e, f), 50, 56.1 h, 150 y 151 (texto actualizado al 12/02/2026); Ley 29733.

@@ -12,7 +12,7 @@
 | [condiciones-propiedad-intelectual](condiciones-propiedad-intelectual.md) | Parte de las condiciones: titularidad de las grabaciones, usos promocionales y sus límites, retiro a pedido | Con las condiciones |
 | [resumenes-para-pantallas](resumenes-para-pantallas.md) | Texto corto y casilla de cada paso: registro, menores, reserva, asesoría, pago, promociones y cancelación | — |
 
-Marcas en los textos: **[verificar]**, dato o norma que el abogado debe confirmar; **[cifra por confirmar]**, valor que el estudio aún no decide.
+Marcas en los textos: **[verificar]**, dato o norma que el abogado debe confirmar; **[cifra por confirmar]**, valor que el estudio aún no decide. Desde la **0.2.0** las cifras salen de [ADR-015](../00-proyecto/decisiones/ADR-015-cancelacion-conservacion-y-correcciones.md) y no queda ninguna "[cifra por confirmar]"; lo pendiente con el estudio va como "[verificar con el estudio]". Los trámites de la empresa (marca, banco de datos, licencias) están en [requisitos-empresariales](../06-operacion/requisitos-empresariales.md).
 
 ## Versionado
 
@@ -20,7 +20,7 @@ Cada texto lleva en su frontmatter `version` (versión semántica) y `vigente_de
 
 | Cambio | Ejemplo | Versión | Qué pasa con los usuarios |
 |---|---|---|---|
-| Cambia derechos u obligaciones | Nuevos plazos o retenciones, nueva finalidad o nuevo destinatario de datos | Mayor (2.0.0) | Aviso por correo y en la plataforma con [cifra por confirmar] días de anticipación; nueva aceptación en el siguiente ingreso o contrato |
+| Cambia derechos u obligaciones | Nuevos plazos o retenciones, nueva finalidad o nuevo destinatario de datos | Mayor (2.0.0) | Aviso por correo y en la plataforma con 15 días de anticipación; nueva aceptación en el siguiente ingreso o contrato |
 | Añade o aclara sin quitar derechos | Un canal de contacto nuevo, un ejemplo más | Menor (1.1.0) | Aviso por correo; no se vuelve a aceptar |
 | Corrección de forma | Erratas, formato | Parche (1.0.1) | Sin aviso |
 
@@ -31,15 +31,15 @@ Cada texto lleva en su frontmatter `version` (versión semántica) y `vigente_de
 
 ## Puntos que el abogado debe revisar
 
-1. **Titular y marca:** que Aural Perú E.I.R.L. figure como titular y si la marca Bugalú Studio está registrada ante el Indecopi.
-2. **Capturas de pago conservadas indefinidamente** (decisión del estudio): choca con el principio de calidad, que exige conservar los datos solo el tiempo necesario (art. 8 de la Ley 29733). Proponer un plazo (por ejemplo, el tributario) o fundamentar la decisión.
-3. **Datos obligatorios del registro:** si el domicilio y las redes son indispensables; condicionar el servicio a datos no indispensables afecta la libertad del consentimiento (art. 3.2 del DS 016-2024-JUS).
+1. **Titular y marca:** que Aural Perú E.I.R.L. figure como titular. La marca Bugalú Studio **no está registrada** ante el Indecopi: cómo nombrarla en los textos mientras tanto.
+2. **Capturas de pago conservadas 5 años** ([ADR-015](../00-proyecto/decisiones/ADR-015-cancelacion-conservacion-y-correcciones.md); antes, indefinidamente): si el plazo se ajusta al principio de calidad (art. 8 de la Ley 29733) y al plazo tributario.
+3. **Datos del registro:** el estudio dejó obligatorios nombre, documento, teléfono y correo, y opcionales domicilio y redes (ADR-015); confirmar que basta para la libertad del consentimiento (art. 3.2 del DS 016-2024-JUS).
 4. **Promociones:** si una casilla en el registro cumple el art. 58.1 e del Código del Consumidor (modificado por la Ley 32323, 2025), que solo permite mensajes masivos cuando el consumidor contacta al proveedor por iniciativa propia y consiente; el uso de WhatsApp; y si las promociones "específicas" son perfilamiento que debe informarse (art. 6.1.8 del reglamento).
 5. **Flujo transfronterizo** a Google y Meta (EE. UU.): base legal (art. 15, incisos 4 y 7, de la Ley 29733), garantías y comunicación al Registro (arts. 18 a 21 del reglamento).
-6. **Banco de datos:** inscripción en el Registro Nacional (art. 42), si hacen falta bancos separados (clientes, reclamaciones, personal), si se requiere Oficial de Datos Personales (art. 37) y el documento de seguridad (art. 47).
+6. **Banco de datos (aún no inscrito):** inscripción en el Registro Nacional (art. 42), si hacen falta bancos separados (clientes, reclamaciones, personal), si se requiere Oficial de Datos Personales (art. 37) y el documento de seguridad (art. 47).
 7. **Alojamiento propio** ([ADR-014](../00-proyecto/decisiones/ADR-014-alojamiento-inicial-local.md)): medidas mínimas de seguridad (arts. 46 a 48 del reglamento) y el procedimiento de notificación de incidentes en 48 horas (art. 34).
 8. **Menores:** quién contrata (capacidad, Código Civil), consentimiento para datos desde los 14 años frente al contrato que firma el adulto (arts. 22 y 25 del reglamento), verificación de identidad del adulto (art. 25.4), qué datos del adulto se pueden pedir (art. 23.2), consecuencia de que el adulto no esté presente y la asesoría virtual.
-9. **Política de cancelación por niveles:** proporcionalidad de las retenciones (arts. 49 y 51 a del Código del Consumidor; reducción de penalidades en el Código Civil [verificar]); si el crédito puede reemplazar la devolución, su vigencia y qué pasa al vencer; la inasistencia sin devolución; y la regla de la v1 de que el cliente con pagos pide la cancelación al estudio, frente al derecho a desvincularse por el mismo medio con que contrató (art. 47 c).
+9. **Política de cancelación por niveles:** proporcionalidad de las retenciones (arts. 49 y 51 a del Código del Consumidor; reducción de penalidades en el Código Civil [verificar]); si el crédito de 30 días que se pierde al vencer puede reemplazar la devolución (nivel 1, devolución a criterio del Administrador; nivel 2, penalización del 25 % del valor de la reserva); la retención total en el nivel 3 y en la inasistencia tras 15 minutos; y las asesorías sin devolución. La cancelación se pide con un botón en la plataforma (art. 47 c).
 10. **Cancelación por el estudio y suspensión de cuentas:** compatibilidad con las cláusulas de ineficacia absoluta (art. 50 a, b y c) y plazo de devolución.
 11. **Cláusula de jurisdicción** (jueces de Lima) frente a consumidores (art. 50 f).
 12. **Propiedad intelectual:** si el estudio es "productor de fonogramas" cuando el artista encarga y paga la grabación (art. 2, num. 33, del D. Leg. 822); si la aceptación por clic cumple la cesión "expresa y escrita" por cada forma de uso (art. 89); derechos del artista intérprete (arts. 131 y 132; Ley 28131); autorización expresa de imagen y voz para los usos promocionales (art. 15 del Código Civil), y si debe ser una casilla aparte; qué entregables recibe por defecto quien solo graba.
@@ -47,6 +47,7 @@ Cada texto lleva en su frontmatter `version` (versión semántica) y `vigente_de
 14. **Comprobantes de pago:** momento y medio de emisión de boletas y facturas fuera de la plataforma (SUNAT) y plazos de conservación tributaria.
 15. **Retención de archivos por saldo impago** y tiempo no usado por llegada tarde: si son exigibles.
 16. **Diseño de las pantallas:** casillas sin marcar y rechazo tan fácil como aceptar (art. 56.1 h del Código, incorporado por el D. Leg. 1729, 2026).
+17. **Conservación de aceptaciones y autorizaciones de menores:** el estudio decidió 12 meses en producción y luego un archivo de respaldo fuera de producción (ADR-015). Confirmar si 12 meses bastan frente a los plazos de prescripción de las acciones (Código Civil, Código de Protección y Defensa del Consumidor, Ley 29733) y frente a la carga de probar el consentimiento [verificar plazos], y si el respaldo debe conservarse por un plazo definido.
 
 ## Fuentes consultadas
 

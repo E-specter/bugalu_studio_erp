@@ -70,6 +70,8 @@ Montaje: desarrollo [montaje-local](06-operacion/montaje-local.md) · [pruebas-l
 
 [montaje-local](06-operacion/montaje-local.md) · [entornos](06-operacion/entornos.md) · [despliegue](06-operacion/despliegue.md) · [herramientas-mcp](06-operacion/herramientas-mcp.md) · [credenciales-oauth](06-operacion/credenciales-oauth.md) · [correo-gmail](06-operacion/correo-gmail.md) · [calendario-google](06-operacion/calendario-google.md)
 
+Empresa: [requisitos-empresariales](06-operacion/requisitos-empresariales.md) (trámites legales y administrativos para operaciones)
+
 ## 07 · Diseño
 
 [brief](07-diseno/brief.md) · [figma](07-diseno/figma.md) · [tokens](07-diseno/tokens.md) · [componentes](07-diseno/componentes/README.md) · `fundamentos/`, [patrones](07-diseno/patrones/README.md), `pantallas/` (pantallas en la fase 7)
