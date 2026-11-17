@@ -10,6 +10,7 @@ from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
+from bugalu.compartido.plazos import calcular_vence_pago
 from bugalu.modulos.catalogo.dominio.precio import (
     LIMA,
     ConfiguracionImpuestos,
@@ -19,7 +20,6 @@ from bugalu.modulos.catalogo.dominio.precio import (
     calcular_simulacion,
     impuesto_y_total,
 )
-from bugalu.modulos.reservas.dominio.reserva import calcular_vence_pago
 
 IMPORTE, FECHA_HORA, TEXTO = "importe", "fecha_hora", "texto"
 _MIERCOLES, _SABADO = date(2030, 1, 9), date(2030, 1, 12)

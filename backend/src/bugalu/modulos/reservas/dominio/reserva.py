@@ -65,11 +65,6 @@ def franja_que_contiene[T: _Intervalo](inicio: datetime, fin: datetime, franjas:
     )
 
 
-def calcular_vence_pago(ahora: datetime, inicio: datetime, dias: int, horas: int) -> datetime:
-    """RN-18: lo mas tarde entre inicio - `dias` y ahora + `horas`; nunca despues del inicio."""
-    return min(inicio, max(inicio - timedelta(days=dias), ahora + timedelta(hours=horas)))
-
-
 def cuotas_de(total: Decimal, anticipo: Decimal) -> list[tuple[str, Decimal]]:
     """RN-13: `al_reservar` es el anticipo de la simulacion y `al_terminar` el resto."""
     return [("al_reservar", anticipo), ("al_terminar", total - anticipo)]

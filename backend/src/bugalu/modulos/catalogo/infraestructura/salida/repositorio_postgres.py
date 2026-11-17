@@ -16,17 +16,9 @@ from bugalu.modulos.catalogo.dominio.precio import (
     Unidad,
 )
 
-_CAMPOS_SERVICIO = frozenset({"tarifa_hora", "monto_fijo", "activo"})
-_CAMPOS_ESPECIALISTA = frozenset({"monto_fijo", "monto_variable", "unidad", "activo"})
-_CAMPOS_IMPUESTOS = frozenset({"porcentaje_igv", "precios_incluyen_igv"})
-# (consulta, lleva id): `for update` exige poder actualizar la fila, o sea ser administrador.
-_BLOQUEOS = {
-    "impuestos": ("select 1 from public.configuracion_impuestos for update", False),
-    "servicio": ("select 1 from public.servicio where id = %s for update", True),
-    "especialista": ("select 1 from public.especialista where id = %s for update", True),
-    "recargos": ("select 1 from public.recargo order by tipo for update", False),
-    "parametros": ("select 1 from public.parametro order by clave for update", False),
-}
+# Solo lo no sensible se escribe directo: los campos sensibles los aplica aplicar_cambio_confirmado.
+_CAMPOS_SERVICIO = frozenset({"activo"})
+_CAMPOS_ESPECIALISTA = frozenset({"activo"})
 _SERVICIO = sql.SQL(
     "select s.id, s.nombre, s.categoria, s.ocupa_sala, s.tarifa_hora, s.monto_fijo, "
     "array(select se.id_especialista from public.servicio_especialista se "
@@ -129,22 +121,14 @@ class RepositorioCatalogoPostgres:
             valores.append(id_fila)
         await self._conexion.execute(consulta, valores)
 
-    async def guardar_impuestos(self, cambios: Mapping[str, Decimal | bool]) -> None:
-        await self._actualizar_columnas("configuracion_impuestos", _CAMPOS_IMPUESTOS, cambios)
-
     async def obtener_parametros(self) -> dict[str, int]:
         filas = await self._filas("select clave, valor from public.parametro")
         return {clave: int(valor) for clave, valor in filas}
 
-    async def guardar_parametros(self, cambios: Mapping[str, int]) -> None:
-        for clave, valor in cambios.items():
-            await self._conexion.execute(
-                "update public.parametro set valor = %s where clave = %s", (valor, clave)
-            )
-
     async def bloquear_recurso(self, recurso: str, id_recurso: UUID | None) -> None:
-        consulta, lleva_id = _BLOQUEOS[recurso]
-        await self._conexion.execute(consulta, (id_recurso,) if lleva_id else ())
+        await self._conexion.execute(
+            "select public.bloquear_recurso_sensible(%s, %s)", (recurso, id_recurso)
+        )
 
     async def contar_operaciones_vigentes(self) -> int:
         filas = await self._filas(
@@ -178,21 +162,6 @@ class RepositorioCatalogoPostgres:
             fin_de_semana=filas["fin_de_semana"][1],
             feriado=filas["feriado"][1],
         )
-
-    async def guardar_recargos(self, recargos: Recargos) -> None:
-        # Una sola transaccion: o se guardan los tres tipos o ninguno.
-        for tipo, porcentaje, desde, hasta in (
-            ("noche", recargos.noche, recargos.desde_noche, recargos.hasta_noche),
-            ("fin_de_semana", recargos.fin_de_semana, None, None),
-            ("feriado", recargos.feriado, None, None),
-        ):
-            await self._conexion.execute(
-                "insert into public.recargo (tipo, porcentaje, desde, hasta) "
-                "values (%s, %s, %s, %s) "
-                "on conflict (tipo) do update set porcentaje = excluded.porcentaje, "
-                "desde = excluded.desde, hasta = excluded.hasta",
-                (tipo, porcentaje, desde, hasta),
-            )
 
     async def listar_feriados(self, anio: int | None) -> list[Feriado]:
         filas = await self._filas(

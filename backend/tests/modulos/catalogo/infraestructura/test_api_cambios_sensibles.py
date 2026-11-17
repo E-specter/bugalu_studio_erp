@@ -152,11 +152,11 @@ async def test_especialista_recargos_y_parametros_exigen_confirmacion(
     assert len(r.json()) == 12
 
 
-async def test_parametros_incoherentes_son_422_tambien_en_el_endpoint_de_siempre(
+async def test_parametros_incoherentes_piden_confirmacion_428_antes_que_la_coherencia(
     cliente: AsyncClient, administrador: Cabeceras
 ) -> None:
     r = await cliente.patch("/api/v1/parametros", headers=administrador, json={"horas_nivel_2": 60})
-    assert _codigo(r) == (422, "plazos_incoherentes")
+    assert _codigo(r) == (428, "confirmacion_requerida")  # el 422 llega en la vista previa
 
 
 # --- vista previa -----------------------------------------------------------------------------
@@ -316,6 +316,45 @@ async def test_confirmar_impuestos_recargos_especialista_y_parametros(
     assert (await cliente.get("/api/v1/parametros", headers=administrador)).json()[
         "horas_nivel_1"
     ] == 72
+
+
+async def test_cambios_parciales_se_previsualizan_confirman_y_solo_se_registra_lo_enviado(
+    cliente: AsyncClient, administrador: Cabeceras, sql: Sql
+) -> None:
+    antes = sql("select tipo, porcentaje, desde, hasta from public.recargo order by tipo")
+    p = await _previsualizar(cliente, administrador, "recargos", {"noche": {"porcentaje": "30.00"}})
+    assert p.status_code == 200, p.text
+    assert [c["campo"] for c in p.json()["cambios"]] == ["noche.porcentaje"]
+    r = await _confirmar(cliente, administrador, p.json()["token"])
+    assert r.status_code == 200, r.text
+    assert [c["campo"] for c in r.json()["cambios"]] == ["noche.porcentaje"]
+    despues = sql("select tipo, porcentaje, desde, hasta from public.recargo order by tipo")
+    cambiados = [(a, d) for a, d in zip(antes, despues, strict=True) if a != d]
+    assert len(cambiados) == 1 and cambiados[0][1][:2] == ("noche", 30)
+    assert cambiados[0][0][2:] == cambiados[0][1][2:]  # la ventana de la noche no se toco
+
+    voces = await _id(cliente, "/api/v1/servicios", "Grabación de voces")
+    r = await _cambiar(cliente, administrador, "servicio", {"tarifa_hora": "150.00"}, voces)
+    assert r.status_code == 200, r.text
+    assert [c["campo"] for c in r.json()["cambios"]] == ["tarifa_hora"]
+    assert sql("select tarifa_hora, monto_fijo from public.servicio where id = %s", voces) == [
+        (150, 0)
+    ]
+    sql("update public.servicio set tarifa_hora = 80 where id = %s", voces)
+    for tipo, porcentaje, desde, hasta in antes:
+        sql(
+            "update public.recargo set porcentaje = %s, desde = %s, hasta = %s where tipo = %s",
+            porcentaje, desde, hasta, tipo,
+        )  # fmt: skip
+
+
+async def test_recargos_parciales_con_la_noche_vacia_de_duracion_es_422(
+    cliente: AsyncClient, administrador: Cabeceras
+) -> None:
+    r = await _previsualizar(
+        cliente, administrador, "recargos", {"noche": {"desde": "06:00", "hasta": "06:00"}}
+    )
+    assert _codigo(r) == (422, "datos_invalidos")
 
 
 async def test_palabra_incorrecta_es_422_y_el_token_sigue_vigente(
@@ -496,6 +535,22 @@ async def test_registro_orden_descendente_filtros_y_rango(
     lejos = {"desde": "2020-01-01", "hasta": "2020-01-31"}
     r = await cliente.get(REGISTRO, headers=administrador, params=lejos)
     assert r.status_code == 200 and r.json() == []
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"hasta": "9999-12-31"},
+        {"hasta": "0001-01-01"},
+        {"desde": "9999-12-31", "hasta": "9999-12-31"},
+        {"desde": "0001-01-01", "hasta": "0001-01-02"},
+    ],
+)
+async def test_fechas_extremas_del_registro_son_422_nunca_500(
+    cliente: AsyncClient, administrador: Cabeceras, params: dict[str, str]
+) -> None:
+    r = await cliente.get(REGISTRO, headers=administrador, params=params)
+    assert _codigo(r) == (422, "rango_invalido")
 
 
 async def test_el_registro_no_se_puede_alterar_por_la_api(

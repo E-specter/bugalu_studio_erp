@@ -10,10 +10,10 @@ from bugalu.compartido.errores import (
     DuracionInvalida,
     FueraDeFranja,
 )
+from bugalu.compartido.plazos import calcular_vence_pago
 from bugalu.modulos.reservas.dominio.disponibilidad import Limites, Tramo
 from bugalu.modulos.reservas.dominio.modelos import PagoCuota
 from bugalu.modulos.reservas.dominio.reserva import (
-    calcular_vence_pago,
     cuota_pagable,
     cuotas_de,
     estado_de_cuota,

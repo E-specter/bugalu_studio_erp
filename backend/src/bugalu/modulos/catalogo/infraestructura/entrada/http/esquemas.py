@@ -10,6 +10,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    StrictInt,
     StringConstraints,
     field_validator,
     model_validator,
@@ -165,6 +166,35 @@ class Recargos(BaseModel):
         )
 
 
+class _NocheParcial(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    porcentaje: Porcentaje | None = None
+    desde: Hora | None = None
+    hasta: Hora | None = None
+
+
+class _PorcentajeParcial(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    porcentaje: Porcentaje | None = None
+
+
+class CambiosRecargos(BaseModel):
+    """Vista previa de recargos: solo lo que cambia el administrador, anidado y parcial."""
+
+    model_config = ConfigDict(extra="forbid")
+    noche: _NocheParcial | None = None
+    fin_de_semana: _PorcentajeParcial | None = None
+    feriado: _PorcentajeParcial | None = None
+
+    def a_texto(self) -> dict[str, str]:
+        enviados = self.model_dump(exclude_none=True)
+        return {
+            f"{grupo}.{campo}": sensibles.texto(valor) if campo == "porcentaje" else str(valor)
+            for grupo, campos in enviados.items()
+            for campo, valor in campos.items()
+        }
+
+
 # --- cuerpos de entrada -------------------------------------------------------------------------
 
 
@@ -312,3 +342,46 @@ class CambioConfirmado(BaseModel):
     id_recurso: UUID | None
     valor: dict[str, Any]
     cambios: list[CambioRegistrado]
+
+
+Entero = Annotated[StrictInt, Field(ge=1, le=100000)]
+EnteroPorcentaje = Annotated[StrictInt, Field(ge=1, le=100)]
+
+
+class Parametros(BaseModel):
+    dias_limite_pago: int
+    horas_limite_pago: int
+    anticipacion_minima_horas: int
+    anticipacion_maxima_semanas: int
+    # RF-20 (todos sensibles): adelanto, niveles y penalizacion de cancelacion, tolerancia, credito.
+    porcentaje_adelanto: int
+    horas_nivel_1: int
+    horas_nivel_2: int
+    porcentaje_penalizacion_nivel_2: int
+    minutos_tolerancia_inasistencia: int
+    dias_vigencia_credito: int
+    reprogramaciones_nivel_1: int
+    reprogramaciones_nivel_2: int
+
+
+class CambiosParametros(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    dias_limite_pago: Entero | None = None
+    horas_limite_pago: Entero | None = None
+    anticipacion_minima_horas: Entero | None = None
+    anticipacion_maxima_semanas: Entero | None = None
+    porcentaje_adelanto: EnteroPorcentaje | None = None
+    horas_nivel_1: Entero | None = None
+    horas_nivel_2: Entero | None = None
+    porcentaje_penalizacion_nivel_2: EnteroPorcentaje | None = None
+    minutos_tolerancia_inasistencia: Entero | None = None
+    dias_vigencia_credito: Entero | None = None
+    reprogramaciones_nivel_1: Entero | None = None
+    reprogramaciones_nivel_2: Entero | None = None
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def _sin_nulos(cls, valor: object) -> object:
+        if valor is None:
+            raise ValueError("El campo no admite nulo.")
+        return valor

@@ -37,10 +37,7 @@ class RepositorioCambiosPostgres:
     ) -> datetime:
         guardados = {c: {"anterior": a, "nuevo": n} for c, (a, n) in cambios.items()}
         filas = await self._filas(
-            "insert into public.confirmacion_cambio "
-            "(hash_token, id_autor, recurso, id_recurso, nombre_recurso, cambios, expira_en) "
-            "values (%s, auth.uid(), %s, %s, %s, %s, now() + make_interval(mins => %s)) "
-            "returning expira_en",
+            "select public.crear_confirmacion(%s, %s, %s, %s, %s, %s)",
             (hash_token, recurso, id_recurso, nombre_recurso, Jsonb(guardados), minutos),
         )
         expira: datetime = filas[0][0]
@@ -65,8 +62,10 @@ class RepositorioCambiosPostgres:
             vigente,
         )
 
-    async def registrar(self, confirmacion: Confirmacion) -> list[CambioRegistrado]:
-        await self._conexion.execute("select public.registrar_cambios(%s)", (confirmacion.id,))
+    async def aplicar(self, confirmacion: Confirmacion) -> list[CambioRegistrado]:
+        await self._conexion.execute(
+            "select public.aplicar_cambio_confirmado(%s)", (confirmacion.id,)
+        )
         # Las filas de esta transaccion comparten `cambiado_en` (now()).
         filas = await self._filas(
             f"select {_COLUMNAS} from public.registro_cambio "

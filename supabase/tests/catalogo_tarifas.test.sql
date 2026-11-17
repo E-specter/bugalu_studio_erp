@@ -51,9 +51,9 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 select is((select count(*)::int from public.sala_tecnica), 1, 'cliente lee la sala');
 select is((select count(*)::int from public.especialista), 4, 'cliente lee especialistas');
 select is((select count(*)::int from public.parametro), 0, 'cliente no ve parametro');
-select lives_ok($$update public.servicio set tarifa_hora = 1 where nombre = 'Ensayo'$$, 'cliente update de servicio no afecta filas');
-select lives_ok($$update public.parametro set valor = 99$$, 'cliente update de parametro no afecta filas');
-select lives_ok($$update public.recargo set porcentaje = 1$$, 'cliente update de recargo no afecta filas');
+select throws_ok($$update public.servicio set tarifa_hora = 1 where nombre = 'Ensayo'$$, '42501', null, 'cliente no actualiza la tarifa');
+select throws_ok($$update public.parametro set valor = 99$$, '42501', null, 'cliente no actualiza parametro');
+select throws_ok($$update public.recargo set porcentaje = 1$$, '42501', null, 'cliente no actualiza recargo');
 select lives_ok($$delete from public.feriado$$, 'cliente delete de feriado no afecta filas');
 select throws_ok($$insert into public.servicio (nombre, categoria, ocupa_sala, tarifa_hora) values ('X','ensayo',true,1)$$, '42501', null, 'cliente no inserta servicio');
 select throws_ok($$insert into public.feriado (fecha, nombre) values ('2026-12-26','X')$$, '42501', null, 'cliente no inserta feriado');
@@ -68,9 +68,9 @@ select is((select count(*)::int from public.feriado), 1, 'feriado intacto tras e
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ad","role":"authenticated"}', true);
 select is((select count(*)::int from public.parametro), 12, 'admin lee parametro');
-select lives_ok($$update public.servicio set tarifa_hora = 99.00 where nombre = 'Ensayo'$$, 'admin actualiza tarifa');
-select is((select tarifa_hora from public.servicio where nombre = 'Ensayo'), 99.00, 'la tarifa cambio');
-select lives_ok($$update public.parametro set valor = 5 where clave = 'dias_limite_pago'$$, 'admin actualiza parametro');
+select throws_ok($$update public.servicio set tarifa_hora = 99.00 where nombre = 'Ensayo'$$, '42501', null, 'admin no actualiza la tarifa directo (barrera RF-20)');
+select lives_ok($$update public.servicio set activo = true where nombre = 'Ensayo'$$, 'admin actualiza campos no sensibles');
+select lives_ok($$select public.actualizar_parametro('anticipacion_minima_horas', 5)$$, 'admin actualiza un parametro no sensible');
 select lives_ok($$insert into public.feriado (fecha, nombre) values ('2026-12-26','X')$$, 'admin inserta feriado');
 select lives_ok($$delete from public.feriado where fecha = '2026-12-26'$$, 'admin borra feriado');
 select throws_ok($$delete from public.servicio$$, '42501', null, 'admin no borra servicios');

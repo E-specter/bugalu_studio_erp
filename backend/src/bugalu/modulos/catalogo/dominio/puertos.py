@@ -49,11 +49,7 @@ class RepositorioCatalogo(Protocol):
         """IGV y parametros que una reserva guarda al crearse (RF-20 CA-07)."""
         ...
 
-    async def guardar_impuestos(self, cambios: Mapping[str, Decimal | bool]) -> None: ...
-
     async def obtener_parametros(self) -> dict[str, int]: ...
-
-    async def guardar_parametros(self, cambios: Mapping[str, int]) -> None: ...
 
     async def bloquear_recurso(self, recurso: str, id_recurso: UUID | None) -> None:
         """Serializa confirmaciones concurrentes sobre el mismo recurso (RF-20 CA-06)."""
@@ -64,8 +60,6 @@ class RepositorioCatalogo(Protocol):
         ...
 
     async def obtener_recargos(self) -> Recargos: ...
-
-    async def guardar_recargos(self, recargos: Recargos) -> None: ...
 
     async def listar_feriados(self, anio: int | None) -> list[Feriado]: ...
 
@@ -99,8 +93,11 @@ class RepositorioCambios(Protocol):
         """La busca por el hash de su token y la bloquea hasta el fin de la transaccion."""
         ...
 
-    async def registrar(self, confirmacion: Confirmacion) -> list[CambioRegistrado]:
-        """Consume la confirmacion y escribe una fila por campo."""
+    async def aplicar(self, confirmacion: Confirmacion) -> list[CambioRegistrado]:
+        """Consume la confirmacion, aplica sus campos y escribe una fila de registro por campo.
+
+        Es la unica via de escritura de los campos sensibles: la base la exige (RF-20 CA-04).
+        """
         ...
 
     async def listar(

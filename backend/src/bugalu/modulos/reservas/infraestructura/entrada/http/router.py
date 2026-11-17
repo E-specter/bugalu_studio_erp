@@ -7,6 +7,10 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 from bugalu.compartido.autenticacion import obtener_claims, obtener_claims_opcionales
 from bugalu.compartido.base_datos import transaccion_con_identidad, transaccion_publica
 from bugalu.compartido.esquemas import RespuestaError
+from bugalu.modulos.catalogo.infraestructura.entrada.http.esquemas import (
+    CambiosParametros,
+    Parametros,
+)
 from bugalu.modulos.reservas.aplicacion.actualizar_parametros.caso_de_uso import (
     ActualizarParametros,
 )
@@ -27,7 +31,6 @@ from bugalu.modulos.reservas.aplicacion.retirar_franja.caso_de_uso import Retira
 from bugalu.modulos.reservas.aplicacion.sugerir_franjas.caso_de_uso import SugerirFranjas
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo as TramoDominio
 from bugalu.modulos.reservas.infraestructura.entrada.http.esquemas import (
-    CambiosParametros,
     Cancelacion,
     Cierre,
     Disponibilidad,
@@ -36,7 +39,6 @@ from bugalu.modulos.reservas.infraestructura.entrada.http.esquemas import (
     NuevaReserva,
     NuevasFranjas,
     NuevoCierre,
-    Parametros,
     Reserva,
     Sala,
     Tramo,

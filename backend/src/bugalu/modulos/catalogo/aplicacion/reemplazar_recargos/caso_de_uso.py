@@ -15,5 +15,5 @@ class ReemplazarRecargos:
             sensibles.valores_recargos(await self._catalogo.obtener_recargos()),
             sensibles.valores_recargos(recargos),
         )
-        await self._catalogo.guardar_recargos(recargos)
-        return await self._catalogo.obtener_recargos()  # lo guardado, con la escala de la base
+        # Sin 428 no cambia ningun campo sensible: no hay nada que escribir.
+        return await self._catalogo.obtener_recargos()

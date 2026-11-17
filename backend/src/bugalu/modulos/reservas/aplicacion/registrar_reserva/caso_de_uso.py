@@ -3,6 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from bugalu.compartido.errores import DatosInvalidos, EnsayoNoDisponible, FueraDeFranja
+from bugalu.compartido.plazos import calcular_vence_pago
 from bugalu.modulos.reservas.aplicacion.clientes import con_clientes
 from bugalu.modulos.reservas.dominio import disponibilidad as calculo
 from bugalu.modulos.reservas.dominio import reserva as reglas
@@ -49,7 +50,7 @@ class RegistrarReserva:
                 inicio,
                 fin,
                 detalle,
-                reglas.calcular_vence_pago(ahora, inicio, dias, horas),
+                calcular_vence_pago(ahora, inicio, dias, horas),
                 cotizacion,
                 tuple(reglas.cuotas_de(cotizacion.total, cotizacion.anticipo)),
             )

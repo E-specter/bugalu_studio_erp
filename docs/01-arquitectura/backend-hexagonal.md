@@ -26,6 +26,10 @@ infraestructura  →  aplicacion  →  dominio
 - Pagos: el puerto `PasarelaPagos` vive en `pagos/dominio`; en v1 su único adaptador es manual (captura + validación del Administrador, [ADR-004](../00-proyecto/decisiones/ADR-004-pagos-validacion-manual.md)). Una pasarela real será otro adaptador.
 - Almacenamiento: adaptador sobre Supabase Storage ([ADR-003](../00-proyecto/decisiones/ADR-003-almacenamiento-supabase-storage.md)); autenticación: JWT de Supabase Auth ([ADR-005](../00-proyecto/decisiones/ADR-005-supabase-auth.md)).
 
+### Dependencias entre módulos
+
+Un solo sentido, sin ciclos: `pagos → reservas → catalogo`; `identidad` y `notificaciones` no importan de otros módulos. Lo que dos módulos comparten (reglas puras, errores, esquemas base) va a `compartido/` o al módulo del que dependen los demás (p. ej. `compartido/plazos.py` con `calcular_vence_pago`; los esquemas de parámetros en `catalogo`). La prueba `backend/tests/test_dependencias_entre_modulos.py` lo hace cumplir.
+
 ## Estructura
 
 ```

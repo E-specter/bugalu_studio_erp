@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(32);
+select plan(33);
 
 -- RF-20 (1/2): configuracion_impuestos, parametros de ADR-015 y reserva.parametros_aplicados.
 insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data)
@@ -28,18 +28,19 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c1","role":"authenticated"}', true);
 select is((select porcentaje_igv::text from public.configuracion_impuestos), '18.00', 'el cliente lee el IGV');
-update public.configuracion_impuestos set porcentaje_igv = 5, precios_incluyen_igv = false;
+select throws_ok($$update public.configuracion_impuestos set porcentaje_igv = 5, precios_incluyen_igv = false$$, '42501', null, 'el cliente no escribe el IGV');
 reset role;
 select is((select porcentaje_igv::text || precios_incluyen_igv::text from public.configuracion_impuestos), '18.00true', 'la escritura del cliente no cambia nada');
 
 -- administrador actualiza, no inserta ni borra
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ad","role":"authenticated"}', true);
-select lives_ok($$update public.configuracion_impuestos set porcentaje_igv = 10.50, precios_incluyen_igv = false$$, 'el administrador actualiza');
+select throws_ok($$update public.configuracion_impuestos set porcentaje_igv = 10.50, precios_incluyen_igv = false$$, '42501', null, 'el administrador no actualiza directo (barrera RF-20)');
 select throws_ok($$delete from public.configuracion_impuestos$$, '42501', null, 'nadie borra la configuracion');
 select throws_ok($$insert into public.configuracion_impuestos (porcentaje_igv, precios_incluyen_igv) values (1, true)$$, '42501', null, 'nadie inserta otra fila');
 reset role;
-select is((select porcentaje_igv::text || precios_incluyen_igv::text from public.configuracion_impuestos), '10.50false', 'el cambio del administrador se guardo');
+select is((select porcentaje_igv::text || precios_incluyen_igv::text from public.configuracion_impuestos), '18.00true', 'el IGV sigue intacto');
+update public.configuracion_impuestos set porcentaje_igv = 10.50, precios_incluyen_igv = false;  -- estado para lo que sigue
 
 -- Parametros de ADR-015
 select is(

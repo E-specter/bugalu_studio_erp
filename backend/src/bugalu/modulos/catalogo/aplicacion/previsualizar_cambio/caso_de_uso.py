@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from bugalu.compartido.errores import SinCambios
+from bugalu.compartido.errores import DatosInvalidos, SinCambios
 from bugalu.modulos.catalogo.aplicacion.lectura_recurso import cargar, valores
 from bugalu.modulos.catalogo.aplicacion.permisos import exigir_administrador
 from bugalu.modulos.catalogo.dominio import cambios_sensibles as sensibles
@@ -55,6 +55,10 @@ class PrevisualizarCambio:
         nuevo = sensibles.aplicar(recurso, actual, {c: d for c, (_, d) in diferencias.items()})
         if recurso == "parametros":
             sensibles.validar_plazos(nuevo)
+        if recurso == "recargos" and nuevo.desde_noche == nuevo.hasta_noche:
+            raise DatosInvalidos(
+                "La noche no puede empezar y terminar a la misma hora.", {"campo": "noche"}
+            )
         ejemplos = await self._ejemplos(recurso, actual, nuevo, diferencias, ahora)
         token = secrets.token_urlsafe(32)
         expira = await self._cambios.guardar_confirmacion(

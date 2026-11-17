@@ -204,7 +204,7 @@ class RepositorioReservasPostgres:
             if clave not in PARAMETROS:
                 raise ValueError("Parametro desconocido.")
             await self._conexion.execute(
-                "update public.parametro set valor = %s where clave = %s", (valor, clave)
+                "select public.actualizar_parametro(%s, %s)", (clave, valor)
             )
 
     async def plazos_pago(self) -> tuple[int, int]:

@@ -12,13 +12,13 @@ class ActualizarParametros:
     async def ejecutar(self, cambios: Mapping[str, int]) -> dict[str, int]:
         await exigir_administrador(self._reservas)
         actuales = await self._reservas.obtener_parametros()
-        sensibles.validar_plazos({**actuales, **cambios})
         # RF-20 CA-04: un sensible con otro valor solo cambia por vista previa y confirmacion.
         sensibles.exigir_confirmacion(
             "parametros",
             sensibles.valores_parametros(actuales),
             sensibles.valores_parametros(cambios),
         )
+        sensibles.validar_plazos({**actuales, **cambios})
         if cambios:
             await self._reservas.guardar_parametros(cambios)
         return await self._reservas.obtener_parametros()

@@ -45,25 +45,9 @@ class ConfirmarCambio:
         vigentes = valores(recurso, actual)
         if any(vigentes.get(c) != anterior for c, (anterior, _) in confirmacion.cambios.items()):
             raise CambioDesactualizado("Otro administrador cambió este recurso mientras revisabas.")
-        nuevos = {c: nuevo for c, (_, nuevo) in confirmacion.cambios.items()}
-        resultado = sensibles.aplicar(recurso, actual, nuevos)
         if recurso == "parametros":
-            sensibles.validar_plazos(resultado)
-        await self._guardar(recurso, id_recurso, resultado, sensibles.tipados(nuevos))
-        registrados = await self._cambios.registrar(confirmacion)
+            nuevos = {c: nuevo for c, (_, nuevo) in confirmacion.cambios.items()}
+            sensibles.validar_plazos(sensibles.aplicar(recurso, actual, nuevos))
+        registrados = await self._cambios.aplicar(confirmacion)
         _, valor = await cargar(self._catalogo, recurso, id_recurso)
         return Confirmado(confirmacion, valor, registrados)
-
-    async def _guardar(
-        self, recurso: str, id_recurso: Any, resultado: Any, tipados: dict[str, Any]
-    ) -> None:
-        if recurso == "servicio":
-            await self._catalogo.actualizar_servicio(id_recurso, tipados)
-        elif recurso == "especialista":
-            await self._catalogo.actualizar_especialista(id_recurso, tipados)
-        elif recurso == "impuestos":
-            await self._catalogo.guardar_impuestos(tipados)
-        elif recurso == "recargos":
-            await self._catalogo.guardar_recargos(resultado)
-        else:
-            await self._catalogo.guardar_parametros(tipados)

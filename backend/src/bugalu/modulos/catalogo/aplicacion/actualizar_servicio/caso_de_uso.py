@@ -24,8 +24,11 @@ class ActualizarServicio:
             sensibles.valores_servicio(actual),
             {k: sensibles.texto(v) for k, v in cambios.items() if k != "especialistas_por_defecto"},
         )
+        # Los sensibles llegan aqui con su mismo valor (si no, fue 428): solo se escribe lo demas.
         campos: dict[str, Decimal | bool] = {
-            k: v for k, v in cambios.items() if k != "especialistas_por_defecto"
+            k: v
+            for k, v in cambios.items()
+            if k not in sensibles.SENSIBLES["servicio"] and k != "especialistas_por_defecto"
         }
         if (ids := cambios.get("especialistas_por_defecto")) is not None:
             unicos = list(dict.fromkeys(ids))

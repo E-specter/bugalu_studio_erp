@@ -27,10 +27,6 @@ from bugalu.modulos.catalogo.infraestructura.salida.repositorio_cambios_postgres
 from bugalu.modulos.catalogo.infraestructura.salida.repositorio_postgres import (
     RepositorioCatalogoPostgres,
 )
-from bugalu.modulos.reservas.infraestructura.entrada.http.esquemas import (
-    CambiosParametros,
-    Parametros,
-)
 
 router = APIRouter(tags=["cambios-sensibles"])
 
@@ -57,8 +53,8 @@ _MODELOS: dict[str, type[BaseModel]] = {
     "impuestos": e.CambiosImpuestos,
     "servicio": e.SensiblesServicio,
     "especialista": e.SensiblesEspecialista,
-    "recargos": e.Recargos,
-    "parametros": CambiosParametros,
+    "recargos": e.CambiosRecargos,
+    "parametros": e.CambiosParametros,
 }
 
 
@@ -73,8 +69,8 @@ def _texto_de_cambios(cuerpo: e.NuevaPrevisualizacion) -> dict[str, str]:
     except ValidationError as error:
         campo = ".".join(str(p) for p in error.errors()[0]["loc"]) or "cambios"
         raise DatosInvalidos(f"Datos invalidos: {campo}.", {"campo": campo}) from error
-    if isinstance(modelo, e.Recargos):
-        return sensibles.valores_recargos(modelo.a_dominio())
+    if isinstance(modelo, e.CambiosRecargos):
+        return modelo.a_texto()
     propuesto = {c: sensibles.texto(v) for c, v in modelo.model_dump(exclude_unset=True).items()}
     if extra := [c for c in propuesto if c not in sensibles.SENSIBLES[cuerpo.recurso]]:
         raise DatosInvalidos(f"Datos invalidos: {extra[0]}.", {"campo": extra[0]})
@@ -115,7 +111,7 @@ def _valor(recurso: str, objeto: Any) -> dict[str, Any]:
         "especialista": e.Especialista.desde_dominio,
         "impuestos": e.Impuestos.desde_dominio,
         "recargos": e.Recargos.desde_dominio,
-        "parametros": lambda valores: Parametros(**valores),
+        "parametros": lambda valores: e.Parametros(**valores),
     }
     valor: dict[str, Any] = construir[recurso](objeto).model_dump(mode="json")
     return valor

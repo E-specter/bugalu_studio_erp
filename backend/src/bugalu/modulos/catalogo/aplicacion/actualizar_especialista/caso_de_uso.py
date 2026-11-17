@@ -25,9 +25,11 @@ class ActualizarEspecialista:
             sensibles.valores_especialista(encontrados[0]),
             {k: sensibles.texto(v) for k, v in cambios.items()},
         )
-        if not cambios:
+        # Los sensibles llegan aqui con su mismo valor (si no, fue 428): solo se escribe lo demas.
+        campos = {k: v for k, v in cambios.items() if k not in sensibles.SENSIBLES["especialista"]}
+        if not campos:
             return encontrados[0]
-        especialista = await self._catalogo.actualizar_especialista(id_especialista, cambios)
+        especialista = await self._catalogo.actualizar_especialista(id_especialista, campos)
         if especialista is None:
             raise LookupError("El especialista desaparecio durante la transaccion.")
         return especialista

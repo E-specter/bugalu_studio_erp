@@ -11,7 +11,6 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    StrictInt,
     field_validator,
     model_validator,
 )
@@ -33,8 +32,6 @@ def _acotado(valor: datetime) -> datetime:
 
 
 Instante = Annotated[AwareDatetime, AfterValidator(_acotado)]
-Entero = Annotated[StrictInt, Field(ge=1, le=100000)]
-EnteroPorcentaje = Annotated[StrictInt, Field(ge=1, le=100)]
 
 
 class Sala(BaseModel):
@@ -167,45 +164,6 @@ class NuevoCierre(BaseModel):
         if self.fin <= self.inicio:
             raise ValueError("El fin debe ser posterior al inicio.")
         return self
-
-
-class Parametros(BaseModel):
-    dias_limite_pago: int
-    horas_limite_pago: int
-    anticipacion_minima_horas: int
-    anticipacion_maxima_semanas: int
-    # RF-20 (todos sensibles): adelanto, niveles y penalizacion de cancelacion, tolerancia, credito.
-    porcentaje_adelanto: int
-    horas_nivel_1: int
-    horas_nivel_2: int
-    porcentaje_penalizacion_nivel_2: int
-    minutos_tolerancia_inasistencia: int
-    dias_vigencia_credito: int
-    reprogramaciones_nivel_1: int
-    reprogramaciones_nivel_2: int
-
-
-class CambiosParametros(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    dias_limite_pago: Entero | None = None
-    horas_limite_pago: Entero | None = None
-    anticipacion_minima_horas: Entero | None = None
-    anticipacion_maxima_semanas: Entero | None = None
-    porcentaje_adelanto: EnteroPorcentaje | None = None
-    horas_nivel_1: Entero | None = None
-    horas_nivel_2: Entero | None = None
-    porcentaje_penalizacion_nivel_2: EnteroPorcentaje | None = None
-    minutos_tolerancia_inasistencia: Entero | None = None
-    dias_vigencia_credito: Entero | None = None
-    reprogramaciones_nivel_1: Entero | None = None
-    reprogramaciones_nivel_2: Entero | None = None
-
-    @field_validator("*", mode="before")
-    @classmethod
-    def _sin_nulos(cls, valor: object) -> object:
-        if valor is None:
-            raise ValueError("El campo no admite nulo.")
-        return valor
 
 
 class Cancelacion(BaseModel):

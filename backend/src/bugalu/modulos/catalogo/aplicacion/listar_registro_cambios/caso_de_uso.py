@@ -8,6 +8,12 @@ from bugalu.modulos.catalogo.dominio.puertos import RepositorioCambios, Reposito
 
 DIAS_POR_DEFECTO = 30
 DIAS_MAXIMOS = 366
+ANIOS_ADMITIDOS = range(2000, 9999)  # 2000..9998: `hasta + 1 dia` no desborda
+
+
+def _exigir_anio(campo: str, fecha: date) -> None:
+    if fecha.year not in ANIOS_ADMITIDOS:
+        raise RangoInvalido("Las fechas van del año 2000 al 9998.", {"campo": campo})
 
 
 class ListarRegistroCambios:
@@ -21,7 +27,9 @@ class ListarRegistroCambios:
         """Fechas de Lima, ambas incluidas; por defecto, los ultimos 30 dias."""
         await exigir_administrador(self._catalogo)
         hasta = hasta or hoy
-        desde = desde or hasta - timedelta(days=DIAS_POR_DEFECTO - 1)
+        _exigir_anio("hasta", hasta)
+        desde = desde or max(hasta - timedelta(days=DIAS_POR_DEFECTO - 1), date(2000, 1, 1))
+        _exigir_anio("desde", desde)
         if not 1 <= (hasta - desde).days + 1 <= DIAS_MAXIMOS:
             raise RangoInvalido(
                 f"El rango va de 1 a {DIAS_MAXIMOS} días y la fecha final no puede ser anterior.",
