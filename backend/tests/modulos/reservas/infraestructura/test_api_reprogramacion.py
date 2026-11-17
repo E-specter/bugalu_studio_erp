@@ -622,6 +622,28 @@ async def test_elegir_la_devolucion_integra_del_estudio(
     assert (r.status_code, codigo(r)) == (409, "reprogramacion_no_permitida")
 
 
+async def test_con_varias_devoluciones_del_estudio_la_reserva_trae_la_mas_reciente(
+    cliente: AsyncClient,
+    cliente_a: UsuarioDePrueba,
+    cancelada_por_el_estudio: Callable[..., Any],
+    sql: Ejecutar,
+) -> None:
+    id_ = await cancelada_por_el_estudio(cliente_a)
+    url = f"{RESERVAS}/{id_}/eleccion-estudio"
+    await cliente.post(url, json={"opcion": "devolucion"}, headers=con(cliente_a))
+    # La mas antigua se inserta despues: manda la fecha de solicitud, no el orden en que se lee.
+    sql(
+        "insert into public.devolucion (id, id_reserva, id_cliente, tipo, motivo, "
+        "monto_solicitado, estado, monto_aprobado, solicitada_en, decidida_en, limite) "
+        "values (gen_random_uuid(), %s, %s, 'estudio', 'Pago tardio', 7, 'aprobada', 7, "
+        "now() - interval '1 hour', now(), now())",
+        UUID(id_),
+        cliente_a.id,
+    )
+    r = await cliente.get(f"{RESERVAS}/{id_}", headers=con(cliente_a))
+    assert r.status_code == 200 and r.json()["devolucion"]["monto_aprobado"] == "100.00"
+
+
 async def test_el_administrador_elige_por_el_cliente(
     cliente: AsyncClient,
     cliente_a: UsuarioDePrueba,

@@ -38,14 +38,25 @@ def test_la_funcion_es_administrador_no_se_expone_por_rpc(
     assert (r.status_code, r.json()["code"]) == (404, "PGRST202")  # funcion ausente del esquema
 
 
-FUNCIONES_DE_LA_POLITICA = [
-    "reprogramar_reserva",
-    "cancelar_reserva",
-    "aplicar_credito",
-    "elegir_estudio_devolucion",
-    "aplicar_excepcion",
-    "aplicar_inasistencia",
-]
+U = "00000000-0000-0000-0000-000000000001"
+# Con los nombres reales, `public` expuesto la resolveria (distinto de 404 PGRST202); con `{}` no.
+ARGUMENTOS_DE_LA_POLITICA: dict[str, dict[str, object]] = {
+    "reprogramar_reserva": {
+        "p_id": U,
+        "p_nuevo_inicio": "2027-06-01T10:00:00-05:00",
+        "p_nivel_esperado": None,
+        "p_total_esperado": None,
+        "p_id_franja": None,
+        "p_precio": {},
+        "p_total_nuevo": None,
+    },
+    "cancelar_reserva": {"p_id": U},
+    "aplicar_credito": {"p_id_cuota": U, "p_monto": 1},
+    "elegir_estudio_devolucion": {"p_id": U},
+    "aplicar_excepcion": {"p_id": U, "p_motivo": "Motivo de la excepcion"},
+    "aplicar_inasistencia": {"p_id": U, "p_id_autor": U},
+}
+FUNCIONES_DE_LA_POLITICA = list(ARGUMENTOS_DE_LA_POLITICA)
 
 
 @pytest.mark.parametrize("funcion", FUNCIONES_DE_LA_POLITICA)
@@ -55,7 +66,7 @@ def test_las_funciones_de_la_politica_no_se_exponen_por_rpc(
     r = httpx.post(
         f"{configuracion.url_supabase}/rest/v1/rpc/{funcion}",
         headers=_cabeceras(configuracion, crear_usuario()),
-        json={},
+        json=ARGUMENTOS_DE_LA_POLITICA[funcion],
     )
     assert (r.status_code, r.json()["code"]) == (404, "PGRST202")
 

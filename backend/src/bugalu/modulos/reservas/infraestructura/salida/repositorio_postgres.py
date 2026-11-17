@@ -564,8 +564,11 @@ class RepositorioReservasPostgres:
         if not ids:
             return {}
         filas = await self._filas(
-            f"{DEVOLUCION}where d.tipo = 'estudio' and d.id_reserva = any(%s)", (ids,)
+            f"{DEVOLUCION}where d.tipo = 'estudio' and d.id_reserva = any(%s) "
+            "order by d.solicitada_en, d.id",
+            (ids,),
         )
+        # Orden ascendente: la ultima fila de cada reserva (la mas reciente) es la que queda.
         return {f[2]: devolucion_desde_fila(f) for f in filas}
 
     async def obtener_reserva(self, id_reserva: UUID) -> Reserva | None:
