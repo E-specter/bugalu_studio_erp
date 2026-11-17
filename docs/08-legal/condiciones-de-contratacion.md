@@ -60,7 +60,7 @@ Mientras no registres ningún pago, tu pre-reserva tiene una fecha límite, que 
 
 Registrar un pago con su captura detiene el plazo. Si rechazamos tu pago y no tienes otro en revisión, tienes al menos **1 hora más** para registrar otro, sin pasar del inicio. Si el plazo vence sin pagos, la pre-reserva se cancela sola, sin costo, el horario se libera y te avisamos por correo. Podemos ajustar estos plazos, pero solo para reservas nuevas.
 
-Si llega la hora de tu sesión y tu pago sigue en revisión, la reserva no se pierde y la sesión empieza si en ese momento verificamos tu pago [verificar con el estudio qué pasa si no se puede verificar].
+Si llega la hora de tu sesión y tu pago sigue en revisión, la reserva no se pierde y la sesión empieza si en ese momento verificamos tu pago. Si no podemos verificarlo, la sesión no empieza; pasados 15 minutos de la hora reservada se aplica la inasistencia.
 
 El saldo se paga hasta 48 horas después de terminar la sesión. Mientras no lo pagues, retenemos los entregables de esa sesión [verificar].
 
@@ -73,7 +73,7 @@ El saldo se paga hasta 48 horas después de terminar la sesión. Mientras no lo 
 | Cuándo nos avisas | Si cancelas | Si reprogramas |
 |---|---|---|
 | Nivel 1: más de 48 horas antes | Todo lo pagado pasa a crédito. Puedes pedir la devolución en la plataforma, con su motivo; el Administrador la decide (total, parcial o rechazo con motivo) y el dinero se devuelve fuera de la plataforma | Sin costo, hasta 2 veces por reserva |
-| Nivel 2: entre 48 y 24 horas antes | Se retiene una penalización del 25 % del valor de la reserva, que el adelanto del 50 % siempre cubre; el resto de lo pagado pasa a crédito, sin devolución | Una sola vez, con la misma penalización [verificar con el estudio si se cobra también al reprogramar] |
+| Nivel 2: entre 48 y 24 horas antes | Se retiene una penalización del 25 % del valor de la reserva, que el adelanto del 50 % siempre cubre; el resto de lo pagado pasa a crédito, sin devolución | Una sola vez, con la misma penalización del 25 % |
 | Nivel 3: menos de 24 horas antes | Se retiene todo lo pagado | No hay reprogramación gratuita |
 | Inasistencia: no llegas dentro de los primeros 15 minutos | Se retiene lo pagado, sin crédito ni cobro adicional [verificar proporcionalidad] | No aplica |
 

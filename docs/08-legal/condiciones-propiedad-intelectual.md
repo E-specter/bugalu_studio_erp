@@ -30,7 +30,7 @@ Esta sección forma parte de las [Condiciones de contratación](condiciones-de-c
 
 Sobre los másteres y entregables pactados, el estudio te cede, de forma exclusiva, para todo el mundo y por todo el plazo de protección, los derechos que pudiera tener como productor de la grabación, para todas sus formas de uso [verificar arts. 89 y 90 del D. Leg. 822: la cesión debe ser expresa y escrita por cada forma de uso].
 
-**Qué entregables recibes** lo indica cada servicio antes de contratarlo. En una sesión de grabación recibes las multipistas WAV de la sesión cuando pagas el saldo [verificar con el estudio si se cede su titularidad o solo se entrega una copia]; los másteres solo existen si contratas posproducción.
+**Qué entregables recibes** lo indica cada servicio antes de contratarlo. En una sesión de grabación recibes las multipistas WAV de la sesión cuando pagas el saldo, y pasan a ser tuyas; los másteres solo existen si contratas posproducción.
 
 Que el estudio sea titular de una grabación no le permite explotar comercialmente tu interpretación ni tus obras: para eso siempre necesita tu autorización escrita.
 
