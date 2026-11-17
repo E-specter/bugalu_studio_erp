@@ -87,7 +87,7 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
                   <Campo tipo="area" nombre="detalle" etiqueta="Qué necesitas (opcional)" ayuda="Cuéntanos qué vas a grabar o qué equipo necesitas." maxlength="500" rows="4" />
                 </Panel>
                 <Panel codigo="R4" titulo="Pago y cancelación">
-                  <p>Pagas el 50 % para confirmar y el resto al terminar la sesión. Tienes un plazo para pagar el anticipo; te lo decimos al confirmar y por correo. Si vence sin pago, la reserva se cancela y el horario se libera. Puedes cancelarla sin costo mientras no hayas registrado ningún pago.</p>
+                  <p>Pagas un adelanto para confirmar y el resto al terminar la sesión. Tienes un plazo para pagar el anticipo; te lo decimos al confirmar y por correo. Si vence sin pago, la reserva se cancela y el horario se libera. Puedes cancelarla sin costo mientras no hayas registrado ningún pago.</p>
                 </Panel>
               </>
             )}
@@ -216,7 +216,7 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
   import { listarSalas, crearReserva, obtenerReserva } from '../servicios/reservas.js';
   import { listarServicios, listarEspecialistas, simular } from '../servicios/catalogo.js';
   import { ErrorApi } from '../servicios/api.js';
-  import { soles, fechaDe, horaDe, instante, nombreDia, diaMes, duracionReserva, pintarPartidas, esFecha, inicioValido, duracionValida } from '../servicios/formatos.js';
+  import { soles, filasPrecio, fechaDe, horaDe, instante, nombreDia, diaMes, duracionReserva, pintarPartidas, esFecha, inicioValido, duracionValida } from '../servicios/formatos.js';
 
   const RUTAS: Record<string, string> = { horario: '/reservar/', servicio: '/reservar/servicio/', confirmar: '/reservar/confirmar/' };
   const DESCRIPCION: Record<string, string> = {
@@ -402,13 +402,13 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
         ['Servicio', servicio?.nombre ?? '—', 'servicio'],
         ['Especialistas', nombres.length ? nombres.join(', ') : '—', 'servicio'],
       ];
-      if (this.sim && this.simEstado === 'ok') filas.push(['Total', soles(this.sim.total)], ['Anticipo 50 %', soles(this.sim.anticipo)]);
-      else if (this.paso === 'servicio' || this.paso === 'horario') filas.push(['Total', '—']);
+      const precio = (this.sim && this.simEstado === 'ok' ? filasPrecio(this.sim) : this.paso === 'servicio' || this.paso === 'horario' ? [['Total', '—']] : []) as [string, string][];
+      filas.push(...precio);
       for (const destino of [this.q('[data-resumen]'), this.q('[data-revision]')]) {
         if (!destino) continue;
         destino.replaceChildren(
           ...filas
-            .filter(([etiqueta]) => destino.hasAttribute('data-resumen') || !['Total', 'Anticipo 50 %'].includes(etiqueta))
+            .filter(([etiqueta]) => destino.hasAttribute('data-resumen') || !precio.some((p) => p[0] === etiqueta))
             .map(([etiqueta, valor, cambiar]) => {
               const fila = document.createElement('div');
               const dt = document.createElement('dt');
@@ -761,8 +761,7 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
           ['Horario', `${horaDe(reserva.inicio)} – ${horaDe(reserva.fin)}`],
           ['Sala', reserva.sala],
           ['Servicio', reserva.servicio],
-          ['Total', soles(reserva.precio.total)],
-          ['Anticipo 50 %', soles(reserva.precio.anticipo)],
+          ...filasPrecio(reserva.precio, reserva.parametros_aplicados?.porcentaje_adelanto),
         ].map(([etiqueta, valor]) => {
           const fila = document.createElement('div');
           const dt = document.createElement('dt');

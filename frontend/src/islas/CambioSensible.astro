@@ -1,0 +1,240 @@
+---
+// <bugalu-cambio-sensible>: la revision con barreras de un cambio sensible (spec RF-20-cambios-sensibles). La monta una isla de
+// gestion (<bugalu-tarifas>): esta pide la vista previa, la isla la entrega aqui con `abrir()` y recibe el resultado en una promesa.
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Tabla from '../componentes/Tabla.astro';
+import BarraAcciones from '../componentes/BarraAcciones.astro';
+---
+
+<!-- Oculta hasta registrarse y hasta abrir la revision: sin JS no hay revision que ver (la isla de la vista ya explica). -->
+<bugalu-cambio-sensible class="cs" hidden>
+  <div class="cs-columna">
+    <Panel codigo="C1" titulo="Qué cambia" ayuda=" ">
+      <Tabla titulo="Qué cambia" variante="partidas" columnas={['Campo', 'Antes', 'Después']} numericas={[1, 2]} />
+    </Panel>
+    <Panel codigo="C2" titulo="Impacto">
+      <Tabla titulo="Impacto" variante="partidas" columnas={['Ejemplo', 'Antes', 'Después']} numericas={[1, 2]} />
+      <Aviso variante="informacion" titulo=" " texto=" " />
+    </Panel>
+    <Panel codigo="C3" titulo="Confirmar">
+      <form novalidate method="post" class="cs-formulario" data-cs-formulario>
+        <Campo nombre="palabra" etiqueta="Escribe CONFIRMAR" ayuda="Escríbelo en mayúsculas para aplicar el cambio. Puedes pegarlo." autocomplete="off" autocapitalize="characters" spellcheck="false" />
+        <BarraAcciones variante="formulario">
+          <Boton slot="secundaria" variante="secundario" tamano="grande" data-cs-cancelar>Cancelar</Boton>
+          <Boton slot="principal" tipo="submit" tamano="grande" aria-disabled="true" data-cs-aplicar>Aplicar cambio</Boton>
+        </BarraAcciones>
+      </form>
+    </Panel>
+  </div>
+</bugalu-cambio-sensible>
+
+<script>
+  // @ts-nocheck
+  import { confirmarCambio, previsualizarCambio } from '../servicios/catalogo.js';
+  import { soles, porcentaje, fechaDe, horaDe, diaMes } from '../servicios/formatos.js';
+  import { ponerError, quitarError, mostrarAviso, enfocarAviso } from '../servicios/formulario.js';
+  import { mensajeError } from '../servicios/isla-gestion.js';
+
+  const PALABRA = 'CONFIRMAR';
+  const ERROR_PALABRA = 'Escribe CONFIRMAR, en mayúsculas, para aplicar el cambio.';
+  const dias = (v) => `${v} días`;
+  const horas = (v) => `${v} h`;
+  const sinFormato = (v) => v;
+  // campo del contrato -> [etiqueta en C1, formato]. `anterior` y `nuevo` llegan como texto: aqui solo se formatean.
+  const CAMPOS = {
+    tarifa_hora: ['TARIFA POR HORA', soles],
+    monto_fijo: ['MONTO FIJO', soles],
+    monto_variable: ['MONTO VARIABLE', soles],
+    unidad: ['UNIDAD', (v) => ({ hora: 'Por hora', lapso_30: 'Por media hora' })[v] ?? v],
+    'noche.porcentaje': ['NOCHE (%)', porcentaje],
+    'noche.desde': ['NOCHE DESDE', sinFormato],
+    'noche.hasta': ['NOCHE HASTA', sinFormato],
+    'fin_de_semana.porcentaje': ['FIN DE SEMANA (%)', porcentaje],
+    'feriado.porcentaje': ['FERIADO (%)', porcentaje],
+    porcentaje_igv: ['PORCENTAJE DE IGV', porcentaje],
+    precios_incluyen_igv: ['LOS PRECIOS INCLUYEN IGV', (v) => (String(v) === 'true' ? 'Sí' : 'No')],
+    dias_limite_pago: ['DÍAS ANTES DEL INICIO', dias],
+    horas_limite_pago: ['HORAS DESDE LA SOLICITUD', horas],
+    horas_nivel_1: ['LÍMITE DEL NIVEL 1', horas],
+    horas_nivel_2: ['LÍMITE DEL NIVEL 2', horas],
+    porcentaje_adelanto: ['ADELANTO PARA CONFIRMAR', porcentaje],
+  };
+  const IMPACTO = {
+    importe: soles,
+    fecha_hora: (v) => `${diaMes(fechaDe(v))}, ${horaDe(v)}`,
+    texto: sinFormato,
+  };
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+
+  class BugaluCambioSensible extends HTMLElement {
+    connectedCallback() {
+      this.host = this.closest('[data-gestion]'); // avisos, plantillas y region viva son de la isla de la vista
+      this.entrada = this.querySelector('[name="palabra"]');
+      this.aplicar = this.querySelector('[data-cs-aplicar]');
+      this.cancelar = this.querySelector('[data-cs-cancelar]');
+      this.aplicar.setAttribute('aria-describedby', 'campo-palabra-ayuda');
+      this.querySelector('[data-cs-formulario]').addEventListener('submit', (e) => {
+        e.preventDefault();
+        e.stopPropagation(); // el submit no debe llegar al despachador de formularios de la isla de la vista
+        this.confirmar();
+      });
+      this.entrada.addEventListener('input', () => {
+        quitarError(this.entrada);
+        this.aplicar.setAttribute('aria-disabled', String(!this.palabraValida));
+      });
+      this.cancelar.addEventListener('click', () => !this.ocupado && this.cerrar({ estado: 'cancelado' }));
+    }
+
+    get palabraValida() {
+      return this.entrada.value.trim() === PALABRA;
+    }
+
+    // Pinta la vista previa y devuelve una promesa con el resultado: {estado: 'aplicado', resultado} | {estado: 'cancelado'}
+    // | {estado: 'volver', aviso: [variante, titulo, texto?], recargar?} (la vista muestra el aviso y vuelve al formulario).
+    abrir(previa, peticion) {
+      this.peticion = peticion;
+      this.entrada.value = '';
+      quitarError(this.entrada);
+      this.aplicar.setAttribute('aria-disabled', 'true');
+      this.pintar(previa);
+      this.hidden = false;
+      this.enfocarRevision();
+      this.anunciar(`Revisión lista: ${plural(previa.cambios.length, 'cambio', 'cambios')}, ${plural(previa.impacto.operaciones_vigentes, 'reserva vigente conserva', 'reservas vigentes conservan')} sus condiciones.`);
+      return new Promise((resolver) => (this.resolver = resolver));
+    }
+
+    cerrar(resultado) {
+      this.hidden = true;
+      this.resolver(resultado);
+    }
+
+    anunciar(texto) {
+      this.host.querySelector('[data-anuncio]').textContent = texto;
+    }
+
+    enfocarRevision() {
+      const titulo = this.querySelector('.panel-titulo');
+      titulo.tabIndex = -1;
+      titulo.focus();
+    }
+
+    pintar(previa) {
+      this.previa = previa;
+      this.querySelector('.panel-ayuda').textContent = previa.nombre_recurso;
+      const [c1, c2] = this.querySelectorAll('tbody');
+      const th = (texto) => Object.assign(document.createElement('th'), { scope: 'row', textContent: texto });
+      const td = (etiqueta, texto, clase) => {
+        const celda = Object.assign(document.createElement('td'), { textContent: texto, className: clase ?? '' });
+        celda.dataset.etiqueta = etiqueta;
+        return celda;
+      };
+      const tr = (...nodos) => {
+        const f = document.createElement('tr');
+        f.append(...nodos);
+        return f;
+      };
+      c1.replaceChildren(...previa.cambios.map((c) => {
+        const [etiqueta, dar] = CAMPOS[c.campo] ?? [c.campo.toUpperCase(), sinFormato];
+        return tr(th(etiqueta), td('Antes', dar(c.anterior), 'tabla-num'), td('Después', dar(c.nuevo), 'tabla-num cs-despues'));
+      }));
+      c2.replaceChildren(...previa.impacto.ejemplos.map((e) => {
+        const dar = IMPACTO[e.tipo] ?? sinFormato;
+        return tr(th(e.concepto), td('Antes', dar(e.antes), 'tabla-num'), td('Después', dar(e.despues), 'tabla-num cs-despues'));
+      }));
+      const n = previa.impacto.operaciones_vigentes;
+      this.querySelector('.aviso-titulo').textContent = `Se aplica solo a reservas nuevas. ${plural(n, 'reserva vigente conserva', 'reservas vigentes conservan')} sus condiciones.`;
+    }
+
+    ocupar(si) {
+      this.ocupado = si;
+      this.cancelar.disabled = si;
+      if (si) {
+        this.aplicar.setAttribute('aria-busy', 'true');
+        this.textoAplicar = this.aplicar.textContent;
+        this.aplicar.textContent = 'Aplicando…';
+        this.aplicar.setAttribute('aria-disabled', 'true');
+      } else {
+        this.aplicar.removeAttribute('aria-busy');
+        this.aplicar.textContent = this.textoAplicar ?? 'Aplicar cambio';
+        this.aplicar.setAttribute('aria-disabled', String(!this.palabraValida));
+      }
+    }
+
+    errorPalabra() {
+      ponerError(this.host, this.entrada, ERROR_PALABRA);
+      this.entrada.focus();
+    }
+
+    async confirmar() {
+      if (this.ocupado) return;
+      if (!this.palabraValida) return this.errorPalabra();
+      this.ocupar(true);
+      try {
+        const resultado = await confirmarCambio({ token: this.previa.token, palabra: PALABRA });
+        this.ocupar(false);
+        this.cerrar({ estado: 'aplicado', resultado });
+      } catch (error) {
+        this.ocupar(false);
+        await this.fallo(error);
+      }
+    }
+
+    // Todos los errores del contrato: los que dejan seguir aqui conservan lo escrito; el resto devuelve al formulario.
+    async fallo({ estado, codigo, ...error }) {
+      if (estado === 422 && codigo === 'palabra_incorrecta') return this.errorPalabra();
+      if (estado === 409 && codigo === 'confirmacion_no_valida') return this.renovar('informacion', 'La vista previa caducó y la actualizamos', 'Revisa el impacto y vuelve a aplicar.', false);
+      if (estado === 409 && codigo === 'cambio_desactualizado') {
+        return this.renovar('aviso', `Otro administrador cambió ${this.previa.nombre_recurso} mientras revisabas`, 'ANTES ya muestra los valores actuales: revísalos y vuelve a escribir CONFIRMAR.', true);
+      }
+      if (estado === 403) return this.cerrar({ estado: 'volver', aviso: ['error', 'Esta vista previa la pidió otra cuenta', 'Vuelve a guardar para generar la tuya.'] });
+      const aviso = estado === 401
+        ? mostrarAviso(this.host, 'aviso', 'Tu sesión no es válida', 'No se aplicó nada y lo que escribiste sigue aquí. Inicia sesión y vuelve a guardar.', { enlace: { texto: 'Ir al acceso interno', href: `/acceso/interno?${new URLSearchParams({ volver: location.pathname + location.search })}` } })
+        : mostrarAviso(this.host, 'error', ...mensajeError({ estado }));
+      enfocarAviso(aviso);
+    }
+
+    // Nueva vista previa con los mismos cambios; `vaciar`: otro administrador cambio el recurso, hay que volver a escribir.
+    async renovar(variante, titulo, texto, vaciar) {
+      this.ocupar(true);
+      try {
+        const previa = await previsualizarCambio(this.peticion);
+        this.ocupar(false);
+        if (vaciar) this.entrada.value = '';
+        this.pintar(previa);
+        this.aplicar.setAttribute('aria-disabled', String(!this.palabraValida));
+        const aviso = mostrarAviso(this.host, variante, titulo, texto);
+        this.anunciar(`${titulo}. ${texto}`);
+        enfocarAviso(aviso);
+      } catch (error) {
+        this.ocupar(false);
+        if (error.codigo === 'sin_cambios') return this.cerrar({ estado: 'volver', recargar: true, aviso: ['informacion', 'Otro administrador ya aplicó estos mismos valores.'] });
+        if (error.estado === 403 || error.estado === 404) return this.cerrar({ estado: 'volver', aviso: ['error', 'No pudimos actualizar la revisión', 'Vuelve a guardar para generar otra.'] });
+        enfocarAviso(mostrarAviso(this.host, 'error', ...mensajeError(error)));
+      }
+    }
+  }
+
+  if (!customElements.get('bugalu-cambio-sensible')) customElements.define('bugalu-cambio-sensible', BugaluCambioSensible);
+</script>
+
+<style>
+  .cs:not([hidden]) {
+    display: block;
+  }
+  .cs-columna {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+  }
+  .cs-formulario {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+  }
+  .cs :global(.cs-despues) {
+    font-weight: var(--fuente-peso-titulo);
+  }
+</style>

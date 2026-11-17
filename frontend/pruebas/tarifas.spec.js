@@ -107,12 +107,12 @@ test('servicio: edita tarifa, monto fijo, especialistas por defecto y activo', a
   await expect(page.getByText('Van incluidos y el cliente no puede quitarlos.')).toBeVisible();
   await sinViolaciones(page);
   await page.screenshot({ path: 'pruebas/capturas/tarifas-servicio-1440.png', fullPage: true });
-  await page.getByLabel('Tarifa por hora (S/)').fill('125,5');
+  await page.getByLabel('Tarifa por hora (S/)').fill('120');
   await grupo(page, 'Especialistas por defecto').getByLabel('Productor').check();
   await page.getByLabel('Activo').uncheck();
   await page.getByRole('button', { name: 'Guardar servicio' }).click();
   await expect(page.getByText('Servicio actualizado. El precio nuevo se aplica')).toBeVisible();
-  expect(parches[0].cuerpo).toEqual({ tarifa_hora: '125.50', monto_fijo: '15.00', activo: false, especialistas_por_defecto: ['e1', 'e2'] });
+  expect(parches[0].cuerpo).toEqual({ tarifa_hora: '120.00', monto_fijo: '15.00', activo: false, especialistas_por_defecto: ['e1', 'e2'] });
   expect(consola).toEqual([]);
 });
 
@@ -156,10 +156,10 @@ test('servicio: error de red al guardar conserva los datos', async ({ page }) =>
   await base(page);
   await simular(page, 'PATCH', '/servicios/s1', (r) => r.abort('connectionrefused'));
   await page.goto('/app/tarifas/servicio?id=s1');
-  await page.getByLabel('Tarifa por hora (S/)').fill('130');
+  await page.getByLabel('Tarifa por hora (S/)').fill('120'); // mismo importe: sin cambio sensible, un solo paso
   await page.getByRole('button', { name: 'Guardar servicio' }).click();
   await expect(page.getByText('Sin conexión. Revisa tu red y vuelve a intentarlo.')).toBeVisible();
-  await expect(page.getByLabel('Tarifa por hora (S/)')).toHaveValue('130');
+  await expect(page.getByLabel('Tarifa por hora (S/)')).toHaveValue('120');
   await expect(page.getByRole('button', { name: 'Reintentar' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Guardar servicio' })).toBeEnabled();
 });
@@ -178,12 +178,11 @@ test('especialista: edita fijo, variable, unidad y activo', async ({ page }) => 
   await expect(page.getByText('Se cobra por cada hora o media hora de la reserva, según la unidad.')).toBeVisible();
   await sinViolaciones(page);
   await page.screenshot({ path: 'pruebas/capturas/tarifas-especialista-1440.png', fullPage: true });
-  await page.getByLabel('Monto variable (S/)').fill('45.5');
-  await grupo(page, 'Unidad').getByLabel('Por hora').check();
+  await page.getByLabel('Monto variable (S/)').fill('40'); // lo sensible igual: un solo paso (los cambios sensibles van en cambios-sensibles.spec.js)
   await page.getByLabel('Activo').check();
   await page.getByRole('button', { name: 'Guardar especialista' }).click();
   await expect(page.getByText('Especialista actualizado. El precio nuevo se aplica')).toBeVisible();
-  expect(parches[0].cuerpo).toEqual({ monto_fijo: '100.00', monto_variable: '45.50', unidad: 'hora', activo: true });
+  expect(parches[0].cuerpo).toEqual({ monto_fijo: '100.00', monto_variable: '40.00', unidad: 'lapso_30', activo: true });
 });
 
 test('especialista: id desconocido y importe invalido', async ({ page }) => {
@@ -237,11 +236,11 @@ test('recargos: guarda con PUT y porcentajes validados', async ({ page }) => {
   expect(puts).toHaveLength(0);
   await sinViolaciones(page);
   await page.screenshot({ path: 'pruebas/capturas/tarifas-recargos-errores-1440.png', fullPage: true });
-  await grupo(page, 'Fin de semana').getByLabel('Recargo (%)').fill('12.5');
-  await grupo(page, 'Noche').getByLabel('Desde').fill('21:30');
+  await grupo(page, 'Fin de semana').getByLabel('Recargo (%)').fill('10');
+  await grupo(page, 'Noche').getByLabel('Desde').fill('22:00');
   await page.getByRole('button', { name: 'Guardar recargos' }).click();
   await expect(page.getByText('Recargos guardados.')).toBeVisible();
-  expect(puts[0].cuerpo).toEqual({ noche: { porcentaje: '25.00', desde: '21:30', hasta: '06:00' }, fin_de_semana: { porcentaje: '12.50' }, feriado: { porcentaje: '50.00' } });
+  expect(puts[0].cuerpo).toEqual({ noche: { porcentaje: '25.00', desde: '22:00', hasta: '06:00' }, fin_de_semana: { porcentaje: '10.00' }, feriado: { porcentaje: '50.00' } });
 });
 
 test('feriados: anadir, 409 en la fecha y quitar', async ({ page }) => {
@@ -324,7 +323,7 @@ test('lista: carga con aria-busy mientras la API tarda', async ({ page }) => {
 
 test.describe('sin JavaScript', () => {
   test.use({ javaScriptEnabled: false });
-  for (const ruta of ['/app/tarifas', '/app/tarifas/servicio', '/app/tarifas/especialista', '/app/tarifas/recargos']) {
+  for (const ruta of ['/app/tarifas', '/app/tarifas/servicio', '/app/tarifas/especialista', '/app/tarifas/recargos', '/app/tarifas/impuestos']) {
     test(`${ruta} explica que hace falta JS`, async ({ page }) => {
       await page.goto(ruta);
       expect(await page.content()).toContain('Actívalo en tu navegador y recarga la página.');

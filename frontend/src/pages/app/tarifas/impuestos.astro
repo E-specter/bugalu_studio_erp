@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Tarifas from '../../../islas/Tarifas.astro';
+---
+
+<LayoutApp titulo="Impuestos">
+  <EncabezadoPantalla
+    titulo="Impuestos"
+    indice="[A8] CATÁLOGO / IMPUESTOS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Tarifas', href: '/app/tarifas' }, { etiqueta: 'Impuestos' }]}
+    descripcion="El IGV que se aplica a los precios. Un cambio rige solo para las reservas nuevas."
+  />
+  <Tarifas vista="impuestos" />
+</LayoutApp>

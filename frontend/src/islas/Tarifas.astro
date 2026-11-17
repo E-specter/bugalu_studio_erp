@@ -6,16 +6,18 @@ import Campo from '../componentes/Campo.astro';
 import Casilla from '../componentes/Casilla.astro';
 import Tabla from '../componentes/Tabla.astro';
 import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import CambioSensible from './CambioSensible.astro';
 import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
 import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
 
 interface Props {
-  vista: 'lista' | 'servicio' | 'especialista' | 'recargos';
+  vista: 'lista' | 'servicio' | 'especialista' | 'recargos' | 'impuestos';
 }
 const { vista } = Astro.props;
 // Panel de la vista mientras carga o falla (codigos y titulos de la spec RF-02-tarifas).
-const principal = { lista: { codigo: 'T1', titulo: 'Servicios' }, servicio: { codigo: 'S1', titulo: 'Servicio' }, especialista: { codigo: 'E1', titulo: 'Especialista' }, recargos: { codigo: 'R1', titulo: 'Recargos por horario' } }[vista];
+const principal = { lista: { codigo: 'T1', titulo: 'Servicios' }, servicio: { codigo: 'S1', titulo: 'Servicio' }, especialista: { codigo: 'E1', titulo: 'Especialista' }, recargos: { codigo: 'R1', titulo: 'Recargos por horario' }, impuestos: { codigo: 'I1', titulo: 'IGV' } }[vista];
 const aviso = 'Los cambios valen para las simulaciones y reservas nuevas; las ya hechas guardan su precio.';
+const ayudaCambio = 'Si cambias un importe o un porcentaje, te mostraremos el impacto y te pediremos confirmarlo.';
 const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
 ---
 
@@ -27,6 +29,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
   <!-- Region viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
   <p class="visualmente-oculto" role="status" data-anuncio></p>
   <div data-salida><Panel {...principal} cargando /></div>
+  <CambioSensible />
 
   <EstadosIsla principal={principal} noEncontrada={vista === 'servicio' || vista === 'especialista' ? { etiqueta: 'Volver a tarifas', href: '/app/tarifas' } : undefined} />
 
@@ -101,7 +104,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
                   <div class="gestion-grupo" data-especialistas></div>
                 </fieldset>
                 <Casilla nombre="activo" etiqueta="Activo" detalle="Si lo desactivas, deja de ofrecerse al reservar." />
-                <div><Boton tipo="submit" data-envio>Guardar servicio</Boton></div>
+                <div><Boton tipo="submit" data-envio>Guardar servicio</Boton><p class="gestion-ayuda">{ayudaCambio}</p></div>
               </form>
             </Panel>
           </div>
@@ -133,8 +136,31 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
                 <Casilla tipo="radio" nombre="unidad" valor="lapso_30" etiqueta="Por media hora" />
               </fieldset>
               <Casilla nombre="activo" etiqueta="Activo" />
-              <div><Boton tipo="submit" data-envio>Guardar especialista</Boton></div>
+              <div><Boton tipo="submit" data-envio>Guardar especialista</Boton><p class="gestion-ayuda">{ayudaCambio}</p></div>
             </form>
+          </Panel>
+        </div>
+      </div>
+    </template>
+  )}
+
+  {vista === 'impuestos' && (
+    <template data-estado="datos">
+      <div class="gestion-rejilla">
+        <Panel codigo="I1" titulo="IGV">
+          <form novalidate method="post" class="gestion-formulario" data-formulario="impuestos">
+            <Campo tipo="number" nombre="porcentaje_igv" etiqueta="Porcentaje de IGV (%)" obligatorio min="0" max="99.99" step="0.01" />
+            <fieldset class="gestion-grupo">
+              <legend>Los precios incluyen IGV</legend>
+              <Casilla tipo="radio" nombre="precios_incluyen_igv" valor="si" etiqueta="Sí" detalle="El cliente ve el total; el IGV va desglosado dentro." />
+              <Casilla tipo="radio" nombre="precios_incluyen_igv" valor="no" etiqueta="No" detalle="Las tarifas son netas y el total suma el IGV." />
+            </fieldset>
+            <div><Boton tipo="submit" data-envio>Revisar cambio</Boton><p class="gestion-ayuda">Te mostraremos el impacto y te pediremos confirmarlo.</p></div>
+          </form>
+        </Panel>
+        <div class="gestion-lateral">
+          <Panel codigo="I2" titulo="Cómo se muestra" variante="lateral">
+            <p>Con IGV incluido, un total de S/ 150,00 al 18 % se muestra con base S/ 127,12 e IGV S/ 22,88. Los comprobantes se emiten fuera de la app.</p>
           </Panel>
         </div>
       </div>
@@ -165,7 +191,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
                 <legend>Feriado</legend>
                 <Campo tipo="number" nombre="feriado_porcentaje" etiqueta="Recargo (%)" obligatorio min="0" step="0.01" />
               </fieldset>
-              <div><Boton tipo="submit" data-envio>Guardar recargos</Boton></div>
+              <div><Boton tipo="submit" data-envio>Guardar recargos</Boton><p class="gestion-ayuda">{ayudaCambio}</p></div>
             </form>
           </Panel>
           <div class="gestion-lateral">
@@ -199,12 +225,13 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
 <script>
   // @ts-nocheck
   import { IslaGestion } from '../servicios/isla-gestion.js';
-  import { listarServicios, actualizarServicio, listarEspecialistas, actualizarEspecialista, obtenerRecargos, guardarRecargos, listarFeriados, crearFeriado, quitarFeriado } from '../servicios/catalogo.js';
-  import { leerImporte, mostrarImporte, soles, hoyLima, esFecha, diaMes, diaMesAnio } from '../servicios/formatos.js';
-  import { mostrarAviso, enfocarAviso, quitarError } from '../servicios/formulario.js';
+  import { listarServicios, actualizarServicio, listarEspecialistas, actualizarEspecialista, obtenerRecargos, guardarRecargos, obtenerImpuestos, previsualizarCambio, listarFeriados, crearFeriado, quitarFeriado } from '../servicios/catalogo.js';
+  import { leerImporte, mostrarImporte, porcentaje, soles, hoyLima, esFecha, diaMes, diaMesAnio } from '../servicios/formatos.js';
+  import { mostrarAviso, enfocarAviso, quitarError, limpiarAvisos } from '../servicios/formulario.js';
 
   const categorias = { grabacion: 'GRABACIÓN', ensayo: 'ENSAYO', live: 'LIVE', posproduccion: 'POSPRODUCCIÓN' };
   const unidades = { hora: 'por hora', lapso_30: 'por media hora' };
+  const ERROR_IGV = 'Escribe un porcentaje de 0 a 99,99, con hasta dos decimales.';
   const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
   const ERROR_IMPORTE = 'Escribe un importe de 0 o más, con hasta dos decimales, como 120,50.';
   const ERROR_PORCENTAJE = 'Escribe un porcentaje de 0 o más.';
@@ -229,15 +256,19 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       if (accion === 'servicio') this.guardarServicio(formulario);
       else if (accion === 'especialista') this.guardarEspecialista(formulario);
       else if (accion === 'recargos') this.guardarRecargos(formulario);
+      else if (accion === 'impuestos') this.guardarImpuestos(formulario);
       else this.anadirFeriado(formulario);
     }
 
     errorEnvio(error) {
-      if (error.estado === 404 && this.registro) this.sustituir('no-encontrada');
+      // Red de seguridad: el backend exige la revision aunque la isla no haya detectado un campo sensible.
+      if (error.estado === 428 && error.codigo === 'confirmacion_requerida' && this.ctx) this.revisar(this.ctx);
+      else if (error.estado === 404 && this.registro) this.sustituir('no-encontrada');
+      else if (error.estado === 422 && error.codigo === 'sin_cambios') enfocarAviso(mostrarAviso(this, 'informacion', 'Ya tiene esos valores. No hay nada que cambiar.'));
       else if (error.estado === 409) this.errorCampo(this.querySelector('[name="feriado-fecha"]'), 'Ya hay un feriado en esa fecha.');
-      else if (error.estado === 422 && error.detalles?.campo && this.querySelector(`[name="${error.detalles.campo}"]`)) {
-        const entrada = this.querySelector(`[name="${error.detalles.campo}"]`);
-        this.errorCampo(entrada, entrada.type === 'text' ? ERROR_IMPORTE : ERROR_PORCENTAJE);
+      else if (error.estado === 422 && error.detalles?.campo && this.querySelector(`[name="${error.detalles.campo.replace('.', '_')}"]`)) {
+        const entrada = this.querySelector(`[name="${error.detalles.campo.replace('.', '_')}"]`);
+        this.errorCampo(entrada, entrada.type === 'text' ? ERROR_IMPORTE : this.vista === 'impuestos' ? ERROR_IGV : ERROR_PORCENTAJE);
       } else return false;
       return true;
     }
@@ -266,6 +297,38 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
         llenar(fila, r);
         return fila;
       }));
+    }
+
+    // --- Cambios sensibles (RF-20): vista previa, revision en <bugalu-cambio-sensible> y, al confirmar, lo no sensible ---
+
+    // ctx: {formulario, peticion, resto?: () => Promise, restoNombre?, exito(resultado)}
+    revisar(ctx) {
+      this.ctx = ctx;
+      const boton = ctx.formulario.querySelector('[data-envio]');
+      this.enviar(boton, 'Calculando impacto…', () => previsualizarCambio(ctx.peticion), (previa) => this.abrirRevision(previa, ctx, boton));
+    }
+
+    async abrirRevision(previa, ctx, boton) {
+      const salida = this.querySelector('[data-salida]');
+      salida.hidden = true;
+      limpiarAvisos(this);
+      const r = await this.querySelector('bugalu-cambio-sensible').abrir(previa, ctx.peticion);
+      salida.hidden = false;
+      if (r.estado === 'cancelado') {
+        mostrarAviso(this, 'informacion', 'No se aplicó ningún cambio.');
+        boton.focus();
+      } else if (r.estado === 'volver') {
+        if (r.recargar) await this.cargar();
+        enfocarAviso(mostrarAviso(this, r.aviso[0], r.aviso[1], r.aviso[2]));
+      } else if (ctx.resto) {
+        try {
+          await ctx.resto();
+        } catch {
+          await this.cargar();
+          return enfocarAviso(mostrarAviso(this, 'error', `La tarifa se cambió, pero no pudimos guardar ${ctx.restoNombre}`, 'Vuelve a guardar.'));
+        }
+        await ctx.exito(r.resultado);
+      } else await ctx.exito(r.resultado);
     }
 
     // --- Lista ---
@@ -303,6 +366,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       const [servicios, especialistas] = await Promise.all([listarServicios(), listarEspecialistas()]);
       const s = servicios.find((x) => x.id === this.registro);
       if (!s) return this.mostrar('no-encontrada');
+      this.cargado = s;
       this.mostrar('datos');
       this.querySelector('[data-campo="nombre"]').textContent = s.nombre;
       this.querySelector('[data-campo="categoria"]').textContent = categorias[s.categoria] ?? s.categoria;
@@ -340,12 +404,17 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       if (this.ocupado) return;
       const { valores, errores } = this.importes(formulario, ['tarifa_hora', 'monto_fijo']);
       if (!this.validar(errores)) return;
-      const cuerpo = {
-        ...valores,
-        activo: formulario.querySelector('[name="activo"]').checked,
-        especialistas_por_defecto: [...formulario.querySelectorAll('[name="especialistas_por_defecto"]:checked')].map((c) => c.value),
-      };
-      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => actualizarServicio(this.registro, cuerpo), () => location.assign('/app/tarifas?aviso=servicio-actualizado'), true);
+      const s = this.cargado;
+      const boton = formulario.querySelector('[data-envio]');
+      const activo = formulario.querySelector('[name="activo"]').checked;
+      const defecto = [...formulario.querySelectorAll('[name="especialistas_por_defecto"]:checked')].map((c) => c.value);
+      const cambios = { tarifa_hora: valores.tarifa_hora, monto_fijo: valores.monto_fijo };
+      const sensible = cambios.tarifa_hora !== leerImporte(s.tarifa_hora) || cambios.monto_fijo !== leerImporte(s.monto_fijo);
+      const nombres = [activo !== s.activo && 'Activo', [...defecto].sort().join() !== [...s.especialistas_por_defecto].sort().join() && 'Especialistas por defecto'].filter(Boolean);
+      const exito = () => location.assign('/app/tarifas?aviso=servicio-actualizado');
+      this.ctx = { formulario, peticion: { recurso: 'servicio', id_recurso: this.registro, cambios }, resto: nombres.length ? () => actualizarServicio(this.registro, { activo, especialistas_por_defecto: defecto }) : null, restoNombre: nombres.join(' / '), exito };
+      if (sensible) return this.revisar(this.ctx);
+      this.enviar(boton, 'Guardando…', () => actualizarServicio(this.registro, { ...cambios, activo, especialistas_por_defecto: defecto }), exito, true);
     }
 
     // --- Especialista ---
@@ -353,6 +422,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
     async especialista() {
       const e = (await listarEspecialistas()).find((x) => x.id === this.registro);
       if (!e) return this.mostrar('no-encontrada');
+      this.cargado = e;
       this.mostrar('datos');
       this.querySelector('[data-campo="nombre"]').textContent = e.nombre;
       this.querySelector('[name="monto_fijo"]').value = mostrarImporte(e.monto_fijo);
@@ -368,8 +438,14 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       if (this.ocupado) return;
       const { valores, errores } = this.importes(formulario, ['monto_fijo', 'monto_variable']);
       if (!this.validar(errores)) return;
-      const cuerpo = { ...valores, unidad: formulario.querySelector('[name="unidad"]:checked').value, activo: formulario.querySelector('[name="activo"]').checked };
-      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => actualizarEspecialista(this.registro, cuerpo), () => location.assign('/app/tarifas?aviso=especialista-actualizado'), true);
+      const e = this.cargado;
+      const activo = formulario.querySelector('[name="activo"]').checked;
+      const cambios = { ...valores, unidad: formulario.querySelector('[name="unidad"]:checked').value };
+      const sensible = cambios.monto_fijo !== leerImporte(e.monto_fijo) || cambios.monto_variable !== leerImporte(e.monto_variable) || cambios.unidad !== e.unidad;
+      const exito = () => location.assign('/app/tarifas?aviso=especialista-actualizado');
+      this.ctx = { formulario, peticion: { recurso: 'especialista', id_recurso: this.registro, cambios }, resto: activo !== e.activo ? () => actualizarEspecialista(this.registro, { activo }) : null, restoNombre: 'Activo', exito };
+      if (sensible) return this.revisar(this.ctx);
+      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => actualizarEspecialista(this.registro, { ...cambios, activo }), exito, true);
     }
 
     // --- Recargos y feriados ---
@@ -381,6 +457,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
 
     async recargos() {
       const [r, feriados] = await Promise.all([obtenerRecargos(), listarFeriados(this.anio)]);
+      this.cargado = r;
       this.mostrar('datos');
       const poner = (nombre, valor) => (this.querySelector(`[name="${nombre}"]`).value = valor);
       poner('noche_porcentaje', Number(r.noche.porcentaje));
@@ -433,11 +510,40 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
         feriado: { porcentaje: porcentaje('feriado_porcentaje') },
       };
       if (!this.validar(errores)) return;
+      const r = this.cargado;
+      const hh = (t) => String(t).slice(0, 5);
+      const sensible = cuerpo.noche.porcentaje !== leerImporte(r.noche.porcentaje) || hh(cuerpo.noche.desde) !== hh(r.noche.desde) || hh(cuerpo.noche.hasta) !== hh(r.noche.hasta)
+        || cuerpo.fin_de_semana.porcentaje !== leerImporte(r.fin_de_semana.porcentaje) || cuerpo.feriado.porcentaje !== leerImporte(r.feriado.porcentaje);
+      this.ctx = { formulario, peticion: { recurso: 'recargos', cambios: cuerpo }, exito: async () => { await this.cargar(); this.avisar('Recargos guardados.', '', 'recargos'); } };
+      if (sensible) return this.revisar(this.ctx);
       this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => guardarRecargos(cuerpo), () => this.avisar('Recargos guardados.'));
     }
 
-    avisar(titulo) {
-      enfocarAviso(mostrarAviso(this, 'exito', titulo));
+    // `recurso`: tras un cambio con revision, ofrece el registro de cambios de ese recurso.
+    avisar(titulo, texto = '', recurso) {
+      enfocarAviso(mostrarAviso(this, 'exito', titulo, texto, recurso && { enlace: { texto: 'Ver en el registro de cambios', href: `/app/cambios?recurso=${recurso}` } }));
+    }
+
+    // --- Impuestos ---
+
+    async impuestos() {
+      const i = await obtenerImpuestos();
+      this.cargado = i;
+      this.mostrar('datos');
+      this.querySelector('[name="porcentaje_igv"]').value = Number(i.porcentaje_igv);
+      this.querySelector(`[name="precios_incluyen_igv"][value="${i.precios_incluyen_igv ? 'si' : 'no'}"]`).checked = true;
+      return `IGV al ${porcentaje(i.porcentaje_igv)}`;
+    }
+
+    guardarImpuestos(formulario) {
+      if (this.ocupado) return;
+      const entrada = formulario.querySelector('[name="porcentaje_igv"]');
+      quitarError(entrada);
+      const valor = leerImporte(entrada.value);
+      if (valor === null || Number(valor) > 99.99) return this.validar([{ entrada, mensaje: ERROR_IGV, texto: this.etiqueta(entrada) }]);
+      this.validar([]);
+      const cambios = { porcentaje_igv: valor, precios_incluyen_igv: formulario.querySelector('[name="precios_incluyen_igv"]:checked').value === 'si' };
+      this.revisar({ formulario, peticion: { recurso: 'impuestos', cambios }, exito: async () => { await this.cargar(); this.avisar('IGV actualizado', 'Rige para las simulaciones y reservas nuevas.', 'impuestos'); } });
     }
 
     async recargarFeriados(aviso) {

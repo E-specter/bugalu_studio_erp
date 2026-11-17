@@ -1,6 +1,6 @@
 // Formatos compartidos (sin navegador): título de semana (N9) y partidas de precio (B3).
 import { test, expect } from '@playwright/test';
-import { inicioValido, duracionValida, esFecha, rangoSemana, duracionReserva, partidasPrecio, soles } from '../src/servicios/formatos.js';
+import { inicioValido, duracionValida, esFecha, rangoSemana, duracionReserva, partidasPrecio, filasPrecio, porcentaje, soles } from '../src/servicios/formatos.js';
 
 test('rangoSemana: dentro de un mes, entre meses y entre años', () => {
   expect(rangoSemana('2026-11-16')).toBe('SEMANA DEL 16 AL 22 NOV 2026');
@@ -48,4 +48,15 @@ test('inicioValido: ISO con hora y zona y fecha real; si no, null', () => {
 test('duracionValida: solo digitos, multiplo de 30, de 30 a 480; si no, 0', () => {
   expect(['30', '60', '480'].map(duracionValida)).toEqual([30, 60, 480]);
   for (const x of ['0x1e', '1e2', '+30', '30.0', '45', '0', '510', '', null]) expect(duracionValida(x)).toBe(0);
+});
+
+test('desglose de IGV: incluido y no incluido salen del backend; el adelanto usa su porcentaje', () => {
+  const precio = { lineas: [], recargos: [], total: '150.00', anticipo: '45.00', porcentaje_adelanto: 30 };
+  const incluido = { ...precio, impuesto: { nombre: 'IGV', porcentaje: '18.00', incluido: true, base: '127.12', monto: '22.88' } };
+  const neto = { ...precio, impuesto: { nombre: 'IGV', porcentaje: '18.00', incluido: false, base: '127.12', monto: '22.88' } };
+  expect(partidasPrecio(incluido).pie).toEqual([['Total', 'S/ 150,00'], ['Incluye IGV (18 %)', 'S/ 22,88', true], ['Anticipo 30 %', 'S/ 45,00']]);
+  expect(partidasPrecio(neto).pie).toEqual([['Subtotal', 'S/ 127,12'], ['IGV (18 %)', 'S/ 22,88', true], ['Total', 'S/ 150,00'], ['Anticipo 30 %', 'S/ 45,00']]);
+  expect(filasPrecio(incluido)[1]).toEqual(['Incluye IGV (18 %)', 'S/ 22,88']);
+  expect(filasPrecio(neto)[1]).toEqual(['Más IGV (18 %)', 'S/ 22,88']);
+  expect(porcentaje('12.50')).toBe('12,5 %');
 });

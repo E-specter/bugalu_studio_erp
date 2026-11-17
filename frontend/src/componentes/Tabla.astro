@@ -38,6 +38,10 @@ const partidas = variante === 'partidas';
     padding: var(--espacio-4);
     border-block-end: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
   }
+  /* El IGV es informativo, no un total. */
+  .tabla :global(.tabla-igv > *) {
+    font-weight: var(--fuente-peso-regular);
+  }
   .tabla :global(tbody tr:last-child) {
     border-block-end: 0;
   }

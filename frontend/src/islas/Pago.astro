@@ -52,6 +52,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
             <div data-fila="vence"><dt>Paga antes de</dt><dd data-campo="vence"></dd></div>
           </dl>
           <p class="pago-total"><span class="pago-total-etiqueta">Importe de la cuota</span><span class="pago-total-importe" data-campo="importe"></span></p>
+          <p class="gestion-ayuda" data-igv hidden></p>
           <div class="pago-rechazo" data-rechazo hidden><Aviso variante="aviso" titulo=" " texto=" " /></div>
         </Panel>
       </aside>
@@ -91,7 +92,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
   import { IslaGestion } from '../servicios/isla-gestion.js';
   import { obtenerReserva, absoluta, faltan, textoCuota, ultimoRechazo } from '../servicios/reservas.js';
   import { registrarPago, obtenerInstrucciones, obtenerContacto } from '../servicios/pagos.js';
-  import { fechaDe, horaDe, diaMesAnio, soles, leerImporte, mostrarImporte } from '../servicios/formatos.js';
+  import { fechaDe, horaDe, diaMesAnio, soles, porcentaje, leerImporte, mostrarImporte } from '../servicios/formatos.js';
   import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, llenarAviso } from '../servicios/formulario.js';
 
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -232,6 +233,10 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
       campo('fecha', `${diaMesAnio(fechaDe(r.inicio))}, ${horaDe(r.inicio)}–${horaDe(r.fin)}`);
       campo('cuota', textoCuota(c, r.precio?.total));
       campo('importe', soles(c.monto));
+      const igv = r.precio?.impuesto?.porcentaje ?? r.parametros_aplicados?.porcentaje_igv;
+      const nota = this.querySelector('[data-igv]');
+      nota.hidden = igv === undefined;
+      if (igv !== undefined) nota.textContent = `Incluye IGV (${porcentaje(igv)}).`;
       const ms = r.estado === 'pre_reservada' && r.vence_pago && !r.pago_por_validar ? Date.parse(r.vence_pago) - Date.now() : 0;
       if (ms > 0) campo('vence', `${absoluta(r.vence_pago)} · ${faltan(ms)}`);
       else this.querySelector('[data-fila="vence"]').remove();

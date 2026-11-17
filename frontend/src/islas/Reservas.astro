@@ -378,7 +378,7 @@ const filtros = [
       campo('especialistas', (r.especialistas ?? []).map(nombre).join(', '));
       campo('cliente', r.cliente && nombre(r.cliente));
       const p = r.precio;
-      pintarPartidas(this.querySelector('[data-precio] .tabla'), p);
+      pintarPartidas(this.querySelector('[data-precio] .tabla'), p, r.parametros_aplicados?.porcentaje_adelanto);
       this.llenarCuotas(r);
       this.pintarEstado();
     }

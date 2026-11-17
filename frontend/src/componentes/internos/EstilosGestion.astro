@@ -29,7 +29,7 @@
   }
   /* B2: en un panel Lateral la tabla es siempre tarjeta, también en escritorio (tabla.md, adaptabilidad): a ese ancho las columnas parten palabras. */
   @media (min-width: 64em) { /* punto-quiebre-escritorio: deshace el paso a tabla de Tabla.astro */
-    .gestion-lateral .tabla:not(.tabla-partidas) tr {
+    .gestion-lateral .tabla:not(.tabla-partidas) tbody tr { /* tbody: gana a Tabla.astro sin depender del orden de las hojas */
       display: block;
       padding: var(--espacio-3);
     }

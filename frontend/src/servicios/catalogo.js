@@ -18,3 +18,8 @@ export const quitarFeriado = (fecha) => pedir(`/api/v1/feriados/${ruta(fecha)}`,
 
 // Publica: {id_sala, id_servicio, inicio, fin, especialistas: [id]} -> {lineas, recargos, total, anticipo}. La usa la reserva por pasos.
 export const simular = (cuerpo) => pedir('/api/v1/simulaciones', { method: 'POST', cuerpo, sinToken: true });
+
+// RF-20: impuestos (publico) y flujo con barreras de los cambios sensibles ({recurso, id_recurso?, cambios} -> vista previa con token).
+export const obtenerImpuestos = () => pedir('/api/v1/impuestos', { sinToken: true });
+export const previsualizarCambio = (peticion) => pedir('/api/v1/cambios-sensibles/previsualizar', { method: 'POST', cuerpo: peticion });
+export const confirmarCambio = (cuerpo) => pedir('/api/v1/cambios-sensibles/confirmar', { method: 'POST', cuerpo });

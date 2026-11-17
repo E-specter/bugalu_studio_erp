@@ -86,19 +86,37 @@ const cantidadPartida = (cantidad, unidad) =>
   : unidad === 'lapso_30' ? `${Number(cantidad)} × 30 min`
   : unidad === 'fijo' ? '1'
   : String(Number(cantidad));
-// Simulacion -> { filas: [[concepto, cantidad, importe]], pie: [[etiqueta, importe]] }; solo formatea, nunca suma.
-export function partidasPrecio(precio) {
+// "18.00" -> "18 %", "12.50" -> "12,5 %" (estructura-app, formato de datos).
+export const porcentaje = (p) => `${Number(p)} %`.replace('.', ',');
+// shortcut: sin `porcentaje_adelanto` en la respuesta (reservas viejas en mocks) cae en 50; el backend siempre lo envia.
+const etiquetaAnticipo = (adelanto) => `Anticipo ${porcentaje(adelanto ?? 50)}`;
+// Desglose de IGV que dicta el backend (nunca se calcula aqui). `precio.impuesto` puede faltar: sin desglose.
+// Resumen: bajo el total, "Incluye IGV (18 %)" o "Más IGV (18 %)".
+export const filasPrecio = (precio, adelanto = precio.porcentaje_adelanto) => [
+  ['Total', soles(precio.total)],
+  ...(precio.impuesto ? [[`${precio.impuesto.incluido ? 'Incluye' : 'Más'} IGV (${porcentaje(precio.impuesto.porcentaje)})`, soles(precio.impuesto.monto)]] : []),
+  [etiquetaAnticipo(adelanto), soles(precio.anticipo)],
+];
+// Simulacion -> { filas: [[concepto, cantidad, importe]], pie: [[etiqueta, importe, esImpuesto?]] }; solo formatea, nunca suma.
+export function partidasPrecio(precio, adelanto = precio.porcentaje_adelanto) {
+  const i = precio.impuesto;
+  const igv = i && [`${i.incluido ? 'Incluye IGV' : 'IGV'} (${porcentaje(i.porcentaje)})`, soles(i.monto), true];
   return {
     filas: [
       ...precio.lineas.map((l) => [l.concepto, cantidadPartida(l.cantidad, l.unidad), soles(l.monto)]),
       ...precio.recargos.map((r) => [RECARGOS[r.tipo] ?? 'Recargo', `${r.bloques} × 30 min`, soles(r.monto)]),
     ],
-    pie: [['Total', soles(precio.total)], ['Anticipo 50 %', soles(precio.anticipo)]],
+    pie: [
+      ...(i && !i.incluido ? [['Subtotal', soles(i.base)], igv] : []),
+      ['Total', soles(precio.total)],
+      ...(i?.incluido ? [igv] : []),
+      [etiquetaAnticipo(adelanto), soles(precio.anticipo)],
+    ],
   };
 }
 // Pinta las partidas en una <Tabla variante="partidas"> ya renderizada (<tbody> y <tfoot>).
-export function pintarPartidas(tabla, precio) {
-  const { filas, pie } = partidasPrecio(precio);
+export function pintarPartidas(tabla, precio, adelanto) {
+  const { filas, pie } = partidasPrecio(precio, adelanto);
   const celda = (etiqueta, texto) => {
     const td = Object.assign(document.createElement('td'), { textContent: texto, className: 'tabla-num' });
     td.dataset.etiqueta = etiqueta;
@@ -107,5 +125,5 @@ export function pintarPartidas(tabla, precio) {
   const th = (texto, extra = {}) => Object.assign(document.createElement('th'), { scope: 'row', textContent: texto, ...extra });
   const fila = (...nodos) => { const tr = document.createElement('tr'); tr.append(...nodos); return tr; };
   tabla.querySelector('tbody').replaceChildren(...filas.map(([c, q, i]) => fila(th(c), celda('Cantidad', q), celda('Importe', i))));
-  tabla.querySelector('tfoot').replaceChildren(...pie.map(([e, i]) => fila(th(e, { colSpan: 2 }), celda('Importe', i))));
+  tabla.querySelector('tfoot').replaceChildren(...pie.map(([e, i, igv]) => { const tr = fila(th(e, { colSpan: 2 }), celda('Importe', i)); tr.classList.toggle('tabla-igv', Boolean(igv)); return tr; }));
 }
