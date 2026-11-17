@@ -10,13 +10,13 @@ Registro de decisiones abiertas. Cuando una se cierra, se crea `ADR-<nnn>-<tema>
 | D-02 | Pasarela de pagos | Perú (PEN); hoy se valida cada pago con su captura | **Cerrada:** [ADR-004](ADR-004-pagos-validacion-manual.md) |
 | D-03 | Autenticación | Supabase Auth (sin `password_hash` propio) vs. autenticación propia en FastAPI (el informe asume `passwordHash`) | **Cerrada:** [ADR-005](ADR-005-supabase-auth.md) |
 | D-04 | Tipo de clave primaria | UUID (alineado con Supabase Auth) vs. entero (informe) | **Cerrada:** [ADR-006](ADR-006-claves-uuid.md) |
-| D-05 | Límite por defecto de rondas de corrección | Sin definir | — |
+| D-05 | Límite por defecto de rondas de corrección | Máximo 3 cambios grandes de mezcla y 3 de máster | **Cerrada:** [ADR-015](ADR-015-cancelacion-conservacion-y-correcciones.md) |
 | D-06 | Caducidad de una reserva `Pre-reservada` sin pago | 3 días antes o 1 hora, ajustables | **Cerrada:** [ADR-009](ADR-009-reservas-tarifas-y-caducidad.md) (reservas de sala) |
 | D-07 | Proveedor de correo transaccional | Cuenta de Google del estudio por SMTP con contraseña de aplicación | **Cerrada:** [ADR-011](ADR-011-correo-gmail-del-estudio.md) |
 | D-08 | Hosting de backend y frontend | Servidor local del estudio con Docker; frontend local o en un servicio gratuito; dominio por reservar | **Cerrada:** [ADR-014](ADR-014-alojamiento-inicial-local.md) |
 | D-09 | Moneda, impuestos y facturación electrónica | Moneda **PEN** decidida ([ADR-004](ADR-004-pagos-validacion-manual.md)); boleta o factura fuera de la v1 ([ADR-010](ADR-010-pagos-estados-y-cancelacion.md)); IGV 18 % incluido en los precios y parámetros con barreras ([ADR-013](ADR-013-impuestos-y-parametros-sensibles.md)) | Parcial (facturación electrónica) |
 | D-10 | Sello/Mánager y Músico de sesión | ¿Roles del sistema o fuera de alcance v1? | **Cerrada:** [ADR-008](ADR-008-acceso-y-roles-v1.md) (fuera de la v1) |
-| D-11 | Políticas de cancelación y reembolso del anticipo | v1: el cliente con pagos lo pide al estudio; el Administrador cancela con nota del reembolso gestionado fuera; política de devolución sin definir | **Parcial:** [ADR-010](ADR-010-pagos-estados-y-cancelacion.md) |
+| D-11 | Políticas de cancelación y reembolso del anticipo | v1: el cliente con pagos lo pide al estudio; el Administrador cancela con nota del reembolso gestionado fuera; política de devolución sin definir | **Cerrada:** [ADR-015](ADR-015-cancelacion-conservacion-y-correcciones.md) (sustituye la v1 de [ADR-010](ADR-010-pagos-estados-y-cancelacion.md)) |
 | D-12 | Asignación de personal | El informe usa `idIngeniero` único en `reserva`; RF-07 exige varios roles por sesión | — |
 | D-13 | Archivo y plan de Figma | URL del archivo maestro, plan y asiento (determinan límites de uso del MCP) | **Cerrada:** [ADR-001](ADR-001-figma-fuente-extraccion.md) |
 | D-14 | Code Connect de Figma | Vincular componentes de Figma con el código; aporta precisión pero exige mantenimiento | **Cerrada:** [ADR-002](ADR-002-code-connect-descartado.md) |
