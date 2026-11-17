@@ -1,5 +1,7 @@
 """RF-17 etapa A: perfil reforzado, pendientes y consentimientos (stack local, RLS real)."""
 
+import threading
+import time
 from collections.abc import Callable
 from typing import Any
 
@@ -154,6 +156,18 @@ async def test_patch_guarda_documento_domicilio_y_redes_y_el_get_los_devuelve(
     assert (await cliente.get(PERFIL, headers=_con(u))).json()["documento"] == DNI
 
 
+@pytest.mark.parametrize("tipo", ["ce", "pasaporte"])
+async def test_el_documento_de_extranjeria_pierde_los_espacios_internos(
+    cliente: AsyncClient, crear_usuario: Crear, tipo: str
+) -> None:
+    u = crear_usuario()
+    r = await cliente.patch(
+        PERFIL, headers=_con(u), json={"documento": {"tipo": tipo, "numero": "ab 123456"}}
+    )
+    assert r.status_code == 200
+    assert r.json()["documento"] == {"tipo": tipo, "numero": "AB123456"}
+
+
 async def test_el_documento_de_extranjeria_se_normaliza_a_mayusculas(
     cliente: AsyncClient, crear_usuario: Crear
 ) -> None:
@@ -288,6 +302,34 @@ async def test_un_documento_repetido_no_bloquea_y_marca_ambas_cuentas(
     cambio = {"documento": {"tipo": "dni", "numero": "76543210"}}
     await cliente.patch(PERFIL, headers=_con(b), json=cambio)
     assert not ({str(a.id), str(b.id)} & await marcados())
+
+
+def test_dos_cuentas_que_guardan_el_mismo_documento_a_la_vez_quedan_marcadas(
+    configuracion: Configuracion, crear_usuario: Crear
+) -> None:
+    a, b = crear_usuario(), crear_usuario()
+    cambio = (
+        "update public.usuario set documento_tipo = 'dni', documento_numero = '55443322' "
+        "where id = %s"
+    )
+    url = configuracion.url_base_datos_admin
+    with psycopg.connect(url) as ca, psycopg.connect(url) as cb:
+        ca.execute(cambio, (a.id,))  # A abre su transaccion sin confirmar
+
+        def guardar_b() -> None:
+            cb.execute(cambio, (b.id,))
+            cb.commit()
+
+        hilo = threading.Thread(target=guardar_b)
+        hilo.start()
+        time.sleep(1)  # B corre en paralelo; con el bloqueo espera a A, sin el confirma ya
+        ca.commit()
+        hilo.join(10)
+    with psycopg.connect(url) as c:
+        filas = c.execute(
+            "select documento_repetido from public.usuario where id = any(%s)", ([a.id, b.id],)
+        ).fetchall()
+    assert filas == [(True,), (True,)]
 
 
 async def test_el_filtro_de_documento_repetido_es_del_administrador(

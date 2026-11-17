@@ -27,7 +27,7 @@ CONTEXTOS = (
 # La politica no se "acepta": queda registrada la version mostrada (CA-04).
 TIPOS_DEL_REGISTRO = frozenset({"terminos_uso", "politica_privacidad", "declaracion_agrupacion"})
 AVISO_MINIMO = timedelta(days=15)
-_SEMVER = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
+_SEMVER = re.compile(r"^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$")
 
 
 @dataclass(frozen=True)

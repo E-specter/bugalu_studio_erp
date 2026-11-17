@@ -34,7 +34,7 @@ class Documento(_Cuerpo):
 
     @model_validator(mode="after")
     def _formato(self) -> Documento:
-        self.numero = self.numero.strip().upper()
+        self.numero = "".join(self.numero.split()).upper()
         if not _NUMERO[self.tipo].fullmatch(self.numero):
             raise ValueError("Numero de documento invalido.")
         return self

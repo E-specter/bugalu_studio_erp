@@ -40,7 +40,11 @@ def test_el_html_crudo_sale_escapado(entrada: str) -> None:
         "vbscript:x",
         "data:text/html;base64,PHNjcmlwdD4=",
         "file:///etc/passwd",
-        "mailto:a@b.pe",
+        "mailto:",
+        "mailto:javascript:alert(1)",
+        "MAILTO:javascript:alert(1)",
+        "mailto:a@b.pe?body=x",
+        "mailto:a@b.pe,c@d.pe",
         "//evil.example/x",
     ],
 )
@@ -61,3 +65,8 @@ def test_un_enlace_a_una_imagen_peligrosa_pierde_su_origen() -> None:
 )
 def test_los_enlaces_http_https_y_relativos_se_conservan(destino: str) -> None:
     assert f'href="{destino}"' in markdown_a_html(f"[clic]({destino})")
+
+
+@pytest.mark.parametrize("destino", ["mailto:hola@bugalu.pe", "MAILTO:hola@bugalu.pe"])
+def test_un_enlace_mailto_con_direccion_se_conserva(destino: str) -> None:
+    assert f'href="{destino}"' in markdown_a_html(f"[correo]({destino})")

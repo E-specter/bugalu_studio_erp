@@ -7,9 +7,11 @@ from psycopg import AsyncConnection
 from psycopg.types.json import Jsonb
 
 from bugalu.compartido.errores import (
+    AvisoInsuficiente,
     NoEncontrado,
     SinPermiso,
     TextoDesactualizado,
+    VersionInvalida,
     VersionProgramada,
     VersionVigente,
 )
@@ -98,6 +100,14 @@ class RepositorioTextosPostgres:
         except psycopg.errors.RaiseException as error:
             if error.diag.message_primary == "version_programada":
                 raise VersionProgramada("Ya hay una version programada de este texto.") from error
+            if (
+                error.diag.message_primary == "version_invalida"
+            ):  # la base repite las reglas de CA-02
+                raise VersionInvalida("La version no es mayor que la ultima.") from error
+            if error.diag.message_primary == "aviso_insuficiente":
+                raise AvisoInsuficiente(
+                    "Una version mayor o menor exige 15 dias de aviso."
+                ) from error
             raise
         return _texto(filas[0])
 

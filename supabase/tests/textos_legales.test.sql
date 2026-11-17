@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(62);
+select plan(72);
 
 -- RF-17 (etapa A): textos legales versionados e inmutables y aceptaciones inmutables.
 insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data)
@@ -138,5 +138,27 @@ select throws_ok($$update public.aceptacion set retirada_en = null where context
 select lives_ok($$delete from auth.users where id = '00000000-0000-0000-0000-0000000000c1'$$, 'borrar la cuenta borra sus aceptaciones');
 select is((select count(*)::int from public.aceptacion), 0, 'no quedan aceptaciones de la cuenta borrada');
 
+-- Correcciones de la auditoria: tope de cifras de la version y reglas de CA-02 en la propia funcion.
+select throws_ok($$insert into public.texto_legal (tipo, version, tipo_cambio, contenido, vigente_desde) values ('condiciones_contratacion', '1.0.3000000000', 'parche', 'x', now())$$,
+  '23514', null, 'una parte de la version no pasa de nueve cifras');
+select throws_ok($$insert into public.texto_legal (tipo, version, tipo_cambio, contenido, vigente_desde) values ('condiciones_contratacion', '3000000000.0.0', 'mayor', 'x', now())$$,
+  '23514', null, 'tampoco la parte mayor');
+select lives_ok($$insert into public.texto_legal (tipo, version, tipo_cambio, contenido, vigente_desde) values ('condiciones_contratacion', '999999999.999999999.999999999', 'mayor', 'x', now() + interval '1 day')$$,
+  'nueve cifras si caben');
+select lives_ok($$delete from public.texto_legal where tipo = 'condiciones_contratacion'$$, 'se retira la programada de prueba');
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ad","role":"authenticated"}', true);
+select throws_ok($$select public.publicar_texto_legal('condiciones_contratacion', '1.0.3000000000', 'parche', 'x', '{}', null, now())$$,
+  '23514', null, 'publicar una version enorme falla antes de dejar nada');
+select lives_ok($$select public.publicar_texto_legal('condiciones_contratacion', '1.0.0', 'mayor', 'x', '{}', null, now() - interval '3 days')$$,
+  'la primera version puede regir ya, con fecha pasada');
+select throws_ok($$select public.publicar_texto_legal('condiciones_contratacion', '0.9.0', 'mayor', 'x', '{}', null, now() + interval '20 days')$$,
+  'P0001', 'version_invalida', 'una version inferior no se publica por SQL');
+select throws_ok($$select public.publicar_texto_legal('condiciones_contratacion', '1.1.0', 'mayor', 'x', '{}', null, now() + interval '20 days')$$,
+  'P0001', 'version_invalida', 'la version debe ser coherente con el tipo de cambio');
+select throws_ok($$select public.publicar_texto_legal('condiciones_contratacion', '2.0.0', 'mayor', 'x', '{}', null, now() - interval '1 day')$$,
+  'P0001', 'aviso_insuficiente', 'una mayor con fecha pasada no se publica por SQL');
+select throws_ok($$select public.publicar_texto_legal('condiciones_contratacion', '1.1.0', 'menor', 'x', '{}', null, now() + interval '14 days')$$,
+  'P0001', 'aviso_insuficiente', 'una menor exige 15 dias de aviso');
 select * from finish();
 rollback;

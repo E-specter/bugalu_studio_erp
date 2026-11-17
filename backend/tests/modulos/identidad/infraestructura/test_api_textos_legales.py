@@ -158,6 +158,16 @@ async def test_422_de_publicacion_y_la_base_queda_intacta(
     assert _filas(sql) == antes
 
 
+@pytest.mark.parametrize("version", ["1.0.3000000000", "3000000000.0.0", "1.0.1000000000"])
+async def test_una_parte_de_la_version_con_mas_de_nueve_cifras_es_422_y_no_rompe_las_lecturas(
+    cliente: AsyncClient, administrador: Cabeceras, sql: Sql, version: str
+) -> None:
+    r = await _publicar(cliente, administrador, version=version, tipo_cambio="parche")
+    assert (r.status_code, r.json()["error"]["codigo"]) == (422, "version_invalida")
+    assert _filas(sql) == []
+    assert (await cliente.get(BASE)).status_code == 200
+
+
 @pytest.mark.parametrize(
     "cambios",
     [
