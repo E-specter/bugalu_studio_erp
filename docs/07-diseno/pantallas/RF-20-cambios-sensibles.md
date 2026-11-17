@@ -40,8 +40,8 @@ Formatos: [formato de datos](../patrones/estructura-app.md#formato-de-datos) (po
 
 | Panel | Componente (variante) | Contenido |
 |---|---|---|
-| `C1 QUÉ CAMBIA` | [panel](../componentes/panel.md) Base + [tabla](../componentes/tabla.md) Compacta | Ayuda: `nombre_recurso`. CAMPO · ANTES · DESPUÉS; DESPUÉS en `fuente-peso-titulo` (la diferencia no se marca solo con color) |
-| `C2 IMPACTO` | panel Base + tabla Partidas | EJEMPLO · ANTES · DESPUÉS (`impacto.ejemplos`, `concepto` tal cual) → [aviso](../componentes/aviso.md) Información con `operaciones_vigentes` |
+| `C1 QUÉ CAMBIA` | [panel](../componentes/panel.md) Base + [tabla](../componentes/tabla.md) Partidas, sin pie | Ayuda: `nombre_recurso`. CAMPO · ANTES · DESPUÉS; ANTES y DESPUÉS a la derecha y DESPUÉS en `fuente-peso-titulo` (la diferencia no se marca solo con color). Partidas y no Compacta: con tres columnas cabe a 320 px y la cabecera ANTES / DESPUÉS sigue visible en móvil, que es justo la comparación (revisión visual TAREA-RF20-6) |
+| `C2 IMPACTO` | panel Base + tabla Partidas, sin pie | EJEMPLO · ANTES · DESPUÉS (`impacto.ejemplos`, `concepto` tal cual; a 390 el concepto se ajusta en varias líneas y las cifras no se parten) → [aviso](../componentes/aviso.md) Información con `operaciones_vigentes`, solo título, separado de la tabla por `espacio-4` |
 | `C3 CONFIRMAR` | panel Base + [campo](../componentes/campo.md) Texto + [barra de acciones](../componentes/barra-acciones.md) Formulario | ESCRIBE CONFIRMAR (`autocomplete="off"`, `autocapitalize="characters"`, `spellcheck="false"`; se puede pegar) → "Cancelar" (Secundario grande) + "Aplicar cambio" (Primario grande) |
 
 "Aplicar cambio" lleva `aria-disabled="true"` (sigue enfocable) hasta que el campo, sin espacios a los extremos, sea exactamente `CONFIRMAR`; pulsarlo antes muestra el error del campo. "Cancelar" tiene el mismo tamaño y peso visual (CA-09). Una sola columna también en escritorio: la revisión se lee de arriba abajo.
@@ -67,7 +67,8 @@ Formatos: [formato de datos](../patrones/estructura-app.md#formato-de-datos) (po
 ## Integración sin rehacer las pantallas
 
 - [Tarifas](RF-02-tarifas.md): S2, E2 y R1 conservan campos, botones y avisos; bajo "Guardar servicio", "Guardar especialista" y "Guardar recargos" se añade la ayuda "Si cambias un importe o un porcentaje, te mostraremos el impacto y te pediremos confirmarlo." En Lista, la ranura `acciones` suma "Impuestos" (Secundario como enlace) junto a "Recargos y feriados".
-- [Parámetros](RF-03-franjas.md): se añade el panel `P3 CANCELACIÓN Y ADELANTO` (LÍMITE DEL NIVEL 1 (HORAS), LÍMITE DEL NIVEL 2 (HORAS), ADELANTO PARA CONFIRMAR (%): `type="number"`, `step="1"`, obligatorios; adelanto de 1 a 100) antes de "Guardar parámetros", con la misma ayuda bajo el botón. Los parámetros sensibles de ADR-015 que aún no tienen nombre en el contrato se suman a P3 con RF-18.
+- [Parámetros](RF-03-franjas.md): se añade el panel `P3 CANCELACIÓN Y ADELANTO` antes de "Guardar parámetros", con campos `type="number"`, `step="1"` y obligatorios, en este orden: ADELANTO PARA CONFIRMAR (%) (1 a 100), LÍMITE DEL NIVEL 1 (HORAS), LÍMITE DEL NIVEL 2 (HORAS), PENALIZACIÓN DEL NIVEL 2 (%) (0 a 100), TOLERANCIA DE INASISTENCIA (MIN), VIGENCIA DEL CRÉDITO (DÍAS), REPROGRAMACIONES DEL NIVEL 1 y REPROGRAMACIONES DEL NIVEL 2 (los de ADR-015 ya tienen nombre en el contrato). Las ayudas, en [parámetros, copy](RF-03-franjas.md#copy). Bajo el botón: "Si cambias un plazo, un porcentaje o un límite, te mostraremos el impacto y te pediremos confirmarlo."
+- [Impuestos](#impuestos): bajo "Revisar cambio", "Te mostraremos el impacto y te pediremos confirmarlo." (ahí siempre hay revisión).
 - El aviso fijo de S2 y E2 y el éxito de parámetros ya dicen que solo cambian las reservas nuevas: se mantienen.
 
 ## Impuestos
@@ -87,11 +88,11 @@ Origen: `Simulacion.impuesto` y `Reserva.precio.impuesto` (`{nombre, porcentaje,
 
 | Dónde | Cambio |
 |---|---|
-| Tabla Partidas de [reservar](RF-04-reservar.md#datos) (02 y R2) y [mis reservas](RF-04-mis-reservas.md) (D2) | `incluido`: TOTAL → fila "Incluye IGV ({p} %)" con `monto` → ANTICIPO. No incluido: SUBTOTAL (`base`) → "IGV ({p} %)" → TOTAL → ANTICIPO. La fila del IGV va en `fuente-peso-regular` (no es un total) |
-| Resumen persistente y Listo (05) | Bajo el total, `fuente-tamano-pequeno`: "Incluye IGV ({p} %): S/ 22,88" o "Más IGV ({p} %): S/ 22,88" |
+| Tabla Partidas de [reservar](RF-04-reservar.md#datos) (02 y R2) y [mis reservas](RF-04-mis-reservas.md) (D2) | `incluido`: TOTAL → fila "Incluye IGV ({p} %)" con `monto` → ANTICIPO. No incluido: SUBTOTAL (`base`) → "IGV ({p} %)" → TOTAL → ANTICIPO. La fila del IGV va en `fuente-peso-regular` (no es un total; `class="tabla-igv"`, ver [tabla](../componentes/tabla.md#código)) |
+| Resumen persistente y Listo (05) | Filas del `<dl>`, en el mismo orden que la tabla: `incluido`, TOTAL → INCLUYE IGV ({p} %) → ANTICIPO; no incluido, SUBTOTAL → MÁS IGV ({p} %) → TOTAL → ANTICIPO. "Más IGV" nunca va después del total: el total ya lo suma y se leería como un importe aparte (revisión visual TAREA-RF20-6, B1) |
 | SERVICIO del paso 02 (las tarifas públicas) | Ayuda de la `<legend>`: "Precios con IGV incluido ({p} %)." o "Precios sin IGV: el IGV ({p} %) se suma al total." |
-| [Registrar pago](RF-05-registrar-pago.md), lateral | Bajo IMPORTE DE LA CUOTA: "Incluye IGV ({p} %)." con el porcentaje de la reserva |
-| [Pagos](RF-05-pagos.md), V2 PAGO | `<dl>` suma IGV INCLUIDO ({p} %): "S/ 11,44 · base S/ 63,56" y la nota "Informativo: el comprobante se emite fuera de la app." |
+| [Registrar pago](RF-05-registrar-pago.md), lateral | Bajo IMPORTE DE LA CUOTA: "Incluye IGV ({p} %)." con el porcentaje de la reserva, también con precios sin IGV: la cuota sale del total, que siempre lo incluye |
+| [Pagos](RF-05-pagos.md), V2 PAGO | `<dl>` suma IGV INCLUIDO ({p} %): "S/ 11,44 · base S/ 63,56" y, debajo en la misma `<dd>`, la nota "Informativo: el comprobante se emite fuera de la app." como `gestion-ayuda` (`fuente-tamano-pequeno`, `color-texto-secundario`), no en la línea del dato |
 
 `{p}` es el porcentaje guardado en la operación, no el vigente (CA-03, CA-07).
 
@@ -103,7 +104,4 @@ Origen: `Simulacion.impuesto` y `Reserva.precio.impuesto` (`{nombre, porcentaje,
 
 ## Pendientes
 
-- **leader / dev-backend:** `impacto.ejemplos[].antes/despues` mezcla importes y fechas (plazos de pago): proponemos `tipo: "importe"|"fecha_hora"|"texto"` para formatearlos.
-- **leader / dev-backend:** nombre de `campo` en `recargos` (anidado); proponemos `noche.porcentaje`, `noche.desde`, `fin_de_semana.porcentaje`…
-- **leader / dev-backend:** la etiqueta "ANTICIPO 50 %" y "Al reservar · 50 %" deben salir de `porcentaje_adelanto`; proponemos exponerlo en `Simulacion` (en `Reserva` ya va en `parametros_aplicados`). `Cuota` sin `impuesto`: basta el porcentaje de la reserva (sin importe) salvo que se decida añadirlo.
-- **leader:** nombres de los parámetros de ADR-015 (penalización, tolerancia, crédito, reprogramaciones) para P3 (RF-18).
+Ninguno. Cerrados con la implementación (revisión visual TAREA-RF20-6): `impacto.ejemplos[].tipo` (`importe`, `fecha_hora`, `texto`), `campo` de recargos con punto (`noche.porcentaje`…), `porcentaje_adelanto` en `Simulacion` y los nombres de ADR-015 en P3.

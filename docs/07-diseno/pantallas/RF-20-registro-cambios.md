@@ -27,8 +27,8 @@ depende_de: [RF-20, ADR-013, diseno-brief, patron-estructura-app, patron-tablas-
 
 | Dato | Origen | Formato |
 |---|---|---|
-| Cambios | `GET /registro-cambios?desde=&hasta=&recurso=` → `[CambioRegistrado]` | Total "12 cambios"; orden de la API (más reciente primero) |
-| Fecha | `cambiado_en` | Relativa < 7 días con absoluta en `title`; si no, `D MMM AAAA, HH:mm` ([formato](../patrones/estructura-app.md#formato-de-datos)) |
+| Cambios | `GET /registro-cambios?desde=&hasta=&recurso=` → `[CambioRegistrado]` | Total visible en la ayuda del panel ("12 cambios del 17 oct al 16 nov.", como pide [tablas y tableros](../patrones/tablas-y-tableros.md)); orden de la API (más reciente primero) |
+| Fecha | `cambiado_en` | `<time datetime>`. Relativa < 7 días ("hace 2 h", "hace 3 días") con la absoluta en `title`; si no, `D MMM AAAA, HH:mm` ([formato](../patrones/estructura-app.md#formato-de-datos)). El `title` es un extra para el ratón: la relativa basta sola |
 | Autor | `autor.nombre` | Tal cual |
 | Recurso | `recurso`, `nombre_recurso` | `nombre_recurso` en la celda principal ("Grabación de voces"); debajo, [etiqueta](../componentes/etiqueta-tecnica.md) Neutra IMPUESTOS · SERVICIO · ESPECIALISTA · RECARGOS · PARÁMETROS |
 | Campo, antes, después | `campo`, `anterior`, `nuevo` | Etiqueta y formato de la tabla de campos de [cambios sensibles](RF-20-cambios-sensibles.md#flujo-con-barreras); valor desconocido, tal cual |
@@ -40,7 +40,7 @@ depende_de: [RF-20, ADR-013, diseno-brief, patron-estructura-app, patron-tablas-
 |---|---|---|
 | Encabezado | [encabezado-pantalla](../componentes/encabezado-pantalla.md) App | Ruta, índice, título y descripción; sin acción |
 | Controles | `<form method="get">` | DESDE · HASTA · RECURSO en fila (una columna en móvil) + "Filtrar" ([botón](../componentes/boton.md) Secundario) y, si el filtro no es el de por defecto, enlace "Ver los últimos 30 días" |
-| Principal | [panel](../componentes/panel.md) `CAMBIOS` + [tabla](../componentes/tabla.md) Compacta | FECHA · AUTOR · RECURSO · CAMPO · ANTES · DESPUÉS. Ayuda del panel: "Nadie puede editar ni borrar este registro." |
+| Principal | [panel](../componentes/panel.md) `CAMBIOS` + [tabla](../componentes/tabla.md) Compacta | FECHA · AUTOR · RECURSO · CAMPO · ANTES · DESPUÉS. Ayuda del panel: "{n} cambios del {desde} al {hasta}. Nadie puede editar ni borrar este registro." (sin el total cuando está vacío) |
 
 Patrones: [tablas y tableros](../patrones/tablas-y-tableros.md), [estados del sistema](../patrones/estados-sistema.md). Sin acción primaria: es una vista de consulta. Adaptabilidad: < `punto-quiebre-escritorio`, cada fila pasa a tarjeta (`<dl>`). Sin paginación: el contrato limita el rango a 366 días y el volumen es bajo.
 
