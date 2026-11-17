@@ -94,7 +94,27 @@ test.describe('01 Horario', () => {
     await montar(page, { sesion: false });
     await page.goto(`/reservar/?fecha=2026-11-16&inicio=${encodeURIComponent(INI)}&duracion=420`);
     const duracion = page.getByRole('combobox', { name: 'Duración' });
-    expect(await duracion.locator('option').allTextContents()).toEqual(['30 min', '1 h', '1 h 30 min', '2 h', '2 h 30 min', '3 h', '3 h 30 min']);
+    await expect(duracion.locator('option')).toHaveText(['30 min', '1 h', '1 h 30 min', '2 h', '2 h 30 min', '3 h', '3 h 30 min']); // con reintentos: las opciones llegan con la disponibilidad
+    await expect(duracion).toHaveValue('60');
+  });
+
+  test('al restaurar el inicio de la URL, la duración no se ofrece hasta saber qué cabe (la disponibilidad tarda)', async ({ page }) => {
+    await montar(page, { sesion: false });
+    let soltar;
+    const espera = new Promise((r) => (soltar = r));
+    await page.route(`${API}/disponibilidad?**`, async (r) => {
+      await espera;
+      await r.fulfill(json(200, DISP));
+    });
+    const salas = page.waitForResponse(`${API}/salas`);
+    await page.goto(`/reservar/?fecha=2026-11-16&inicio=${encodeURIComponent(INI)}&duracion=420`);
+    await salas;
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(r)))));
+    const duracion = page.getByRole('combobox', { name: 'Duración' });
+    await expect(duracion).toBeDisabled(); // antes ofrecía hasta 8 h con 7 h elegida
+    soltar();
+    await expect(duracion).toBeEnabled();
+    await expect(duracion.locator('option')).toHaveText(['30 min', '1 h', '1 h 30 min', '2 h', '2 h 30 min', '3 h', '3 h 30 min']);
     await expect(duracion).toHaveValue('60');
   });
 

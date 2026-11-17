@@ -207,11 +207,9 @@ test('3. el Administrador ve el contador, la captura cargada desde Storage y rec
 test('4. otro pago con un PDF: el cliente ve el contacto en vez de Cancelar; el Administrador lo aprueba y la reserva queda Confirmada', async () => {
   await registrarPago(paginaA, op2, { name: 'voucher.pdf', mimeType: 'application/pdf', buffer: PDF });
   await expect(paginaA.getByRole('row', { name: /Al reservar/ })).toContainText('En validación');
-  // Con un pago registrado (reserva aún pre-reservada) el cliente no cancela: ve el aviso y el contacto del estudio.
-  await expect(paginaA.getByRole('button', { name: 'Cancelar reserva' })).toHaveCount(0);
-  await expect(paginaA.getByText('Ya registraste un pago, así que la cancelación la gestiona el estudio.')).toBeVisible();
-  await expect(paginaA.getByText(/Escribenos por WhatsApp al 999 999 999/)).toBeVisible();
-  await captura(paginaA, '9-sin-cancelar-contacto');
+  // Desde RF-18 el cliente con un pago en validación sí puede solicitar la cancelación (con vista previa de nivel); el estudio ya no la gestiona por fuera.
+  await expect(paginaA.getByRole('button', { name: 'Solicitar cancelación' })).toBeVisible();
+  await captura(paginaA, '9-solicitar-cancelacion');
   await paginaAdmin.goto('/app/pagos/');
   await paginaAdmin.getByRole('link', { name: `Revisar pago de ${folio}` }).click();
   await expect(paginaAdmin.getByRole('link', { name: /Abrir comprobante\.pdf/ })).toHaveAttribute('href', new RegExp(`^${SUPABASE}/storage/v1/`));
@@ -226,15 +224,17 @@ test('4. otro pago con un PDF: el cliente ve el contacto en vez de Cancelar; el 
   await captura(paginaA, '8-detalle-confirmada');
 });
 
-test('5. confirmada y con pagos el cliente no cancela y el Administrador cancela con nota', async () => {
-  await expect(paginaA.getByRole('button', { name: 'Cancelar reserva' })).toHaveCount(0);
+test('5. confirmada y con pagos el Administrador cancela por el estudio con nota (el cliente la cancelaría con su vista previa)', async () => {
+  await expect(paginaA.getByRole('button', { name: 'Solicitar cancelación' })).toBeVisible();
   await paginaAdmin.goto(`/app/reservas/detalle?id=${idReserva}`);
   await paginaAdmin.getByRole('button', { name: 'Cancelar reserva', exact: true }).click();
-  await paginaAdmin.getByRole('button', { name: `Cancelar reserva ${folio}` }).click();
-  await expect(paginaAdmin.getByText('Escribe qué pasa con el pago: cómo se devuelve o por qué no.', { exact: true }).first()).toBeVisible();
-  await paginaAdmin.getByLabel(/Nota sobre el reembolso/).fill('Devolvemos todo por Yape en 48 h');
+  const panel = paginaAdmin.getByRole('region', { name: new RegExp(`Cancelar reserva ${folio}`) });
+  await panel.getByRole('radio', { name: /El estudio/ }).check();
+  await panel.getByRole('button', { name: `Cancelar reserva ${folio}` }).click();
+  await expect(paginaAdmin.getByText('Escribe la nota para el cliente.').first()).toBeVisible();
+  await panel.getByLabel(/Nota para el cliente/).fill('Devolvemos todo por Yape en 48 h');
   await captura(paginaAdmin, '10-cancelar-nota');
-  await paginaAdmin.getByRole('button', { name: `Cancelar reserva ${folio}` }).click();
+  await panel.getByRole('button', { name: `Cancelar reserva ${folio}` }).click();
   await expect(paginaAdmin.locator('[data-avisos] .aviso')).toContainText('Reserva cancelada');
   await paginaA.goto(`/app/reservas/detalle?id=${idReserva}`);
   await expect(paginaA.locator('[data-estado-reserva]')).toContainText('Nota del estudio: Devolvemos todo por Yape en 48 h');

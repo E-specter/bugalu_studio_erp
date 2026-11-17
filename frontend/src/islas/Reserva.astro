@@ -329,6 +329,9 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
     async connectedCallback() {
       this.paso = this.getAttribute('paso')!;
       this.leerUrl();
+      // Antes de cualquier await. El calendario puede haber avisado el inicio de la URL antes de que esta isla existiera (el aviso no se repite solo): se le pide de nuevo.
+      this.addEventListener('calendario-inicio', (ev) => this.alElegirInicio((ev as CustomEvent).detail));
+      this.q<any>('bugalu-calendario')?.avisarInicio?.();
       if (!(await this.guardar())) return;
       this.addEventListener('click', (ev) => this.alPulsar(ev));
       this.addEventListener('submit', (ev) => {
@@ -336,7 +339,6 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
         this.guardarCuenta();
       });
       this.addEventListener('change', (ev) => this.alCambiar(ev));
-      this.addEventListener('calendario-inicio', (ev) => this.alElegirInicio((ev as CustomEvent).detail));
       // Hijo directo: el calendario ya pintado trae su propio [data-cuerpo] antes en el DOM.
       this.q('.res-principal > [data-cuerpo]')!.hidden = false;
       const lateral = this.q('[data-cuerpo-lateral]');
@@ -346,10 +348,9 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
       this.q('.res-acciones [data-anterior]')?.setAttribute('href', this.url(this.paso === 'confirmar' || this.paso === 'cuenta' ? 'servicio' : 'horario'));
       // Salas para el nombre del resumen (el calendario trae las suyas); un fallo no bloquea el paso.
       this.salas = await listarSalas().catch(() => []);
-      if (this.paso === 'horario') this.iniciarHorario();
-      else if (this.paso === 'listo') await this.iniciarListo();
+      if (this.paso === 'listo') await this.iniciarListo();
       else if (this.paso === 'cuenta') await this.iniciarCuenta();
-      else await this.cargarCatalogo();
+      else if (this.paso !== 'horario') await this.cargarCatalogo();
       this.resumen();
       if (this.paso === 'listo' || this.paso === 'horario' || this.paso === 'cuenta') this.titulo().focus();
     }
@@ -566,9 +567,7 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
 
     // --- 01 Horario ---
 
-    iniciarHorario() {
-      if (this.e.inicio) this.opcionesDuracion();
-    }
+    // Con un inicio en la URL, la duración se ofrece cuando el calendario sabe qué cabe y avisa (calendario-inicio): antes sería adivinar hasta 8 h.
     alElegirInicio(detalle: { inicio: string; minutosMaximos: number }) {
       this.e.inicio = detalle.inicio;
       this.max = detalle.minutosMaximos;

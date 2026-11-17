@@ -368,11 +368,11 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       return anuncio;
     }
 
-    // Un inicio restaurado desde la URL emite el mismo evento que al elegirlo, para que Reserva limite la duración.
+    // Un inicio restaurado desde la URL emite el mismo evento que al elegirlo, para que Reserva limite la duración. Reserva lo vuelve a pedir al enlazarse (sin datos aún, no hace nada: lo emitirá al cargar).
     avisarInicio() {
       const { inicio } = this.estado;
       const ms = inicio ? Date.parse(inicio) : NaN;
-      if (this.modo !== 'reserva' || !(this.modelo.estadoDe(ms)?.e === 'libre')) return;
+      if (this.modo !== 'reserva' || !(this.modelo?.estadoDe(ms)?.e === 'libre')) return;
       this.dispatchEvent(new CustomEvent('calendario-inicio', { bubbles: true, detail: { inicio, minutosMaximos: this.maximo(ms) } }));
     }
 

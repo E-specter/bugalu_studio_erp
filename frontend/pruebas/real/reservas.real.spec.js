@@ -212,9 +212,9 @@ test('5. el cliente cancela desde el detalle y el tramo vuelve a estar libre', a
   await paginaA.goto('/app/reservas/');
   await paginaA.getByRole('link', { name: new RegExp(`Ver reserva ${folio}`) }).click();
   await expect(paginaA.getByRole('heading', { level: 1 })).toHaveText(new RegExp(folio, 'i'));
-  await paginaA.getByRole('button', { name: 'Cancelar reserva', exact: true }).click();
+  await paginaA.getByRole('button', { name: 'Solicitar cancelación' }).click(); // desde RF-18 el cliente ve la vista previa y confirma
   await captura(paginaA, '5-confirmar-cancelacion');
-  await paginaA.getByRole('button', { name: /Sí, cancelar|Confirmar cancelación|Cancelar reserva/ }).last().click();
+  await paginaA.getByRole('button', { name: 'Confirmar cancelación' }).click();
   await expect(paginaA.getByText('Cancelada', { exact: true }).first()).toBeVisible();
   await captura(paginaA, '5-cancelada');
   await paginaB.goto(`/reservar/?fecha=${ymd(MARTES)}`);

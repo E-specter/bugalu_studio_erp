@@ -465,6 +465,29 @@ test('navegacion: PAGOS es el destino actual en las pantallas de pagos y el even
   await expect(page.locator('[data-contador]:visible')).toHaveCount(0);
 });
 
+test('navegacion: la carga inicial del contador, si llega tarde, no pisa el conteo que ya avisó una pantalla', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await base(page);
+  let soltar;
+  const espera = new Promise((r) => (soltar = r));
+  let enVuelo;
+  const pedida = new Promise((r) => (enVuelo = r));
+  // La lista de la carga inicial queda retenida hasta que la pantalla ya avisó su conteo (carrera que antes pisaba el 7 con el 2 viejo).
+  await page.route((u) => u.pathname === '/api/v1/pagos', async (r) => {
+    enVuelo();
+    await espera;
+    await r.fulfill(json(200, POR_VALIDAR));
+  });
+  await page.goto(REVISAR);
+  await pedida;
+  await page.evaluate(() => document.dispatchEvent(new CustomEvent('bugalu:pagos-por-validar', { detail: 7 })));
+  const enlace = page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: /Pagos/ });
+  await expect(enlace).toHaveAccessibleName('Pagos 7 pagos por validar');
+  soltar();
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  await expect(enlace).toHaveAccessibleName('Pagos 7 pagos por validar');
+});
+
 test('navegacion (movil): cinco destinos en la barra con PAGOS y contador; FRANJAS y TARIFAS en el menu', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await base(page);

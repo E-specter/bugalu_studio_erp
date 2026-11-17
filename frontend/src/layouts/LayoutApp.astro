@@ -63,6 +63,7 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
 
   // Rol del perfil cargado: muestra los destinos del Administrador y fija la variante (Estudio o Portal).
   let rol: string | null = null;
+  let avisos = 0;
   function aplicar(perfil: { rol: string }) {
     rol = perfil.rol;
     document.querySelectorAll<HTMLElement>('[data-solo]').forEach((e) => (e.hidden = !e.dataset.solo!.split(' ').includes(rol ?? '')));
@@ -70,7 +71,10 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
     // El título de sección y el área nacen neutros (vacíos y ocultos): aparecen solo al conocer el rol.
     document.querySelectorAll<HTMLElement>('[data-seccion]').forEach((e) => { e.textContent = portal ? 'Portal' : 'Estudio'; e.removeAttribute('data-neutro'); });
     avisarTextos(perfil as { pendientes?: { contexto: string }[] });
-    if (rol === 'administrador') listarPagos().then((l) => contarPagos(l.length), () => contarPagos(0));
+    if (rol === 'administrador') {
+      const vistos = avisos; // un conteo que la pantalla ya avisó es más reciente que esta carga inicial: no se pisa
+      listarPagos().then((l) => vistos === avisos && contarPagos(l.length), () => vistos === avisos && contarPagos(0));
+    }
     document.querySelectorAll<HTMLElement>('[data-area]').forEach((e) => { e.textContent = portal ? 'Portal del artista' : 'Panel interno'; e.removeAttribute('data-neutro'); });
   }
 
@@ -103,7 +107,10 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
     });
   }
 
-  document.addEventListener('bugalu:pagos-por-validar', (e) => contarPagos((e as CustomEvent).detail));
+  document.addEventListener('bugalu:pagos-por-validar', (e) => {
+    avisos++;
+    contarPagos((e as CustomEvent).detail);
+  });
   document.addEventListener('bugalu:perfil', (e) => aplicar((e as CustomEvent).detail));
   // La pantalla de perfil ya pide los datos y avisa con el evento; las demás los piden aquí (solo con sesión).
   if (!document.querySelector('bugalu-perfil') && (await obtenerToken())) obtenerPerfil().then(aplicar, () => {});

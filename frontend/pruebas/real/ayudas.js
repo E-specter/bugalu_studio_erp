@@ -1,5 +1,6 @@
 // Ayudas compartidas por los recorridos reales. Desde RF-17 reservar exige textos de registro aceptados, perfil con documento y la version de las condiciones.
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 export const API = 'http://127.0.0.1:8010/api/v1';
@@ -47,3 +48,23 @@ export const dia = (n) => new Date(lunesSiguiente.getTime() + n * 86400_000);
 export const ymd = (d) => d.toISOString().slice(0, 10);
 export const inicio = (d, hora) => `${ymd(d)}T${hora}:00-05:00`;
 export const hoyMasDias = (n) => ymd(new Date(lima.getTime() + n * 86400_000));
+
+// Solo pruebas: la clave de servicio borra los objetos de Storage que crea el recorrido (Configuracion y src/ no la conocen).
+export const claveServicio = () => process.env.CLAVE_SERVICIO_SUPABASE_PRUEBAS ?? readFileSync(resolve(BACKEND, '.env'), 'utf8').match(/^CLAVE_SERVICIO_SUPABASE_PRUEBAS=(.+)$/m)?.[1].trim();
+
+// Vacia `comprobantes/<id>/` de cada usuario y devuelve cuantos objetos borro; falla si quedan huerfanos.
+export async function vaciarComprobantes(ids, supabase = 'http://127.0.0.1:45621') {
+  const clave = claveServicio();
+  const cabeceras = { apikey: clave, authorization: `Bearer ${clave}`, 'content-type': 'application/json' };
+  const listar = async (id) => (await (await fetch(`${supabase}/storage/v1/object/list/comprobantes`, { method: 'POST', headers: cabeceras, body: JSON.stringify({ prefix: id, limit: 100 }) })).json()).map((o) => `${id}/${o.name}`);
+  let borrados = 0;
+  let restos = 0;
+  for (const id of ids) {
+    const objetos = await listar(id);
+    borrados += objetos.length;
+    if (objetos.length) await fetch(`${supabase}/storage/v1/object/comprobantes`, { method: 'DELETE', headers: cabeceras, body: JSON.stringify({ prefixes: objetos }) });
+    restos += (await listar(id)).length;
+  }
+  if (restos) throw new Error(`${restos} huérfanos en comprobantes`);
+  return borrados;
+}
