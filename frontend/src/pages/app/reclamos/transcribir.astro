@@ -1,0 +1,18 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Boton from '../../../componentes/Boton.astro';
+import Reclamacion from '../../../islas/Reclamacion.astro';
+---
+
+<LayoutApp titulo="Transcribir hoja">
+  <EncabezadoPantalla
+    titulo="TRANSCRIBIR HOJA"
+    indice="[A12] CONTROL / RECLAMOS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Reclamos', href: '/app/reclamos/' }, { etiqueta: 'Transcribir' }]}
+    descripcion="Copia aquí, tal cual, una hoja del libro de respaldo. Recibe un número de la app y su plazo cuenta desde la fecha original."
+  >
+    <Boton slot="acciones" variante="secundario" href="/app/reclamos/">Volver a reclamos</Boton>
+  </EncabezadoPantalla>
+  <Reclamacion transcripcion />
+</LayoutApp>

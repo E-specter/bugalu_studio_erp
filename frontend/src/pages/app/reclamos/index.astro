@@ -1,0 +1,21 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Boton from '../../../componentes/Boton.astro';
+import Reclamos from '../../../islas/Reclamos.astro';
+---
+
+<!-- Cliente (Mis reclamos) y Administrador (bandeja) comparten ruta: la isla cambia titulo, indice y acciones segun el rol (data-para). -->
+<LayoutApp titulo="Reclamos">
+  <EncabezadoPantalla
+    titulo="RECLAMOS"
+    indice="RECLAMOS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Reclamos' }]}
+    descripcion="Hojas del Libro de Reclamaciones de Bugalú Studio."
+  >
+    <Boton slot="acciones" href="/libro-de-reclamaciones/" data-para="cliente" hidden>Presentar un reclamo</Boton>
+    <Boton slot="acciones" variante="secundario" href="/app/reclamos/transcribir" data-para="administrador" hidden>Transcribir hoja del libro físico</Boton>
+    <Boton slot="acciones" variante="secundario" data-exportar data-para="administrador" hidden>Exportar CSV</Boton>
+  </EncabezadoPantalla>
+  <Reclamos vista="lista" />
+</LayoutApp>

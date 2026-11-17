@@ -1,0 +1,197 @@
+---
+// Hoja de reclamacion (ficha hoja-reclamacion.md): <template> que llena servicios/hoja-reclamacion.js con pintarHoja().
+// Las islas lo incluyen una vez y clonan la hoja; aqui viven su estilo y las reglas de impresion.
+import EtiquetaTecnica from './EtiquetaTecnica.astro';
+import IndicadorEstado from './IndicadorEstado.astro';
+import Archivo from './Archivo.astro';
+import { DEFINICIONES, LEYENDAS } from '../servicios/hoja-reclamacion.js';
+---
+
+<template data-plantilla-hoja>
+  <article class="hoja">
+    <header class="hoja-encabezado">
+      <div class="hoja-titulos">
+        <p class="hoja-antetitulo">LIBRO DE RECLAMACIONES</p>
+        <h2 class="hoja-titulo">HOJA DE RECLAMACIÓN <span data-numero-rotulo>N.º <span class="hoja-numero" data-numero></span></span></h2>
+        <p class="hoja-sin-numero" data-sin-numero>N.º Se asigna al enviar</p>
+        <div data-transcrita><EtiquetaTecnica texto=" " /></div>
+      </div>
+      <p class="hoja-fecha"><span class="hoja-rotulo">Fecha</span> <time data-fecha></time></p>
+    </header>
+    <dl class="hoja-datos hoja-proveedor">
+      <div><dt>Razón social</dt><dd data-proveedor="razon"></dd></div>
+      <div><dt>RUC</dt><dd data-proveedor="ruc"></dd></div>
+      <div><dt>Domicilio</dt><dd data-proveedor="domicilio"></dd></div>
+    </dl>
+    <section class="hoja-seccion" aria-labelledby="s1"><h3 id="s1">1. IDENTIFICACIÓN DEL CONSUMIDOR RECLAMANTE</h3><dl class="hoja-datos" data-seccion="1"></dl></section>
+    <section class="hoja-seccion" aria-labelledby="s2"><h3 id="s2">2. IDENTIFICACIÓN DEL BIEN CONTRATADO</h3><dl class="hoja-datos" data-seccion="2"></dl></section>
+    <section class="hoja-seccion" aria-labelledby="s3">
+      <h3 id="s3">3. DETALLE DE LA RECLAMACIÓN Y PEDIDO DEL CONSUMIDOR</h3>
+      <dl class="hoja-datos" data-seccion="3"></dl>
+      <div data-adjuntos-caja hidden>
+        <p class="hoja-rotulo">Adjuntos</p>
+        <ul class="hoja-adjuntos" data-adjuntos></ul>
+      </div>
+    </section>
+    <section class="hoja-seccion" aria-labelledby="s4" data-seccion-4>
+      <h3 id="s4">4. OBSERVACIONES Y ACCIONES ADOPTADAS POR EL PROVEEDOR</h3>
+      <dl class="hoja-datos" data-seccion="4"></dl>
+      <div class="hoja-sin-respuesta" data-sin-respuesta>
+        <IndicadorEstado tono="pendiente" texto="SIN RESPUESTA AÚN" />
+        <p class="hoja-plazo" data-plazo></p>
+      </div>
+    </section>
+    <footer class="hoja-pie">
+      <p>{DEFINICIONES.reclamo}</p>
+      <p>{DEFINICIONES.queja}</p>
+      {LEYENDAS.map((l) => <p>{l}</p>)}
+      <p class="hoja-copia" data-copia></p>
+    </footer>
+    <template data-archivo="sin"><Archivo variante="lectura" nombre=" " metadato=" " /></template>
+    <template data-archivo="abrir"><Archivo variante="lectura" nombre=" " metadato=" " href="#" /></template>
+  </article>
+</template>
+
+<style is:global>
+  .hoja {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+    padding: var(--espacio-5);
+    background: var(--color-fondo-superficie);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+  }
+  .hoja-encabezado {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    padding-block-end: var(--espacio-4);
+    border-block-end: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+  }
+  .hoja-titulos {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: var(--espacio-2);
+  }
+  .hoja-antetitulo,
+  .hoja-rotulo,
+  .hoja-datos dt {
+    margin: 0;
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .hoja-titulo {
+    font-family: var(--fuente-familia-titulo);
+    font-size: var(--fuente-tamano-titulo-sm);
+  }
+  .hoja-numero {
+    font-family: var(--fuente-familia-tecnica);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .hoja-sin-numero,
+  .hoja-fecha,
+  .hoja-plazo {
+    margin: 0;
+    color: var(--color-texto-principal);
+    font-size: var(--fuente-tamano-base);
+  }
+  .hoja-sin-numero[hidden],
+  .hoja [hidden] {
+    display: none;
+  }
+  .hoja-datos {
+    display: grid;
+    gap: var(--espacio-4);
+    margin: 0;
+  }
+  .hoja-datos > div {
+    min-inline-size: 0;
+  }
+  .hoja-datos dd {
+    margin: 0;
+    color: var(--color-texto-principal);
+    font-size: var(--fuente-tamano-base);
+    overflow-wrap: anywhere;
+  }
+  .hoja-datos dd.hoja-texto {
+    color: var(--color-texto-cuerpo);
+    white-space: pre-line;
+  }
+  .hoja-seccion {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    padding-block-start: var(--espacio-5);
+    border-block-start: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+  }
+  .hoja-adjuntos {
+    display: grid;
+    gap: var(--espacio-3);
+    margin: var(--espacio-2) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .hoja-pie {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+    padding-block-start: var(--espacio-4);
+    border-block-start: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+  }
+  .hoja-pie p {
+    color: var(--color-texto-cuerpo);
+    font-size: var(--fuente-tamano-pequeno);
+  }
+  .hoja-pie .hoja-copia {
+    display: none;
+    font-size: var(--fuente-tamano-micro);
+  }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    .hoja-encabezado {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: start;
+    }
+    .hoja-proveedor {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .hoja-seccion .hoja-datos {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .hoja-datos .hoja-ancho {
+      grid-column: 1 / -1;
+    }
+  }
+
+  /* Impresion (ficha, Impresion): solo la hoja. Los avisos, botones y lo marcado con data-no-imprimir salen. */
+  @media print {
+    .encabezado,
+    .aviso,
+    .boton,
+    .barra {
+      display: none !important;
+    }
+    .hoja {
+      gap: var(--espacio-4);
+      padding: 0;
+      background: none;
+      border: 0;
+    }
+    .hoja-encabezado,
+    .hoja-proveedor,
+    .hoja-datos {
+      break-inside: avoid;
+    }
+    .hoja-pie .hoja-copia {
+      display: block;
+    }
+    .hoja .archivo {
+      background: none;
+    }
+  }
+</style>

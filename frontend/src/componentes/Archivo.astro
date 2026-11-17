@@ -45,6 +45,10 @@ const icono = { audio: 'audio-waveform', imagen: 'image', pdf: 'file', otro: 'fi
     background: var(--color-fondo-superficie);
     border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
   }
+  /* Rechazado por el servidor (carga-archivos.md, Adjuntos de reclamo): borde alerta y, debajo, el mensaje de error comun. */
+  .archivo[data-error] {
+    border-color: var(--color-texto-alerta);
+  }
   .archivo-visual {
     display: grid;
     flex: none;

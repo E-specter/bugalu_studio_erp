@@ -1,0 +1,637 @@
+---
+// Hoja del Libro de Reclamaciones (RF-16: formulario, confirmacion y constancia, spec RF-16-formulario y RF-16-confirmacion-y-constancia).
+// Con `transcripcion` es el formulario del Administrador para las hojas del libro fisico (RF-16-transcribir). Sin JS: el formulario nace
+// oculto y el <noscript> da los canales para reclamar.
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Casilla from '../componentes/Casilla.astro';
+import BarraAcciones from '../componentes/BarraAcciones.astro';
+import HojaReclamacion from '../componentes/HojaReclamacion.astro';
+import CargaArchivos from './CargaArchivos.astro';
+import ContactoEstudio from '../componentes/internos/ContactoEstudio.astro';
+import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+import { PROVEEDOR, DEFINICIONES, LEYENDAS } from '../servicios/hoja-reclamacion.js';
+import { TIPOS_DOCUMENTO } from '../servicios/perfil-datos.js';
+
+interface Props {
+  transcripcion?: boolean;
+}
+const { transcripcion = false } = Astro.props;
+const documentos = Object.entries(TIPOS_DOCUMENTO).map(([valor, nombre]) => [valor, valor === 'ce' ? 'CE (carné de extranjería)' : nombre]);
+---
+
+<EstilosGestion />
+
+<bugalu-reclamacion class="reclamacion" data-gestion transcripcion={transcripcion ? '' : undefined}>
+  {!transcripcion && (
+    <div class="reclamacion-encabezado" data-encabezado data-no-imprimir>
+      <p class="reclamacion-paso" data-paso>PASO 1 DE 2 · COMPLETA LA HOJA</p>
+      <h1 data-titulo>LIBRO DE RECLAMACIONES</h1>
+      <p class="reclamacion-descripcion">Presenta un reclamo o una queja sobre nuestros servicios. No necesitas cuenta. Te respondemos en un máximo de 15 días hábiles.</p>
+    </div>
+  )}
+
+  {transcripcion && <noscript><Aviso variante="informacion" titulo="Esta sección necesita JavaScript" texto="Actívalo en tu navegador y recarga la página." /></noscript>}
+  {!transcripcion && <noscript>
+    <div class="reclamacion-sin-js">
+      <Aviso variante="informacion" titulo="Para llenar la hoja aquí necesitas JavaScript. También puedes presentar tu reclamo o queja por estos canales:">
+        <ContactoEstudio />
+        <p>Danos tu nombre, documento, domicilio, el detalle y tu pedido. Te respondemos en un máximo de 15 días hábiles.</p>
+      </Aviso>
+      {LEYENDAS.map((l) => <p class="reclamacion-leyenda">{l}</p>)}
+    </div>
+  </noscript>}
+
+  <div data-avisos data-no-imprimir></div>
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+
+  <!-- Estado 1: formulario -->
+  <div data-vista="formulario" hidden>
+    {!transcripcion && <div data-prellenado data-no-imprimir hidden><Aviso variante="informacion" titulo="Usamos los datos de tu cuenta" texto="Puedes cambiarlos: valen solo para esta hoja y no tocan tu perfil. La hoja quedará en Mis reclamos." /></div>}
+
+    {!transcripcion && (
+      <section class="hoja reclamacion-previa" aria-labelledby="rc-hoja-titulo">
+        <header class="hoja-encabezado">
+          <div class="hoja-titulos">
+            <p class="hoja-antetitulo">LIBRO DE RECLAMACIONES</p>
+            <h2 class="hoja-titulo" id="rc-hoja-titulo">HOJA DE RECLAMACIÓN</h2>
+            <p class="hoja-sin-numero">N.º Se asigna al enviar</p>
+          </div>
+          <p class="hoja-fecha"><span class="hoja-rotulo">Fecha</span> <time data-fecha-hoy></time></p>
+        </header>
+        <dl class="hoja-datos hoja-proveedor">
+          <div><dt>Razón social</dt><dd>{PROVEEDOR.razon_social}</dd></div>
+          <div><dt>RUC</dt><dd>{PROVEEDOR.ruc}</dd></div>
+          <div><dt>Domicilio</dt><dd>{PROVEEDOR.domicilio}</dd></div>
+        </dl>
+      </section>
+    )}
+
+    <form novalidate method="post" class="gestion-formulario reclamacion-formulario" data-formulario>
+      {!transcripcion && <p class="gestion-ayuda">Todos los datos son obligatorios salvo los marcados como opcionales.</p>}
+
+      {transcripcion && (
+        <Panel codigo="T0" titulo="HOJA FÍSICA" ayuda="La fecha y la hora en que el consumidor llenó la hoja, no las de hoy.">
+          <div class="gestion-formulario">
+            <Campo id="rc-numero-fisica" nombre="numero_hoja_fisica" etiqueta="Número de la hoja física" autocomplete="off" required />
+            <div class="gestion-fila-campos">
+              <Campo id="rc-fecha-original" tipo="date" nombre="fecha_original" etiqueta="Fecha original" required />
+              <Campo id="rc-hora-original" tipo="time" nombre="hora_original" etiqueta="Hora original" step="60" required />
+            </div>
+            <div data-aviso-antigua hidden><Aviso variante="aviso" titulo="Esta hoja tiene más de 1 día" texto=" " /></div>
+          </div>
+        </Panel>
+      )}
+
+      <Panel codigo="1" titulo="IDENTIFICACIÓN DEL CONSUMIDOR RECLAMANTE">
+        <div class="gestion-formulario">
+          <Campo id="rc-nombre" nombre="nombre" etiqueta="Nombre completo" maxlength="200" autocomplete="name" required />
+          <div class="gestion-fila-campos">
+            <Campo id="rc-tipo-documento" tipo="selector" nombre="tipo_documento" etiqueta="Tipo de documento" required>
+              <option value="">Elige una opción</option>
+              {documentos.map(([valor, nombre]) => <option value={valor}>{nombre}</option>)}
+            </Campo>
+            <Campo id="rc-documento" nombre="documento" etiqueta="Número de documento" autocomplete="off" spellcheck="false" required />
+          </div>
+          <Campo id="rc-domicilio" nombre="domicilio" etiqueta="Domicilio" maxlength="200" autocomplete="street-address" required />
+          <div class="gestion-fila-campos">
+            <Campo id="rc-telefono" tipo="tel" nombre="telefono" etiqueta="Teléfono (opcional)" maxlength="20" autocomplete="tel" />
+            <Campo id="rc-correo" tipo="email" nombre="correo" etiqueta="Correo" autocomplete="email" required />
+          </div>
+          <Casilla id="rc-menor" nombre="es_menor" etiqueta="Soy menor de edad" detalle="Si tienes menos de 18 años, añade los datos de tu madre, padre o tutor." aria-controls="rc-tutor" />
+          <fieldset class="gestion-grupo" id="rc-tutor" hidden>
+            <legend>Datos de tu madre, padre o tutor</legend>
+            <Campo id="rc-rep-nombre" nombre="rep_nombre" etiqueta="Nombre completo" maxlength="200" autocomplete="off" />
+            <Campo id="rc-rep-domicilio" nombre="rep_domicilio" etiqueta="Domicilio" maxlength="200" autocomplete="off" />
+            <div class="gestion-fila-campos">
+              <Campo id="rc-rep-telefono" tipo="tel" nombre="rep_telefono" etiqueta="Teléfono (opcional)" maxlength="20" autocomplete="off" />
+              <Campo id="rc-rep-correo" tipo="email" nombre="rep_correo" etiqueta="Correo" autocomplete="off" />
+            </div>
+          </fieldset>
+        </div>
+      </Panel>
+
+      <Panel codigo="2" titulo="IDENTIFICACIÓN DEL BIEN CONTRATADO">
+        <div class="gestion-formulario">
+          <div class="campo">
+            <fieldset class="gestion-grupo">
+              <legend>Producto o servicio</legend>
+              <p class="gestion-ayuda" id="rc-bien-ayuda">Lo que contrataste o quisiste contratar: una sesión, una mezcla, una asesoría.</p>
+              <Casilla tipo="radio" id="rc-bien-servicio" nombre="bien_tipo" valor="servicio" etiqueta="Servicio" marcada aria-describedby="rc-bien-ayuda" />
+              <Casilla tipo="radio" id="rc-bien-producto" nombre="bien_tipo" valor="producto" etiqueta="Producto" aria-describedby="rc-bien-ayuda" />
+            </fieldset>
+          </div>
+          <Campo id="rc-monto" nombre="monto" etiqueta="Monto reclamado en S/ (opcional)" ayuda="Por ejemplo, 150,00." inputmode="decimal" autocomplete="off" />
+          <Campo id="rc-descripcion" tipo="area" nombre="descripcion" etiqueta="Descripción (opcional)" ayuda="Qué contrataste y cuándo. Si tienes una reserva, escribe su folio, por ejemplo R-2026-00014." maxlength="1000" />
+        </div>
+      </Panel>
+
+      <Panel codigo="3" titulo="DETALLE DE LA RECLAMACIÓN Y PEDIDO DEL CONSUMIDOR">
+        <div class="gestion-formulario">
+          <div class="campo">
+            <fieldset class="gestion-grupo">
+              <legend>Tipo</legend>
+              <Casilla tipo="radio" id="rc-tipo-reclamo" nombre="tipo" valor="reclamo" etiqueta="Reclamo" detalle={DEFINICIONES.reclamo} />
+              <Casilla tipo="radio" id="rc-tipo-queja" nombre="tipo" valor="queja" etiqueta="Queja" detalle={DEFINICIONES.queja} />
+              {transcripcion && <Casilla tipo="radio" id="rc-tipo-sin" nombre="tipo" valor="" etiqueta="Sin marcar en la hoja física" />}
+            </fieldset>
+          </div>
+          <Campo id="rc-detalle" tipo="area" nombre="detalle" etiqueta="Detalle" ayuda="Qué pasó, cuándo y con quién. De 10 a 3000 caracteres." minlength="10" maxlength="3000" required />
+          <Campo id="rc-pedido" tipo="area" nombre="pedido" etiqueta="Pedido" ayuda="Qué solución esperas. De 10 a 3000 caracteres." minlength="10" maxlength="3000" required />
+          <CargaArchivos variante="reclamo" nombre="adjuntos" id="rc-adjuntos" etiqueta={transcripcion ? 'Fotos de la hoja física (opcional)' : 'Adjuntos (opcional)'} ayuda={transcripcion ? 'Fotos o escaneo de la hoja manuscrita. Hasta 3 archivos PDF, JPG o PNG de 5 MB cada uno.' : 'Comprobantes, capturas o fotos. Hasta 3 archivos PDF, JPG o PNG de 5 MB cada uno.'} />
+          <div class="campo">
+            <fieldset class="gestion-grupo">
+              <legend>Medio para la respuesta</legend>
+              <Casilla tipo="radio" id="rc-medio-correo" nombre="medio_respuesta" valor="correo" etiqueta="Correo electrónico" detalle="Te escribimos al correo de la sección 1." marcada={!transcripcion} />
+              <Casilla tipo="radio" id="rc-medio-carta" nombre="medio_respuesta" valor="carta" etiqueta="Carta a mi domicilio" detalle="Te la llevamos al domicilio de la sección 1. Tarda más en llegar." />
+            </fieldset>
+          </div>
+        </div>
+      </Panel>
+
+      {!transcripcion && (
+        <div class="reclamacion-sitio" aria-hidden="true">
+          <label for="rc-sitio">No completes este campo</label>
+          <input id="rc-sitio" name="sitio_web" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+      )}
+
+      {!transcripcion && (
+        <div class="reclamacion-leyendas">
+          {LEYENDAS.map((l) => <p>{l}</p>)}
+          <p>Usamos estos datos solo para atender tu hoja y responderte. Más en la <a href="/legal/privacidad/">Política de privacidad</a>.</p>
+        </div>
+      )}
+      <div><Boton tipo="submit" tamano="grande" icono="arrow-right">Revisar la hoja</Boton></div>
+    </form>
+  </div>
+
+  <!-- Estado 2: confirmacion (la hoja en lectura; lo escrito sigue en el formulario oculto) -->
+  <div data-vista="confirmacion" hidden>
+    <div class="reclamacion-revision" data-no-imprimir>
+      <h2 class="reclamacion-subtitulo" tabindex="-1" data-foco>{transcripcion ? 'REVISA LA HOJA' : 'REVISA TU HOJA'}</h2>
+      <p>{transcripcion ? 'Así quedará registrada. Las hojas no se editan ni se borran: corrígela ahora si algo no coincide con la hoja física.' : 'Así quedará registrada. Si algo no está bien, corrígelo ahora: una vez enviada no se puede cambiar.'}</p>
+    </div>
+    <div data-hoja></div>
+    <div class="reclamacion-barra" data-no-imprimir>
+      <BarraAcciones variante="formulario">
+        <Boton slot="secundaria" variante="secundario" tamano="grande" data-corregir>Corregir datos</Boton>
+        <Boton slot="principal" tamano="grande" data-enviar>{transcripcion ? 'Registrar hoja' : 'Enviar reclamación'}</Boton>
+      </BarraAcciones>
+      <p class="gestion-ayuda" role="status" data-progreso></p>
+    </div>
+  </div>
+
+  <!-- Estado 3: constancia -->
+  <div data-vista="constancia" hidden>
+    <div class="reclamacion-acciones" data-no-imprimir>
+      <Boton data-imprimir>Imprimir o guardar en PDF</Boton>
+      <Boton variante="secundario" href="/app/reclamos/" data-ver-mis hidden>Ver mis reclamos</Boton>
+      <Boton variante="secundario" href="/" data-inicio>Volver al inicio</Boton>
+    </div>
+    <div data-hoja></div>
+  </div>
+
+  <PlantillasFormulario />
+  <template data-plantilla="aviso-canales"><Aviso variante="error" titulo=" " texto=" "><ContactoEstudio /></Aviso></template>
+  <HojaReclamacion />
+</bugalu-reclamacion>
+
+<script>
+  // @ts-nocheck
+  import { ErrorApi, obtenerPerfil } from '../servicios/api.js';
+  import { obtenerToken } from '../servicios/sesion.js';
+  import { registrarHoja, transcribirHoja } from '../servicios/reclamaciones.js';
+  import { pintarHoja } from '../servicios/hoja-reclamacion.js';
+  import { validarDocumento } from '../servicios/perfil-datos.js';
+  import { leerImporte, hoyLima, sumarDias, instante, diaMesAnio, fechaDe } from '../servicios/formatos.js';
+  import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos } from '../servicios/formulario.js';
+
+  const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // ruta de `detalles.campo` del contrato -> name del control del formulario
+  const CAMPOS = {
+    'consumidor.nombre': 'nombre', 'consumidor.tipo_documento': 'tipo_documento', 'consumidor.documento': 'documento', 'consumidor.domicilio': 'domicilio',
+    'consumidor.telefono': 'telefono', 'consumidor.correo': 'correo', 'representante.nombre': 'rep_nombre', 'representante.domicilio': 'rep_domicilio',
+    'representante.telefono': 'rep_telefono', 'representante.correo': 'rep_correo', 'bien.tipo': 'bien_tipo', 'bien.monto': 'monto', 'bien.descripcion': 'descripcion',
+    tipo: 'tipo', detalle: 'detalle', pedido: 'pedido', medio_respuesta: 'medio_respuesta', fecha_original: 'fecha_original', numero_hoja_fisica: 'numero_hoja_fisica',
+  };
+  const TITULOS = { formulario: 'Paso 1 de 2', confirmacion: 'Paso 2 de 2: confirma', constancia: 'Hoja registrada' };
+
+  class BugaluReclamacion extends HTMLElement {
+    connectedCallback() {
+      this.transcripcion = this.hasAttribute('transcripcion');
+      this.form = this.querySelector('form');
+      this.carga = this.querySelector('bugalu-carga-archivos');
+      this.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.revisar();
+      });
+      this.addEventListener('click', (e) => {
+        if (e.target.closest('[data-corregir]')) this.volver();
+        else if (e.target.closest('[data-enviar]')) this.enviar();
+        else if (e.target.closest('[data-imprimir]')) window.print();
+        else if (e.target.closest('[data-reintentar]')) this.iniciar();
+      });
+      this.addEventListener('change', (e) => {
+        if (e.target.name === 'es_menor') this.querySelector('#rc-tutor').hidden = !e.target.checked;
+        else if (e.target.name === 'fecha_original') this.avisarAntigua();
+      });
+      this.iniciar();
+    }
+
+    f(nombre) {
+      return this.form.elements[nombre];
+    }
+
+    valor(nombre) {
+      return this.f(nombre).value.trim();
+    }
+
+    async iniciar() {
+      limpiarAvisos(this);
+      if (this.transcripcion) {
+        try {
+          const perfil = await obtenerPerfil();
+          if (perfil.rol !== 'administrador') throw new ErrorApi(403, 'sin_permiso', '');
+        } catch (error) {
+          return this.sinAcceso(error);
+        }
+      } else {
+        const hoy = this.querySelector('[data-fecha-hoy]');
+        hoy.textContent = diaMesAnio(hoyLima());
+        hoy.dateTime = hoyLima();
+      }
+      this.querySelector('[data-vista="formulario"]').hidden = false;
+      if (!this.transcripcion) this.prellenar();
+    }
+
+    // Transcribir es del Administrador: sin sesion o con otro rol, el formulario no se muestra.
+    sinAcceso(error) {
+      const aviso = error.estado === 401 ? mostrarAviso(this, 'aviso', 'Tu sesión no es válida', 'Inicia sesión para continuar.', { enlace: { texto: 'Ir al acceso interno', href: `/acceso/interno?${new URLSearchParams({ volver: location.pathname })}` } })
+        : error.estado === 403 ? mostrarAviso(this, 'error', 'No tienes permiso', 'Esta sección es solo para el Administrador.', { enlace: { texto: 'Volver al inicio', href: '/app/' } })
+        : mostrarAviso(this, 'error', error.estado === 0 ? 'Sin conexión' : error.estado === 503 ? 'El servicio no responde' : 'Algo salió mal', error.estado === 0 ? 'Revisa tu red y vuelve a intentarlo.' : 'Inténtalo de nuevo.', { boton: { texto: 'Reintentar', atributo: 'data-reintentar' } });
+      this.anunciar(aviso);
+    }
+
+    anunciar(aviso) {
+      aviso.removeAttribute('role');
+      this.querySelector('[data-anuncio]').textContent = aviso.textContent.replace(/\s+/g, ' ').trim();
+    }
+
+    // CA-10: con sesion de cliente, los datos del perfil vienen escritos (editables). Sin sesion, otro rol o un fallo: hoja vacia, sin error.
+    async prellenar() {
+      try {
+        if (!(await obtenerToken())) return;
+        const p = await obtenerPerfil();
+        if (p.rol !== 'cliente') return;
+        const poner = (nombre, valor) => valor && !this.valor(nombre) && (this.f(nombre).value = valor);
+        poner('nombre', p.nombre);
+        poner('tipo_documento', p.documento?.tipo);
+        poner('documento', p.documento?.numero);
+        poner('domicilio', p.domicilio);
+        poner('telefono', p.telefono);
+        poner('correo', p.correo);
+        if (p.es_menor && !this.f('es_menor').checked) {
+          this.f('es_menor').checked = true;
+          this.querySelector('#rc-tutor').hidden = false;
+          const t = p.menor?.tutor;
+          poner('rep_nombre', t?.nombre);
+          poner('rep_telefono', t?.telefono);
+          poner('rep_correo', t?.correo);
+        }
+        this.querySelector('[data-prellenado]').hidden = false;
+      } catch {}
+    }
+
+    avisarAntigua() {
+      const fecha = this.valor('fecha_original');
+      const caja = this.querySelector('[data-aviso-antigua]');
+      const antigua = fecha && fecha < sumarDias(hoyLima(), -1);
+      caja.hidden = !antigua;
+      if (!antigua) return;
+      const aviso = caja.querySelector('.aviso');
+      aviso.removeAttribute('role');
+      aviso.querySelector('.aviso-texto').textContent = `El reglamento pide transcribirla dentro de 1 día calendario. Regístrala igual: el plazo de respuesta ya corre desde el ${diaMesAnio(fecha)}.`;
+    }
+
+    // --- Validacion (CA-03): errores bajo cada campo, resumen arriba y foco al primer campo con error ---
+
+    leer() {
+      const errores = [];
+      const mal = (nombre, mensaje, texto) => errores.push({ entrada: this.querySelector(`[name="${nombre}"]`), mensaje, texto, nombre });
+      const largo = (nombre, max, mensaje, texto) => this.valor(nombre).length > max && mal(nombre, mensaje, texto);
+      this.form.querySelectorAll('[aria-invalid="true"]').forEach(quitarError);
+      this.carga.limpiarRechazos();
+
+      const persona = (p, quien) => {
+        const nombre = this.valor(`${p}nombre`);
+        const domicilio = this.valor(`${p}domicilio`);
+        const correo = this.valor(`${p}correo`);
+        const telefono = this.valor(`${p}telefono`);
+        if (!nombre) mal(`${p}nombre`, 'Escribe el nombre completo.', `Nombre completo${quien}`);
+        else largo(`${p}nombre`, 200, 'El nombre admite hasta 200 caracteres.', `Nombre completo${quien}`);
+        if (p === '') {
+          const tipo = this.valor('tipo_documento');
+          const numero = this.valor('documento');
+          const doc = validarDocumento(tipo, numero);
+          if (doc.tipo) mal('tipo_documento', doc.tipo, 'Tipo de documento');
+          if (!numero) mal('documento', 'Escribe el número de documento.', 'Número de documento');
+          else if (doc.numero) mal('documento', doc.numero, 'Número de documento');
+          this.documento = doc.valor;
+        }
+        if (!domicilio) mal(`${p}domicilio`, 'Escribe el domicilio.', `Domicilio${quien}`);
+        else largo(`${p}domicilio`, 200, 'El domicilio admite hasta 200 caracteres.', `Domicilio${quien}`);
+        if (telefono.length > 20) mal(`${p}telefono`, 'El teléfono admite hasta 20 caracteres.', `Teléfono${quien}`);
+        if (!correo) mal(`${p}correo`, 'Escribe el correo.', `Correo${quien}`);
+        else if (!CORREO.test(correo)) mal(`${p}correo`, 'Escribe un correo válido, como nombre@correo.com.', `Correo${quien}`);
+        return { nombre, domicilio, ...(telefono && { telefono }), correo };
+      };
+
+      if (this.transcripcion) {
+        if (!this.valor('numero_hoja_fisica')) mal('numero_hoja_fisica', 'Escribe el número de la hoja física.', 'Número de la hoja física');
+        const fecha = this.valor('fecha_original');
+        if (!fecha) mal('fecha_original', 'Elige la fecha original.', 'Fecha original');
+        else if (fecha > hoyLima()) mal('fecha_original', 'La fecha original no puede ser futura.', 'Fecha original');
+        if (!this.valor('hora_original')) mal('hora_original', 'Elige la hora original.', 'Hora original');
+      }
+      const consumidor = persona('', '');
+      const esMenor = this.f('es_menor').checked;
+      const representante = esMenor ? persona('rep_', ' de tu madre, padre o tutor') : null;
+
+      const montoTexto = this.valor('monto');
+      const monto = montoTexto ? leerImporte(montoTexto) : null;
+      if (montoTexto && (monto === null || Number(monto) < 0.01 || Number(monto) > 999999.99)) mal('monto', 'Escribe un monto entre S/ 0,01 y S/ 999 999,99, o déjalo vacío.', 'Monto reclamado');
+      const descripcion = this.valor('descripcion');
+      largo('descripcion', 1000, 'La descripción admite hasta 1000 caracteres.', 'Descripción');
+
+      const tipo = this.querySelector('input[name="tipo"]:checked')?.value ?? '';
+      if (!tipo && !this.transcripcion) mal('tipo', 'Elige si es un reclamo o una queja.', 'Tipo');
+      if (!this.querySelector('input[name="tipo"]:checked') && this.transcripcion) mal('tipo', 'Elige qué marcó el consumidor, o «Sin marcar en la hoja física».', 'Tipo');
+      for (const [nombre, texto, falta] of [['detalle', 'Detalle', 'Cuenta qué pasó con al menos 10 caracteres.'], ['pedido', 'Pedido', 'Escribe qué pides con al menos 10 caracteres.']]) {
+        if (this.valor(nombre).length < 10) mal(nombre, falta, texto);
+        else largo(nombre, 3000, 'Admite hasta 3000 caracteres.', texto);
+      }
+      const medio = this.querySelector('input[name="medio_respuesta"]:checked')?.value;
+      if (!medio) mal('medio_respuesta', 'Elige qué marcó el consumidor como medio de respuesta.', 'Medio para la respuesta');
+
+      const datos = {
+        confirmado: true,
+        consumidor: { ...consumidor, tipo_documento: this.documento?.tipo ?? this.valor('tipo_documento'), documento: this.documento?.numero ?? this.valor('documento') },
+        es_menor: esMenor,
+        ...(representante && { representante }),
+        bien: { tipo: this.querySelector('input[name="bien_tipo"]:checked').value, ...(monto && { monto }), ...(descripcion && { descripcion }) },
+        tipo: tipo || null,
+        detalle: this.valor('detalle'),
+        pedido: this.valor('pedido'),
+        medio_respuesta: medio,
+        ...(!this.transcripcion && this.f('sitio_web').value && { sitio_web: this.f('sitio_web').value }),
+        ...(this.transcripcion && { fecha_original: instante(this.valor('fecha_original'), this.valor('hora_original') || '00:00'), numero_hoja_fisica: this.valor('numero_hoja_fisica') }),
+      };
+      return { datos, errores };
+    }
+
+    // Errores bajo cada campo y resumen con enlaces; el foco va al primer campo con error (el aviso no es region viva).
+    mostrarErrores(errores) {
+      limpiarAvisos(this);
+      errores.forEach(({ entrada, mensaje }) => ponerError(this, entrada, mensaje));
+      const n = errores.length;
+      const aviso = mostrarAviso(this, 'error', `Revisa ${n} ${n === 1 ? 'dato' : 'datos'} antes de seguir`, '', { enlaces: errores.map((e) => ({ texto: e.texto, href: `#${e.entrada.id}` })) });
+      aviso.removeAttribute('role');
+      errores[0].entrada.focus();
+    }
+
+    revisar() {
+      const { datos, errores } = this.leer();
+      if (errores.length) return this.mostrarErrores(errores);
+      limpiarAvisos(this);
+      this.datos = datos;
+      const archivos = this.carga.archivos;
+      this.archivos = archivos;
+      const hoja = { ...datos, origen: this.transcripcion ? 'libro_fisico' : 'web', adjuntos: archivos.map((a, i) => ({ n: i + 1, nombre: a.name, tipo: a.type, tamano: a.size })) };
+      this.querySelector('[data-vista="confirmacion"] [data-hoja]').replaceChildren(pintarHoja(this, hoja, { variante: 'confirmacion' }));
+      this.vista('confirmacion', '[data-foco]');
+    }
+
+    volver() {
+      if (this.enviando) return;
+      limpiarAvisos(this);
+      this.vista('formulario', this.transcripcion ? '.panel-titulo' : '[data-titulo]');
+    }
+
+    // Una vista a la vez; el foco va al titulo de la vista y la pagina vuelve arriba.
+    vista(nombre, foco) {
+      this.querySelectorAll('[data-vista]').forEach((v) => (v.hidden = v.dataset.vista !== nombre));
+      const titulo = this.querySelector('[data-titulo]');
+      if (titulo) {
+        titulo.textContent = nombre === 'constancia' ? 'HOJA REGISTRADA' : 'LIBRO DE RECLAMACIONES';
+        titulo.tabIndex = -1;
+        this.querySelector('[data-paso]').textContent = nombre === 'confirmacion' ? 'PASO 2 DE 2 · CONFIRMA' : 'PASO 1 DE 2 · COMPLETA LA HOJA';
+        this.querySelector('[data-paso]').hidden = nombre === 'constancia';
+        document.title = `${TITULOS[nombre]} · Libro de Reclamaciones · Bugalú Studio`;
+      }
+      scrollTo(0, 0);
+      const destino = foco && (this.querySelector(`[data-vista="${nombre}"] ${foco}`) ?? this.querySelector(foco));
+      if (destino) {
+        destino.tabIndex = -1;
+        destino.focus({ preventScroll: true });
+      }
+    }
+
+    // --- Envio (CA-04, CA-05, CA-06, CA-12) ---
+
+    async enviar() {
+      if (this.enviando) return;
+      const boton = this.querySelector('[data-enviar]');
+      const original = boton.textContent;
+      this.enviando = true;
+      boton.disabled = true;
+      boton.setAttribute('aria-busy', 'true');
+      boton.textContent = this.transcripcion ? 'Registrando…' : 'Enviando…';
+      this.querySelector('[data-corregir]').disabled = true;
+      this.carga.bloquear(true);
+      limpiarAvisos(this);
+      const progreso = this.querySelector('[data-progreso]');
+      progreso.textContent = '';
+      const lento = setTimeout(() => (progreso.textContent = this.archivos.length ? 'Subiendo los adjuntos, puede tardar un minuto.' : 'Seguimos registrando tu hoja…'), 10000);
+      const cuerpo = new FormData();
+      cuerpo.append('datos', JSON.stringify(this.datos));
+      this.archivos.forEach((a) => cuerpo.append('adjuntos', a));
+      const conCuenta = !this.transcripcion && Boolean(await obtenerToken());
+      let hoja;
+      try {
+        hoja = await (this.transcripcion ? transcribirHoja(cuerpo) : registrarHoja(cuerpo));
+      } catch (error) {
+        clearTimeout(lento);
+        this.enviando = false;
+        boton.disabled = false;
+        boton.removeAttribute('aria-busy');
+        boton.textContent = original;
+        progreso.textContent = '';
+        this.querySelector('[data-corregir]').disabled = false;
+        this.carga.bloquear(false);
+        return this.falloEnvio(error);
+      }
+      clearTimeout(lento);
+      if (this.transcripcion) return location.assign(`/app/reclamos/detalle?id=${encodeURIComponent(hoja.id)}&aviso=hoja-transcrita`);
+      this.constancia(hoja, conCuenta);
+    }
+
+    constancia(hoja, conCuenta) {
+      this.querySelector('[data-vista="confirmacion"] [data-hoja]').replaceChildren();
+      const correo = this.datos.consumidor.correo;
+      const registrada = Boolean(hoja?.numero);
+      const medio = this.datos.medio_respuesta === 'carta' ? 'carta a tu domicilio' : 'correo electrónico';
+      const vence = hoja?.vence_respuesta ? ` a más tardar el ${diaMesAnio(fechaDe(hoja.vence_respuesta))}` : '';
+      this.querySelector('[data-vista="constancia"] [data-hoja]').replaceChildren(...(registrada ? [pintarHoja(this, hoja, { variante: 'constancia' })] : []));
+      this.querySelector('[data-imprimir]').hidden = !registrada;
+      this.querySelector('[data-ver-mis]').hidden = !conCuenta;
+      this.querySelector('[data-inicio]').hidden = conCuenta;
+      this.vista('constancia');
+      if (registrada) document.title = `Hoja N.º ${hoja.numero} registrada · Libro de Reclamaciones · Bugalú Studio`;
+      const aviso = registrada
+        ? mostrarAviso(this, 'exito', `Registramos tu hoja N.º ${hoja.numero}`, `Te enviamos una copia a ${correo}. Te responderemos por ${medio}${vence}. Guarda o imprime esta constancia antes de salir.${conCuenta ? ' También la encuentras en Mis reclamos.' : ''}`)
+        : mostrarAviso(this, 'exito', 'Registramos tu hoja', `Te enviamos la constancia a ${correo}. Guárdala: ahí está tu número de hoja.`);
+      enfocarAviso(aviso);
+    }
+
+    // Errores que se quedan en la confirmacion llevan el foco al aviso; los de campos y adjuntos vuelven al formulario.
+    falloEnvio(error) {
+      const e = error;
+      const d = e.detalles ?? {};
+      const aqui = (variante, titulo, texto, opciones) => enfocarAviso(mostrarAviso(this, variante, titulo, texto, opciones));
+      if ((e.estado === 401 || e.estado === 403) && this.transcripcion) return this.sinAcceso(e);
+      if (e.estado === 409) return aqui('error', 'No pudimos registrar la hoja', 'Vuelve a pulsar «Enviar reclamación».');
+      if (e.estado === 413 || e.codigo === 'adjunto_no_permitido' || e.codigo === 'demasiados_adjuntos') return this.rechazoAdjunto(e);
+      if (e.estado === 422) return this.rechazoDatos(e);
+      if (this.transcripcion && e.estado !== 422) {
+        const [titulo, texto] = e.estado === 0 ? ['Sin conexión', 'Revisa tu red y vuelve a intentarlo.'] : e.estado === 503 ? ['El servicio no responde', 'Inténtalo de nuevo en unos minutos.'] : ['Algo salió mal', 'Inténtalo de nuevo.'];
+        return aqui('error', titulo, `${texto} Tus datos siguen aquí.`);
+      }
+      if (e.estado === 429) return aqui('canales', 'Demasiados envíos desde tu conexión', 'Recibimos muchas hojas desde tu conexión en la última hora. Tus datos siguen aquí: inténtalo más tarde o preséntala por estos canales:');
+      if (e.estado === 503) return aqui('canales', 'El Libro de Reclamaciones no responde', 'No pudimos registrar tu hoja. Tus datos siguen aquí: inténtalo en unos minutos o preséntala por estos canales:');
+      if (e.estado === 0) return aqui('error', 'Sin conexión', 'No sabemos si tu hoja llegó. Si en unos minutos no recibes la constancia en tu correo, vuelve a enviarla: tus datos siguen aquí.');
+      aqui('canales', 'Algo salió mal', 'No pudimos registrar tu hoja. Tus datos siguen aquí: inténtalo de nuevo o preséntala por estos canales:');
+    }
+
+    rechazoAdjunto(e) {
+      const n = Number(e.detalles?.adjunto);
+      const archivo = this.archivos[n - 1];
+      const texto = e.codigo === 'demasiados_adjuntos' ? 'Puedes adjuntar hasta 3 archivos. Quita los que sobran.'
+        : !archivo ? 'Uno de los adjuntos no se aceptó (más de 5 MB o no es PDF, JPG ni PNG). Quítalo o cámbialo.'
+        : e.estado === 413 ? `${archivo.name} pesa más de 5 MB. Quítalo o elige uno más liviano.`
+        : `${archivo.name} no es un PDF, JPG o PNG válido. Quítalo para enviar la hoja sin él.`;
+      this.vista('formulario', '[data-titulo]');
+      const aviso = mostrarAviso(this, 'error', 'Revisa 1 dato antes de seguir', '', { enlaces: [{ texto: 'Adjuntos', href: '#rc-adjuntos' }] });
+      aviso.removeAttribute('role');
+      this.carga.marcarRechazado(archivo && e.codigo !== 'demasiados_adjuntos' ? n : 0, texto);
+    }
+
+    rechazoDatos(e) {
+      const nombre = CAMPOS[e.detalles?.campo];
+      this.vista('formulario', '[data-titulo]');
+      const entrada = nombre && this.querySelector(`[name="${nombre}"]`);
+      if (!entrada) {
+        const aviso = mostrarAviso(this, 'error', e.mensaje || 'Revisa los datos de la hoja');
+        return enfocarAviso(aviso);
+      }
+      // El texto del formulario manda; si el cliente no lo reproduce, el del servidor.
+      const { errores } = this.leer();
+      const propio = errores.find((x) => x.nombre === nombre);
+      this.mostrarErrores([propio ?? { entrada, mensaje: e.mensaje, texto: entrada.closest('.campo')?.querySelector('label')?.textContent.trim() ?? nombre, nombre }]);
+    }
+  }
+
+  if (!customElements.get('bugalu-reclamacion')) customElements.define('bugalu-reclamacion', BugaluReclamacion);
+</script>
+
+<style>
+  .reclamacion {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+  }
+  .reclamacion [hidden] {
+    display: none;
+  }
+  .reclamacion-encabezado {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+  }
+  .reclamacion-paso {
+    margin: 0;
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+  }
+  .reclamacion-descripcion {
+    color: var(--color-texto-cuerpo);
+  }
+  .reclamacion [data-vista] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+  }
+  .reclamacion [data-avisos]:empty {
+    display: none;
+  }
+  .reclamacion-formulario,
+  .reclamacion-previa {
+    max-inline-size: var(--medida-contenedor-max);
+  }
+  .reclamacion-formulario :global(.campo) {
+    max-inline-size: var(--medida-linea-lectura);
+  }
+  .reclamacion-formulario :global(.gestion-fila-campos > .campo) {
+    max-inline-size: none;
+  }
+  .reclamacion-leyendas {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+  }
+  .reclamacion-leyendas p,
+  .reclamacion-leyenda {
+    color: var(--color-texto-cuerpo);
+    font-size: var(--fuente-tamano-pequeno);
+  }
+  .reclamacion-subtitulo {
+    margin-block-end: var(--espacio-2);
+  }
+  .reclamacion-revision {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+  }
+  .reclamacion-barra {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+  }
+  .reclamacion-acciones {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+  }
+  .reclamacion-sin-js {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+  }
+  /* Campo trampa (CA-12): fuera de la vista y del arbol de accesibilidad, pero no display:none (los robots lo saltarian). */
+  .reclamacion-sitio {
+    position: absolute;
+    inline-size: var(--borde-grosor-fino);
+    block-size: var(--borde-grosor-fino);
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    .reclamacion-acciones {
+      flex-direction: row;
+    }
+  }
+</style>

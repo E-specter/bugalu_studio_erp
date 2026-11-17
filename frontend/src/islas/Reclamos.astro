@@ -1,0 +1,683 @@
+---
+// Libro de Reclamaciones dentro de la app (RF-16: spec RF-16-mis-reclamos y RF-16-bandeja). Las mismas rutas sirven al cliente
+// ("Mis reclamos") y al Administrador (bandeja, detalle con adjuntos, respuesta y CSV): la isla elige la vista por el rol del perfil.
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Tabla from '../componentes/Tabla.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import IndicadorEstado from '../componentes/IndicadorEstado.astro';
+import BarraAcciones from '../componentes/BarraAcciones.astro';
+import HojaReclamacion from '../componentes/HojaReclamacion.astro';
+import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+
+interface Props {
+  vista: 'lista' | 'detalle';
+}
+const { vista } = Astro.props;
+const principal = { lista: { titulo: 'Hojas' }, detalle: { titulo: 'Hoja' } }[vista];
+---
+
+<EstilosGestion />
+
+<!-- Un bloque por estado (estados-sistema): la isla clona el que toca. Sin JS, el noscript oculta la carga y avisa. -->
+<bugalu-reclamos class="reclamos" data-gestion vista={vista}>
+  <div data-avisos></div>
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  {vista === 'lista' && (
+    <>
+      <nav class="reclamos-filtros" aria-label="Filtrar por estado" data-filtros hidden></nav>
+      <form class="reclamos-controles" method="get" novalidate data-controles hidden>
+        <input type="hidden" name="estado" />
+        <div class="gestion-fila-campos">
+          <Campo id="rec-desde" tipo="date" nombre="desde" etiqueta="Desde" ayuda="Fecha de presentación." />
+          <Campo id="rec-hasta" tipo="date" nombre="hasta" etiqueta="Hasta" />
+        </div>
+        <div class="reclamos-controles-acciones">
+          <Boton variante="secundario" tipo="submit" data-envio-filtro>Filtrar</Boton>
+          <a class="reclamos-quitar" href="/app/reclamos/" data-quitar-fechas hidden>Quitar fechas</a>
+        </div>
+      </form>
+    </>
+  )}
+  <div data-salida><Panel {...principal} cargando /></div>
+
+  <EstadosIsla principal={principal} />
+
+  {['neutra', 'exito', 'aviso', 'alerta'].map((variante) => <template data-sello={variante}><EtiquetaTecnica variante={variante as 'neutra'} texto=" " /></template>)}
+  <template data-filtro="no"><EtiquetaTecnica variante="filtro" texto=" " href="#" /></template>
+  <template data-filtro="si"><EtiquetaTecnica variante="filtro" texto=" " href="#" aplicado /></template>
+
+  {vista === 'lista' && (
+    <>
+      <template data-estado="vacio">
+        <Panel titulo="Hojas">
+          <p class="gestion-vacio-titulo" data-vacio-titulo></p>
+          <p data-vacio-texto></p>
+          <div class="reclamos-aparte" data-vacio-accion><Boton href="/libro-de-reclamaciones/">Presentar un reclamo</Boton></div>
+        </Panel>
+      </template>
+      <template data-estado="mias">
+        <Panel titulo="Hojas">
+          <p class="reclamos-total" data-total></p>
+          <Tabla titulo="Tus hojas de reclamación" columnas={['Hoja', 'Presentada', 'Tipo', 'Estado', '']} />
+          <p class="reclamos-nota">¿No ves una hoja? Las que presentaste sin iniciar sesión no aparecen aquí; su copia está en tu correo.</p>
+        </Panel>
+      </template>
+      <template data-estado="todas">
+        <Panel titulo="Hojas">
+          <p class="reclamos-total" data-total></p>
+          <Tabla titulo="Hojas del Libro de Reclamaciones" columnas={['Hoja', 'Presentada', 'Consumidor', 'Tipo', 'Plazo', '']} />
+        </Panel>
+      </template>
+      <template data-fila="mias">
+        <tr>
+          <th scope="row"><span class="reclamos-numero" data-numero></span></th>
+          <td data-etiqueta="Presentada"><time data-fecha></time></td>
+          <td data-etiqueta="Tipo" data-tipo></td>
+          <td data-etiqueta="Estado" data-plazo></td>
+          <td><Boton variante="secundario" href="#" data-revisar>Ver hoja<span class="visualmente-oculto" data-objeto></span></Boton></td>
+        </tr>
+      </template>
+      <template data-fila="todas">
+        <tr>
+          <th scope="row"><span class="reclamos-numero" data-numero></span><span class="reclamos-etiquetas" data-extras></span></th>
+          <td data-etiqueta="Presentada"><time data-fecha></time></td>
+          <td data-etiqueta="Consumidor" data-consumidor></td>
+          <td data-etiqueta="Tipo" data-tipo></td>
+          <td data-etiqueta="Plazo" data-plazo></td>
+          <td><Boton variante="secundario" href="#" data-revisar>Revisar hoja<span class="visualmente-oculto" data-objeto></span></Boton></td>
+        </tr>
+      </template>
+    </>
+  )}
+
+  {vista === 'detalle' && (
+    <>
+      <template data-estado="no-encontrada">
+        <Panel codigo="[404]" titulo="Hoja no encontrada"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a reclamos', href: '/app/reclamos/' }} /></Panel>
+      </template>
+      <template data-estado="datos">
+        <div class="gestion-rejilla">
+          <div class="gestion-principal">
+            <div data-etiquetas hidden></div>
+            <div data-hoja></div>
+          </div>
+          <div class="gestion-lateral" data-lateral hidden>
+            <div data-panel="responder">
+              <Panel codigo="R1" titulo="Respuesta" variante="lateral">
+                <form novalidate method="post" class="gestion-formulario" data-formulario="responder">
+                  <div data-plazo-r></div>
+                  <p class="gestion-ayuda" data-medio></p>
+                  <Campo id="rec-texto" tipo="area" nombre="texto" etiqueta="Respuesta" ayuda="La verá el consumidor tal cual. Si el tipo marcado no corresponde, trátala según su contenido y dilo aquí. Puedes proponer una solución." minlength="10" maxlength="5000" />
+                  <div class="gestion-formulario" data-carta hidden>
+                    <Campo id="rec-referencia" nombre="referencia_carta" etiqueta="Referencia de la carta" ayuda="Número de guía o de cargo de la carta." autocomplete="off" />
+                    <Campo id="rec-enviada" tipo="date" nombre="enviada_en" etiqueta="Fecha de envío" />
+                  </div>
+                  <div><Boton tipo="submit" data-envio>Revisar respuesta</Boton></div>
+                </form>
+              </Panel>
+            </div>
+            <div data-panel="revisar" hidden>
+              <Panel codigo="R1" titulo="Revisa la respuesta" variante="lateral">
+                <div class="gestion-formulario">
+                  <dl class="gestion-datos">
+                    <div><dt>Respuesta</dt><dd class="reclamos-texto" data-r="texto"></dd></div>
+                    <div><dt>Medio</dt><dd data-r="medio"></dd></div>
+                    <div><dt data-r="destino-rotulo">Destino</dt><dd data-r="destino"></dd></div>
+                    <div data-r-carta hidden><dt>Referencia de la carta</dt><dd data-r="referencia"></dd></div>
+                    <div data-r-carta hidden><dt>Fecha de envío</dt><dd data-r="enviada"></dd></div>
+                  </dl>
+                  <p data-consecuencias></p>
+                  <BarraAcciones variante="formulario">
+                    <Boton slot="secundaria" variante="secundario" data-envio data-corregir>Corregir respuesta</Boton>
+                    <Boton slot="principal" data-envio data-enviar>Enviar respuesta</Boton>
+                  </BarraAcciones>
+                </div>
+              </Panel>
+            </div>
+            <div data-panel="respondida" hidden>
+              <Panel codigo="R1" titulo="Respuesta" variante="lateral">
+                <IndicadorEstado variante="barra" tono="correcto" texto="RESPONDIDA" dato=" " activo />
+              </Panel>
+            </div>
+          </div>
+        </div>
+      </template>
+    </>
+  )}
+
+  <HojaReclamacion />
+</bugalu-reclamos>
+
+<script>
+  // @ts-nocheck
+  import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { ErrorApi, obtenerPerfil } from '../servicios/api.js';
+  import { areaRecordada } from '../servicios/sesion.js';
+  import { listarMias, listarHojas, obtenerHoja, responderHoja, obtenerAdjunto, exportarHojas } from '../servicios/reclamaciones.js';
+  import { pintarHoja, TIPOS } from '../servicios/hoja-reclamacion.js';
+  import { hoyLima, fechaDe, horaDe, diaMesAnio, esFecha, instante } from '../servicios/formatos.js';
+  import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos } from '../servicios/formulario.js';
+
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const ESTADOS = ['pendiente', 'respondida'];
+  const MEDIOS = { correo: 'correo electrónico', carta: 'carta al domicilio' };
+  const AVISOS_DETALLE = ['respuesta-enviada', 'respuesta-registrada', 'hoja-transcrita'];
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  const fecha = (iso) => diaMesAnio(fechaDe(iso));
+  const fechaHora = (iso) => `${fecha(iso)}, ${horaDe(iso)}`;
+
+  // [variante de etiqueta, texto, linea de abajo] del estado de una hoja. Siempre texto, nunca solo color.
+  function plazo(h, admin) {
+    const hasta = fecha(h.vence_respuesta);
+    if (h.estado === 'respondida') return ['exito', 'RESPONDIDA', null];
+    if (!admin) return ['aviso', 'EN TRÁMITE', `Respuesta hasta el ${hasta}`];
+    const n = h.dias_habiles_restantes;
+    if (n < 0 || (typeof n !== 'number' && Date.parse(h.vence_respuesta) < Date.now())) return ['alerta', 'FUERA DE PLAZO', `Venció el ${hasta}`];
+    if (typeof n !== 'number') return ['aviso', 'EN TRÁMITE', `hasta el ${hasta}`];
+    return ['aviso', n === 0 ? 'VENCE HOY' : n === 1 ? 'VENCE EN 1 DÍA HÁBIL' : `VENCE EN ${n} DÍAS HÁBILES`, `hasta el ${hasta}`];
+  }
+
+  class BugaluReclamos extends IslaGestion {
+    rol = null;
+
+    iniciar() {
+      this.registro = new URLSearchParams(location.search).get('id') ?? '';
+      this.addEventListener('click', (e) => {
+        const adjunto = e.target.closest('[data-adjunto]');
+        if (adjunto) {
+          e.preventDefault();
+          this.abrirAdjunto(adjunto);
+        } else if (e.target.closest('[data-corregir]')) this.corregir();
+        else if (e.target.closest('[data-enviar]')) this.enviarRespuesta(e.target.closest('[data-enviar]'));
+      });
+      // Las acciones del encabezado viven fuera de la isla.
+      document.addEventListener('click', (e) => {
+        if (e.target.closest('[data-exportar]')) this.exportar(e.target.closest('[data-exportar]'));
+        else if (e.target.closest('[data-imprimir]')) window.print();
+      });
+    }
+
+    // El aviso de la URL se muestra al cargar la hoja (su texto lleva datos de ella); aqui solo se lee y se quita de la direccion.
+    avisoDeUrl() {
+      const url = new URL(location.href);
+      this.claveAviso = url.searchParams.get('aviso');
+      if (this.claveAviso === null) return;
+      url.searchParams.delete('aviso');
+      history.replaceState(null, '', url);
+    }
+
+    mostrar(estado) {
+      super.mostrar(estado);
+      const aviso = this.querySelector('[data-salida] .aviso');
+      if (estado === 'sin-permiso') aviso.querySelector('.aviso-texto').textContent = 'Esta sección es para clientes y el Administrador.';
+      // Sin rol conocido, el acceso es el que se uso la ultima vez (area recordada).
+      if (estado === 'no-autenticado' && areaRecordada() !== 'estudio') {
+        const enlace = this.querySelector('.aviso-accion');
+        enlace.textContent = 'Ir al acceso';
+        enlace.href = `/acceso/?${new URLSearchParams({ volver: location.pathname + location.search })}`;
+      }
+    }
+
+    // El cliente no sabe si una hoja ajena existe: 403 se pinta como 404 (CA-10).
+    fallo(error) {
+      if (this.vista === 'detalle' && this.rol === 'cliente' && error.estado === 403) return this.noExiste();
+      super.fallo(error);
+    }
+
+    async perfil() {
+      const perfil = await obtenerPerfil();
+      if (perfil.rol !== 'cliente' && perfil.rol !== 'administrador') throw new ErrorApi(403, 'sin_permiso', '');
+      this.rol = perfil.rol;
+      return perfil.rol;
+    }
+
+    get admin() {
+      return this.rol === 'administrador';
+    }
+
+    // Titulo, indice, ruta y acciones del encabezado (la pagina nace neutra: el rol decide cual se ve).
+    cabecera(titulo, indice, descripcion, ruta, tituloPagina) {
+      const q = (s) => document.querySelector(s);
+      q('.encabezado-titulo').textContent = titulo;
+      q('.encabezado-indice').textContent = indice;
+      if (descripcion) q('.encabezado-descripcion').textContent = descripcion;
+      const pasos = [...document.querySelectorAll('.encabezado-ruta li')];
+      ruta.forEach((texto, i) => pasos[i + 1] && (pasos[i + 1].querySelector('a, span').textContent = texto));
+      document.querySelectorAll('[data-para]').forEach((e) => (e.hidden = e.dataset.para !== this.rol));
+      document.title = `${tituloPagina} · Bugalú Studio`;
+    }
+
+    sello(variante, texto) {
+      const nodo = this.querySelector(`template[data-sello="${variante}"]`).content.cloneNode(true);
+      nodo.querySelector('.etiqueta > span:last-child').textContent = texto;
+      return nodo;
+    }
+
+    // Etiqueta de estado con su linea de abajo, en una celda o un bloque.
+    pintarPlazo(destino, h) {
+      const [variante, texto, abajo] = plazo(h, this.admin);
+      destino.append(this.sello(variante, texto));
+      if (abajo) destino.append(Object.assign(document.createElement('span'), { className: 'reclamos-secundario', textContent: abajo }));
+    }
+
+    noExiste() {
+      this.noEncontrada = [this.admin ? 'No encontramos esta hoja.' : 'No encontramos esta hoja en tu cuenta.', ''];
+      this.mostrar('no-encontrada');
+      const enlace = this.querySelector('[data-salida] .aviso-accion');
+      enlace.textContent = this.admin ? 'Volver a reclamos' : 'Volver a mis reclamos';
+      this.cabecera(this.admin ? 'LIBRO DE RECLAMACIONES' : 'MIS RECLAMOS', this.admin ? '[A12] CONTROL / RECLAMOS' : '[P4] CUENTA / RECLAMOS', '', [], 'Hoja no encontrada');
+      return null;
+    }
+
+    // --- Lista: Mis reclamos (cliente) y bandeja (Administrador) ---
+
+    async lista() {
+      const rol = await this.perfil();
+      const url = new URLSearchParams(location.search);
+      this.cabecera(
+        this.admin ? 'LIBRO DE RECLAMACIONES' : 'MIS RECLAMOS',
+        this.admin ? '[A12] CONTROL / RECLAMOS' : '[P4] CUENTA / RECLAMOS',
+        this.admin ? 'Hojas presentadas en la web o transcritas del libro físico. Responde cada una dentro de 15 días hábiles; las respuestas no se editan.' : 'Las hojas del Libro de Reclamaciones que presentaste con tu sesión iniciada y nuestra respuesta. Te respondemos en un máximo de 15 días hábiles.',
+        [this.admin ? 'Reclamos' : 'Mis reclamos'],
+        this.admin ? 'Reclamos' : 'Mis reclamos',
+      );
+      let hojas;
+      this.filtros = {};
+      if (rol === 'cliente') {
+        hojas = await listarMias();
+        if (!Array.isArray(hojas)) throw new Error('respuesta_inesperada');
+        hojas = [...hojas].sort((a, b) => Date.parse(b.creada_en) - Date.parse(a.creada_en));
+      } else {
+        const estado = ESTADOS.includes(url.get('estado')) ? url.get('estado') : '';
+        const desde = esFecha(url.get('desde')) ? url.get('desde') : '';
+        const hasta = esFecha(url.get('hasta')) ? url.get('hasta') : '';
+        this.filtros = { estado, desde, hasta };
+        this.controles(this.filtros);
+        // 422 de fechas: el rango se valida antes; si el servidor aun asi lo rechaza, se explica bajo HASTA.
+        try {
+          hojas = await listarHojas(this.filtros);
+        } catch (error) {
+          if (error.estado === 422) {
+            this.errorRango();
+            this.mostrar('todas');
+            this.querySelector('[data-salida] [data-total]').textContent = '';
+            this.querySelector('tbody').replaceChildren();
+            return null;
+          }
+          throw error;
+        }
+        if (!Array.isArray(hojas)) throw new Error('respuesta_inesperada');
+        // Pendientes primero, la que vence antes arriba; despues las respondidas, las mas recientes arriba.
+        hojas = [...hojas].sort((a, b) => (a.estado === b.estado ? (a.estado === 'pendiente' ? Date.parse(a.vence_respuesta) - Date.parse(b.vence_respuesta) : Date.parse(b.creada_en) - Date.parse(a.creada_en)) : a.estado === 'pendiente' ? -1 : 1));
+      }
+      if (!hojas.length) return this.vacio();
+      this.mostrar(this.admin ? 'todas' : 'mias');
+      const modelo = this.querySelector(`template[data-fila="${this.admin ? 'todas' : 'mias'}"]`);
+      this.querySelector('tbody').replaceChildren(...hojas.map((h) => {
+        const fila = modelo.content.cloneNode(true).firstElementChild;
+        fila.querySelector('[data-numero]').textContent = h.numero;
+        const tiempo = fila.querySelector('time');
+        tiempo.textContent = fechaHora(h.creada_en);
+        tiempo.dateTime = h.creada_en;
+        fila.querySelector('[data-tipo]').textContent = TIPOS[h.tipo] ?? 'Sin marcar';
+        this.pintarPlazo(fila.querySelector('[data-plazo]'), h);
+        if (this.admin) {
+          fila.querySelector('[data-consumidor]').textContent = h.consumidor?.nombre ?? '—';
+          const extras = fila.querySelector('[data-extras]');
+          if (h.origen === 'libro_fisico') extras.append(this.sello('neutra', 'TRANSCRITA'));
+          if (h.revisar_spam) extras.append(this.sello('alerta', 'Revisar: posible envío automático'.toUpperCase()));
+        }
+        const ver = fila.querySelector('[data-revisar]');
+        ver.href = `/app/reclamos/detalle?id=${encodeURIComponent(h.id)}`;
+        fila.querySelector('[data-objeto]').textContent = ` ${h.numero}`;
+        return fila;
+      }));
+      const pendientes = hojas.filter((h) => h.estado === 'pendiente').length;
+      const total = this.admin ? `${plural(hojas.length, 'hoja', 'hojas')} · ${plural(pendientes, 'pendiente', 'pendientes')}` : plural(hojas.length, 'hoja', 'hojas');
+      this.querySelector('[data-total]').textContent = total;
+      return total;
+    }
+
+    vacio() {
+      this.mostrar('vacio');
+      const titulo = this.querySelector('[data-vacio-titulo]');
+      const texto = this.querySelector('[data-vacio-texto]');
+      const accion = this.querySelector('[data-vacio-accion]');
+      const { estado, desde, hasta } = this.filtros;
+      if (!this.admin) {
+        titulo.textContent = 'Aún no tienes hojas';
+        texto.textContent = 'Aquí verás los reclamos y quejas que presentes con tu sesión iniciada, y nuestra respuesta.';
+        document.querySelectorAll('[data-para="cliente"]').forEach((e) => (e.hidden = true)); // el vacio ya trae la accion
+      } else if (!estado && !desde && !hasta) {
+        titulo.textContent = 'Aún no hay hojas';
+        texto.textContent = 'Cuando alguien presente un reclamo o una queja, aparecerá aquí y te avisaremos por correo.';
+        accion.remove();
+      } else {
+        const rango = desde && hasta ? ` entre el ${diaMesAnio(desde)} y el ${diaMesAnio(hasta)}` : desde ? ` desde el ${diaMesAnio(desde)}` : hasta ? ` hasta el ${diaMesAnio(hasta)}` : '';
+        titulo.textContent = `No hay hojas${estado ? ` ${estado === 'pendiente' ? 'pendientes' : 'respondidas'}` : ''}${rango}.`;
+        texto.remove();
+        const boton = accion.querySelector('a');
+        boton.textContent = 'Quitar filtros';
+        boton.href = '/app/reclamos/';
+        boton.classList.replace('boton-primario', 'boton-secundario');
+      }
+      return titulo.textContent;
+    }
+
+    // Filtros por estado (enlaces con aria-current) y fechas de presentacion (formulario GET).
+    controles({ estado, desde, hasta }) {
+      const conFechas = (valor) => new URLSearchParams({ ...(valor && { estado: valor }), ...(desde && { desde }), ...(hasta && { hasta }) }).toString();
+      const nav = this.querySelector('[data-filtros]');
+      nav.replaceChildren(...[['', 'TODAS'], ['pendiente', 'PENDIENTES'], ['respondida', 'RESPONDIDAS']].map(([clave, texto]) => {
+        const nodo = this.querySelector(`template[data-filtro="${clave === estado ? 'si' : 'no'}"]`).content.cloneNode(true);
+        nodo.querySelector('.etiqueta > span:last-child').textContent = texto;
+        nodo.querySelector('a').href = `/app/reclamos/${conFechas(clave) ? `?${conFechas(clave)}` : ''}`;
+        return nodo;
+      }));
+      nav.hidden = false;
+      const form = this.querySelector('[data-controles]');
+      form.hidden = false;
+      form.elements.estado.disabled = !estado;
+      form.elements.estado.value = estado;
+      form.elements.desde.value = desde;
+      form.elements.hasta.value = hasta;
+      this.querySelector('[data-quitar-fechas]').hidden = !(desde || hasta);
+      this.querySelector('[data-quitar-fechas]').href = `/app/reclamos/${estado ? `?estado=${estado}` : ''}`;
+    }
+
+    alEnviar(formulario) {
+      const cual = formulario.dataset.formulario;
+      if (cual === 'responder') this.revisarRespuesta(formulario);
+      else this.filtrar(formulario);
+    }
+
+    errorRango() {
+      const form = this.querySelector('[data-controles]');
+      ponerError(this, form.elements.hasta, 'La fecha final debe ser igual o posterior a la inicial.');
+      form.elements.hasta.focus();
+    }
+
+    filtrar(form) {
+      [form.elements.desde, form.elements.hasta].forEach(quitarError);
+      const { desde, hasta } = { desde: form.elements.desde.value, hasta: form.elements.hasta.value };
+      if (desde && hasta && hasta < desde) return this.errorRango();
+      const parametros = new URLSearchParams({ ...(form.elements.estado.value && { estado: form.elements.estado.value }), ...(desde && { desde }), ...(hasta && { hasta }) }).toString();
+      location.assign(`/app/reclamos/${parametros ? `?${parametros}` : ''}`);
+    }
+
+    // CA-11: CSV de un rango. Pide el token, crea un blob y lo descarga con el rango en el nombre.
+    async exportar(boton) {
+      if (boton.getAttribute('aria-busy') || !this.querySelector('[data-controles]')) return;
+      const form = this.querySelector('[data-controles]');
+      [form.elements.desde, form.elements.hasta].forEach(quitarError);
+      limpiarAvisos(this);
+      const { desde, hasta } = { desde: form.elements.desde.value, hasta: form.elements.hasta.value };
+      if (!desde || !hasta) {
+        ponerError(this, form.elements.desde, 'Elige DESDE y HASTA para exportar.');
+        form.elements.desde.focus();
+        return;
+      }
+      if (hasta < desde) return this.errorRango();
+      const original = boton.textContent;
+      boton.setAttribute('aria-busy', 'true');
+      boton.textContent = 'Exportando…';
+      this.querySelector('[data-anuncio]').textContent = 'Exportando…';
+      try {
+        const archivo = await exportarHojas(desde, hasta);
+        const enlace = Object.assign(document.createElement('a'), { href: URL.createObjectURL(archivo), download: `reclamaciones-${desde}-${hasta}.csv` });
+        document.body.append(enlace);
+        enlace.click();
+        enlace.remove();
+        setTimeout(() => URL.revokeObjectURL(enlace.href), 0);
+        this.querySelector('[data-anuncio]').textContent = 'CSV descargado';
+      } catch (error) {
+        this.querySelector('[data-anuncio]').textContent = '';
+        if (error.estado === 422) this.errorRango();
+        else if (error.estado === 401) this.mostrar('no-autenticado');
+        else if (error.estado === 403) this.mostrar('sin-permiso');
+        else enfocarAviso(mostrarAviso(this, 'error', ...(error.estado === 0 ? ['Sin conexión', 'Revisa tu red y vuelve a intentarlo.'] : error.estado === 503 ? ['El servicio no responde', 'Inténtalo de nuevo en unos minutos.'] : ['Algo salió mal', 'Inténtalo de nuevo.'])));
+      }
+      boton.removeAttribute('aria-busy');
+      boton.textContent = original;
+    }
+
+    // --- Detalle: la hoja (cliente o Administrador) y la respuesta ---
+
+    async detalle() {
+      await this.perfil();
+      if (!UUID.test(this.registro)) return this.noExiste();
+      let h;
+      try {
+        h = await obtenerHoja(this.registro);
+      } catch (error) {
+        if (error.estado === 404) return this.noExiste();
+        throw error;
+      }
+      if (!h?.numero || !Object.hasOwn({ pendiente: 1, respondida: 1 }, h.estado)) throw new Error('respuesta_inesperada');
+      this.hoja = h;
+      this.mostrar('datos');
+      const tipo = TIPOS[h.tipo] ?? 'Hoja';
+      this.cabecera(
+        `HOJA N.º ${h.numero}`,
+        this.admin ? '[A12] CONTROL / RECLAMOS' : '[P4] CUENTA / RECLAMOS',
+        this.admin ? `${h.consumidor.nombre} · ${tipo} presentado el ${fecha(h.creada_en)}.` : `${tipo} presentado el ${fecha(h.creada_en)}.`,
+        [this.admin ? 'Reclamos' : 'Mis reclamos', h.numero],
+        `Hoja N.º ${h.numero}`,
+      );
+      this.querySelector('[data-hoja]').replaceChildren(pintarHoja(this, h, { variante: 'consulta', administrador: this.admin }));
+      const etiquetas = this.querySelector('[data-etiquetas]');
+      if (this.admin && h.revisar_spam) {
+        etiquetas.hidden = false;
+        etiquetas.append(this.sello('alerta', 'REVISAR: POSIBLE ENVÍO AUTOMÁTICO'));
+      } else etiquetas.remove();
+      const rejilla = this.querySelector('.gestion-rejilla');
+      if (!this.admin) {
+        rejilla.classList.add('gestion-rejilla-simple');
+        this.querySelector('[data-lateral]').remove();
+      } else {
+        this.querySelector('[data-lateral]').hidden = false;
+        this.panelRespuesta(h);
+      }
+      const abierto = this.claveAviso;
+      this.claveAviso = null;
+      if (AVISOS_DETALLE.includes(abierto)) this.avisarDetalle(abierto, h);
+      return `Hoja ${h.numero}`;
+    }
+
+    avisarDetalle(clave, h) {
+      const texto = {
+        'respuesta-enviada': 'Respuesta enviada al correo del consumidor.',
+        'respuesta-registrada': `Respuesta registrada con la carta ${h.respuesta?.referencia_carta ?? ''}.`.replace(' .', '.'),
+        'hoja-transcrita': `Hoja transcrita con el N.º ${h.numero}. El plazo de respuesta cuenta desde la fecha original: vence el ${fecha(h.vence_respuesta)}.`,
+      }[clave];
+      enfocarAviso(mostrarAviso(this, 'exito', texto));
+    }
+
+    // R1: la respuesta es irreversible (CA-07), asi que lleva su revision antes de enviarse.
+    panelRespuesta(h) {
+      if (h.estado === 'respondida') {
+        this.querySelector('[data-panel="responder"]').hidden = true;
+        const caja = this.querySelector('[data-panel="respondida"]');
+        caja.hidden = false;
+        caja.querySelector('.indicador-dato').textContent = h.respuesta?.enviada_en ? fechaHora(h.respuesta.enviada_en) : '';
+        return;
+      }
+      this.querySelector('[data-panel="respondida"]').remove();
+      this.pintarPlazo(this.querySelector('[data-plazo-r]'), h);
+      const carta = h.medio_respuesta === 'carta';
+      this.querySelector('[data-medio]').textContent = `El consumidor pidió ${MEDIOS[h.medio_respuesta] ?? h.medio_respuesta}.`;
+      this.querySelector('[data-carta]').hidden = !carta;
+      this.querySelector('[name="enviada_en"]').max = hoyLima();
+    }
+
+    revisarRespuesta(formulario) {
+      if (this.ocupado) return;
+      const h = this.hoja;
+      const texto = formulario.elements.texto;
+      const referencia = formulario.elements.referencia_carta;
+      const enviada = formulario.elements.enviada_en;
+      [texto, referencia, enviada].forEach(quitarError);
+      const carta = h.medio_respuesta === 'carta';
+      const errores = [];
+      const t = texto.value.trim();
+      if (t.length < 10) errores.push({ entrada: texto, mensaje: 'Escribe la respuesta con al menos 10 caracteres.', texto: 'Respuesta' });
+      else if (t.length > 5000) errores.push({ entrada: texto, mensaje: 'La respuesta admite hasta 5000 caracteres.', texto: 'Respuesta' });
+      if (carta) {
+        if (!referencia.value.trim()) errores.push({ entrada: referencia, mensaje: 'Escribe la referencia de la carta.', texto: 'Referencia de la carta' });
+        if (!enviada.value) errores.push({ entrada: enviada, mensaje: 'Elige la fecha en que enviaste la carta.', texto: 'Fecha de envío' });
+        else if (enviada.value > hoyLima()) errores.push({ entrada: enviada, mensaje: 'La fecha de envío no puede ser futura.', texto: 'Fecha de envío' });
+      }
+      if (!this.validar(errores, ['dato', 'datos'])) return;
+      this.respuesta = { texto: t, ...(carta && { referencia_carta: referencia.value.trim(), enviada_en: instante(enviada.value, '00:00') }) };
+      const r = (n) => this.querySelector(`[data-r="${n}"]`);
+      r('texto').textContent = t;
+      r('medio').textContent = MEDIOS[h.medio_respuesta][0].toUpperCase() + MEDIOS[h.medio_respuesta].slice(1);
+      r('destino-rotulo').textContent = carta ? 'Domicilio' : 'Correo';
+      r('destino').textContent = carta ? h.consumidor.domicilio : h.consumidor.correo;
+      this.querySelectorAll('[data-r-carta]').forEach((e) => (e.hidden = !carta));
+      if (carta) {
+        r('referencia').textContent = referencia.value.trim();
+        r('enviada').textContent = diaMesAnio(enviada.value);
+      }
+      this.querySelector('[data-consecuencias]').textContent = carta
+        ? `Queda registrada la carta ${referencia.value.trim()} enviada el ${diaMesAnio(enviada.value)}, con tu nombre. No se puede editar ni borrar.`
+        : `Enviamos esta respuesta a ${h.consumidor.correo} y queda registrada con tu nombre. No se puede editar ni borrar.`;
+      this.querySelector('[data-enviar]').textContent = carta ? 'Registrar respuesta' : 'Enviar respuesta';
+      this.querySelector('[data-panel="responder"]').hidden = true;
+      this.querySelector('[data-panel="revisar"]').hidden = false;
+      const titulo = this.querySelector('[data-panel="revisar"] .panel-titulo');
+      titulo.tabIndex = -1;
+      titulo.focus();
+    }
+
+    corregir() {
+      if (this.ocupado) return;
+      limpiarAvisos(this);
+      this.querySelector('[data-panel="revisar"]').hidden = true;
+      this.querySelector('[data-panel="responder"]').hidden = false;
+      this.querySelector('[name="texto"]').focus();
+    }
+
+    enviarRespuesta(boton) {
+      const carta = this.hoja.medio_respuesta === 'carta';
+      this.enviar(boton, carta ? 'Registrando…' : 'Enviando…', () => responderHoja(this.registro, this.respuesta), () => location.assign(`/app/reclamos/detalle?id=${encodeURIComponent(this.registro)}&aviso=${carta ? 'respuesta-registrada' : 'respuesta-enviada'}`), true);
+    }
+
+    // 409 (ya respondida desde otra sesion), 404 y 422 de la respuesta; lo demas lo trata la base.
+    errorEnvio(error) {
+      if (error.codigo === 'ya_respondida') {
+        limpiarAvisos(this);
+        const aviso = mostrarAviso(this, 'informacion', 'Esta hoja ya tiene respuesta, quizá desde otra sesión.');
+        this.cargar().then(() => enfocarAviso(aviso));
+      } else if (error.estado === 404) {
+        this.noEncontrada = ['No encontramos esta hoja.', ''];
+        this.sustituir('no-encontrada');
+      }
+      else if (error.estado === 422) {
+        this.corregir();
+        const campo = error.detalles?.campo;
+        const entrada = this.querySelector(`[name="${campo === 'referencia_carta' || campo === 'enviada_en' ? campo : 'texto'}"]`);
+        const mensajes = { texto: 'Escribe la respuesta con al menos 10 caracteres.', referencia_carta: 'Escribe la referencia de la carta.', enviada_en: 'La fecha de envío no puede ser futura.' };
+        this.validar([{ entrada, mensaje: mensajes[entrada.name], texto: this.etiqueta(entrada) }], ['dato', 'datos']);
+      } else return false;
+      return true;
+    }
+
+    // El archivo se abre en una pestaña nueva: la pestaña se abre en el clic (para que no la bloqueen) y se dirige a la URL firmada.
+    async abrirAdjunto(enlace) {
+      const n = enlace.dataset.adjunto;
+      const li = enlace.closest('li');
+      li.querySelector('.mensaje-error')?.remove();
+      const pestana = window.open('', '_blank');
+      try {
+        const { url } = await obtenerAdjunto(this.registro, n);
+        // La URL firmada solo se usa si es http(s) y del origen de Supabase (el backend firma con URL_SUPABASE).
+        const destino = new URL(url);
+        if (!/^https?:$/.test(destino.protocol) || destino.origin !== new URL(import.meta.env.PUBLIC_URL_SUPABASE).origin) throw new Error('url');
+        if (!pestana) throw new Error('bloqueada');
+        pestana.opener = null;
+        pestana.location.href = destino.href;
+      } catch {
+        pestana?.close();
+        const mensaje = this.querySelector('template[data-plantilla="error"]').content.firstElementChild.cloneNode(true);
+        mensaje.setAttribute('role', 'alert');
+        mensaje.querySelector('span').textContent = `No pudimos abrir ${li.querySelector('.archivo-nombre').textContent}. Inténtalo de nuevo.`;
+        li.append(mensaje);
+      }
+    }
+  }
+
+  if (!customElements.get('bugalu-reclamos')) customElements.define('bugalu-reclamos', BugaluReclamos);
+</script>
+
+<style>
+  .reclamos {
+    display: block;
+  }
+  .reclamos :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  .reclamos-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+    margin-block-end: var(--espacio-4);
+  }
+  .reclamos-controles {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    margin-block-end: var(--espacio-4);
+  }
+  .reclamos-controles-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-4);
+  }
+  .reclamos-quitar {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--medida-control-tactil);
+    color: var(--color-texto-principal);
+  }
+  .reclamos-total {
+    margin-block-end: var(--espacio-3);
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .reclamos-nota {
+    margin-block-start: var(--espacio-3);
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+  }
+  .reclamos-numero {
+    display: block;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-weight: var(--fuente-peso-medio);
+    font-variant-numeric: tabular-nums;
+  }
+  .reclamos-etiquetas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-1);
+  }
+  :global(.reclamos-secundario) {
+    display: block;
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+  }
+  .reclamos-aparte {
+    margin-block-start: var(--espacio-2);
+  }
+  .reclamos-texto {
+    white-space: pre-line;
+  }
+</style>

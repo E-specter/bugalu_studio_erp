@@ -70,8 +70,8 @@ test('pie: los enlaces no suman separacion entre filas', async ({ page }) => {
 });
 
 // N5: las tres filas de contacto miden lo mismo (el objetivo tactil esta en la fila, no solo en el enlace).
-test('contacto del estudio: filas de igual altura', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
+test('contacto del estudio: filas de igual altura', async ({ browser }) => {
+  const page = await (await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1440, height: 900 } })).newPage(); // el contacto del libro vive en su <noscript>
   await page.goto('/libro-de-reclamaciones/');
   const alturas = await page.locator('.contacto li').evaluateAll((l) => l.map((e) => Math.round(e.getBoundingClientRect().height)));
   expect(alturas.length).toBeGreaterThanOrEqual(3);

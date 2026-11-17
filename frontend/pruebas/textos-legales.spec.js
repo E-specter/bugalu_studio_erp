@@ -228,16 +228,7 @@ test('publico: directorio con error de red ofrece Reintentar', async ({ page }) 
   await expect(page.getByRole('button', { name: 'Reintentar' })).toBeVisible();
 });
 
-// --- 3. Libro de reclamaciones provisional ---
-test('publico: libro de reclamaciones provisional con el contacto del estudio', async ({ page }) => {
-  await page.goto('/libro-de-reclamaciones/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^libro de reclamaciones$/i);
-  await expect(page.getByRole('link', { name: 'somos.bugalu.studio@gmail.com' })).toBeVisible();
-  await expect(page.getByText('+51 925 530 800')).toBeVisible();
-  await expect(page.getByRole('contentinfo')).toBeVisible();
-  await sinViolaciones(page);
-  await page.screenshot({ path: 'pruebas/capturas/libro-reclamaciones-1440.png', fullPage: true });
-});
+// El libro de reclamaciones ya no es provisional: lo cubre reclamacion-publico.spec.js.
 
 // --- 4. Administrador: lista ---
 async function admin(page, { lista = json(200, LISTA) } = {}) {
@@ -564,7 +555,7 @@ test('navegacion: TEXTOS con icono file-text, actual en su pantalla (escritorio)
   await page.setViewportSize({ width: 1440, height: 900 });
   await admin(page);
   await page.goto('/app/textos');
-  const enlace = page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Textos' });
+  const enlace = page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Textos', exact: true });
   await expect(enlace).toHaveAttribute('href', '/app/textos/');
   await expect(enlace).toHaveAttribute('aria-current', 'page');
   await expect(enlace.locator('svg path')).toHaveCount(5);
@@ -575,12 +566,12 @@ test('navegacion: TEXTOS en el menu del movil y un cliente no la ve', async ({ p
   await admin(page);
   await page.goto('/app/textos');
   await page.getByText('Menú', { exact: true }).click();
-  await expect(page.locator('.cabecera-menu-panel').getByRole('link', { name: 'Textos' })).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('.cabecera-menu-panel').getByRole('link', { name: 'Textos', exact: true })).toHaveAttribute('aria-current', 'page');
   const otra = await page.context().newPage();
   await otra.route(`${API}/perfil`, (r) => r.fulfill(perfil({ rol: 'cliente' })));
   await otra.setViewportSize({ width: 1440, height: 900 });
   await otra.goto('/app/');
-  await expect(otra.getByRole('link', { name: 'Textos' })).toBeHidden();
+  await expect(otra.getByRole('link', { name: 'Textos', exact: true })).toBeHidden();
 });
 
 // --- 7. Usuarios con documento repetido ---

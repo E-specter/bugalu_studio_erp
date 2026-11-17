@@ -52,4 +52,16 @@ const { titulo } = Astro.props;
   :is(h1, h2)[tabindex='-1']:focus {
     outline: none;
   }
+  /* Impresion (hoja-reclamacion.md): fuera cabecera, navegacion, pie y todo lo marcado; la hoja no se mueve de su sitio. */
+  @media print {
+    .saltar,
+    .publico-cabecera,
+    .cabecera,
+    .app-nav-tactil,
+    .app-nav-lateral,
+    .pie,
+    [data-no-imprimir] {
+      display: none !important; /* shortcut: gana a los display de cada componente; sin !important habria que subir la especificidad en cada uno */
+    }
+  }
 </style>

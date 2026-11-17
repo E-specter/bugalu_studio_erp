@@ -1,0 +1,18 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Boton from '../../../componentes/Boton.astro';
+import Reclamos from '../../../islas/Reclamos.astro';
+---
+
+<LayoutApp titulo="Hoja de reclamación">
+  <EncabezadoPantalla
+    titulo="HOJA"
+    indice="RECLAMOS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Reclamos', href: '/app/reclamos/' }, { etiqueta: 'Hoja' }]}
+    descripcion="Hoja del Libro de Reclamaciones."
+  >
+    <Boton slot="acciones" variante="secundario" data-imprimir data-para="cliente" hidden>Imprimir o guardar en PDF</Boton>
+  </EncabezadoPantalla>
+  <Reclamos vista="detalle" />
+</LayoutApp>

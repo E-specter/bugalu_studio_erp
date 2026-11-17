@@ -1,8 +1,9 @@
 ---
 interface Props {
   variante?: 'completa' | 'acceso';
+  class?: string;
 }
-const { variante = 'completa', class: clase } = Astro.props as Props & { class?: string };
+const { variante = 'completa', class: clase } = Astro.props as Props;
 const enlaces = [
   { texto: 'Términos de uso', href: '/legal/terminos-de-uso/' },
   { texto: 'Política de privacidad', href: '/legal/privacidad/' },
@@ -21,8 +22,8 @@ const enlaces = [
     </nav>
     {variante === 'completa' && (
       <>
-        <p class="pie-tecnica">AURAL PERÚ EIRL · RUC 20615656128 · AV. JAVIER PRADO ESTE 5920, LA MOLINA, LIMA</p>
-        <p class="pie-tecnica">BUGALÚ STUDIO © 2026</p>
+        <p class="pie-tecnica">Aural Perú E.I.R.L. · RUC 20615656128 · Av. Javier Prado Este 5920, La Molina, Lima</p>
+        <p class="pie-tecnica">Bugalú Studio © 2026</p>
       </>
     )}
   </div>
@@ -76,6 +77,7 @@ const enlaces = [
     color: var(--color-texto-secundario);
     font-family: var(--fuente-familia-tecnica);
     font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase; /* la razon social se escribe como en los Terminos; el estilo tecnico la pone en mayusculas */
   }
   @media (min-width: 90em) { /* punto-quiebre-amplio */
     .pie-completa .pie-contenido {

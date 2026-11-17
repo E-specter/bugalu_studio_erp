@@ -4,8 +4,11 @@
 import Campo from '../componentes/Campo.astro';
 import Archivo from '../componentes/Archivo.astro';
 import Icono from '../componentes/internos/Icono.astro';
+import MensajeError from '../componentes/internos/MensajeError.astro';
 
 interface Props {
+  variante?: 'captura' | 'reclamo';
+  maxArchivos?: number;
   etiqueta: string;
   ayuda?: string;
   nombre?: string;
@@ -14,21 +17,24 @@ interface Props {
   maxMb?: number;
   obligatorio?: boolean;
 }
-const { etiqueta, ayuda, nombre = 'captura', id = `carga-${nombre}`, accept = 'image/jpeg,image/png,application/pdf', maxMb = 5, obligatorio = false } = Astro.props;
+const { variante = 'captura', maxArchivos = 3, etiqueta, ayuda, nombre = 'captura', id = `carga-${nombre}`, accept = 'image/jpeg,image/png,application/pdf', maxMb = 5, obligatorio = false } = Astro.props;
+const reclamo = variante === 'reclamo';
 ---
 
-<bugalu-carga-archivos variante="captura" max-mb={maxMb} accept={accept}>
+<bugalu-carga-archivos variante={variante} max-mb={maxMb} max-archivos={maxArchivos} accept={accept}>
   <!-- Campo pinta <input type={tipo}> para cualquier tipo que no sea area, selector, password ni search: 'file' funciona aunque su tipado no lo liste. -->
-  <Campo tipo={'file' as 'text'} {nombre} {etiqueta} {ayuda} {id} {obligatorio} accept={accept} />
+  <Campo tipo={'file' as 'text'} {nombre} {etiqueta} {ayuda} {id} {obligatorio} accept={accept} multiple={reclamo || undefined} />
   <template data-boton><label class="carga-boton"><Icono nombre="upload" />Seleccionar archivo</label></template>
   <template data-archivo><Archivo nombre=" " tipo="pdf" metadato=" " /></template>
+  {reclamo && <template data-plantilla="error"><MensajeError id="" texto=" " /></template>}
 </bugalu-carga-archivos>
 
 <script>
   // @ts-nocheck
+  import { tamanoArchivo as tamano } from '../servicios/hoja-reclamacion.js';
+  import { ponerError, quitarError } from '../servicios/formulario.js';
   const MB = 1048576;
   const TIPOS = { 'image/jpeg': 'JPG', 'image/png': 'PNG', 'application/pdf': 'PDF' };
-  const tamano = (bytes) => (bytes < MB ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${String(Number((bytes / MB).toFixed(1))).replace('.', ',')} MB`);
 
   class BugaluCargaArchivos extends HTMLElement {
     connectedCallback() {
@@ -42,8 +48,112 @@ const { etiqueta, ayuda, nombre = 'captura', id = `carga-${nombre}`, accept = 'i
       this.estado = Object.assign(document.createElement('div'), { className: 'visualmente-oculto' });
       this.estado.setAttribute('role', 'status');
       this.entrada.after(this.boton, this.adjunto, this.estado);
+      if (this.getAttribute('variante') === 'reclamo') return this.iniciarReclamo();
       this.entrada.addEventListener('change', () => this.cambiar());
       this.adjunto.addEventListener('click', (e) => e.target.closest('.archivo-accion') && this.quitar());
+    }
+
+    // --- Adjuntos de reclamo: varios archivos que se suman (hasta max-archivos) y viajan en el FormData de la pantalla ---
+
+    iniciarReclamo() {
+      this.archivos = [];
+      this.maximo = Number(this.getAttribute('max-archivos'));
+      this.ayuda = this.querySelector('.campo-ayuda');
+      this.textoAyuda = this.ayuda?.textContent ?? '';
+      this.adjunto = Object.assign(document.createElement('ul'), { className: 'carga-lista' });
+      this.boton.after(this.adjunto);
+      this.entrada.addEventListener('change', () => this.agregar());
+      this.adjunto.addEventListener('click', (e) => {
+        const boton = e.target.closest('.archivo-accion');
+        if (boton) this.quitarReclamo([...this.adjunto.children].indexOf(boton.closest('li')));
+      });
+    }
+
+    agregar() {
+      const maxMb = Number(this.getAttribute('max-mb'));
+      const tipos = this.getAttribute('accept').split(',');
+      const errores = [];
+      for (const f of [...this.entrada.files]) {
+        if (this.archivos.length >= this.maximo) errores.push(`Puedes adjuntar hasta ${this.maximo} archivos. Quita uno para añadir ${f.name}.`);
+        else if (!tipos.includes(f.type)) errores.push(`${f.name} no es PDF, JPG ni PNG. Elige otro archivo.`);
+        else if (f.size > maxMb * MB) errores.push(`${f.name} pesa más de ${maxMb} MB. Elige uno más liviano.`);
+        else this.archivos.push(f);
+      }
+      this.entrada.value = ''; // el input solo sirve para elegir: la lista vive en memoria
+      this.limpiarRechazos();
+      this.pintarLista();
+      if (errores.length) this.errorGrupo(errores.join(' '));
+      this.estado.textContent = errores.length ? errores.join(' ') : `${this.archivos.length} de ${this.maximo} archivos adjuntos.`;
+      this.dispatchEvent(new CustomEvent('cambio', { bubbles: true }));
+    }
+
+    pintarLista() {
+      this.vistas?.forEach((u) => URL.revokeObjectURL(u));
+      this.vistas = [];
+      const modelo = this.querySelector('template[data-archivo]');
+      this.adjunto.replaceChildren(...this.archivos.map((f) => {
+        const li = document.createElement('li');
+        const nodo = modelo.content.firstElementChild.cloneNode(true);
+        nodo.querySelector('.archivo-nombre').textContent = f.name;
+        nodo.querySelector('.archivo-nombre').title = f.name;
+        nodo.querySelector('.archivo-metadato').textContent = `${TIPOS[f.type] ?? ''} · ${tamano(f.size)}`;
+        nodo.querySelector('.archivo-accion').setAttribute('aria-label', `Quitar ${f.name}`);
+        if (f.type.startsWith('image/')) {
+          const src = URL.createObjectURL(f);
+          this.vistas.push(src);
+          nodo.querySelector('.archivo-visual').replaceChildren(Object.assign(document.createElement('img'), { className: 'archivo-miniatura', src, alt: `Vista previa de ${f.name}` }));
+        }
+        li.append(nodo);
+        return li;
+      }));
+      const lleno = this.archivos.length >= this.maximo;
+      this.boton.hidden = lleno;
+      if (this.ayuda) this.ayuda.textContent = lleno ? `Máximo ${this.maximo} archivos.` : this.textoAyuda;
+    }
+
+    quitarReclamo(i) {
+      const [quitado] = this.archivos.splice(i, 1);
+      this.limpiarRechazos();
+      this.pintarLista();
+      this.estado.textContent = `Quitaste ${quitado.name}.`;
+      const botones = this.querySelectorAll('.archivo-accion');
+      (botones[Math.min(i, botones.length - 1)] ?? this.entrada).focus();
+      this.dispatchEvent(new CustomEvent('cambio', { bubbles: true }));
+    }
+
+    errorGrupo(texto) {
+      ponerError(this, this.entrada, texto);
+    }
+
+    // El servidor rechazo el adjunto `n` (desde 1): ese archivo toma el estado Error hasta que se quite. Sin `n`, error del grupo.
+    marcarRechazado(n, texto) {
+      this.limpiarRechazos();
+      const li = this.adjunto.children[n - 1];
+      if (!li) {
+        this.errorGrupo(texto);
+        this.entrada.focus();
+        return;
+      }
+      const mensaje = this.querySelector('template[data-plantilla="error"]').content.firstElementChild.cloneNode(true);
+      mensaje.id = `${this.entrada.id}-rechazo-${n}`;
+      mensaje.querySelector('span').textContent = texto;
+      li.querySelector('.archivo').dataset.error = '';
+      li.querySelector('.archivo-accion').setAttribute('aria-describedby', mensaje.id);
+      li.append(mensaje);
+      li.querySelector('.archivo-accion').focus();
+    }
+
+    limpiarRechazos() {
+      quitarError(this.entrada);
+      this.adjunto.querySelectorAll('.mensaje-error').forEach((m) => m.remove());
+      this.adjunto.querySelectorAll('[data-error]').forEach((a) => a.removeAttribute('data-error'));
+      this.adjunto.querySelectorAll('[aria-describedby]').forEach((a) => a.removeAttribute('aria-describedby'));
+    }
+
+    // Mientras se envia la hoja, ni se suma ni se quita nada.
+    bloquear(si) {
+      this.entrada.disabled = si;
+      this.adjunto.querySelectorAll('.archivo-accion').forEach((b) => (b.disabled = si));
     }
 
     get archivo() {
@@ -131,6 +241,20 @@ const { etiqueta, ayuda, nombre = 'captura', id = `carga-${nombre}`, accept = 'i
     line-height: var(--fuente-interlineado-interfaz);
     text-transform: uppercase;
     cursor: pointer;
+  }
+  .carga-lista {
+    display: grid;
+    gap: var(--espacio-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .carga-lista:empty {
+    display: none;
+  }
+  .carga-lista li {
+    display: grid;
+    gap: var(--espacio-2);
   }
   .carga-boton[hidden] {
     display: none;

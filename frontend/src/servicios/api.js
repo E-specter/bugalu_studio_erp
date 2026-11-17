@@ -40,12 +40,18 @@ async function enviar(ruta, { cuerpo, headers, token, opciones }) {
   }
 }
 
-async function leer(respuesta) {
+// `descargar`: archivo (p. ej. un CSV) que pide el token; devuelve el Blob. Los errores llegan como en `pedir`.
+export async function descargar(ruta, tipo) {
+  const respuesta = await enviar(ruta, { token: await obtenerToken(), headers: { Accept: tipo }, opciones: {} });
+  return leer(respuesta, 'blob');
+}
+
+async function leer(respuesta, forma = 'json') {
   if (!respuesta.ok) {
     const { error } = await respuesta.json().catch(() => ({}));
     throw new ErrorApi(respuesta.status, error?.codigo ?? 'error_desconocido', error?.mensaje ?? 'El servidor devolvió un error.', error?.detalles);
   }
-  return respuesta.status === 204 ? null : respuesta.json();
+  return respuesta.status === 204 ? null : respuesta[forma]();
 }
 
 export const obtenerPerfil = () => pedir('/api/v1/perfil');
