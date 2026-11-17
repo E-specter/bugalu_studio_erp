@@ -85,6 +85,10 @@ Sin sesión, `http://localhost:4321/app/perfil` muestra "Tu sesión no es válid
 
 Con el usuario ya registrado y `URL_BASE_DATOS_ADMIN` en `backend/.env`, desde `backend/`: `uv run python -m bugalu.herramientas.crear_administrador <correo>`. Es idempotente; si el correo no existe, falla con un mensaje claro.
 
+## 5. Textos legales (RF-17)
+
+Tras cada `npx supabase db reset` los textos legales quedan vacíos. Desde `backend/`, con `URL_BASE_DATOS_ADMIN` en `.env`: `uv run python -m bugalu.herramientas.cargar_textos_legales [carpeta]`. Publica, vigente ya, la primera versión de cada texto sin versiones desde `docs/08-legal/` (versión del frontmatter; condiciones con el anexo de propiedad intelectual; resúmenes de `resumenes-para-pantallas.md`). Es idempotente y no toca un texto que ya tenga versiones. En producción se corre una vez, con los textos ya aprobados por el abogado.
+
 ## Configuración de Supabase que conviene conocer
 
 Tras cambiar `supabase/config.toml`: `npx supabase stop` y `npx supabase start`.

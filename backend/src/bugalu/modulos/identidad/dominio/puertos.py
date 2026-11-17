@@ -1,8 +1,10 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
+from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
 from bugalu.modulos.identidad.dominio.solicitud import EstadoSolicitud, Solicitud
+from bugalu.modulos.identidad.dominio.textos_legales import Aceptacion, TextoLegal
 from bugalu.modulos.identidad.dominio.usuario import Rol, Usuario
 
 
@@ -36,3 +38,34 @@ class RepositorioSolicitudes(Protocol):
     ) -> Solicitud | None:
         """Resuelve solo si sigue pendiente; devuelve None si otro la resolvio antes."""
         ...
+
+
+class RepositorioTextos(Protocol):
+    async def listar_publicos(self) -> list[TextoLegal]:
+        """Los vigentes y los programados."""
+        ...
+
+    async def obtener(self, tipo: str, version: str) -> TextoLegal | None: ...
+
+    async def vigentes(self) -> dict[str, TextoLegal]: ...
+
+    async def ultima_version(self, tipo: str) -> str | None:
+        """La mayor version publicada (con programadas); bloquea las publicaciones del tipo."""
+        ...
+
+    async def publicar(
+        self,
+        tipo: str,
+        version: str,
+        tipo_cambio: str,
+        contenido: str,
+        resumenes: Mapping[str, str],
+        resumen_cambios: str | None,
+        vigente_desde: datetime | None,
+    ) -> TextoLegal: ...
+
+    async def retirar(self, tipo: str, version: str) -> None: ...
+
+    async def aceptar_registro(self, textos: Sequence[tuple[str, str]]) -> list[Aceptacion]: ...
+
+    async def listar_aceptaciones(self, id_usuario: UUID) -> list[Aceptacion]: ...

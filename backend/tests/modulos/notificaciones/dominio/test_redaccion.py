@@ -56,6 +56,38 @@ def test_reserva_caducada_lleva_folio_y_avisa_que_el_horario_se_libero() -> None
     assert "10:00" in cuerpo
 
 
+def test_texto_legal_nuevo_avisa_la_version_y_desde_cuando_rige() -> None:
+    asunto, cuerpo = redactar(
+        "texto_legal_nuevo",
+        {
+            "tipo": "terminos_uso",
+            "version": "2.0.0",
+            "tipo_cambio": "mayor",
+            "vigente_desde": "2027-03-10T15:00:00+00:00",  # 10:00 en Lima
+            "resumen_cambios": "Nuevos plazos de cancelación.",
+        },
+    )
+    assert "Términos de uso" in asunto
+    assert "2.0.0" in cuerpo
+    assert "10 de marzo de 2027" in cuerpo
+    assert "Nuevos plazos de cancelación." in cuerpo
+    assert "volver a aceptar" in cuerpo  # la mayor se acepta de nuevo
+
+
+def test_texto_legal_nuevo_menor_no_pide_aceptar_de_nuevo() -> None:
+    _, cuerpo = redactar(
+        "texto_legal_nuevo",
+        {
+            "tipo": "politica_privacidad",
+            "version": "1.1.0",
+            "tipo_cambio": "menor",
+            "vigente_desde": "2027-03-10T15:00:00+00:00",
+            "resumen_cambios": None,
+        },
+    )
+    assert "volver a aceptar" not in cuerpo
+
+
 def test_tipo_desconocido_falla() -> None:
     with pytest.raises(ValueError, match="tipo"):
         redactar("otro", {})

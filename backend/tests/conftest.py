@@ -165,3 +165,33 @@ def sesion_por_enlace(configuracion: Configuracion) -> Callable[[UsuarioDePrueba
         return parse_qs(urlparse(r.headers["location"]).fragment)["access_token"][0]
 
     return abrir
+
+
+@pytest.fixture
+def textos_aislados(configuracion: Configuracion) -> Iterator[None]:
+    """Solo pruebas: deja los textos legales y sus aceptaciones vacios y restaura lo que habia.
+
+    Las tablas son inmutables a proposito: aqui se apagan sus triggers de usuario un instante.
+    """
+    tablas = ("aceptacion", "texto_legal")
+    vaciar = (
+        *(f"alter table public.{t} disable trigger user" for t in tablas),
+        *(f"delete from public.{t}" for t in tablas),
+        "delete from public.notificacion where tipo = 'texto_legal_nuevo'",
+        *(f"alter table public.{t} enable trigger user" for t in tablas),
+    )
+    with psycopg.connect(configuracion.url_base_datos_admin, autocommit=True) as c:
+        c.execute("create temp table copia_texto as select * from public.texto_legal")
+        c.execute("create temp table copia_aceptacion as select * from public.aceptacion")
+        c.execute(
+            "create temp table copia_aviso as select * from public.notificacion "
+            "where tipo = 'texto_legal_nuevo'"
+        )
+        for orden in vaciar:
+            c.execute(orden)
+        yield
+        for orden in vaciar:
+            c.execute(orden)
+        c.execute("insert into public.texto_legal select * from copia_texto")
+        c.execute("insert into public.aceptacion select * from copia_aceptacion")
+        c.execute("insert into public.notificacion select * from copia_aviso")

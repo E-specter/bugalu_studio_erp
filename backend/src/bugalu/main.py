@@ -14,6 +14,9 @@ from bugalu.modulos.catalogo.infraestructura.entrada.http.router_cambios import 
     router as router_cambios,
 )
 from bugalu.modulos.identidad.infraestructura.entrada.http.router import router as router_identidad
+from bugalu.modulos.identidad.infraestructura.entrada.http.router_textos import (
+    router as router_textos,
+)
 from bugalu.modulos.notificaciones.infraestructura.entrada.ejecucion import (
     enviar_una_vez,
     repetir,
@@ -64,6 +67,7 @@ def crear_app() -> FastAPI:
         )
     registrar_manejadores(app)
     app.include_router(router_identidad, prefix="/api/v1")
+    app.include_router(router_textos, prefix="/api/v1")
     app.include_router(router_catalogo, prefix="/api/v1")
     app.include_router(router_cambios, prefix="/api/v1")
     app.include_router(router_reservas, prefix="/api/v1")

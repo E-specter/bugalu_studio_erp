@@ -190,3 +190,23 @@ class ConfirmacionNoValida(Conflicto):
 
 class CambioDesactualizado(Conflicto):
     codigo = "cambio_desactualizado"
+
+
+class VersionInvalida(DatosInvalidos):
+    codigo = "version_invalida"
+
+
+class AvisoInsuficiente(DatosInvalidos):
+    codigo = "aviso_insuficiente"
+
+
+class VersionProgramada(Conflicto):
+    codigo = "version_programada"
+
+
+class VersionVigente(Conflicto):
+    codigo = "version_vigente"
+
+
+class TextoDesactualizado(Conflicto):
+    codigo = "texto_desactualizado"

@@ -142,6 +142,31 @@ def _reserva_cancelada_cliente(datos: dict[str, Any]) -> tuple[str, str]:
     )
 
 
+_TEXTOS = {
+    "terminos_uso": "Términos de uso",
+    "politica_privacidad": "Política de privacidad",
+    "condiciones_contratacion": "Condiciones de contratación",
+    "declaracion_agrupacion": "Declaración de agrupación",
+}
+
+
+def _texto_legal_nuevo(datos: dict[str, Any]) -> tuple[str, str]:
+    nombre = _TEXTOS.get(datos["tipo"], datos["tipo"])
+    cambios = f"Qué cambia: {datos['resumen_cambios']}\n" if datos.get("resumen_cambios") else ""
+    nueva_aceptacion = (
+        "Tendrás que volver a aceptarlo en tu siguiente ingreso.\n"
+        if datos["tipo_cambio"] == "mayor"
+        else ""
+    )
+    return (
+        f"Actualizamos: {nombre}",
+        f"Publicamos la versión {datos['version']} de «{nombre}».\n\n"
+        f"Rige desde el {_fecha(_lima(datos['vigente_desde']))} (hora de Lima).\n"
+        f"{cambios}{nueva_aceptacion}"
+        "Puedes leerla completa en la plataforma, en la sección de textos legales.\n",
+    )
+
+
 _REDACTORES: dict[str, Callable[[dict[str, Any]], tuple[str, str]]] = {
     "reserva_caducada": _reserva_caducada,
     "pago_registrado": _pago_registrado,
@@ -149,6 +174,7 @@ _REDACTORES: dict[str, Callable[[dict[str, Any]], tuple[str, str]]] = {
     "pago_rechazado": _pago_rechazado,
     "reserva_cancelada_estudio": _reserva_cancelada_estudio,
     "reserva_cancelada_cliente": _reserva_cancelada_cliente,
+    "texto_legal_nuevo": _texto_legal_nuevo,
 }
 
 
