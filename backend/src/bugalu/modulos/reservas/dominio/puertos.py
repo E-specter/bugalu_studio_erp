@@ -31,7 +31,10 @@ class Cotizador(Protocol):
         inicio: datetime,
         fin: datetime,
         id_especialistas: Sequence[UUID],
-    ) -> Cotizacion: ...
+        parametros: dict[str, Any] | None = None,
+    ) -> Cotizacion:
+        """`parametros`: los guardados en una reserva (IGV, adelanto); sin ellos, los vigentes."""
+        ...
 
 
 class RepositorioReservas(Protocol):

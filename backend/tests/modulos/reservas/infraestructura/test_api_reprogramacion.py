@@ -8,11 +8,12 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
+import psycopg
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from bugalu.compartido.configuracion import obtener_configuracion
+from bugalu.compartido.configuracion import Configuracion, obtener_configuracion
 from bugalu.main import crear_app
 from tests.conftest import UsuarioDePrueba
 from tests.modulos.reservas.infraestructura.conftest import Ejecutar, con
@@ -717,3 +718,55 @@ async def test_disponibilidad_excluye_la_propia_reserva_solo_para_su_dueno_o_el_
     assert await ocupados(cliente_b, excluir_reserva=id_) == 1  # otro cliente: se ignora
     assert await ocupados(None, excluir_reserva=id_) == 1  # anonimo: se ignora
     assert await ocupados(cliente_a, excluir_reserva=str(UUID(int=5))) == 1  # inexistente
+
+
+def _captura_en_validacion(
+    configuracion: Configuracion, sql: Ejecutar, usuario: UsuarioDePrueba, id_: str
+) -> None:
+    """El cliente subio la captura del saldo y el estudio aun no la valida."""
+    cuota = sql(
+        "select id from public.cuota where id_reserva = %s and hito = 'al_terminar'", UUID(id_)
+    )[0][0]
+    with psycopg.connect(configuracion.url_base_datos_admin) as c:
+        c.execute("set local role authenticated")
+        claims = json.dumps({"sub": str(usuario.id), "role": "authenticated"})
+        c.execute("select set_config('request.jwt.claims', %s, true)", (claims,))
+        c.execute(
+            "insert into public.comprobante_pago (id_cuota, id_cliente, metodo, monto, "
+            "numero_operacion, ruta_captura, tipo_captura) "
+            "values (%s, %s, 'yape', 50, %s, %s, 'image/png')",
+            (cuota, usuario.id, f"OP-{id_[:8]}", f"{usuario.id}/{id_[:8]}.png"),
+        )
+
+
+@pytest.mark.parametrize("ruta", ["eleccion-estudio", "reprogramar", "reprogramar/simular"])
+async def test_con_una_captura_en_validacion_no_se_elige_tras_la_cancelacion_del_estudio(
+    cliente: AsyncClient,
+    cliente_a: UsuarioDePrueba,
+    administrador: UsuarioDePrueba,
+    reserva_con_pagos: Callable[..., str],
+    configuracion: Configuracion,
+    nuevo_dia: str,
+    sql: Ejecutar,
+    ruta: str,
+) -> None:
+    id_ = reserva_con_pagos(cliente_a, 1)
+    _captura_en_validacion(configuracion, sql, cliente_a, id_)
+    r = await cliente.post(
+        f"{RESERVAS}/{id_}/cancelar",
+        json={"por": "estudio", "nota": "Averia en la sala"},
+        headers=con(administrador),
+    )
+    assert r.json()["eleccion_estudio"] == "pendiente", r.text
+    antes = estado_de(sql, id_)
+    cuerpo = {**CUERPOS[ruta], **({"total_esperado": None} if ruta == "reprogramar" else {})}
+    if ruta == "reprogramar":
+        cuerpo["nivel_esperado"] = None
+    r = await cliente.post(f"{RESERVAS}/{id_}/{ruta}", json=cuerpo, headers=con(cliente_a))
+    try:
+        assert (r.status_code, codigo(r)) == (409, "eleccion_no_disponible"), r.text
+        assert "validemos tu pago" in r.json()["error"]["mensaje"]
+        assert estado_de(sql, id_) == antes
+        assert sql("select count(*) from public.devolucion") == [(0,)]
+    finally:
+        sql("delete from public.comprobante_pago where starts_with(numero_operacion, 'OP-')")

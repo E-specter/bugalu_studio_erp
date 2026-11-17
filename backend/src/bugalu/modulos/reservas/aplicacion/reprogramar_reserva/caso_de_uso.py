@@ -60,7 +60,12 @@ async def _planificar(
     if contexto.estudio:  # tras una cancelacion del estudio el precio no se recalcula
         return _Plan(franja.id, contexto.precio, contexto.total, ())
     cotizacion: Cotizacion = await cotizador.cotizar(
-        contexto.id_sala, contexto.id_servicio, inicio, fin, contexto.id_especialistas
+        contexto.id_sala,
+        contexto.id_servicio,
+        inicio,
+        fin,
+        contexto.id_especialistas,
+        contexto.parametros_aplicados,
     )
     return _Plan(franja.id, cotizacion.precio, cotizacion.total, cotizacion.especialistas)
 

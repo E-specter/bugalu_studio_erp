@@ -51,7 +51,9 @@ class SimularPrecio:
         inicio: datetime,
         fin: datetime,
         id_especialistas: Sequence[UUID],
+        parametros: dict[str, Any] | None = None,
     ) -> Cotizacion:
+        """`parametros`: los guardados en una reserva (reprogramar); sin ellos, los vigentes."""
         if not await self._catalogo.existe_sala(id_sala):
             raise DatosInvalidos("La sala no existe.")
         servicio = await self._catalogo.obtener_servicio(id_servicio)
@@ -72,7 +74,7 @@ class SimularPrecio:
         fechas = {b.date() for b in bloques_del_tramo(inicio, fin)}  # valida el tramo
         extra = [conocidos[i] for i in elegidos]
         vigentes = (
-            await self._catalogo.parametros_vigentes()
+            parametros or await self._catalogo.parametros_vigentes()
         )  # una lectura: precio y reserva coinciden
         simulacion = calcular_simulacion(
             servicio,

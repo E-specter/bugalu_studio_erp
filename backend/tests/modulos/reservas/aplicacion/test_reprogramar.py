@@ -39,7 +39,7 @@ class ReprogramacionFalsa(ReservasFalso):
         super().__init__(personal=False)
         self.contexto = ContextoReprogramacion(
             SALA.id, uuid4(), t(10, 10), t(10, 12), estudio, PRECIO_VIEJO, Decimal("200.00"),
-            (uuid4(),),
+            (uuid4(),), {"porcentaje_igv": "18.00"},
         )  # fmt: skip
         self.franjas[uuid4()] = Franja(uuid4(), SALA.id, t(20, 8), t(20, 20))
         self.llamadas: list[tuple[Any, ...]] = []
@@ -85,6 +85,7 @@ class ReprogramacionFalsa(ReservasFalso):
 class CotizadorFalso:
     def __init__(self) -> None:
         self.llamadas = 0
+        self.parametros: dict[str, Any] | None = None
 
     async def cotizar(
         self,
@@ -93,8 +94,10 @@ class CotizadorFalso:
         inicio: datetime,
         fin: datetime,
         id_especialistas: Sequence[UUID],
+        parametros: dict[str, Any] | None = None,
     ) -> Cotizacion:
         self.llamadas += 1
+        self.parametros = parametros
         assert fin - inicio == timedelta(hours=2)  # la misma duracion
         return Cotizacion("ensayo", PRECIO_NUEVO, Decimal("240.00"), Decimal("120.00"), (), {})
 
@@ -153,3 +156,9 @@ async def test_un_nivel_cambiado_de_la_base_lleva_el_precio_nuevo_en_el_detalle(
             ID, t(20, 10), 1, Decimal("240.00"), AHORA
         )
     assert e.value.detalles == {"nivel": 2, "precio": PRECIO_NUEVO}
+
+
+async def test_se_cotiza_con_los_parametros_guardados_de_la_reserva() -> None:
+    falso, cotizador = ReprogramacionFalsa(), CotizadorFalso()
+    await SimularReprogramacion(falso, cotizador).ejecutar(ID, t(20, 10), AHORA)
+    assert cotizador.parametros == {"porcentaje_igv": "18.00"}

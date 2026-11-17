@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from typing import Any
@@ -199,6 +199,7 @@ class ContextoReprogramacion:
     precio: dict[str, Any]
     total: Decimal
     id_especialistas: tuple[UUID, ...]
+    parametros_aplicados: dict[str, Any] = field(default_factory=dict)  # los de la reserva
 
 
 @dataclass(frozen=True)

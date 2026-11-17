@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from psycopg import AsyncConnection
@@ -25,8 +26,11 @@ class CotizadorCatalogo:
         inicio: datetime,
         fin: datetime,
         id_especialistas: Sequence[UUID],
+        parametros: dict[str, Any] | None = None,
     ) -> Cotizacion:
-        c = await self._simular.cotizar(id_sala, id_servicio, inicio, fin, id_especialistas)
+        c = await self._simular.cotizar(
+            id_sala, id_servicio, inicio, fin, id_especialistas, parametros
+        )
         return Cotizacion(
             categoria=c.servicio.categoria,
             precio=Simulacion.desde_dominio(c.simulacion).model_dump(mode="json"),

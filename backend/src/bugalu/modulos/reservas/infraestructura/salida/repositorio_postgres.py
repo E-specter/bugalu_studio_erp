@@ -163,6 +163,8 @@ def _traducir_reprogramacion(error: Error) -> ErrorDeNegocio:
         if codigo == "nivel_cambiado":
             return NivelCambiado("El nivel cambio: revisa la vista previa.", detalles)
         return PrecioCambiado("El precio cambio: revisa la vista previa.", detalles)
+    if codigo == "eleccion_no_disponible" and error.diag.message_detail == "en_validacion":
+        return EleccionNoDisponible("Espera a que validemos tu pago para elegir.")
     clase, mensaje = _REPROGRAMACION.get(codigo, (ReprogramacionNoPermitida, "No se puede ahora."))
     return clase(mensaje)
 
@@ -648,7 +650,7 @@ class RepositorioReservasPostgres:
             raise _traducir_reprogramacion(e) from None
         f = filas[0]
         return ContextoReprogramacion(
-            f[0], f[1], f[2], f[3], f[4], _con_impuesto(f[5], f[8]), f[6], tuple(f[7])
+            f[0], f[1], f[2], f[3], f[4], _con_impuesto(f[5], f[8]), f[6], tuple(f[7]), f[8]
         )
 
     async def vista_reprogramacion(
