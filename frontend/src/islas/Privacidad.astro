@@ -1,0 +1,284 @@
+---
+// <bugalu-privacidad>: consentimientos opcionales e historial de textos aceptados (spec RF-17-perfil, vista Privacidad).
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Tabla from '../componentes/Tabla.astro';
+import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.astro';
+import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLegal.astro';
+
+const volver = '/acceso?volver=%2Fapp%2Fperfil%2Fprivacidad%2F';
+---
+
+<!-- Un bloque por estado (estados-sistema): la isla clona el que toca. Sin JS, el noscript oculta la carga y lo dice. -->
+<bugalu-privacidad class="privacidad">
+  <div data-avisos></div>
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  <div data-salida><Panel titulo="Promociones" cargando /></div>
+
+  <PlantillasFormulario />
+  <PlantillasResumenLegal />
+
+  <template data-estado="cargando"><Panel titulo="Promociones" cargando /></template>
+  <template data-estado="no-autenticado">
+    <Panel titulo="Privacidad"><Aviso variante="aviso" titulo="Tu sesión no es válida" texto="Inicia sesión para ver tu privacidad." accion={{ etiqueta: 'Ir al acceso', href: volver }} /></Panel>
+  </template>
+  <template data-estado="sin-permiso">
+    <Panel titulo="Privacidad"><Aviso variante="informacion" titulo="Esta sección es para artistas." accion={{ etiqueta: 'Volver a mi perfil', href: '/app/perfil/' }} /></Panel>
+  </template>
+  <template data-estado="error">
+    <Panel titulo="Privacidad">
+      <Aviso variante="error" titulo="No pudimos cargar tu perfil" texto="Inténtalo de nuevo.">
+        <div class="privacidad-reintentar"><Boton variante="secundario" data-reintentar>Reintentar</Boton></div>
+      </Aviso>
+    </Panel>
+  </template>
+  <template data-estado="formulario">
+    <div class="privacidad-rejilla">
+      <form novalidate class="privacidad-formulario" data-formulario>
+        <Panel codigo="P1" titulo="Promociones"><div data-bloque="promociones"></div></Panel>
+        <Panel codigo="P2" titulo="Usos promocionales"><div data-bloque="usos"></div></Panel>
+        <div><Boton tipo="submit" data-principal>Guardar preferencias</Boton></div>
+      </form>
+      <Panel codigo="P3" titulo="Textos aceptados"><div data-historial aria-busy="true"><p class="privacidad-ayuda">Cargando…</p></div></Panel>
+    </div>
+  </template>
+  <template data-estado="historial-vacio"><p class="privacidad-ayuda">Aún no has aceptado ningún texto.</p></template>
+  <template data-estado="historial-error">
+    <Aviso variante="error" titulo="No pudimos cargar tus textos aceptados.">
+      <div class="privacidad-reintentar"><Boton variante="secundario" data-reintentar-historial>Reintentar</Boton></div>
+    </Aviso>
+  </template>
+  <template data-estado="historial"><Tabla titulo="Textos que aceptaste" columnas={['Texto', 'Dónde', 'Fecha', 'Estado']} variante="compacta" /></template>
+  <template data-fila>
+    <tr>
+      <th scope="row"><span data-nombre></span> <a data-version></a></th>
+      <td data-etiqueta="Dónde" data-donde></td>
+      <td data-etiqueta="Fecha" data-fecha></td>
+      <td data-etiqueta="Estado" data-retirada></td>
+    </tr>
+  </template>
+  <noscript>
+    <style is:inline>bugalu-privacidad [data-salida] { display: none; }</style>
+    <Aviso variante="error" titulo="Esta página necesita JavaScript" texto="Actívalo en tu navegador y recarga la página para ver tu privacidad." />
+  </noscript>
+</bugalu-privacidad>
+
+<script>
+  // @ts-nocheck
+  import { obtenerPerfil } from '../servicios/api.js';
+  import { listarTextosLegales, tipos } from '../servicios/textos-legales.js';
+  import { guardarConsentimientos, misAceptaciones, vigenteDe, enlacesDe, enlaceTexto, dondeAcepto } from '../servicios/aceptaciones.js';
+  import { resumenLegal, errorResumen } from '../servicios/resumen-legal.js';
+  import { mostrarAviso, enfocarAviso, limpiarAvisos } from '../servicios/formulario.js';
+  import { fechaDe, horaDe, diaMesAnio } from '../servicios/formatos.js';
+
+  const AVISO_TELEFONO = 'Añade tu teléfono en Tus datos para elegir WhatsApp.';
+  const CASILLAS = {
+    promociones: [['promociones_correo', 'Quiero recibir promociones por correo.'], ['promociones_whatsapp', 'Quiero recibir promociones por WhatsApp.']],
+    usos: [['fotos_videos', 'Autorizo al estudio a usar fotos y videos del proceso en que aparezco.'], ['excluir_material', 'No quiero que el estudio use mi material en sus promociones.']],
+  };
+  const TEXTO = { promociones: ['politica_privacidad', 'promociones', 'Promociones'], usos: ['condiciones_contratacion', 'usos_promocionales', 'Usos promocionales'] };
+
+  function textoDeError(error) {
+    return error.codigo === 'sin_conexion' ? ['Sin conexión', 'No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo.'] : ['No pudimos cargar tu perfil', 'Algo salió mal. Inténtalo de nuevo.'];
+  }
+
+  class BugaluPrivacidad extends HTMLElement {
+    perfil = null;
+    lista = [];
+
+    connectedCallback() {
+      this.addEventListener('click', (e) => {
+        if (e.target.closest('[data-reintentar]')) this.cargar();
+        if (e.target.closest('[data-reintentar-historial]')) this.historial();
+        const bloqueada = e.target.closest('input[aria-disabled="true"]'); // sigue enfocable, pero no cambia
+        if (bloqueada) e.preventDefault();
+      });
+      this.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.guardar();
+      });
+      this.cargar();
+    }
+
+    plantilla(nombre) {
+      return this.querySelector(`template[data-estado="${nombre}"]`).content.cloneNode(true);
+    }
+    mostrar(estado) {
+      this.querySelector('[data-salida]').replaceChildren(this.plantilla(estado));
+      this.querySelectorAll('[data-salida] [role]').forEach((e) => e.removeAttribute('role')); // la region estable lo anuncia
+    }
+    anunciar(texto) {
+      const anuncio = this.querySelector('[data-anuncio]');
+      anuncio.textContent = '';
+      anuncio.textContent = texto;
+    }
+
+    async cargar() {
+      limpiarAvisos(this);
+      this.mostrar('cargando');
+      try {
+        this.perfil = await obtenerPerfil();
+      } catch (error) {
+        if (error.estado === 401) {
+          this.mostrar('no-autenticado');
+          return this.anunciar('Tu sesión no es válida');
+        }
+        this.mostrar('error');
+        const [titulo, texto] = textoDeError(error);
+        this.querySelector('.aviso-titulo').textContent = titulo;
+        this.querySelector('.aviso-texto').textContent = texto;
+        return this.anunciar(`${titulo}. ${texto}`);
+      }
+      document.dispatchEvent(new CustomEvent('bugalu:perfil', { detail: this.perfil }));
+      if (this.perfil.rol !== 'cliente') {
+        this.mostrar('sin-permiso');
+        return this.anunciar('Esta sección es para artistas.');
+      }
+      this.mostrar('formulario');
+      await this.pintarTextos(this.perfil.consentimientos ?? {});
+      this.anunciar('Privacidad cargada.');
+      this.historial();
+    }
+
+    // Pinta P1 y P2 con la version vigente; `marcadas` son las casillas (la eleccion se conserva al repintar).
+    async pintarTextos(marcadas) {
+      try {
+        this.lista = await listarTextosLegales();
+        if (!Array.isArray(this.lista)) throw new Error('lista');
+      } catch {
+        this.lista = [];
+      }
+      const sinTelefono = !this.perfil.telefono;
+      for (const [clave, [tipo, contexto, titulo]] of Object.entries(TEXTO)) {
+        const caja = this.querySelector(`[data-bloque="${clave}"]`);
+        const texto = vigenteDe(this.lista, tipo);
+        if (!texto?.resumenes?.[contexto]) {
+          caja.replaceChildren(Object.assign(document.createElement('p'), { className: 'privacidad-ayuda', textContent: 'No pudimos mostrar este texto ahora. Puedes guardar el resto o volver más tarde.' }));
+          continue;
+        }
+        const casillas = CASILLAS[clave].map(([nombre, etiqueta]) => ({ nombre, etiqueta, deshabilitada: nombre === 'promociones_whatsapp' && sinTelefono }));
+        const raiz = resumenLegal(this, { variante: 'opcional', titulo, resumenes: [texto.resumenes[contexto]], enlaces: enlacesDe([texto]), casillas });
+        for (const [nombre] of CASILLAS[clave]) raiz.querySelector(`input[name="${nombre}"]`).checked = marcadas[nombre] === true;
+        if (clave === 'promociones' && sinTelefono) {
+          const entrada = raiz.querySelector('input[name="promociones_whatsapp"]');
+          const ayuda = document.createElement('p');
+          ayuda.className = 'privacidad-ayuda';
+          ayuda.id = 'privacidad-sin-telefono';
+          ayuda.append('Añade tu teléfono en ', Object.assign(document.createElement('a'), { href: '/app/perfil/', textContent: 'Tus datos' }), ' para elegir WhatsApp.');
+          raiz.querySelector('.casilla:has(input[name="promociones_whatsapp"])').after(ayuda);
+          entrada.setAttribute('aria-describedby', `${entrada.getAttribute('aria-describedby')} ${ayuda.id}`);
+        }
+        caja.replaceChildren(raiz);
+      }
+    }
+
+    marcadas() {
+      return Object.fromEntries(Object.values(CASILLAS).flat().map(([nombre]) => [nombre, this.querySelector(`input[name="${nombre}"]`)?.checked === true]));
+    }
+
+    async guardar() {
+      const boton = this.querySelector('[data-principal]');
+      if (boton.disabled) return;
+      limpiarAvisos(this);
+      this.querySelectorAll('.resumen-legal').forEach((r) => errorResumen(r, ''));
+      const cuerpo = this.marcadas();
+      const etiqueta = boton.textContent;
+      boton.disabled = true;
+      boton.setAttribute('aria-busy', 'true');
+      boton.textContent = 'Guardando…';
+      let aviso = null;
+      let exito = false;
+      try {
+        this.perfil.consentimientos = await guardarConsentimientos(cuerpo);
+        aviso = mostrarAviso(this, 'exito', 'Preferencias guardadas.');
+        aviso.removeAttribute('role');
+        this.anunciar('Preferencias guardadas.');
+        exito = true;
+      } catch (error) {
+        if (error.estado === 422 && error.codigo === 'telefono_requerido') {
+          errorResumen(this.querySelector('[data-bloque="promociones"] .resumen-legal'), AVISO_TELEFONO, 'promociones_whatsapp');
+          this.querySelector('input[name="promociones_whatsapp"]').focus();
+        } else if (error.estado === 409 && error.codigo === 'texto_desactualizado') {
+          await this.pintarTextos(cuerpo);
+          aviso = mostrarAviso(this, 'informacion', `Actualizamos el texto a la versión ${error.detalles?.vigente?.version ?? 'nueva'}. Revísalo y vuelve a guardar.`);
+        } else {
+          aviso =
+            error.estado === 401 ? mostrarAviso(this, 'aviso', 'Tu sesión caducó', 'Inicia sesión y vuelve a guardar.')
+            : error.estado === 422 ? mostrarAviso(this, 'error', error.mensaje, '')
+            : mostrarAviso(this, 'error', ...textoDeError(error));
+        }
+      }
+      boton.disabled = false;
+      boton.removeAttribute('aria-busy');
+      boton.textContent = etiqueta;
+      if (aviso && !exito) enfocarAviso(aviso);
+      else if (exito) {
+        boton.focus();
+        this.historial();
+      }
+    }
+
+    // P3: lo aceptado, lo mas reciente primero.
+    async historial() {
+      const caja = this.querySelector('[data-historial]');
+      caja.setAttribute('aria-busy', 'true');
+      let lista;
+      try {
+        lista = await misAceptaciones();
+        if (!Array.isArray(lista)) throw new Error('lista');
+      } catch {
+        caja.replaceChildren(this.plantilla('historial-error'));
+        caja.querySelector('[role]')?.removeAttribute('role');
+        return caja.setAttribute('aria-busy', 'false');
+      }
+      caja.setAttribute('aria-busy', 'false');
+      if (!lista.length) return caja.replaceChildren(this.plantilla('historial-vacio'));
+      const tabla = this.plantilla('historial');
+      const molde = this.querySelector('template[data-fila]');
+      tabla.querySelector('tbody').append(
+        ...[...lista].sort((a, b) => Date.parse(b.aceptada_en) - Date.parse(a.aceptada_en)).map((a) => {
+          const fila = molde.content.cloneNode(true);
+          fila.querySelector('[data-nombre]').textContent = tipos[a.tipo]?.nombre ?? a.tipo;
+          const enlace = fila.querySelector('[data-version]');
+          if (tipos[a.tipo]) Object.assign(enlace, { href: enlaceTexto(a.tipo, a.version), textContent: `versión ${a.version}` });
+          else enlace.replaceWith(`versión ${a.version}`);
+          fila.querySelector('[data-donde]').textContent = dondeAcepto[a.contexto] ?? a.contexto;
+          fila.querySelector('[data-fecha]').textContent = `${diaMesAnio(fechaDe(a.aceptada_en))}, ${horaDe(a.aceptada_en)}`;
+          fila.querySelector('[data-retirada]').textContent = a.retirada_en ? `Retirado el ${diaMesAnio(fechaDe(a.retirada_en))}` : '—';
+          return fila;
+        }),
+      );
+      caja.replaceChildren(tabla);
+    }
+  }
+  if (!customElements.get('bugalu-privacidad')) customElements.define('bugalu-privacidad', BugaluPrivacidad);
+</script>
+
+<style>
+  .privacidad-rejilla,
+  .privacidad-formulario {
+    display: grid;
+    gap: var(--espacio-5);
+    min-inline-size: 0;
+  }
+  .privacidad-ayuda {
+    margin: 0;
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+    line-height: var(--fuente-interlineado-interfaz);
+  }
+  .privacidad-ayuda :global(a) {
+    color: var(--color-texto-principal);
+  }
+  .privacidad-reintentar {
+    margin-block-start: var(--espacio-2);
+  }
+  .privacidad :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  .privacidad :global(.resumen-legal-opcional input[aria-disabled='true']) {
+    opacity: var(--efecto-opacidad-capa);
+  }
+</style>

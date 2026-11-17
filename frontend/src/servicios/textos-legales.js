@@ -3,7 +3,7 @@ import { pedir } from './api.js';
 // Textos de la etapa A (RF-17); `autorizacion_menor` entra con la etapa B. `contextos`: pasos donde se muestra el resumen de cada texto (resumenes-para-pantallas).
 export const tipos = {
   terminos_uso: { slug: 'terminos-de-uso', nombre: 'Términos de uso', contextos: ['registro'] },
-  politica_privacidad: { slug: 'privacidad', nombre: 'Política de privacidad', contextos: ['pago', 'promociones'] },
+  politica_privacidad: { slug: 'privacidad', nombre: 'Política de privacidad', contextos: ['registro', 'pago', 'promociones'] },
   condiciones_contratacion: { slug: 'condiciones-de-contratacion', nombre: 'Condiciones de contratación', contextos: ['reserva', 'asesoria', 'usos_promocionales'] },
   declaracion_agrupacion: { slug: 'declaracion-de-agrupacion', nombre: 'Declaración de agrupación', contextos: ['registro'] },
 };

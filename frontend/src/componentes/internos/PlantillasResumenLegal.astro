@@ -1,0 +1,13 @@
+---
+// Pieza interna: plantillas del resumen legal que clonan las islas (servicios/resumen-legal.js).
+import ResumenLegal from '../ResumenLegal.astro';
+
+const enlaces = [{ etiqueta: ' ', href: '#' }];
+---
+
+<template data-plantilla="resumen-casillas">
+  <ResumenLegal titulo=" " resumen=" " {enlaces} casillas={[{ nombre: 'aceptar', etiqueta: ' ' }]} />
+</template>
+<template data-plantilla="resumen-lectura">
+  <ResumenLegal variante="lectura" titulo=" " resumen=" " {enlaces} />
+</template>

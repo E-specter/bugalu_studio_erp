@@ -83,6 +83,7 @@ const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar l
 <script>
   import { iniciarSesion, registrar, iniciarConProveedor, recuperarContrasena, fijarContrasena, esperarRecuperacion, recordarArea, rutaPropia, normalizarTelefono, ErrorAcceso } from '../servicios/sesion.js';
   import { obtenerPerfil } from '../servicios/api.js';
+  import { pendientesDe } from '../servicios/aceptaciones.js';
   import { enviarSolicitud } from '../servicios/solicitudes.js';
   import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, mostrarAvisoDeUrl } from '../servicios/formulario.js';
 
@@ -240,7 +241,7 @@ const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar l
       switch (this.modo) {
         case 'iniciar':
           await iniciarSesion({ correo: d.correo.trim(), contrasena: d.contrasena });
-          return this.ir(this.volver ?? '/app/');
+          return this.ir(await this.destinoFinal(this.volver ?? '/app/'));
         case 'interno':
           await iniciarSesion({ correo: d.correo.trim(), contrasena: d.contrasena });
           return this.alPerfil();
@@ -249,7 +250,7 @@ const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar l
           if (!conSesion) return this.sinSesion();
           const destino = new URL(this.volver ?? '/app/perfil', location.origin);
           destino.searchParams.set('aviso', 'cuenta-creada');
-          return this.ir(destino.pathname + destino.search + destino.hash);
+          return this.ir(await this.destinoFinal(destino.pathname + destino.search + destino.hash));
         }
         case 'solicitar': {
           if (!this.cuentaCreada) {
@@ -342,6 +343,16 @@ const textoSinJs = modo === 'recuperar' || modo === 'restablecer' ? 'Recuperar l
     }
 
     // --- Destinos de cada modo ---
+
+    // Tras ingresar: con textos por aceptar pasa por /acceso/textos y de ahi sigue; en la reserva lo resuelve el paso 03. Si el perfil no responde, sigue al destino.
+    async destinoFinal(destino: string) {
+      if (destino.startsWith('/reservar')) return destino;
+      try {
+        const perfil = await obtenerPerfil();
+        if (perfil.rol === 'cliente' && pendientesDe(perfil, 'registro').length) return `/acceso/textos?${new URLSearchParams({ volver: destino })}`;
+      } catch {}
+      return destino;
+    }
 
     // Acceso interno: el rol decide el destino. Reintentar repite solo GET /perfil.
     async alPerfil() {

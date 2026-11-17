@@ -3,8 +3,13 @@ import Panel from '../componentes/Panel.astro';
 import Aviso from '../componentes/Aviso.astro';
 import Boton from '../componentes/Boton.astro';
 import Campo from '../componentes/Campo.astro';
+import Casilla from '../componentes/Casilla.astro';
 import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
 import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.astro';
+import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLegal.astro';
+
+const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasaporte', 'Pasaporte']];
+const redes = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['facebook', 'Facebook'], ['youtube', 'YouTube'], ['spotify', 'Spotify'], ['otra', 'Otra']];
 ---
 
 <!-- Un bloque por estado (estados-sistema): se pintan en servidor y la isla clona el que toca. Sin JS, el noscript oculta la carga y muestra el error. -->
@@ -22,15 +27,58 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
 
   <template data-estado="datos">
     <div data-confirmacion></div>
+    <div data-requisitos></div>
     <div class="perfil-rejilla">
-      <Panel codigo="A1" titulo="Tus datos" ayuda="Así te verá el estudio.">
-        <form novalidate method="post" class="perfil-formulario" data-formulario>
-          <Campo nombre="nombre" etiqueta="Nombre" autocomplete="name" obligatorio />
-          <Campo tipo="tel" nombre="telefono" etiqueta="Teléfono (opcional)" ayuda="Solo números; con + y código de país si no es de Perú." autocomplete="tel" />
-          <div data-solo-cliente><Campo nombre="nombre_artistico" etiqueta="Nombre artístico o proyecto" /></div>
-          <div><Boton tipo="submit" data-principal>Guardar cambios</Boton></div>
-        </form>
-      </Panel>
+      <form novalidate method="post" class="perfil-formulario" data-formulario>
+        <Panel codigo="A1" titulo="Tus datos" ayuda="Así te verá el estudio.">
+          <div class="perfil-campos">
+            <Campo nombre="nombre" etiqueta="Nombre" autocomplete="name" obligatorio />
+            <Campo tipo="tel" nombre="telefono" etiqueta="Teléfono (opcional)" ayuda="Solo números; con + y código de país si no es de Perú. Lo necesitas para reservar." autocomplete="tel" />
+            <div data-solo-cliente><Campo nombre="nombre_artistico" etiqueta="Nombre artístico o proyecto" /></div>
+          </div>
+        </Panel>
+        <div data-solo-cliente>
+          <Panel codigo="A3" titulo="Identidad" ayuda="Lo pedimos una vez para que tus reservas sean seguras.">
+            <div class="perfil-campos">
+              <fieldset class="perfil-grupo">
+                <legend>Modalidad</legend>
+                <Casilla tipo="radio" nombre="modalidad" valor="individual" etiqueta="Individual" detalle="Reservas a tu nombre." marcada />
+                <Casilla tipo="radio" nombre="modalidad" valor="agrupacion" etiqueta="Agrupación" detalle="Banda, dúo o colectivo. Tú eres el responsable de la cuenta." />
+              </fieldset>
+              <div class="perfil-documento">
+                <Campo tipo="selector" nombre="tipo_documento" etiqueta="Tipo de documento">
+                  <option value="">Elige una opción</option>
+                  {tiposDocumento.map(([valor, nombre]) => <option value={valor}>{nombre}</option>)}
+                </Campo>
+                <Campo nombre="numero_documento" etiqueta="Número" autocomplete="off" spellcheck="false" />
+              </div>
+              <Casilla nombre="es_menor" etiqueta="Soy menor de 18 años" detalle="Si lo marcas, por ahora no podrás reservar en línea: te ayudaremos por otro canal." />
+            </div>
+          </Panel>
+        </div>
+        <div data-solo-cliente data-bloque-integrantes hidden>
+          <Panel codigo="A4" titulo="Integrantes" ayuda="Tú eres el responsable de la agrupación ante el estudio.">
+            <div class="perfil-campos">
+              <div class="perfil-filas" data-filas="integrante"></div>
+              <div data-error-integrantes></div>
+              <div><Boton variante="secundario" data-anadir="integrante">Añadir integrante</Boton></div>
+              <p class="perfil-ayuda" data-maximo="integrante" hidden>Máximo 20 integrantes.</p>
+              <div data-declaracion></div>
+            </div>
+          </Panel>
+        </div>
+        <div data-solo-cliente>
+          <Panel codigo="A5" titulo="Domicilio y redes" ayuda="Opcional. Nos ayuda a conocer tu trabajo.">
+            <div class="perfil-campos">
+              <Campo nombre="domicilio" etiqueta="Domicilio" maxlength="200" autocomplete="street-address" />
+              <div class="perfil-filas" data-filas="red"></div>
+              <div><Boton variante="secundario" data-anadir="red">Añadir red</Boton></div>
+              <p class="perfil-ayuda" data-maximo="red" hidden>Máximo 5 redes.</p>
+            </div>
+          </Panel>
+        </div>
+        <div><Boton tipo="submit" data-principal>Guardar cambios</Boton></div>
+      </form>
       <Panel codigo="A2" titulo="Cuenta" variante="lateral">
         <dl class="datos">
           <div><dt>Correo</dt><dd class="perfil-correo"><span data-campo="correo"></span><span data-etiqueta></span></dd></div>
@@ -38,9 +86,29 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
           <div data-fila="especialidad"><dt>Especialidad</dt><dd data-campo="especialidad"></dd></div>
         </dl>
         <p class="perfil-ayuda">El rol y la especialidad los asigna el Administrador.</p>
+        <p class="perfil-ayuda" data-solo-cliente><a href="/app/perfil/privacidad/">Privacidad y textos aceptados</a></p>
       </Panel>
     </div>
   </template>
+
+  <!-- Filas repetibles (formularios.md): la isla clona la que toca y da ids unicos a cada campo. -->
+  <template data-fila="red">
+    <div class="perfil-fila">
+      <Campo tipo="selector" nombre="red" etiqueta="Red">
+        {redes.map(([valor, nombre]) => <option value={valor}>{nombre}</option>)}
+      </Campo>
+      <Campo nombre="valor_red" etiqueta="Usuario o enlace" autocomplete="off" />
+      <Boton variante="secundario" data-quitar>Quitar red</Boton>
+    </div>
+  </template>
+  <template data-fila="integrante">
+    <div class="perfil-fila">
+      <Campo nombre="nombre_integrante" etiqueta="Nombre del integrante" autocomplete="off" />
+      <Campo nombre="rol_integrante" etiqueta="Rol" ayuda="Por ejemplo, voz o batería." autocomplete="off" />
+      <Boton variante="secundario" data-quitar>Quitar integrante</Boton>
+    </div>
+  </template>
+  <PlantillasResumenLegal />
 
   <template data-estado="confirmacion">
     <Aviso variante="aviso" titulo="Verifica tu correo" texto="Lo necesitarás antes de registrar tu primer pago. Te enviaremos un enlace de un solo uso.">
@@ -84,7 +152,21 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
   import { obtenerPerfil, actualizarPerfil, verificarCorreo } from '../servicios/api.js';
   import { pedirEnlaceVerificacion } from '../servicios/verificacion.js';
   import { normalizarTelefono } from '../servicios/sesion.js';
-  import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, mostrarAvisoDeUrl } from '../servicios/formulario.js';
+  import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, mostrarAvisoDeUrl, llenarAviso } from '../servicios/formulario.js';
+  import { obtenerContacto } from '../servicios/pagos.js';
+  import { listarTextosLegales } from '../servicios/textos-legales.js';
+  import { aceptar, misAceptaciones, bloquesRegistro } from '../servicios/aceptaciones.js';
+  import { resumenLegal, errorResumen, avisoResumen } from '../servicios/resumen-legal.js';
+  import { validarDocumento } from '../servicios/perfil-datos.js';
+
+  // Aviso fijo bajo los avisos de resultado (p. ej. lo que falta para reservar); sin rol: no es el resultado de una accion.
+  function mostrarAvisoEn(isla: HTMLElement, variante: string, titulo: string) {
+    const fragmento = isla.querySelector<HTMLTemplateElement>(`template[data-plantilla="aviso-${variante}"]`)!.content.cloneNode(true) as DocumentFragment;
+    const aviso = fragmento.querySelector<HTMLElement>('.aviso')!;
+    llenarAviso(aviso, titulo, '');
+    isla.querySelector('[data-requisitos]')!.replaceChildren(fragmento);
+    return aviso;
+  }
 
   const roles: Record<string, string> = { cliente: 'Cliente', personal: 'Personal del estudio', administrador: 'Administrador' };
 
@@ -115,6 +197,17 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
         if (destino.closest('[data-reintentar]')) this.cargar(true);
         const verificarBoton = destino.closest<HTMLButtonElement>('[data-verificar]');
         if (verificarBoton) this.pedirEnlace(verificarBoton);
+        const anadir = destino.closest('[data-anadir]');
+        if (anadir) {
+          const clase = anadir.getAttribute('data-anadir')!;
+          this.anadir(clase);
+          this.querySelector(`[data-filas="${clase}"] .perfil-fila:last-child`)?.querySelector<HTMLElement>('input, select')?.focus();
+        }
+        const quitar = destino.closest('[data-quitar]');
+        if (quitar) this.quitar(quitar);
+      });
+      this.addEventListener('change', (e) => {
+        if ((e.target as HTMLInputElement).name === 'modalidad') this.alCambiarModalidad();
       });
       this.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -181,7 +274,8 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
       this.querySelector<HTMLInputElement>('[name="nombre"]')!.value = perfil.nombre ?? '';
       this.querySelector<HTMLInputElement>('[name="telefono"]')!.value = perfil.telefono ?? '';
       if (perfil.rol === 'cliente') this.querySelector<HTMLInputElement>('[name="nombre_artistico"]')!.value = perfil.nombre_artistico ?? '';
-      else this.querySelector('[data-solo-cliente]')!.remove();
+      else this.querySelectorAll('[data-solo-cliente]').forEach((e) => e.remove());
+      this.llenarReforzado(perfil);
       if (perfil.correo_confirmado === false) {
         this.querySelector('[data-confirmacion]')!.replaceChildren(this.querySelector<HTMLTemplateElement>('template[data-estado="confirmacion"]')!.content.cloneNode(true));
       }
@@ -240,6 +334,162 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
       }
     }
 
+    // --- Identidad, integrantes y redes (RF-17) ---
+
+    entrada(nombre: string, raiz: ParentNode = this) {
+      return raiz.querySelector<HTMLInputElement>(`[name="${nombre}"]`)!;
+    }
+    modalidad() {
+      return this.querySelector<HTMLInputElement>('input[name="modalidad"]:checked')?.value ?? 'individual';
+    }
+
+    // Rellena los campos nuevos. Un perfil sin ellos (cuentas anteriores) cuenta como individual y sin datos.
+    llenarReforzado(perfil: any) {
+      if (perfil.rol !== 'cliente') return;
+      const modalidad = perfil.modalidad ?? 'individual';
+      this.querySelector<HTMLInputElement>(`input[name="modalidad"][value="${modalidad}"]`)!.checked = true;
+      this.entrada('tipo_documento').value = perfil.documento?.tipo ?? '';
+      this.entrada('numero_documento').value = perfil.documento?.numero ?? '';
+      this.entrada('es_menor').checked = perfil.es_menor === true;
+      this.entrada('domicilio').value = perfil.domicilio ?? '';
+      for (const r of perfil.redes ?? []) this.anadir('red', [r.red, r.valor]);
+      for (const i of perfil.integrantes ?? []) this.anadir('integrante', [i.nombre, i.rol]);
+      this.alCambiarModalidad(false);
+      const faltan = [!perfil.documento && 'documento de identidad', !perfil.telefono && 'teléfono'].filter(Boolean);
+      if (perfil.datos_para_reservar === false && faltan.length) {
+        const aviso = mostrarAvisoEn(this, 'informacion', `Para reservar te falta: ${faltan.join(' y ')}.`);
+        aviso.removeAttribute('role');
+      }
+      if (perfil.es_menor) this.avisoMenor();
+    }
+
+    alCambiarModalidad(anunciar = true) {
+      const agrupacion = this.modalidad() === 'agrupacion';
+      this.querySelector<HTMLElement>('[data-bloque-integrantes]')!.hidden = !agrupacion;
+      if (!agrupacion) return;
+      if (anunciar) this.anunciar('Añade a los integrantes de la agrupación');
+      this.prepararDeclaracion();
+    }
+
+    // Fila repetible: `valores` rellena sus campos. Cada campo recibe un id propio para que su etiqueta y su error no choquen.
+    anadir(clase: string, valores: string[] = []) {
+      const lista = this.querySelector(`[data-filas="${clase}"]`)!;
+      const maximo = clase === 'red' ? 5 : 20;
+      if (lista.children.length >= maximo) return;
+      const fila = (this.querySelector<HTMLTemplateElement>(`template[data-fila="${clase}"]`)!.content.cloneNode(true) as DocumentFragment).firstElementChild as HTMLElement;
+      const n = ++this.contador;
+      fila.querySelectorAll<HTMLElement>('[id]').forEach((e) => (e.id = `${e.id}-${n}`));
+      fila.querySelectorAll<HTMLElement>('label[for]').forEach((e) => e.setAttribute('for', `${e.getAttribute('for')}-${n}`));
+      fila.querySelectorAll<HTMLElement>('[aria-describedby]').forEach((e) => e.setAttribute('aria-describedby', e.getAttribute('aria-describedby')!.split(' ').map((i) => `${i}-${n}`).join(' ')));
+      fila.querySelectorAll<HTMLInputElement>('input, select').forEach((e, i) => valores[i] !== undefined && (e.value = valores[i]));
+      lista.append(fila);
+      this.limites(clase);
+    }
+    contador = 0;
+    limites(clase: string) {
+      const maximo = clase === 'red' ? 5 : 20;
+      const lleno = this.querySelector(`[data-filas="${clase}"]`)!.children.length >= maximo;
+      this.querySelector<HTMLElement>(`[data-anadir="${clase}"]`)!.hidden = lleno;
+      this.querySelector<HTMLElement>(`[data-maximo="${clase}"]`)!.hidden = !lleno;
+    }
+    quitar(boton: Element) {
+      const fila = boton.closest('.perfil-fila')!;
+      const lista = fila.parentElement!;
+      const clase = lista.getAttribute('data-filas')!;
+      const siguiente = (fila.nextElementSibling ?? fila.previousElementSibling) as HTMLElement | null;
+      fila.remove();
+      this.limites(clase);
+      ((siguiente?.querySelector('input, select') ?? this.querySelector(`[data-anadir="${clase}"]`)) as HTMLElement).focus();
+    }
+
+    // Declaracion de agrupacion: se pide solo si no hay una aceptada. Si no se sabe (la consulta falla), se pide: el servidor responde 409 si ya estaba.
+    async prepararDeclaracion(forzar = false) {
+      const caja = this.querySelector('[data-declaracion]')!;
+      if (caja.firstChild || this.declaracionAceptada) return;
+      let lista: any[] | null = null;
+      try {
+        const [textos, mias] = await Promise.all([listarTextosLegales(), misAceptaciones().catch(() => null)]);
+        lista = textos;
+        if (Array.isArray(mias) && mias.some((a: any) => a.tipo === 'declaracion_agrupacion' && !a.retirada_en) && !forzar) return void (this.declaracionAceptada = true);
+      } catch {
+        return;
+      }
+      const [bloque] = bloquesRegistro(lista!, ['declaracion_agrupacion']);
+      if (!bloque || caja.firstChild) return;
+      this.declaracion = bloque;
+      const raiz = resumenLegal(this, { titulo: bloque.titulo, resumenes: bloque.resumenes, enlaces: bloque.enlaces, casillas: [bloque.casilla] });
+      raiz.dataset.clave = 'declaracion';
+      caja.replaceChildren(raiz);
+    }
+    declaracion: any = null;
+    declaracionAceptada = false;
+
+    async avisoMenor() {
+      const aviso = mostrarAviso(this, 'aviso', 'Aún no puedes reservar en línea', 'Como eres menor de 18 años, tu madre, padre o tutor tiene que autorizar la reserva, y eso todavía no se puede hacer en la app. Escríbenos y reservamos contigo:');
+      const contacto = await obtenerContacto().then((c: any) => c?.texto, () => null);
+      if (contacto) aviso.querySelector('.aviso-cuerpo')!.append(Object.assign(document.createElement('p'), { textContent: contacto, className: 'perfil-contacto' }));
+      return aviso;
+    }
+
+    // Valida lo nuevo y devuelve los cambios del contrato (solo lo que difiere del perfil cargado) o null con el primer campo con error.
+    cambiosReforzados(): { cambios: Record<string, unknown>; fallo: HTMLElement | null } {
+      const perfil = this.perfil;
+      const cambios: Record<string, unknown> = {};
+      let fallo: HTMLElement | null = null;
+      const marcar = (entrada: HTMLElement, texto: string) => {
+        ponerError(this, entrada as HTMLInputElement, texto);
+        fallo ??= entrada;
+      };
+      const raiz = this.querySelector('form')!;
+      raiz.querySelectorAll('[aria-invalid="true"]').forEach((e) => (e.closest('.resumen-legal') ? errorResumen(e.closest('.resumen-legal') as HTMLElement, '') : quitarError(e as HTMLInputElement)));
+      this.querySelector('[data-error-integrantes]')!.replaceChildren();
+      const igual = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+      const tipo = this.entrada('tipo_documento');
+      const numero = this.entrada('numero_documento');
+      if (tipo.value || numero.value.trim()) {
+        const r = validarDocumento(tipo.value, numero.value) as any;
+        if (r.tipo) marcar(tipo, r.tipo);
+        else if (r.numero) marcar(numero, r.numero);
+        else if (!igual(r.valor, perfil.documento)) cambios.documento = r.valor;
+      }
+      const domicilio = this.entrada('domicilio').value.trim();
+      if (domicilio.length > 200) marcar(this.entrada('domicilio'), 'El domicilio admite hasta 200 caracteres.');
+      else if (domicilio && domicilio !== (perfil.domicilio ?? '')) cambios.domicilio = domicilio;
+
+      const filasRedes = [...this.querySelectorAll('[data-filas="red"] .perfil-fila')];
+      const redes = filasRedes.map((f) => ({ red: this.entrada('red', f).value, valor: this.entrada('valor_red', f).value.trim() }));
+      filasRedes.forEach((f, i) => !redes[i].valor && marcar(this.entrada('valor_red', f), 'Escribe tu usuario o el enlace.'));
+      if (!igual(redes, perfil.redes ?? [])) cambios.redes = redes;
+
+      const agrupacion = this.modalidad() === 'agrupacion';
+      const filasInt = [...this.querySelectorAll('[data-filas="integrante"] .perfil-fila')];
+      const integrantes = filasInt.map((f) => ({ nombre: this.entrada('nombre_integrante', f).value.trim(), rol: this.entrada('rol_integrante', f).value.trim() }));
+      if (agrupacion) {
+        if (!integrantes.length) {
+          const nodo = this.querySelector<HTMLTemplateElement>('template[data-plantilla="error"]')!.content.cloneNode(true) as DocumentFragment;
+          nodo.querySelector('p')!.id = 'perfil-error-integrantes';
+          nodo.querySelector('span')!.textContent = 'Añade al menos un integrante.';
+          this.querySelector('[data-error-integrantes]')!.replaceChildren(nodo);
+          fallo ??= this.querySelector<HTMLElement>('[data-anadir="integrante"]');
+        }
+        filasInt.forEach((f, i) => {
+          if (!integrantes[i].nombre) marcar(this.entrada('nombre_integrante', f), 'Escribe el nombre del integrante.');
+          if (!integrantes[i].rol) marcar(this.entrada('rol_integrante', f), 'Escribe qué hace en la agrupación, por ejemplo, voz.');
+        });
+        if (!igual(integrantes, perfil.integrantes ?? [])) cambios.integrantes = integrantes;
+        const casilla = this.querySelector<HTMLInputElement>('[data-declaracion] input');
+        if (casilla && !casilla.checked) {
+          errorResumen(this.querySelector('[data-declaracion] .resumen-legal')!, 'Marca la casilla para registrar la agrupación.');
+          fallo ??= casilla;
+        }
+      }
+      if (agrupacion !== ((perfil.modalidad ?? 'individual') === 'agrupacion')) cambios.modalidad = this.modalidad();
+      const menor = this.entrada('es_menor').checked;
+      if (menor !== (perfil.es_menor === true)) cambios.es_menor = menor;
+      return { cambios, fallo };
+    }
+
     // --- Guardar (CA-09) ---
 
     async guardar(form: HTMLFormElement) {
@@ -254,39 +504,65 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
       const fallos: [HTMLInputElement, string][] = [];
       if (!nombre.value.trim()) fallos.push([nombre, 'Escribe tu nombre.']);
       if (numero === null) fallos.push([telefono, 'Escribe entre 9 y 15 dígitos; puedes empezar con +.']);
-      if (fallos.length) {
+      const reforzado = artistico ? this.cambiosReforzados() : { cambios: {}, fallo: null };
+      if (fallos.length || reforzado.fallo) {
         for (const [entrada, texto] of fallos) ponerError(this, entrada, texto);
-        const aviso = mostrarAviso(this, 'error', `Revisa ${fallos.length} ${fallos.length === 1 ? 'campo' : 'campos'}`, '', {
-          enlaces: fallos.map(([entrada]) => ({ texto: this.querySelector(`label[for="${entrada.id}"]`)!.textContent!.replace('(obligatorio)', '').trim(), href: `#${entrada.id}` })),
-        });
-        return enfocarAviso(aviso);
+        if (fallos.length) {
+          const aviso = mostrarAviso(this, 'error', `Revisa ${fallos.length} ${fallos.length === 1 ? 'campo' : 'campos'}`, '', {
+            enlaces: fallos.map(([entrada]) => ({ texto: this.querySelector(`label[for="${entrada.id}"]`)!.textContent!.replace('(obligatorio)', '').trim(), href: `#${entrada.id}` })),
+          });
+          return enfocarAviso(aviso);
+        }
+        return reforzado.fallo!.focus();
       }
       // El servidor no acepta vacíos: lo que se deja en blanco no se envía.
-      const cambios = { nombre: nombre.value.trim(), ...(numero && { telefono: numero }), ...(artistico?.value.trim() && { nombre_artistico: artistico.value.trim() }) };
+      const cambios: Record<string, any> = { nombre: nombre.value.trim(), ...(numero && { telefono: numero }), ...(artistico?.value.trim() && { nombre_artistico: artistico.value.trim() }), ...reforzado.cambios };
       const etiqueta = boton.textContent;
       boton.disabled = true;
       boton.setAttribute('aria-busy', 'true');
       boton.textContent = 'Guardando…';
       let aviso: Element | null = null;
       try {
+        // La declaracion se acepta antes que el PATCH: el servidor exige que ya exista (409 declaracion_requerida).
+        const casilla = this.querySelector<HTMLInputElement>('[data-declaracion] input');
+        if (this.modalidad() === 'agrupacion' && casilla?.checked && this.declaracion) {
+          await aceptar('registro', this.declaracion.textos);
+          this.declaracionAceptada = true;
+          this.querySelector('[data-declaracion]')!.replaceChildren();
+        }
         this.perfil = await actualizarPerfil(cambios);
         nombre.value = this.perfil.nombre ?? '';
         telefono.value = this.perfil.telefono ?? '';
         if (artistico) artistico.value = this.perfil.nombre_artistico ?? '';
         this.llenar(this.perfil);
-        this.avisar('exito', 'Cambios guardados.');
+        if (this.perfil.es_menor && cambios.es_menor) aviso = await this.avisoMenor();
+        else this.avisar('exito', 'Cambios guardados.');
       } catch (error: any) {
-        aviso =
-          error.estado === 401 ? mostrarAviso(this, 'sesion', 'Tu sesión caducó', 'Inicia sesión y vuelve a guardar.')
-          : error.estado === 422 ? mostrarAviso(this, 'error', error.mensaje, '')
-          : mostrarAviso(this, 'error', ...textoDeError(error));
+        if (error.estado === 409 && error.codigo === 'declaracion_requerida') {
+          await this.prepararDeclaracion(true);
+          const casilla = this.querySelector<HTMLInputElement>('[data-declaracion] input');
+          if (casilla) {
+            errorResumen(this.querySelector('[data-declaracion] .resumen-legal')!, 'Marca la casilla para registrar la agrupación.');
+            aviso = null;
+            casilla.focus();
+          }
+        } else if (error.estado === 409 && error.codigo === 'texto_desactualizado') {
+          this.declaracion = null;
+          this.querySelector('[data-declaracion]')!.replaceChildren();
+          await this.prepararDeclaracion(true);
+          avisoResumen(this.querySelector('[data-declaracion] .resumen-legal')!, `Las condiciones cambiaron. Lee la versión ${error.detalles?.vigente?.version ?? 'nueva'} y vuelve a marcar la casilla.`);
+        } else
+          aviso =
+            error.estado === 401 ? mostrarAviso(this, 'sesion', 'Tu sesión caducó', 'Inicia sesión y vuelve a guardar.')
+            : error.estado === 422 ? mostrarAviso(this, 'error', error.mensaje, '')
+            : mostrarAviso(this, 'error', ...textoDeError(error));
       }
       boton.disabled = false;
       boton.removeAttribute('aria-busy');
       boton.textContent = etiqueta;
       // Tras guardar el foco vuelve al botón; si falló, va al aviso.
       if (aviso) enfocarAviso(aviso);
-      else boton.focus();
+      else if (!this.querySelector('[data-declaracion] [aria-invalid="true"]')) boton.focus();
     }
   }
   if (!customElements.get('bugalu-perfil')) customElements.define('bugalu-perfil', BugaluPerfil);
@@ -338,6 +614,61 @@ import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.a
     display: flex;
     flex-direction: column;
     gap: var(--espacio-5);
+    min-inline-size: 0;
+  }
+  .perfil-campos {
+    display: grid;
+    gap: var(--espacio-4);
+  }
+  .perfil-grupo {
+    display: grid;
+    gap: var(--espacio-1);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-inline-size: 0;
+  }
+  .perfil-grupo legend {
+    padding: 0;
+    margin-block-end: var(--espacio-2);
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .perfil-documento,
+  .perfil :global(.perfil-fila) {
+    display: grid;
+    gap: var(--espacio-3);
+    grid-template-columns: minmax(0, 1fr);
+    align-items: end;
+  }
+  .perfil-filas {
+    display: grid;
+    gap: var(--espacio-4);
+  }
+  .perfil :global(.perfil-fila) {
+    padding-block-end: var(--espacio-4);
+    border-block-end: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+  }
+  .perfil :global(.perfil-contacto) {
+    margin: var(--espacio-2) 0 0;
+  }
+  [data-bloque-integrantes][hidden],
+  [data-anadir][hidden],
+  [data-maximo][hidden] {
+    display: none;
+  }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    .perfil-documento {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    }
+    .perfil :global(.perfil-fila) {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+    }
+  }
+  .perfil :global([data-requisitos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
   }
   .perfil-ayuda {
     margin: var(--espacio-4) 0 0;

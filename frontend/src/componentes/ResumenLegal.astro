@@ -1,0 +1,88 @@
+---
+// Resumen legal (ficha resumen-legal.md): resumen, enlace a la version y casillas sin marcar. Las islas lo clonan de un <template> y lo llena servicios/resumen-legal.js.
+import Icono from './internos/Icono.astro';
+import MensajeError from './internos/MensajeError.astro';
+import Casilla from './Casilla.astro';
+import Aviso from './Aviso.astro';
+
+interface Props {
+  variante?: 'obligatoria' | 'opcional' | 'lectura';
+  titulo: string;
+  resumen: string;
+  enlaces?: { etiqueta: string; href: string }[];
+  casillas?: { nombre: string; etiqueta: string }[];
+}
+const { variante = 'obligatoria', titulo, resumen, enlaces = [], casillas = [] } = Astro.props;
+const Raiz = casillas.length ? 'fieldset' : 'section';
+const Titulo = casillas.length ? 'legend' : 'h3';
+---
+
+<Raiz class:list={['resumen-legal', `resumen-legal-${variante}`]}>
+  <Titulo class="resumen-legal-titulo">{titulo}</Titulo>
+  <div class="resumen-legal-texto"><p>{resumen}</p></div>
+  <ul class="resumen-legal-enlaces">
+    {enlaces.map((e) => (
+      <li><a href={e.href} target="_blank" rel="noopener noreferrer"><span data-etiqueta>{e.etiqueta}</span><Icono nombre="external-link" /><span class="visualmente-oculto"> (se abre en otra pestaña)</span></a></li>
+    ))}
+  </ul>
+  <div class="resumen-legal-aviso" data-aviso hidden><Aviso variante="informacion" titulo=" " /></div>
+  {casillas.length > 0 && (
+    <div class="resumen-legal-casillas">
+      {casillas.map((c) => <Casilla nombre={c.nombre} etiqueta={c.etiqueta} required={variante === 'obligatoria'} />)}
+    </div>
+  )}
+  {casillas.length > 0 && <div data-error hidden><MensajeError id="" texto=" " /></div>}
+</Raiz>
+
+<style>
+  .resumen-legal {
+    display: grid;
+    gap: var(--espacio-2);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-inline-size: 0;
+  }
+  .resumen-legal-titulo {
+    padding: 0;
+    margin: 0;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-titulo);
+    font-size: var(--fuente-tamano-base);
+    text-transform: uppercase;
+  }
+  .resumen-legal-texto {
+    max-inline-size: var(--medida-linea-lectura);
+    color: var(--color-texto-cuerpo);
+    font-size: var(--fuente-tamano-base);
+    line-height: var(--fuente-interlineado-lectura);
+  }
+  .resumen-legal-texto p {
+    margin: 0;
+  }
+  .resumen-legal-texto p + p {
+    margin-block-start: var(--espacio-2);
+  }
+  .resumen-legal-enlaces {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .resumen-legal-enlaces a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--espacio-2);
+    min-block-size: var(--medida-control-tactil);
+    color: var(--color-texto-principal);
+    text-decoration: underline;
+  }
+  .resumen-legal-casillas {
+    display: grid;
+    gap: var(--espacio-1);
+    margin-block-start: var(--espacio-2);
+  }
+  .resumen-legal [hidden] {
+    display: none;
+  }
+</style>

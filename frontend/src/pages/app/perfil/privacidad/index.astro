@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../../componentes/EncabezadoPantalla.astro';
+import Privacidad from '../../../../islas/Privacidad.astro';
+---
+
+<LayoutApp titulo="Privacidad">
+  <EncabezadoPantalla
+    titulo="Privacidad"
+    indice="[00] CUENTA"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Perfil', href: '/app/perfil/' }, { etiqueta: 'Privacidad' }]}
+    descripcion="Tú decides si recibes promociones y si usamos tu imagen. Nada de esto cambia tu servicio."
+  />
+  <Privacidad />
+</LayoutApp>

@@ -88,6 +88,7 @@ const avisosUrl = {
   'sesion-cerrada': ['informacion', 'Cerraste sesión.'],
   'cuenta-creada': ['exito', 'Cuenta creada. Ya puedes reservar.'],
   'contrasena-cambiada': ['exito', 'Contraseña actualizada. Usa la nueva la próxima vez que inicies sesión.'],
+  'textos-aceptados': ['exito', 'Listo. Ya puedes reservar.'],
   'solicitud-enviada': ['exito', 'Solicitud enviada. El Administrador la revisará; vuelve aquí para ver su estado.'],
 };
 

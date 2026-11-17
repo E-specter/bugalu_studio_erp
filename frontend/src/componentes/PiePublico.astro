@@ -56,6 +56,15 @@ const enlaces = [
     font-size: var(--fuente-tamano-pequeno);
     text-decoration: underline;
   }
+  /* Acceso: sin caja propia, va sobre el pie tecnico de la estructura. */
+  .pie-acceso {
+    padding: 0;
+    background: none;
+    border: 0;
+  }
+  .pie-acceso .pie-contenido {
+    max-inline-size: none;
+  }
   .pie-acceso .pie-enlaces a {
     font-size: var(--fuente-tamano-micro);
   }

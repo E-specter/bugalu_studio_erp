@@ -53,8 +53,8 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Tarjeta de versión | [tarjeta-version](tarjeta-version.md) | `componentes/TarjetaVersion.astro` | Borrador |
 | Comentario | [comentario](comentario.md) | `componentes/Comentario.astro` | Borrador |
 | Marco de registro | [marco-registro](marco-registro.md) | `componentes/MarcoRegistro.astro` | Implementado |
-| Resumen legal | [resumen-legal](resumen-legal.md) | `componentes/ResumenLegal.astro` | Borrador (RF-17) |
-| Pie público | [pie-publico](pie-publico.md) | `componentes/PiePublico.astro` | Implementado (variante Completa en `LayoutPublico`; Acceso existe y se monta con la tarea de aceptaciones) |
+| Resumen legal | [resumen-legal](resumen-legal.md) | `componentes/ResumenLegal.astro` | Implementado (RF-17): plantillas en `componentes/internos/PlantillasResumenLegal.astro`; las islas lo llenan con `servicios/resumen-legal.js` (Aceptación, Reserva, Pago, Perfil, Privacidad) |
+| Pie público | [pie-publico](pie-publico.md) | `componentes/PiePublico.astro` | Implementado (Completa en `LayoutPublico`; Acceso en `layouts/Acceso.astro`) |
 | Calendario | [calendario](calendario.md) | isla `<bugalu-calendario>` | Implementado |
 | Reproductor | [reproductor](reproductor.md) | isla `<bugalu-reproductor>` | Borrador |
 | Carga de archivos | [carga-archivos](carga-archivos.md) | isla `<bugalu-carga-archivos>` (`islas/CargaArchivos.astro`) | Implementado (Captura de pago; audio y referencias entran con su RF) |

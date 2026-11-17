@@ -46,11 +46,17 @@ async function montar(page, { sesion = true, sim = (r) => r.fulfill(json(200, SI
   await page.route(`${API}/servicios`, (r) => r.fulfill(servicios()));
   await page.route(`${API}/especialistas`, (r) => r.fulfill(especialistas()));
   await page.route(`${API}/simulaciones`, (r) => { envios.sim.push(r.request().postDataJSON()); return sim(r); });
+  await page.route(`${API}/textos-legales`, (r) => r.fulfill(json(200, [{ tipo: 'condiciones_contratacion', version: '1.0.0', tipo_cambio: 'mayor', vigente_desde: '2026-11-01T00:00:00-05:00', resumenes: { reserva: 'Pagas el adelanto para confirmar.' }, programada: false }])));
   await page.route(`${API}/reservas`, (r) => { envios.crear.push(r.request().postDataJSON()); return crear(r); });
   await page.route(`${API}/reservas/${R1}`, (r) => r.fulfill(json(200, RESERVA)));
   return envios;
 }
 const aviso = (page) => page.locator('bugalu-reserva [data-avisos] [role="alert"], bugalu-reserva [data-avisos] [role="status"]');
+// RF-17: la reserva exige marcar las condiciones.
+const confirmar = async (page) => {
+  await page.getByRole('checkbox', { name: /Acepto las Condiciones de contratación/ }).check();
+  await page.getByRole('button', { name: 'Confirmar reserva' }).click();
+};
 const total = (page) => page.getByRole('row', { name: /Total/i });
 
 test.describe('01 Horario', () => {
@@ -279,9 +285,9 @@ test.describe('04 Confirmar y 05 Listo', () => {
     await page.getByLabel('Qué necesitas (opcional)').fill('Voz y guitarra');
     await sinViolaciones(page);
     await page.screenshot({ path: 'pruebas/capturas/reservar-04-confirmar-1440.png', fullPage: true });
-    await page.getByRole('button', { name: 'Confirmar reserva' }).click();
+    await confirmar(page);
     await expect(page).toHaveURL(new RegExp(`/reservar/listo/\\?id=${R1}`));
-    expect(envios.crear).toEqual([{ id_sala: 'sala-1', id_servicio: 's1', inicio: INI, fin: t('19', '12:00'), especialistas: ['e2'], detalle: 'Voz y guitarra' }]);
+    expect(envios.crear).toEqual([{ id_sala: 'sala-1', id_servicio: 's1', inicio: INI, fin: t('19', '12:00'), especialistas: ['e2'], detalle: 'Voz y guitarra', version_condiciones: '1.0.0' }]);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Reserva registrada');
     await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
     await expect(page.getByText('R-2026-00013').first()).toBeVisible();
@@ -304,6 +310,7 @@ test.describe('04 Confirmar y 05 Listo', () => {
     const envios = await montar(page, { crear: async (r) => { await new Promise((x) => setTimeout(x, 400)); await r.fulfill(json(201, RESERVA)); } });
     await page.goto(PASO4);
     await expect(total(page)).toBeVisible();
+    await page.getByRole('checkbox', { name: /Acepto las Condiciones de contratación/ }).check();
     await page.getByRole('button', { name: 'Confirmar reserva' }).dblclick();
     await expect(page).toHaveURL(/listo/);
     expect(envios.crear).toHaveLength(1);
@@ -328,7 +335,7 @@ test.describe('04 Confirmar y 05 Listo', () => {
       await montar(page, { crear: (r) => r.fulfill(respuesta()) });
       await page.goto(PASO4);
       await expect(total(page)).toBeVisible();
-      await page.getByRole('button', { name: 'Confirmar reserva' }).click();
+      await confirmar(page);
       await expect(aviso(page)).toContainText(texto);
       if (nombre.endsWith('detalle')) await expect(page.getByLabel('Qué necesitas (opcional)')).toBeFocused();
       else await expect(aviso(page)).toBeFocused();
@@ -343,7 +350,7 @@ test.describe('04 Confirmar y 05 Listo', () => {
     await montar(page, { crear: (r) => r.fulfill(errorApi(409, 'tramo_no_disponible')) });
     await page.goto(PASO4);
     await expect(total(page)).toBeVisible();
-    await page.getByRole('button', { name: 'Confirmar reserva' }).click();
+    await confirmar(page);
     await expect(page.getByRole('navigation', { name: 'Progreso de la reserva' })).toContainText('REVISAR');
     await page.screenshot({ path: 'pruebas/capturas/reservar-04-error-409-1440.png', fullPage: true });
   });
@@ -352,7 +359,7 @@ test.describe('04 Confirmar y 05 Listo', () => {
     await montar(page, { crear: (r) => r.abort() });
     await page.goto(PASO4);
     await expect(total(page)).toBeVisible();
-    await page.getByRole('button', { name: 'Confirmar reserva' }).click();
+    await confirmar(page);
     await expect(aviso(page)).toContainText('Sin conexión. Tu reserva no se guardó; revisa tu red.');
   });
 
@@ -468,7 +475,7 @@ test.describe('B4 pasos', () => {
     await montar(page, { crear: (r) => r.fulfill(errorApi(409, 'tramo_no_disponible')) });
     await page.goto(PASO4);
     await expect(total(page)).toBeVisible();
-    await page.getByRole('button', { name: 'Confirmar reserva' }).click();
+    await confirmar(page);
     const item = pasos(page).getByRole('listitem').filter({ hasText: 'REVISAR' });
     await expect(item).toHaveCount(1);
     await expect(item.getByRole('link', { name: /Horario/ })).toBeVisible();
@@ -521,7 +528,7 @@ test.describe('N2 a N8', () => {
     await montar(page, { crear: (r) => r.fulfill(errorApi(503, 'x')) });
     await page.goto(PASO4);
     await expect(total(page)).toBeVisible();
-    await page.getByRole('button', { name: 'Confirmar reserva' }).click();
+    await confirmar(page);
     const [a, r] = await Promise.all([aviso(page).boundingBox(), page.locator('.res-rejilla').boundingBox()]);
     expect(r.y - (a.y + a.height)).toBeGreaterThanOrEqual(20);
   });

@@ -4,6 +4,7 @@ import CabeceraApp from '../componentes/CabeceraApp.astro';
 import NavegacionLateral from '../componentes/NavegacionLateral.astro';
 import NavegacionTactil from '../componentes/NavegacionTactil.astro';
 import Boton from '../componentes/Boton.astro';
+import Aviso from '../componentes/Aviso.astro';
 
 interface Props {
   titulo: string;
@@ -46,6 +47,10 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
     <div class="app-nav-lateral"><NavegacionLateral {destinos} {actual} neutro /></div>
 
     <main id="contenido" tabindex="-1" class="app-principal">
+      <!-- RF-17: textos por aceptar y confirmacion de haberlos aceptado; antes del encabezado, sin rol (no es resultado de una accion). -->
+      <div class="app-avisos" data-avisos-app></div>
+      <template data-aviso-textos><Aviso variante="aviso" titulo="Tienes textos por aceptar" texto="Mientras tanto no puedes hacer reservas nuevas. Puedes ver, pagar y cancelar las que ya tienes." accion={{ etiqueta: 'Revisar y aceptar', href: '#' }} /></template>
+      <template data-aviso-exito><Aviso variante="exito" titulo="Listo. Ya puedes reservar." /></template>
       <slot />
     </main>
   </div>
@@ -64,8 +69,28 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
     const portal = rol === 'cliente';
     // El título de sección y el área nacen neutros (vacíos y ocultos): aparecen solo al conocer el rol.
     document.querySelectorAll<HTMLElement>('[data-seccion]').forEach((e) => { e.textContent = portal ? 'Portal' : 'Estudio'; e.removeAttribute('data-neutro'); });
+    avisarTextos(perfil as { pendientes?: { contexto: string }[] });
     if (rol === 'administrador') listarPagos().then((l) => contarPagos(l.length), () => contarPagos(0));
     document.querySelectorAll<HTMLElement>('[data-area]').forEach((e) => { e.textContent = portal ? 'Portal del artista' : 'Panel interno'; e.removeAttribute('data-neutro'); });
+  }
+
+  // Aviso de textos por aceptar (solo artistas: el Personal y el Administrador no aceptan textos) y, tras aceptarlos, el de exito. `?aviso=textos-aceptados` se lee una vez.
+  const url = new URL(location.href);
+  const aceptados = url.searchParams.get('aviso') === 'textos-aceptados';
+  if (aceptados) {
+    url.searchParams.delete('aviso');
+    history.replaceState(null, '', url);
+  }
+  function avisarTextos(perfil: { pendientes?: { contexto: string }[] }) {
+    const caja = document.querySelector('[data-avisos-app]')!;
+    const pendientes = rol === 'cliente' && (perfil.pendientes ?? []).some((p) => p.contexto === 'registro');
+    const nombre = pendientes ? 'textos' : aceptados ? 'exito' : null;
+    const nodo = nombre && (document.querySelector<HTMLTemplateElement>(`template[data-aviso-${nombre}]`)!.content.cloneNode(true) as DocumentFragment);
+    if (nodo && nombre === 'textos') {
+      nodo.querySelector('.aviso')!.removeAttribute('role');
+      nodo.querySelector<HTMLAnchorElement>('.aviso-accion')!.href = `/acceso/textos?${new URLSearchParams({ volver: location.pathname + location.search })}`;
+    }
+    caja.replaceChildren(...(nodo ? [nodo] : []));
   }
 
   // Contador de PAGOS (navegacion-lateral.md): 0 o error, sin contador. Más de 99: "99+".
@@ -115,6 +140,9 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
   }
   .app-principal {
     padding: var(--espacio-4);
+  }
+  .app-avisos:not(:empty) {
+    margin-block-end: var(--espacio-4);
   }
 
   @media (min-width: 64em) { /* punto-quiebre-escritorio */

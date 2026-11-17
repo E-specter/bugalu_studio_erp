@@ -9,16 +9,19 @@ import Pasos from '../componentes/Pasos.astro';
 import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
 import IndicadorEstado from '../componentes/IndicadorEstado.astro';
 import EncabezadoPantalla from '../componentes/EncabezadoPantalla.astro';
+import MensajeError from '../componentes/internos/MensajeError.astro';
+import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLegal.astro';
 import Calendario from './Calendario.astro';
 
 interface Props {
-  paso: 'horario' | 'servicio' | 'confirmar' | 'listo';
+  paso: 'horario' | 'servicio' | 'cuenta' | 'confirmar' | 'listo';
 }
 const { paso } = Astro.props;
 // Copy de la spec RF-04-reservar (tabla Copy). `n` es el paso de 5 (el 03 es la cuenta: sin sesion va al acceso).
 const meta = {
   horario: { n: 1, titulo: 'Elige tu horario', descripcion: 'Elige el día, la hora de inicio y cuánto tiempo necesitas la sala.' },
   servicio: { n: 2, titulo: 'Servicio y precio', descripcion: 'Elige qué vas a hacer y quién te acompaña. El precio se calcula al momento.' },
+  cuenta: { n: 3, titulo: 'Completa tus datos', descripcion: 'Antes de tu primera reserva necesitamos saber quién eres. Solo te lo pedimos una vez.' },
   confirmar: { n: 4, titulo: 'Confirma tu reserva', descripcion: 'Revisa todo antes de confirmar.' },
   listo: { n: 5, titulo: 'Reserva registrada', descripcion: 'Tu horario queda apartado mientras pagas el anticipo.' },
 }[paso];
@@ -27,6 +30,7 @@ const rutaPaso: Record<string, string> = { Horario: '/reservar/', Servicio: '/re
 const etapas = ['Horario', 'Servicio', 'Cuenta', 'Confirmar', 'Listo'].map((nombre) => ({ nombre, href: paso === 'listo' ? undefined : rutaPaso[nombre] }));
 const enFlujo = paso !== 'listo';
 const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestran todo
+const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasaporte', 'Pasaporte']];
 ---
 
 <!-- Un bloque por estado (estados-sistema): el servidor pinta cada <template> y la isla clona el que toca. Sin JS, el noscript explica que hace falta. -->
@@ -87,8 +91,9 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
                 <Panel codigo="R3" titulo="Detalle">
                   <Campo tipo="area" nombre="detalle" etiqueta="Qué necesitas (opcional)" ayuda="Cuéntanos qué vas a grabar o qué equipo necesitas." maxlength="500" rows="4" />
                 </Panel>
-                <Panel codigo="R4" titulo="Pago y cancelación">
-                  <p>Pagas un adelanto para confirmar y el resto al terminar la sesión. Tienes un plazo para pagar el anticipo; te lo decimos al confirmar y por correo. Si vence sin pago, la reserva se cancela y el horario se libera. Puedes cancelarla sin costo mientras no hayas registrado ningún pago.</p>
+                <Panel codigo="R4" titulo="Condiciones">
+                  <div data-condiciones><p class="res-ayuda" aria-busy="true">Cargando…</p></div>
+                  <p class="res-ayuda" data-motivo-condiciones hidden>Necesitamos mostrarte las condiciones antes de continuar.</p>
                 </Panel>
               </>
             )}
@@ -99,6 +104,40 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
             </div>
             {paso === 'confirmar' && <p class="res-ayuda" data-motivo hidden>Necesitamos mostrarte el precio antes de confirmar.</p>}
           </div>
+        </div>
+      )}
+
+      {paso === 'cuenta' && (
+        <div data-cuerpo hidden>
+          <div data-cuenta-estado></div>
+          <form novalidate class="res-bloques" data-formulario-cuenta hidden>
+            <div data-d1 hidden>
+              <Panel codigo="D1" titulo="Tus datos">
+                <div class="res-campos">
+                  <div data-fila-nombre><Campo nombre="nombre" etiqueta="Nombre" obligatorio autocomplete="name" /></div>
+                  <div class="res-documento" data-fila-documento>
+                    <Campo tipo="selector" nombre="tipo_documento" etiqueta="Tipo de documento" obligatorio>
+                      <option value="">Elige una opción</option>
+                      {tiposDocumento.map(([valor, nombre]) => <option value={valor}>{nombre}</option>)}
+                    </Campo>
+                    <Campo nombre="numero_documento" etiqueta="Número" obligatorio autocomplete="off" spellcheck="false" />
+                  </div>
+                  <div data-fila-telefono><Campo tipo="tel" nombre="telefono" etiqueta="Teléfono" obligatorio ayuda="Solo números; con + y código de país si no es de Perú. Lo necesitas para reservar." autocomplete="tel" /></div>
+                  <Casilla nombre="es_menor" etiqueta="Soy menor de 18 años" detalle="Si lo marcas, por ahora no podrás reservar en línea: te ayudaremos por otro canal." />
+                </div>
+              </Panel>
+            </div>
+            <div data-d2 hidden>
+              <Panel codigo="D2" titulo="Términos">
+                <div class="res-bloques" data-bloques></div>
+                <p class="res-ayuda" data-motivo-textos hidden>Necesitamos mostrarte las condiciones antes de continuar.</p>
+              </Panel>
+            </div>
+            <div class="res-acciones">
+              <Boton variante="secundario" href="#" data-anterior>Anterior</Boton>
+              <Boton tipo="submit" data-guardar-cuenta>Guardar y continuar</Boton>
+            </div>
+          </form>
         </div>
       )}
 
@@ -123,6 +162,20 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
     <Aviso variante="error" titulo=" " accion={{ etiqueta: ' ', href: '#' }} />
   </template>
   <template data-plantilla="aviso-exito"><Aviso variante="exito" titulo=" " /></template>
+  <template data-plantilla="aviso-info"><Aviso variante="informacion" titulo=" " /></template>
+  <template data-plantilla="error"><MensajeError id="" texto="" /></template>
+  <PlantillasResumenLegal />
+  <template data-plantilla="texto-error">
+    <Aviso variante="error" titulo="No pudimos cargar los textos." texto="Revisa tu conexión e inténtalo de nuevo.">
+      <div class="res-acciones"><Boton variante="secundario" data-reintentar-textos>Reintentar</Boton></div>
+    </Aviso>
+  </template>
+  <template data-plantilla="menor">
+    <Aviso variante="critico" titulo="Aún no puedes reservar en línea" texto="Como eres menor de 18 años, tu madre, padre o tutor tiene que autorizar la reserva, y eso todavía no se puede hacer en la app. Escríbenos y reservamos contigo:">
+      <p class="res-contacto" data-contacto hidden></p>
+      <div class="res-acciones"><Boton variante="secundario" href="/">Volver al inicio</Boton></div>
+    </Aviso>
+  </template>
   <template data-plantilla="servicio"><Casilla tipo="radio" nombre="servicio" valor="" etiqueta=" " detalle=" " /></template>
   <template data-plantilla="especialista"><Casilla nombre="especialista" valor="" etiqueta=" " detalle=" " /></template>
   <template data-plantilla="cargando"><Panel titulo="Cargando" cargando /></template>
@@ -187,6 +240,10 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
     color: var(--color-texto-principal);
   }
   bugalu-reserva .res-lista { display: grid; gap: var(--espacio-3); }
+  bugalu-reserva .res-campos { display: grid; gap: var(--espacio-4); }
+  bugalu-reserva .res-documento { display: grid; gap: var(--espacio-4); grid-template-columns: minmax(0, 1fr); }
+  bugalu-reserva .res-contacto { margin: 0; color: var(--color-texto-sobre-alerta); }
+  bugalu-reserva .res-bloques .resumen-legal + .resumen-legal { padding-block-start: var(--espacio-5); border-block-start: var(--borde-grosor-fino) solid var(--color-borde-fuerte); }
   bugalu-reserva .res-ayuda { margin: 0; color: var(--color-texto-secundario); font-size: var(--fuente-tamano-pequeno); }
   bugalu-reserva .res-datos { display: grid; gap: var(--espacio-3); margin: 0; }
   bugalu-reserva .res-datos > div { display: grid; gap: var(--espacio-1); }
@@ -205,6 +262,7 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
   bugalu-reserva [data-listo] { display: grid; gap: var(--espacio-5); }
   bugalu-reserva .res-lateral .etiqueta { display: flex; inline-size: fit-content; margin-block-end: var(--espacio-3); }
   @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    bugalu-reserva .res-documento { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
     bugalu-reserva .res-acciones { flex-direction: row; align-items: center; flex-wrap: wrap; }
   }
   @media (min-width: 64em) { /* punto-quiebre-escritorio */
@@ -216,10 +274,19 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
   import { obtenerToken, obtenerCliente } from '../servicios/sesion.js';
   import { listarSalas, crearReserva, obtenerReserva } from '../servicios/reservas.js';
   import { listarServicios, listarEspecialistas, obtenerImpuestos, simular } from '../servicios/catalogo.js';
-  import { ErrorApi } from '../servicios/api.js';
+  import { ErrorApi, obtenerPerfil, actualizarPerfil } from '../servicios/api.js';
+  import { obtenerContacto } from '../servicios/pagos.js';
+  import { listarTextosLegales } from '../servicios/textos-legales.js';
+  import { aceptar, pendientesDe, bloquesRegistro, bloqueReserva } from '../servicios/aceptaciones.js';
+  import { resumenLegal, errorResumen, avisoResumen } from '../servicios/resumen-legal.js';
+  import { validarDocumento, faltaParaReservar } from '../servicios/perfil-datos.js';
+  import { normalizarTelefono } from '../servicios/sesion.js';
+  import { ponerError, quitarError } from '../servicios/formulario.js';
   import { soles, porcentaje, filasPrecio, fechaDe, horaDe, instante, nombreDia, diaMes, duracionReserva, pintarPartidas, esFecha, inicioValido, duracionValida } from '../servicios/formatos.js';
 
-  const RUTAS: Record<string, string> = { horario: '/reservar/', servicio: '/reservar/servicio/', confirmar: '/reservar/confirmar/' };
+  const RUTAS: Record<string, string> = { horario: '/reservar/', servicio: '/reservar/servicio/', cuenta: '/reservar/cuenta/', confirmar: '/reservar/confirmar/' };
+  const ERROR_TERMINOS = 'Marca la casilla para aceptar los términos; sin ella no podemos activar tus reservas.';
+  const ERROR_CONDICIONES = 'Marca la casilla para aceptar las condiciones; sin ella no podemos registrar tu reserva.';
   const DESCRIPCION: Record<string, string> = {
     grabacion: 'Graba voces, instrumentos o tu banda en vivo.',
     ensayo: 'Ensaya en sala. Disponible si ya tienes una sesión confirmada con nosotros.',
@@ -253,12 +320,19 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
     temporizador: any = null;
     ultimoAnuncio = '';
     enviando = false;
+    condVersion: string | null = null;
+    perfil: any = null;
+    bloques: any[] = [];
 
     async connectedCallback() {
       this.paso = this.getAttribute('paso')!;
       this.leerUrl();
       if (!(await this.guardar())) return;
       this.addEventListener('click', (ev) => this.alPulsar(ev));
+      this.addEventListener('submit', (ev) => {
+        ev.preventDefault();
+        this.guardarCuenta();
+      });
       this.addEventListener('change', (ev) => this.alCambiar(ev));
       this.addEventListener('calendario-inicio', (ev) => this.alElegirInicio((ev as CustomEvent).detail));
       this.q('[data-cuerpo]')!.hidden = false;
@@ -266,14 +340,15 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
       if (lateral) lateral.hidden = false;
       this.enlazarPasos();
       this.bienvenida();
-      this.q('.res-acciones [data-anterior]')?.setAttribute('href', this.url(this.paso === 'confirmar' ? 'servicio' : 'horario'));
+      this.q('.res-acciones [data-anterior]')?.setAttribute('href', this.url(this.paso === 'confirmar' || this.paso === 'cuenta' ? 'servicio' : 'horario'));
       // Salas para el nombre del resumen (el calendario trae las suyas); un fallo no bloquea el paso.
       this.salas = await listarSalas().catch(() => []);
       if (this.paso === 'horario') this.iniciarHorario();
       else if (this.paso === 'listo') await this.iniciarListo();
+      else if (this.paso === 'cuenta') await this.iniciarCuenta();
       else await this.cargarCatalogo();
       this.resumen();
-      if (this.paso === 'listo' || this.paso === 'horario') this.titulo().focus();
+      if (this.paso === 'listo' || this.paso === 'horario' || this.paso === 'cuenta') this.titulo().focus();
     }
 
     disconnectedCallback() {
@@ -311,7 +386,7 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
         id: id(p.get('id')),
       };
     }
-    url(paso: string, extra: Record<string, string | null> = {}) {
+    url(paso: string, extra: Record<string, string | null> = {}, aviso?: string) {
       const e = { ...this.e, ...extra };
       const p = new URLSearchParams();
       if (e.inicio) p.set('inicio', e.inicio);
@@ -321,20 +396,29 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
       if (e.esp?.length) p.set('esp', e.esp.join(','));
       if (e.fecha) p.set('fecha', e.fecha);
       if (e.vista) p.set('vista', e.vista);
+      if (aviso) p.set('aviso', aviso);
       const consulta = p.toString();
       return `${RUTAS[paso]}${consulta ? `?${consulta}` : ''}`;
     }
     // Si a un paso le falta un dato de uno anterior, va al primer paso incompleto.
     async guardar() {
       const { inicio, duracion, servicio, id } = this.e;
-      const falta = this.paso === 'listo' ? !id : this.paso === 'servicio' ? !inicio || !duracion : this.paso === 'confirmar' ? !inicio || !duracion || !servicio : false;
+      const falta = this.paso === 'listo' ? !id : this.paso === 'servicio' ? !inicio || !duracion : this.paso === 'confirmar' || this.paso === 'cuenta' ? !inicio || !duracion || !servicio : false;
       if (falta) {
-        location.replace(this.paso === 'confirmar' && inicio && duracion ? this.url('servicio') : this.paso === 'listo' ? '/reservar/' : this.url('horario'));
+        location.replace((this.paso === 'confirmar' || this.paso === 'cuenta') && inicio && duracion ? this.url('servicio') : this.paso === 'listo' ? '/reservar/' : this.url('horario'));
         return false;
       }
-      if (this.paso === 'confirmar' && !(await obtenerToken())) {
-        location.replace(this.rutaAcceso('confirmar'));
+      if ((this.paso === 'confirmar' || this.paso === 'cuenta') && !(await obtenerToken())) {
+        location.replace(this.rutaAcceso(this.paso));
         return false;
+      }
+      // Faltan datos, textos o es menor: se completa en el paso 03 con la misma eleccion. Si el perfil no responde, decide el servidor al confirmar.
+      if (this.paso === 'confirmar') {
+        const perfil = await obtenerPerfil().catch(() => null);
+        if (perfil && faltaParaReservar(perfil)) {
+          location.replace(this.url('cuenta'));
+          return false;
+        }
       }
       return true;
     }
@@ -347,15 +431,15 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
 
     // --- Avisos, foco y región viva ---
 
-    aviso(mensaje: string, enlace?: { etiqueta: string; href: string }, enfocar?: HTMLElement | null) {
-      const nodo = this.plantilla('aviso');
+    aviso(mensaje: string, enlace?: { etiqueta: string; href: string }, enfocar?: HTMLElement | null, informativo = false) {
+      const nodo = this.plantilla(informativo ? 'aviso-info' : 'aviso');
       const caja = nodo.querySelector<HTMLElement>('.aviso')!;
       caja.querySelector('.aviso-titulo')!.textContent = mensaje;
-      const accion = caja.querySelector<HTMLAnchorElement>('.aviso-accion')!;
-      if (enlace) {
+      const accion = caja.querySelector<HTMLAnchorElement>('.aviso-accion');
+      if (enlace && accion) {
         accion.textContent = enlace.etiqueta;
         accion.href = enlace.href;
-      } else accion.remove();
+      } else accion?.remove();
       this.q('[data-avisos]')!.replaceChildren(nodo);
       caja.tabIndex = -1;
       (enfocar ?? caja).focus();
@@ -445,6 +529,8 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
       if (o.closest('[data-confirmar]')) return void this.confirmar();
       if (o.closest('[data-reintentar-catalogo]')) return void this.cargarCatalogo();
       if (o.closest('[data-reintentar-precio]')) return void this.calcular();
+      if (o.closest('[data-reintentar-condiciones]')) return void this.cargarCondiciones();
+      if (o.closest('[data-reintentar-textos]')) return void this.reintentarCuenta();
       const casilla = o.closest<HTMLInputElement>('input[aria-disabled="true"]');
       if (casilla) ev.preventDefault(); // el especialista incluido no se quita
       const anterior = o.closest('[data-anterior]');
@@ -536,7 +622,10 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
         this.pintarServicios();
         this.pintarEspecialistas();
       }
-      if (this.paso === 'confirmar') this.q('[data-confirmar]')!.setAttribute('disabled', '');
+      if (this.paso === 'confirmar') {
+        this.q('[data-confirmar]')!.setAttribute('disabled', '');
+        this.cargarCondiciones();
+      }
       this.resumen();
       if (this.e.servicio) this.calcular();
       else this.pintarPrecio('vacio');
@@ -615,7 +704,7 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
       else salida.replaceChildren(this.errorPrecio(error));
       const confirmar = this.q('[data-confirmar]');
       if (confirmar && !this.enviando) {
-        (confirmar as HTMLButtonElement).disabled = estado !== 'ok';
+        this.actualizarConfirmar();
         this.q('[data-motivo]')!.hidden = estado !== 'error';
       }
       if (estado !== 'calculando') this.resumen();
@@ -678,7 +767,10 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
     // --- 04 Confirmar ---
 
     async confirmar() {
-      if (this.enviando || this.simEstado !== 'ok') return;
+      if (this.enviando || this.simEstado !== 'ok' || !this.condVersion) return;
+      const marca = this.q<HTMLInputElement>('[data-condiciones] input[type="checkbox"]')!;
+      errorResumen(this.q('[data-condiciones] .resumen-legal')!, marca.checked ? '' : ERROR_CONDICIONES);
+      if (!marca.checked) return marca.focus();
       this.enviando = true;
       this.sinAviso();
       const boton = this.q<HTMLButtonElement>('[data-confirmar]')!;
@@ -698,19 +790,20 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
           fin: sumar(inicio, duracion),
           especialistas: esp,
           ...(detalle && { detalle }),
+          version_condiciones: this.condVersion,
         });
         location.href = `/reservar/listo/?${new URLSearchParams({ id: reserva.id })}`;
         return;
       } catch (error) {
-        this.fallaAlConfirmar(error);
+        await this.fallaAlConfirmar(error);
       }
       this.enviando = false;
-      boton.disabled = false;
+      this.actualizarConfirmar();
       boton.removeAttribute('aria-busy');
       boton.textContent = texto;
       anterior.removeAttribute('aria-disabled');
     }
-    fallaAlConfirmar(error: unknown) {
+    async fallaAlConfirmar(error: unknown) {
       const codigo = error instanceof ErrorApi ? error.codigo : '';
       const estado = error instanceof ErrorApi ? error.estado : -1;
       const horario = this.enlaceHorario();
@@ -721,6 +814,20 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
         anticipacion_excesiva: 'Ese horario aún no se puede reservar: está demasiado lejos.',
         duracion_invalida: 'La duración va de 30 min a 8 h, en bloques de 30 min.',
       };
+      // Orden del contrato: reaceptacion_requerida, perfil_incompleto, autorizacion_menor_pendiente, texto_desactualizado.
+      if (estado === 409 && codigo === 'reaceptacion_requerida') return void location.assign(`/acceso/textos?${new URLSearchParams({ volver: this.url('confirmar') })}`);
+      if (estado === 409 && codigo === 'perfil_incompleto') return void location.assign(this.url('cuenta', {}, 'faltan-datos'));
+      if (estado === 409 && codigo === 'autorizacion_menor_pendiente') return void location.assign(this.url('cuenta', {}, 'menor'));
+      if (estado === 409 && codigo === 'texto_desactualizado') {
+        const version = (error as ErrorApi).detalles?.vigente?.version;
+        await this.cargarCondiciones(`Las condiciones cambiaron. Lee la versión ${version ?? 'nueva'} y vuelve a marcar la casilla.`);
+        const caja = this.q('[data-condiciones] [data-aviso]:not([hidden]) .aviso');
+        if (caja) {
+          caja.tabIndex = -1;
+          caja.focus();
+        }
+        return;
+      }
       if (estado === 409 && codigo === 'tramo_no_disponible') {
         this.revisar('horario');
         return this.aviso('Alguien reservó ese horario hace un momento. Elige otro; lo demás se conserva.', horario);
@@ -746,6 +853,215 @@ const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestra
       if (estado === 503) return this.aviso('El servicio no responde. Tu reserva no se guardó; inténtalo en unos minutos.');
       if (estado === 0) return this.aviso('Sin conexión. Tu reserva no se guardó; revisa tu red.');
       this.aviso('Algo salió mal. Revisa en Mis reservas si se guardó antes de repetir.');
+    }
+
+    // --- Condiciones (paso 04) ---
+
+    actualizarConfirmar() {
+      const confirmar = this.q<HTMLButtonElement>('[data-confirmar]');
+      if (confirmar) confirmar.disabled = this.simEstado !== 'ok' || !this.condVersion;
+    }
+    async cargarCondiciones(aviso?: string) {
+      const caja = this.q('[data-condiciones]')!;
+      const motivo = this.q('[data-motivo-condiciones]')!;
+      this.condVersion = null;
+      this.actualizarConfirmar();
+      try {
+        const lista = await listarTextosLegales();
+        const bloque = Array.isArray(lista) ? bloqueReserva(lista) : null;
+        if (!bloque) throw new Error('sin condiciones');
+        const raiz = resumenLegal(this, { titulo: bloque.titulo, resumenes: bloque.resumenes, enlaces: bloque.enlaces, casillas: [bloque.casilla] });
+        if (aviso) avisoResumen(raiz, aviso);
+        caja.replaceChildren(raiz);
+        this.condVersion = bloque.version;
+        motivo.hidden = true;
+      } catch {
+        caja.replaceChildren(this.plantilla('texto-error'));
+        caja.querySelector('[data-reintentar-textos]')?.setAttribute('data-reintentar-condiciones', '');
+        motivo.hidden = false;
+      }
+      this.actualizarConfirmar();
+    }
+
+    // --- 03 Completa tus datos ---
+
+    async mostrarMenor() {
+      this.q('[data-formulario-cuenta]')!.hidden = true;
+      const nodo = this.plantilla('menor');
+      this.q('[data-cuenta-estado]')!.replaceChildren(nodo);
+      const caja = this.q<HTMLElement>('[data-cuenta-estado] .aviso')!;
+      const contacto = await obtenerContacto().then((c: any) => c?.texto ?? null, () => null);
+      const p = this.q<HTMLElement>('[data-cuenta-estado] [data-contacto]');
+      if (contacto && p) {
+        p.textContent = contacto;
+        p.hidden = false;
+      }
+      return caja;
+    }
+    async iniciarCuenta() {
+      const estado = this.q('[data-cuenta-estado]')!;
+      const url = new URL(location.href);
+      const clave = url.searchParams.get('aviso');
+      if (clave) {
+        url.searchParams.delete('aviso');
+        history.replaceState(null, '', url);
+      }
+      estado.replaceChildren(this.plantilla('cargando'));
+      let perfil: any, lista: any[] | null;
+      try {
+        [perfil, lista] = await Promise.all([obtenerPerfil(), listarTextosLegales().catch(() => null)]);
+      } catch (error) {
+        if (error instanceof ErrorApi && error.estado === 401) return void location.replace(this.rutaAcceso('cuenta'));
+        const nodo = this.plantilla('texto-error');
+        nodo.querySelector('.aviso-titulo')!.textContent = 'No pudimos cargar tus datos.';
+        estado.replaceChildren(nodo);
+        return;
+      }
+      this.perfil = perfil;
+      void this.cargarResumenLateral();
+      estado.replaceChildren();
+      if (perfil.es_menor || clave === 'menor') return void (await this.mostrarMenor());
+      const pendientes = pendientesDe(perfil, 'registro').map((p: any) => p.tipo);
+      const falta: Record<string, boolean> = { nombre: !perfil.nombre, documento: !perfil.documento, telefono: !perfil.telefono };
+      if (!pendientes.length && !Object.values(falta).some(Boolean)) {
+        if (perfil.datos_para_reservar !== false) return void location.replace(this.url('confirmar'));
+        for (const c of Object.keys(falta)) falta[c] = true; // el servidor dice que falta algo que no vemos: se piden los tres
+      }
+      if (clave === 'faltan-datos') this.aviso('Antes de confirmar necesitamos tus datos.', undefined, null, true);
+      else if (clave === 'textos-pendientes') this.aviso('Antes de confirmar necesitamos que aceptes los términos actualizados.', undefined, null, true);
+      for (const [campo, visible] of Object.entries(falta)) if (!visible) this.q(`[data-fila-${campo}]`)!.remove();
+      const nombre = this.q<HTMLInputElement>('[name="nombre"]');
+      if (nombre) nombre.value = perfil.nombre ?? '';
+      const telefono = this.q<HTMLInputElement>('[name="telefono"]');
+      if (telefono) telefono.value = perfil.telefono ?? '';
+      this.q('[data-d1]')!.hidden = false;
+      this.pendientesTipos = pendientes;
+      if (pendientes.length) {
+        this.q('[data-d2]')!.hidden = false;
+        this.pintarTextos(lista);
+      } else this.q('[data-d2]')!.remove();
+      this.q('[data-formulario-cuenta]')!.hidden = false;
+    }
+    pendientesTipos: string[] = [];
+    // Reintentar: si el formulario ya esta, solo los textos; si no, todo el paso.
+    async reintentarCuenta() {
+      if (this.q('[data-formulario-cuenta]')!.hidden) return this.iniciarCuenta();
+      this.pintarTextos(await listarTextosLegales().catch(() => null));
+    }
+    pintarTextos(lista: any[] | null, avisos: Record<string, string> = {}) {
+      const caja = this.q('[data-d2] [data-bloques]')!;
+      const guardar = this.q<HTMLButtonElement>('[data-guardar-cuenta]')!;
+      const motivo = this.q('[data-motivo-textos]')!;
+      this.bloques = Array.isArray(lista) ? bloquesRegistro(lista, this.pendientesTipos) : [];
+      if (!this.bloques.length) {
+        caja.replaceChildren(this.plantilla('texto-error'));
+        guardar.disabled = true;
+        motivo.hidden = false;
+        return;
+      }
+      guardar.disabled = false;
+      motivo.hidden = true;
+      caja.replaceChildren(
+        ...this.bloques.map((b) => {
+          const raiz = resumenLegal(this, { titulo: b.titulo, resumenes: b.resumenes, enlaces: b.enlaces, casillas: [b.casilla] });
+          raiz.dataset.clave = b.clave;
+          if (avisos[b.clave]) avisoResumen(raiz, avisos[b.clave]);
+          return raiz;
+        }),
+      );
+    }
+    // El resumen persistente del lateral: solo nombres, sin precio (el paso 04 lo calcula).
+    async cargarResumenLateral() {
+      if (!this.servicios.length) {
+        const [servicios, especialistas] = await Promise.all([listarServicios().catch(() => []), listarEspecialistas().catch(() => [])]);
+        this.servicios = servicios.filter((s: any) => s.ocupa_sala && s.activo);
+        this.especialistas = especialistas.filter((x: any) => x.activo);
+      }
+      this.resumen();
+    }
+    async guardarCuenta() {
+      if (this.enviando) return;
+      this.sinAviso();
+      const form = this.q<HTMLFormElement>('[data-formulario-cuenta]')!;
+      const campo = (n: string) => form.querySelector<HTMLInputElement>(`[name="${n}"]`);
+      form.querySelectorAll('[aria-invalid="true"]').forEach((e) => {
+        if (e.closest('.resumen-legal')) errorResumen(e.closest('.resumen-legal') as HTMLElement, '');
+        else quitarError(e as HTMLInputElement);
+      });
+      const boton = this.q<HTMLButtonElement>('[data-guardar-cuenta]')!;
+      const cambios: Record<string, unknown> = {};
+      if (campo('es_menor')!.checked) cambios.es_menor = true;
+      else {
+        const fallos: [HTMLElement, string][] = [];
+        const nombre = campo('nombre');
+        if (nombre) {
+          if (!nombre.value.trim()) fallos.push([nombre, 'Escribe tu nombre.']);
+          else cambios.nombre = nombre.value.trim();
+        }
+        const tipo = campo('tipo_documento');
+        if (tipo) {
+          const r = validarDocumento(tipo.value, campo('numero_documento')!.value) as any;
+          if (r.tipo) fallos.push([tipo, r.tipo]);
+          if (r.numero) fallos.push([campo('numero_documento')!, r.numero]);
+          if (r.valor) cambios.documento = r.valor;
+        }
+        const telefono = campo('telefono');
+        if (telefono) {
+          const numero = telefono.value.trim() ? normalizarTelefono(telefono.value) : null;
+          if (!telefono.value.trim()) fallos.push([telefono, 'Escribe tu teléfono; lo necesitas para reservar.']);
+          else if (!numero) fallos.push([telefono, 'Escribe entre 9 y 15 dígitos; puedes empezar con +.']);
+          else cambios.telefono = numero;
+        }
+        for (const [entrada, texto] of fallos) ponerError(this, entrada as HTMLInputElement, texto);
+        const sinMarcar = this.bloques.filter((b) => !form.querySelector<HTMLInputElement>(`[data-clave="${b.clave}"] input`)!.checked);
+        for (const b of sinMarcar) errorResumen(form.querySelector(`[data-clave="${b.clave}"]`)!, b.clave === 'terminos' ? ERROR_TERMINOS : 'Marca la casilla para registrar la agrupación.');
+        const primero = fallos[0]?.[0] ?? (sinMarcar[0] && form.querySelector<HTMLElement>(`[data-clave="${sinMarcar[0].clave}"] input`));
+        if (primero) return primero.focus();
+      }
+      this.enviando = true;
+      boton.disabled = true;
+      boton.setAttribute('aria-busy', 'true');
+      const etiqueta = boton.textContent;
+      boton.textContent = 'Guardando…';
+      try {
+        if (Object.keys(cambios).length) this.perfil = await actualizarPerfil(cambios);
+        if (this.perfil?.es_menor && cambios.es_menor) {
+          const caja = await this.mostrarMenor();
+          caja.tabIndex = -1;
+          caja.focus();
+          return;
+        }
+        if (this.bloques.length && this.pendientesTipos.length) await aceptar('registro', this.bloques.flatMap((b) => b.textos));
+        location.assign(this.url('confirmar'));
+        return;
+      } catch (error) {
+        await this.fallaAlGuardarCuenta(error);
+      } finally {
+        this.enviando = false;
+        boton.disabled = this.pendientesTipos.length > 0 && this.bloques.length === 0;
+        boton.removeAttribute('aria-busy');
+        boton.textContent = etiqueta;
+      }
+    }
+    async fallaAlGuardarCuenta(error: unknown) {
+      const e = error instanceof ErrorApi ? error : null;
+      if (e?.estado === 409 && e.codigo === 'texto_desactualizado') {
+        const lista = await listarTextosLegales().catch(() => null);
+        const v = e.detalles?.vigente?.version;
+        this.pintarTextos(lista, Object.fromEntries(this.bloques.map((b) => [b.clave, `Las condiciones cambiaron. Lee la versión ${v ?? 'nueva'} y vuelve a marcar la casilla.`])));
+        const caja = this.q('[data-d2] [data-aviso]:not([hidden]) .aviso');
+        if (caja) {
+          caja.tabIndex = -1;
+          caja.focus();
+        }
+        return;
+      }
+      const enlace = { etiqueta: 'Iniciar sesión', href: `/acceso?${new URLSearchParams({ volver: this.url('cuenta') })}` };
+      if (e?.estado === 401) return this.aviso('Tu sesión caducó. Inicia sesión para continuar; tus datos se conservan.', enlace);
+      if (e?.estado === 422) return this.aviso(e.mensaje || 'Revisa tus datos.');
+      if (e?.estado === 503) return this.aviso('El servicio no responde. No se guardó nada; inténtalo en unos minutos.');
+      if (e?.estado === 0) return this.aviso('Sin conexión. No se guardó nada; revisa tu red.');
+      this.aviso('Algo salió mal. Inténtalo de nuevo.');
     }
 
     // --- 05 Listo ---

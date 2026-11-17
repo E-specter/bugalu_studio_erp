@@ -1,0 +1,232 @@
+---
+// <bugalu-aceptacion>: aceptar los textos del registro (spec RF-17-registro-y-aceptaciones). Lee el perfil y los textos vigentes por la API.
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.astro';
+import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLegal.astro';
+---
+
+<!-- Un bloque por estado (estados-sistema): la isla clona el que toca. Sin JS, el noscript oculta la carga y lo dice. -->
+<bugalu-aceptacion class="aceptacion">
+  <p class="aceptacion-descripcion" data-descripcion>Lee el resumen y acepta los términos para reservar con nosotros.</p>
+  <div data-avisos></div>
+  <div data-salida><p class="aceptacion-cargando" aria-busy="true">Cargando…</p></div>
+
+  <PlantillasFormulario />
+  <PlantillasResumenLegal />
+
+  <template data-estado="cargando"><p class="aceptacion-cargando" aria-busy="true">Cargando…</p></template>
+  <template data-estado="error-perfil">
+    <Aviso variante="error" titulo="No pudimos cargar tus datos." texto="Inténtalo de nuevo.">
+      <div class="aceptacion-reintentar"><Boton variante="secundario" data-reintentar>Reintentar</Boton></div>
+    </Aviso>
+  </template>
+  <template data-estado="error-textos">
+    <Aviso variante="error" titulo="No pudimos cargar los textos." texto="Revisa tu conexión e inténtalo de nuevo.">
+      <div class="aceptacion-reintentar"><Boton variante="secundario" data-reintentar>Reintentar</Boton></div>
+    </Aviso>
+  </template>
+  <template data-estado="formulario">
+    <form novalidate class="aceptacion-formulario" data-formulario>
+      <div class="aceptacion-bloques" data-bloques></div>
+      <p class="aceptacion-motivo" data-motivo hidden>Necesitamos mostrarte las condiciones antes de continuar.</p>
+      <div class="aceptacion-acciones">
+        <Boton tipo="submit" tamano="grande" data-aceptar>Aceptar y continuar</Boton>
+        <Boton variante="secundario" tamano="grande" data-ahora-no>Ahora no</Boton>
+      </div>
+    </form>
+  </template>
+  <noscript>
+    <style is:inline>bugalu-aceptacion [data-salida] { display: none; }</style>
+    <Aviso variante="error" titulo="Esta página necesita JavaScript" texto="Actívalo en tu navegador y recarga la página para aceptar los textos." />
+  </noscript>
+</bugalu-aceptacion>
+
+<script>
+  // @ts-nocheck
+  import { obtenerPerfil } from '../servicios/api.js';
+  import { obtenerToken, rutaPropia } from '../servicios/sesion.js';
+  import { listarTextosLegales } from '../servicios/textos-legales.js';
+  import { aceptar, pendientesDe, bloquesRegistro } from '../servicios/aceptaciones.js';
+  import { resumenLegal, errorResumen, avisoResumen } from '../servicios/resumen-legal.js';
+  import { mostrarAviso, enfocarAviso, limpiarAvisos } from '../servicios/formulario.js';
+
+  const ERROR_CASILLA = {
+    terminos: 'Marca la casilla para aceptar los términos; sin ella no podemos activar tus reservas.',
+    declaracion: 'Marca la casilla para registrar la agrupación.',
+  };
+
+  class BugaluAceptacion extends HTMLElement {
+    volver = '/app/';
+    pendientes = [];
+    bloques = [];
+    enviando = false;
+
+    async connectedCallback() {
+      this.volver = rutaPropia(new URLSearchParams(location.search).get('volver')) ?? '/app/';
+      this.addEventListener('click', (e) => {
+        if (e.target.closest('[data-reintentar]')) this.cargar(true);
+        if (e.target.closest('[data-ahora-no]')) location.assign(this.volver);
+      });
+      this.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.aceptar();
+      });
+      this.cargar();
+    }
+
+    plantilla(nombre) {
+      return this.querySelector(`template[data-estado="${nombre}"]`).content.cloneNode(true);
+    }
+    mostrar(estado) {
+      this.querySelector('[data-salida]').replaceChildren(this.plantilla(estado));
+    }
+    enfocarTitulo() {
+      const h1 = document.querySelector('h1');
+      h1.tabIndex = -1;
+      h1.focus();
+    }
+    alAcceso() {
+      location.replace(`/acceso?${new URLSearchParams({ volver: location.pathname + location.search })}`);
+    }
+
+    async cargar(reintento = false) {
+      limpiarAvisos(this);
+      if (!(await obtenerToken())) return this.alAcceso();
+      this.mostrar('cargando');
+      let perfil;
+      try {
+        perfil = await obtenerPerfil();
+      } catch (error) {
+        if (error.estado === 401) return this.alAcceso();
+        return this.mostrar('error-perfil');
+      }
+      this.pendientes = pendientesDe(perfil, 'registro');
+      if (!this.pendientes.length) return location.replace(this.volver);
+      this.mostrar('formulario');
+      const actualizacion = this.pendientes.some((p) => p.motivo === 'actualizado');
+      document.querySelector('h1').textContent = actualizacion ? 'Términos actualizados' : 'Antes de empezar';
+      this.querySelector('[data-descripcion]').textContent = actualizacion
+        ? 'Cambiamos los términos de uso. Para hacer reservas nuevas, léelos y acéptalos. Tus reservas actuales siguen con las condiciones que aceptaste.'
+        : 'Lee el resumen y acepta los términos para reservar con nosotros.';
+      await this.cargarTextos();
+      if (!reintento) this.enfocarTitulo();
+    }
+
+    // `aviso`: {clave: texto} para los bloques que cambiaron de version.
+    async cargarTextos(avisos = {}) {
+      const bloques = this.querySelector('[data-bloques]');
+      const aceptarBoton = this.querySelector('[data-aceptar]');
+      const motivo = this.querySelector('[data-motivo]');
+      try {
+        const lista = await listarTextosLegales();
+        if (!Array.isArray(lista)) throw new Error('no es una lista');
+        this.bloques = bloquesRegistro(lista, this.pendientes.map((p) => p.tipo));
+        if (!this.bloques.length) throw new Error('sin textos');
+      } catch {
+        this.bloques = [];
+        bloques.replaceChildren(this.plantilla('error-textos'));
+        aceptarBoton.disabled = true;
+        motivo.hidden = false;
+        return;
+      }
+      aceptarBoton.disabled = false;
+      motivo.hidden = true;
+      bloques.replaceChildren(
+        ...this.bloques.map((b) => {
+          const raiz = resumenLegal(this, { titulo: b.titulo, resumenes: b.resumenes, enlaces: b.enlaces, casillas: [b.casilla] });
+          raiz.dataset.clave = b.clave;
+          if (avisos[b.clave]) avisoResumen(raiz, avisos[b.clave]);
+          return raiz;
+        }),
+      );
+    }
+
+    async aceptar() {
+      if (this.enviando) return;
+      limpiarAvisos(this);
+      const faltan = this.bloques.filter((b) => !this.querySelector(`[data-clave="${b.clave}"] input`).checked);
+      for (const b of this.bloques) errorResumen(this.querySelector(`[data-clave="${b.clave}"]`), faltan.includes(b) ? ERROR_CASILLA[b.clave] : '');
+      if (faltan.length) return this.querySelector(`[data-clave="${faltan[0].clave}"] input`).focus();
+      this.enviando = true;
+      const boton = this.querySelector('[data-aceptar]');
+      boton.disabled = true;
+      boton.setAttribute('aria-busy', 'true');
+      boton.textContent = 'Guardando…';
+      try {
+        await aceptar('registro', this.bloques.flatMap((b) => b.textos));
+        const destino = new URL(this.volver, location.origin);
+        if (destino.pathname.startsWith('/app')) destino.searchParams.set('aviso', 'textos-aceptados');
+        return location.assign(destino.pathname + destino.search + destino.hash);
+      } catch (error) {
+        await this.fallo(error);
+      }
+      this.enviando = false;
+      boton.disabled = this.bloques.length === 0;
+      boton.removeAttribute('aria-busy');
+      boton.textContent = 'Aceptar y continuar';
+    }
+
+    async fallo(error) {
+      if (error.estado === 409 && error.codigo === 'texto_desactualizado') {
+        const version = error.detalles?.vigente?.version;
+        await this.cargarTextos(Object.fromEntries(this.bloques.map((b) => [b.clave, `Las condiciones cambiaron. Lee la versión ${version ?? 'nueva'} y vuelve a marcar la casilla.`])));
+        const aviso = this.querySelector('[data-aviso]:not([hidden]) .aviso');
+        if (aviso) {
+          aviso.tabIndex = -1;
+          aviso.focus();
+        }
+        return;
+      }
+      const [variante, titulo, texto] =
+        error.estado === 401 ? ['aviso', 'Tu sesión caducó', 'Inicia sesión y vuelve a aceptar.']
+        : error.estado === 503 ? ['error', 'El servicio no responde', 'No se guardó nada. Inténtalo en unos minutos.']
+        : error.estado === 0 ? ['error', 'Sin conexión', 'No se guardó nada. Revisa tu red.']
+        : ['error', 'Algo salió mal', 'Inténtalo de nuevo.'];
+      enfocarAviso(mostrarAviso(this, variante, titulo, texto, error.estado === 401 ? { enlace: { texto: 'Ir al acceso', href: `/acceso?${new URLSearchParams({ volver: location.pathname + location.search })}` } } : {}));
+    }
+  }
+  if (!customElements.get('bugalu-aceptacion')) customElements.define('bugalu-aceptacion', BugaluAceptacion);
+</script>
+
+<style>
+  .aceptacion {
+    display: grid;
+    gap: var(--espacio-4);
+    inline-size: 100%;
+  }
+  .aceptacion-descripcion,
+  .aceptacion-motivo {
+    margin: 0;
+    color: var(--color-texto-cuerpo);
+    line-height: var(--fuente-interlineado-lectura);
+  }
+  .aceptacion-motivo {
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+  }
+  .aceptacion-cargando {
+    margin: 0;
+    color: var(--color-texto-secundario);
+  }
+  .aceptacion-formulario,
+  .aceptacion-bloques {
+    display: grid;
+    gap: var(--espacio-5);
+  }
+  .aceptacion-bloques :global(.resumen-legal + .resumen-legal) {
+    padding-block-start: var(--espacio-5);
+    border-block-start: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+  }
+  /* Aceptar y rechazar: mismo tamano, a ancho completo y apilados (CA-13). */
+  .aceptacion-acciones {
+    display: grid;
+    gap: var(--espacio-3);
+  }
+  .aceptacion-acciones :global(.boton) {
+    inline-size: 100%;
+  }
+  .aceptacion-reintentar {
+    margin-block-start: var(--espacio-2);
+  }
+</style>

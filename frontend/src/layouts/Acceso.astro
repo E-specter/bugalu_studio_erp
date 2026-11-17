@@ -4,6 +4,7 @@ import LayoutBase from './LayoutBase.astro';
 import LogoApilado from '../assets/logo-apilado.svg';
 import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
 import MarcoRegistro from '../componentes/MarcoRegistro.astro';
+import PiePublico from '../componentes/PiePublico.astro';
 
 interface Marca {
   codigo: string;
@@ -55,14 +56,15 @@ const variantes = [{ id: 'artistas', marca, pie, oculta: false }, ...(alterna ? 
         <h1>{titulo}</h1>
         <slot />
       </main>
-      <footer class="acceso-pie">
+      <div class="acceso-pie">
+        <PiePublico variante="acceso" />
         {variantes.map((v) => (
           <p data-marca={v.id} hidden={v.oculta}>
             <span>{v.pie.texto}</span>
             {v.pie.enlace && <> · <a href={v.pie.enlace.href}>{v.pie.enlace.texto}</a></>}
           </p>
         ))}
-      </footer>
+      </div>
     </div>
   </div>
 </LayoutBase>

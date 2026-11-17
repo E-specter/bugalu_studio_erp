@@ -37,7 +37,7 @@ test.describe('edicion (punto 1)', () => {
     await expect(lista).toContainText('VERIFICADO');
     await expect(lista).toContainText('Cliente');
     await expect(ver(page, 'El rol y la especialidad los asigna el Administrador.')).toBeVisible();
-    await expect(page.getByRole('heading', { level: 2 })).toHaveText([/TUS DATOS|Tus datos/, /CUENTA|Cuenta/]);
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText([/TUS DATOS|Tus datos/, /IDENTIDAD|Identidad/, /DOMICILIO Y REDES|Domicilio y redes/, /CUENTA|Cuenta/]); // cliente: RF-17 suma A3 y A5
     await sinViolaciones(page);
     expect(consola).toEqual([]);
   });

@@ -9,6 +9,7 @@ import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
 import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
 import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
 import CargaArchivos from './CargaArchivos.astro';
+import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLegal.astro';
 
 const principal = { titulo: 'Registrar pago' };
 const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
@@ -22,6 +23,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
   <div data-salida><Panel {...principal} cargando /></div>
 
   <EstadosIsla principal={principal} />
+  <PlantillasResumenLegal />
 
   <template data-estado="no-encontrada">
     <Panel codigo="[404]" titulo="Cuota no encontrada"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a mis reservas', href: '/app/reservas/' }} /></Panel>
@@ -75,6 +77,8 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
             <CargaArchivos id="pago-captura" nombre="captura" etiqueta="Captura del comprobante" obligatorio ayuda="JPG, PNG o PDF, hasta 5 MB. Que se lean el monto, la fecha y el número de operación." />
           </div>
         </Panel>
+        <!-- RF-17: el resumen del pago va junto al boton, sin casilla (variante Lectura). -->
+        <div data-resumen-legal></div>
         <div class="pago-barra">
           <div class="pago-acciones">
             <Boton variante="secundario" href="#" data-volver>Volver a la reserva</Boton>
@@ -94,6 +98,9 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
   import { registrarPago, obtenerInstrucciones, obtenerContacto } from '../servicios/pagos.js';
   import { fechaDe, horaDe, diaMesAnio, soles, porcentaje, leerImporte, mostrarImporte } from '../servicios/formatos.js';
   import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, llenarAviso } from '../servicios/formulario.js';
+  import { listarTextosLegales } from '../servicios/textos-legales.js';
+  import { vigentesDe, vigenteDe, enlaceTexto } from '../servicios/aceptaciones.js';
+  import { resumenLegal } from '../servicios/resumen-legal.js';
 
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
@@ -250,6 +257,21 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
       this.querySelector('#pago-monto').value = mostrarImporte(c.monto);
       this.querySelector('[data-volver]').href = this.urlReserva();
       this.pintarMetodos(activos);
+      this.resumenPago();
+    }
+
+    // Resumen de lectura del pago (RF-17): es un extra, sin el se puede pagar igual.
+    async resumenPago() {
+      try {
+        const lista = await listarTextosLegales();
+        const texto = vigentesDe(lista, 'pago')[0];
+        const destino = vigenteDe(lista, 'condiciones_contratacion') ?? texto;
+        if (!texto) return;
+        const nombre = destino.tipo === 'condiciones_contratacion' ? 'las Condiciones de contratación' : 'la Política de privacidad';
+        this.querySelector('[data-resumen-legal]')?.replaceChildren(
+          resumenLegal(this, { variante: 'lectura', titulo: 'Registro de un pago', resumenes: [texto.resumenes.pago], enlaces: [{ etiqueta: `Leer ${nombre} (versión ${destino.version})`, href: enlaceTexto(destino.tipo, destino.version) }] }),
+        );
+      } catch {}
     }
 
     pintarMetodos(activos, marcado) {
