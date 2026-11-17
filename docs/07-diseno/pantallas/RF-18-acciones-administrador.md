@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-18-acciones-administrador
 titulo: Pantalla — Inasistencia, caso excepcional y cancelación por el estudio o a pedido del cliente
-estado: borrador
+estado: aprobado
 depende_de: [RF-18, ADR-015, pantalla-rf-18-cancelar, pantalla-rf-18-reprogramar, pantalla-rf-04-mis-reservas, pantalla-rf-03-calendario, diseno-brief, patron-formularios, patron-estados-sistema, comp-panel, comp-campo, comp-casilla, comp-boton, comp-barra-acciones, comp-aviso, comp-etiqueta-tecnica, comp-tabla]
 ---
 

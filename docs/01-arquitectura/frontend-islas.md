@@ -36,12 +36,13 @@ frontend/
 | Calendario de sala: reserva y agenda (`<bugalu-calendario>`) | [RF-02](../03-requerimientos/RF-02.md), [RF-03](../03-requerimientos/RF-03.md), [RF-04](../03-requerimientos/RF-04.md) |
 | Agenda de asesoría | [RF-15](../03-requerimientos/RF-15.md) |
 | Registro de pago con captura (`<bugalu-pago>`, `islas/Pago.astro`, [spec](../07-diseno/pantallas/RF-05-registrar-pago.md); suma el resumen legal de pago) | [RF-05](../03-requerimientos/RF-05.md), [RF-11](../03-requerimientos/RF-11.md), [RF-17](../03-requerimientos/RF-17.md) |
-| Pagos por validar, ficha del pago y datos para pagar del Administrador (`<bugalu-pagos vista="lista\|revisar\|datos">`, `islas/Pagos.astro`, [spec](../07-diseno/pantallas/RF-05-pagos.md)) | [RF-05](../03-requerimientos/RF-05.md) |
+| Pagos por validar, ficha del pago, datos para pagar y cola de devoluciones del Administrador (`<bugalu-pagos vista="lista\|revisar\|datos\|devoluciones\|devolucion">`, `islas/Pagos.astro`, [spec](../07-diseno/pantallas/RF-05-pagos.md), [devoluciones](../07-diseno/pantallas/RF-18-devoluciones.md)) | [RF-05](../03-requerimientos/RF-05.md), [RF-18](../03-requerimientos/RF-18.md) |
+| Mis créditos y pedir devolución; créditos de un cliente en su ficha (`<bugalu-creditos>`, `islas/Creditos.astro`, vistas `lista` y `ficha`, [spec](../07-diseno/pantallas/RF-18-creditos.md)) | [RF-18](../03-requerimientos/RF-18.md) |
 | Contraseña: mostrar u ocultar y medidor de robustez (`<bugalu-contrasena>`) | [RF-01](../03-requerimientos/RF-01.md) |
 | Acceso: iniciar sesión, registrarse, solicitar acceso interno, recuperar y restablecer (`<bugalu-acceso>`) | [RF-01](../03-requerimientos/RF-01.md) |
 | Estado de la solicitud de acceso interno (`<bugalu-solicitud>`) | [RF-01](../03-requerimientos/RF-01.md) |
 | Reserva por pasos (`<bugalu-reserva>`; paso `cuenta` y casilla de condiciones, [spec](../07-diseno/pantallas/RF-17-registro-y-aceptaciones.md)) | [RF-02](../03-requerimientos/RF-02.md), [RF-04](../03-requerimientos/RF-04.md), [RF-17](../03-requerimientos/RF-17.md) |
-| Mis reservas y agenda (`<bugalu-reservas>`) | [RF-04](../03-requerimientos/RF-04.md) |
+| Mis reservas, agenda y reprogramar con selector de horario y vista previa (`<bugalu-reservas>`, vista `reprogramar` en `islas/Reservas.astro`, [spec](../07-diseno/pantallas/RF-18-reprogramar.md)) | [RF-04](../03-requerimientos/RF-04.md), [RF-18](../03-requerimientos/RF-18.md) |
 | Publicación de franjas, cierres y parámetros (`<bugalu-franjas>`; los parámetros sensibles pasan por `<bugalu-cambio-sensible>`) | [RF-03](../03-requerimientos/RF-03.md), [RF-20](../03-requerimientos/RF-20.md) |
 | Tarifas, recargos, feriados e impuestos (`<bugalu-tarifas vista="…\|impuestos">`; los cambios sensibles pasan por `<bugalu-cambio-sensible>`) | [RF-02](../03-requerimientos/RF-02.md), [RF-20](../03-requerimientos/RF-20.md) |
 | Vista previa y confirmación escrita de un cambio sensible (`<bugalu-cambio-sensible>`, `islas/CambioSensible.astro`, la montan `<bugalu-tarifas>` y `<bugalu-franjas>`, [spec](../07-diseno/pantallas/RF-20-cambios-sensibles.md)) | [RF-20](../03-requerimientos/RF-20.md) |

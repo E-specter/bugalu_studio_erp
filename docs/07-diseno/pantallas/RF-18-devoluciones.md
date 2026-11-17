@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-18-devoluciones
 titulo: Pantalla — Cola de devoluciones (Administrador)
-estado: borrador
+estado: aprobado
 depende_de: [RF-18, ADR-015, pantalla-rf-05-pagos, pantalla-rf-18-creditos, diseno-brief, patron-tablas-y-tableros, patron-formularios, patron-estados-sistema, comp-tabla, comp-panel, comp-campo, comp-casilla, comp-barra-acciones, comp-indicador-estado, comp-aviso, comp-boton, comp-etiqueta-tecnica]
 ---
 

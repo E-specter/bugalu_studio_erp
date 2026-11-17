@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-18-creditos
 titulo: Pantalla — Mis créditos, pedir devolución y pagar con crédito
-estado: borrador
+estado: aprobado
 depende_de: [RF-18, ADR-015, pantalla-rf-04-mis-reservas, pantalla-rf-05-registrar-pago, pantalla-rf-01-solicitudes, diseno-brief, patron-tablas-y-tableros, patron-formularios, patron-estados-sistema, comp-tabla, comp-panel, comp-campo, comp-casilla, comp-barra-acciones, comp-aviso, comp-boton, comp-etiqueta-tecnica]
 ---
 

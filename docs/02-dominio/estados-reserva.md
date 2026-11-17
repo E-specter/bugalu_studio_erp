@@ -20,10 +20,14 @@ Pre-reservada ──(cuota al_reservar validada)──► Confirmada ──► E
 | Desde | Hacia | Condición |
 |---|---|---|
 | Pre-reservada | Confirmada | El Administrador valida la cuota `al_reservar` ([RN-03](reglas-negocio.md)) |
-| Pre-reservada | Cancelada | El cliente la cancela sin pagos (RN-20), el Administrador la cancela, o caduca sin pago registrado (RN-18) |
+| Pre-reservada | Cancelada | El cliente la cancela sin costo si no tiene pagos registrados ([RN-20](reglas-negocio.md)), el Administrador la cancela, o caduca sin pago registrado ([RN-18](reglas-negocio.md)) |
+| Pre-reservada | No asistió | Llega a su fin con un pago en validación sin confirmar ([RN-23](reglas-negocio.md), [RF-18](../03-requerimientos/RF-18.md) CA-11) |
 | Confirmada | En curso | Automático al llegar el inicio ([RN-23](reglas-negocio.md)) |
-| Confirmada | Cancelada | Cancelación por el Administrador con nota del reembolso gestionado fuera del sistema (D-11, v1: [ADR-010](../00-proyecto/decisiones/ADR-010-pagos-estados-y-cancelacion.md)) |
+| Confirmada | Cancelada | Con pagos, por niveles según la anticipación: nivel 1 pasa lo pagado a crédito (devolución posible), nivel 2 retiene la penalización, nivel 3 retiene todo ([RN-20](reglas-negocio.md), [RF-18](../03-requerimientos/RF-18.md)); el Administrador puede cancelar por el estudio con nota, y el cliente elige reprogramar sin costo o devolución íntegra ([ADR-015](../00-proyecto/decisiones/ADR-015-cancelacion-conservacion-y-correcciones.md)) |
+| Confirmada | No asistió | El Administrador o el personal marca la inasistencia desde 15 min después del inicio hasta su fin; lo pagado se retiene y no hay crédito ([RN-20](reglas-negocio.md), [RF-18](../03-requerimientos/RF-18.md) CA-11) |
+| Cancelada (por el estudio) | Pre-reservada o Confirmada | Reprogramación sin costo tras una cancelación del estudio: vuelve a su estado anterior en el nuevo horario ([RF-18](../03-requerimientos/RF-18.md) CA-13) |
 | En curso | Finalizada | Automático al llegar el fin; si la cuota `al_terminar` sigue pendiente, se avisa del saldo ([RN-13](reglas-negocio.md), [RN-23](reglas-negocio.md)) |
+| En curso | No asistió | Marca de inasistencia del personal o del Administrador antes del fin (RF-18 CA-11) |
 
 ## Asesoría
 
@@ -47,6 +51,6 @@ Pendiente de validacion ──► Aprobado
             └─────────────► Rechazado (con motivo)
 ```
 
-Al aprobarse, la cuota queda pagada y la aprobación no se deshace (v1). Un rechazo deja la cuota pendiente y el cliente puede subir otro comprobante; mientras un comprobante está pendiente, la cuota no admite otro ([RN-04](reglas-negocio.md)). Una `Pre-reservada` con comprobante pendiente no caduca ni avanza ([RN-18](reglas-negocio.md), [RN-23](reglas-negocio.md)).
+Al aprobarse, la cuota queda pagada y la aprobación no se deshace (v1). Un rechazo deja la cuota pendiente y el cliente puede subir otro comprobante; mientras un comprobante está pendiente, la cuota no admite otro ([RN-04](reglas-negocio.md)). Una `Pre-reservada` con comprobante pendiente no caduca; si llega a su fin sin confirmarse, pasa a `No asistió` ([RN-18](reglas-negocio.md), [RN-23](reglas-negocio.md)).
 
 > **Pendiente de validar:** las transiciones de reserva salieron del informe y se ajustaron al flujo real (2026-11-15). Confirmar con el cliente antes de marcar este archivo como `aprobado`.

@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-18-reprogramar
 titulo: Pantalla — Reprogramar una reserva y elegir tras una cancelación del estudio
-estado: borrador
+estado: aprobado
 depende_de: [RF-18, ADR-015, pantalla-rf-18-cancelar, pantalla-rf-04-mis-reservas, pantalla-rf-04-reservar, pantalla-rf-03-calendario, diseno-brief, patron-formularios, patron-estados-sistema, comp-calendario, comp-panel, comp-tabla, comp-resumen-persistente, comp-barra-acciones, comp-aviso, comp-boton, comp-indicador-estado]
 ---
 

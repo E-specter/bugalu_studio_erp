@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-18-cancelar
 titulo: Pantalla — Detalle de la reserva con cancelación por niveles (cliente)
-estado: borrador
+estado: aprobado
 depende_de: [RF-18, ADR-015, legal-condiciones-de-contratacion, pantalla-rf-04-mis-reservas, diseno-brief, patron-formularios, patron-estados-sistema, comp-panel, comp-tabla, comp-boton, comp-barra-acciones, comp-aviso, comp-indicador-estado, comp-etiqueta-tecnica]
 ---
 
