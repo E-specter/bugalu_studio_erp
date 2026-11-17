@@ -107,3 +107,4 @@ Consecuencias en V4: "Al aprobar, la cuota queda pagada{, la reserva se confirma
 - **dev-backend:** orden de aprobados y rechazados (propuesta: `validado_en` descendente) y forma del 422 de `PUT /instrucciones-pago` (método activo sin texto, largo máximo del texto).
 - **dev-backend:** `GET /pagos/{id}/captura` no dice si es imagen o PDF; propuesta: añadir `tipo` (`imagen` | `pdf`). Sin él, la isla lo deduce de la extensión de la ruta firmada.
 - **Ampliada por RF-20:** V2 PAGO suma el desglose de IGV del pago ([cambios sensibles](RF-20-cambios-sensibles.md#desglose-de-igv)).
+- **Ampliada por RF-18:** acción "Devoluciones" y aviso de devoluciones por decidir o por hacer en la lista ([devoluciones](RF-18-devoluciones.md)).

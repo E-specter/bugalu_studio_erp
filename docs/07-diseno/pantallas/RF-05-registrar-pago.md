@@ -103,3 +103,4 @@ Permisos: solo el dueño; la API es la barrera (403). Un Administrador no regist
 
 - Ninguno. El contacto del estudio y los límites de `numero_operacion` los fija [RF-05](../../03-requerimientos/RF-05.md) (revisión visual de pagos, 2026-11-16).
 - **Ampliada por RF-17 y RF-20:** resumen legal de lectura antes de "Registrar pago" ([aceptaciones](RF-17-registro-y-aceptaciones.md#composición)) y "Incluye IGV" en el lateral ([cambios sensibles](RF-20-cambios-sensibles.md#desglose-de-igv)).
+- **Ampliada por RF-18:** panel `P0 CRÉDITO` con "Usar mi crédito" antes de P1 ([pago con crédito](RF-18-creditos.md#pago-con-crédito)).

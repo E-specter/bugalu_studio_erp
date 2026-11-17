@@ -73,8 +73,8 @@ El saldo se paga hasta 48 horas después de terminar la sesión. Mientras no lo 
 | Cuándo nos avisas | Si cancelas | Si reprogramas |
 |---|---|---|
 | Nivel 1: más de 48 horas antes | Todo lo pagado pasa a crédito. Puedes pedir la devolución en la plataforma, con su motivo; el Administrador la decide (total, parcial o rechazo con motivo) y el dinero se devuelve fuera de la plataforma | Sin costo, hasta 2 veces por reserva |
-| Nivel 2: entre 48 y 24 horas antes | Se retiene una penalización del 25 % del valor de la reserva, que el adelanto del 50 % siempre cubre; el resto de lo pagado pasa a crédito, sin devolución | Una sola vez, con la misma penalización del 25 % |
-| Nivel 3: menos de 24 horas antes | Se retiene todo lo pagado | No hay reprogramación gratuita |
+| Nivel 2: 48 horas antes o menos, y más de 24 | Se retiene una penalización del 25 % del valor de la reserva, que el adelanto del 50 % siempre cubre; el resto de lo pagado pasa a crédito, sin devolución | Una sola vez, con la misma penalización del 25 % |
+| Nivel 3: 24 horas antes o menos | Se retiene todo lo pagado | No hay reprogramación gratuita |
 | Inasistencia: no llegas dentro de los primeros 15 minutos | Se retiene lo pagado, sin crédito ni cobro adicional [verificar proporcionalidad] | No aplica |
 
 - **Reprogramaciones:** a un horario libre; hasta 2 veces por reserva en el nivel 1 y una sola en el nivel 2.
