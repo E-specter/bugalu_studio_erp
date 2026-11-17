@@ -17,7 +17,7 @@ import BarraAcciones from '../componentes/BarraAcciones.astro';
     </Panel>
     <Panel codigo="C2" titulo="Impacto">
       <Tabla titulo="Impacto" variante="partidas" columnas={['Ejemplo', 'Antes', 'Después']} numericas={[1, 2]} />
-      <Aviso variante="informacion" titulo=" " texto=" " />
+      <Aviso variante="informacion" titulo=" " />
     </Panel>
     <Panel codigo="C3" titulo="Confirmar">
       <form novalidate method="post" class="cs-formulario" data-cs-formulario>
@@ -201,6 +201,9 @@ import BarraAcciones from '../componentes/BarraAcciones.astro';
 </script>
 
 <style>
+  .cs :global(.tabla + .aviso) {
+    margin-block-start: var(--espacio-4);
+  }
   .cs:not([hidden]) {
     display: block;
   }

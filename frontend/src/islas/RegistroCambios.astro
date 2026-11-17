@@ -163,6 +163,7 @@ const recursos = [['', 'Todos'], ['impuestos', 'Impuestos'], ['servicio', 'Servi
         texto.textContent = 'Aquí aparece cada cambio de impuestos, tarifas, recargos y plazos, con quién lo hizo.';
       }
       tabla.querySelector('caption').textContent = `Cambios ${periodo}`;
+      this.querySelector('[data-resultados] .panel-ayuda').textContent = `${lista.length ? `${plural(lista.length, 'cambio', 'cambios')} ${periodo}. ` : ''}Nadie puede editar ni borrar este registro.`;
       const modelo = this.querySelector('template[data-fila]');
       tabla.querySelector('tbody').replaceChildren(...lista.map((c) => {
         const fila = modelo.content.cloneNode(true).firstElementChild;

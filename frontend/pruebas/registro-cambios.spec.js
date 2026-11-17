@@ -26,7 +26,7 @@ for (const t of tamanos) {
     await page.goto('/app/cambios');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/registro de cambios/i);
     await expect(page.getByText('[A9] CONTROL / CAMBIOS')).toBeVisible();
-    await expect(page.getByText('Nadie puede editar ni borrar este registro.')).toBeVisible();
+    await expect(page.getByText(/^\d+ cambios? del .* al .*\. Nadie puede editar ni borrar este registro\.$/)).toBeVisible();
     const tabla = page.getByRole('table', { name: 'Cambios del 17 oct al 16 nov' });
     await expect(tabla.getByRole('row')).toHaveCount(CAMBIOS.length + 1);
     const fila1 = tabla.getByRole('row').nth(1);

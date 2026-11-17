@@ -92,11 +92,17 @@ export const porcentaje = (p) => `${Number(p)} %`.replace('.', ',');
 const etiquetaAnticipo = (adelanto) => `Anticipo ${porcentaje(adelanto)}`;
 // Desglose de IGV que dicta el backend (nunca se calcula aqui). `precio.impuesto` puede faltar: sin desglose.
 // Resumen: bajo el total, "Incluye IGV (18 %)" o "Más IGV (18 %)".
-export const filasPrecio = (precio, adelanto = precio.porcentaje_adelanto) => [
-  ['Total', soles(precio.total)],
-  ...(precio.impuesto ? [[`${precio.impuesto.incluido ? 'Incluye' : 'Más'} IGV (${porcentaje(precio.impuesto.porcentaje)})`, soles(precio.impuesto.monto)]] : []),
-  [etiquetaAnticipo(adelanto), soles(precio.anticipo)],
-];
+// Sin IGV incluido: SUBTOTAL, MÁS IGV, TOTAL (el total ya suma el IGV); con IGV incluido: TOTAL, INCLUYE IGV.
+export const filasPrecio = (precio, adelanto = precio.porcentaje_adelanto) => {
+  const i = precio.impuesto;
+  const igv = i && [`${i.incluido ? 'Incluye' : 'Más'} IGV (${porcentaje(i.porcentaje)})`, soles(i.monto)];
+  return [
+    ...(i && !i.incluido ? [['Subtotal', soles(i.base)], igv] : []),
+    ['Total', soles(precio.total)],
+    ...(i?.incluido ? [igv] : []),
+    [etiquetaAnticipo(adelanto), soles(precio.anticipo)],
+  ];
+};
 // Simulacion -> { filas: [[concepto, cantidad, importe]], pie: [[etiqueta, importe, esImpuesto?]] }; solo formatea, nunca suma.
 export function partidasPrecio(precio, adelanto = precio.porcentaje_adelanto) {
   const i = precio.impuesto;

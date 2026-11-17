@@ -16,6 +16,10 @@ const CASOS = [
   { nombre: 'IGV incluido', incluido: true, adelanto: 30, resumen: 'Incluye IGV (18 %)', ayuda: 'Precios con IGV incluido (18 %).' },
   { nombre: 'IGV sin incluir', incluido: false, adelanto: 30, resumen: 'Más IGV (18 %)', ayuda: 'Precios sin IGV: el IGV (18 %) se suma al total.' },
 ];
+// Orden de lectura del resumen persistente: sin IGV incluido el IGV va entre el subtotal y el total (B1, dinero).
+const ordenResumen = (c) => (c.incluido
+  ? /Total\s*S\/ 150,00\s*Incluye IGV \(18 %\)\s*S\/ 22,88\s*Anticipo 30 %\s*S\/ 45,00/i
+  : /Subtotal\s*S\/ 127,12\s*Más IGV \(18 %\)\s*S\/ 22,88\s*Total\s*S\/ 150,00\s*Anticipo 30 %\s*S\/ 45,00/i);
 const impuesto = (incluido, porcentaje = '18.00') => ({ nombre: 'IGV', porcentaje, incluido, base: '127.12', monto: '22.88' });
 const precio = (c) => ({
   lineas: [{ concepto: 'Grabación', cantidad: '2.0', unidad: 'hora', monto: '240.00' }],
@@ -71,6 +75,7 @@ for (const c of CASOS) {
       const resumen = page.getByRole('region', { name: 'Tu reserva' });
       await expect(resumen).toContainText(c.resumen);
       await expect(resumen).toContainText('S/ 22,88');
+      expect(await resumen.innerText()).toMatch(ordenResumen(c));
       await expect(resumen).toContainText('Anticipo 30 %');
       await expect(page.getByRole('group', { name: 'Servicio' })).toContainText(c.ayuda);
       await expect(page.locator('bugalu-reserva [data-anuncio]')).toHaveText('Total S/ 150,00, anticipo S/ 45,00');
@@ -88,6 +93,7 @@ for (const c of CASOS) {
       const datos = page.locator('[data-datos-listo]');
       await expect(datos).toContainText(c.resumen);
       await expect(datos).toContainText('S/ 22,88');
+      expect(await datos.innerText()).toMatch(ordenResumen(c));
       await expect(datos).toContainText('Anticipo 30 %');
       await expect(datos).toContainText('S/ 45,00');
       await sinViolaciones(page);

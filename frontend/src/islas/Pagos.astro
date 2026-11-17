@@ -345,7 +345,11 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
         const fila = this.querySelector('[data-igv]');
         fila.hidden = false;
         fila.querySelector('dt').textContent = `IGV incluido (${porcentaje(p.impuesto.porcentaje)})`;
-        fila.querySelector('dd').textContent = `${soles(p.impuesto.monto)} · base ${soles(p.impuesto.base)}. Informativo: el comprobante se emite fuera de la app.`;
+        fila.querySelector('dd').textContent = `${soles(p.impuesto.monto)} · base ${soles(p.impuesto.base)}`;
+        const nota = document.createElement('p');
+        nota.className = 'gestion-ayuda';
+        nota.textContent = 'Informativo: el comprobante se emite fuera de la app.';
+        fila.querySelector('dd').append(nota);
       }
       campo('operacion').textContent = p.numero_operacion;
       campo('registrado').textContent = horaAnio(p.registrado_en);
