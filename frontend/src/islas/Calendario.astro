@@ -11,7 +11,7 @@ interface Props {
   modo: 'reserva' | 'personal';
 }
 const { modo } = Astro.props;
-const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
+const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
 ---
 
 <!-- Un bloque por estado (estados-sistema): se pintan en servidor y la isla clona el que toca. Sin JS, el noscript oculta la carga y avisa. -->
@@ -78,7 +78,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
       <td data-etiqueta="Cliente" data-cliente></td>
       <td data-etiqueta="Servicio" data-servicio></td>
       <td data-etiqueta="Estado" data-estado-reserva></td>
-      <td><Boton variante="secundario" href="#" data-ver>Ver reserva<span class="visualmente-oculto" data-objeto></span></Boton></td>
+      <td><Boton variante="secundario" href="#" data-ver>Ver reserva<span class="visualmente-oculto" data-objeto></span></Boton><Boton variante="secundario" href="#" data-na hidden>Marcar no asistió<span class="visualmente-oculto" data-objeto-na></span></Boton></td>
     </tr>
   </template>
   <template data-aviso="informacion"><Aviso variante="informacion" titulo=" " texto=" " /></template>
@@ -112,7 +112,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
   const MEDIA = 30 * 60e3;
   const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const ESTADOS_RESERVA: Record<string, [string, string]> = {
-    pre_reservada: ['Pre-reservada', 'aviso'], confirmada: ['Confirmada', 'exito'], en_curso: ['En curso', 'activa'], finalizada: ['Finalizada', 'neutra'], cancelada: ['Cancelada', 'neutra'],
+    pre_reservada: ['Pre-reservada', 'aviso'], confirmada: ['Confirmada', 'exito'], en_curso: ['En curso', 'activa'], finalizada: ['Finalizada', 'neutra'], cancelada: ['Cancelada', 'neutra'], no_asistio: ['No asistió', 'alerta'],
   };
   // Estados con bloque unido (rowspan); la media hora libre nunca se une: cada una es un botón.
   const UNIBLES = ['ocupado', 'propio', 'cerrado', 'noreservable', 'pasado'];
@@ -747,6 +747,15 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa'] as const;
         if (r.pago_por_validar === true) x.querySelector('[data-estado-reserva]')!.append(this.estadoReserva(r.estado, true));
         x.querySelector<HTMLAnchorElement>('[data-ver]')!.href = `/app/reservas/detalle?id=${encodeURIComponent(r.id)}`;
         x.querySelector('[data-objeto]')!.textContent = ` ${r.folio}`;
+        // RF-18: "Marcar no asistió" solo entre inicio + tolerancia y el fin, en un estado que lo admite.
+        const t = r.politica?.minutos_tolerancia_inasistencia;
+        const ahora = Date.now();
+        if (t != null && ['pre_reservada', 'confirmada', 'en_curso'].includes(r.estado) && ahora >= a + Number(t) * 60e3 && ahora < b) {
+          const na = x.querySelector<HTMLAnchorElement>('[data-na]')!;
+          na.hidden = false;
+          na.href = `/app/reservas/detalle?id=${encodeURIComponent(r.id)}&accion=inasistencia`;
+          x.querySelector('[data-objeto-na]')!.textContent = ` · ${r.folio}`;
+        }
         return x;
       }));
       if (!ordenadas.length) {

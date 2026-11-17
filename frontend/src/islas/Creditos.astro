@@ -1,0 +1,404 @@
+---
+// <bugalu-creditos>: mis creditos y pedir devolucion (vista "lista") y los creditos de un cliente en su ficha (vista "ficha").
+// Spec RF-18-creditos. Datos por la API: GET /creditos y POST /creditos/{id}/devolucion.
+import Panel from '../componentes/Panel.astro';
+import Boton from '../componentes/Boton.astro';
+import BarraAcciones from '../componentes/BarraAcciones.astro';
+import Tabla from '../componentes/Tabla.astro';
+import Campo from '../componentes/Campo.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+
+interface Props {
+  vista: 'lista' | 'ficha';
+}
+const { vista } = Astro.props;
+const principal = vista === 'lista' ? { titulo: 'Créditos' } : { codigo: 'U4', titulo: 'Créditos' };
+const filtros = [
+  { clave: 'vigentes', texto: 'Vigentes', href: '/app/reservas/creditos' },
+  { clave: 'historial', texto: 'Historial', href: '/app/reservas/creditos?ver=historial' },
+];
+---
+
+<EstilosGestion />
+
+<bugalu-creditos class="creditos" data-gestion vista={vista}>
+  <div data-avisos></div>
+  <!-- Región viva estable: anuncia la carga y cada resultado una sola vez. -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  {vista === 'lista' && <nav class="creditos-filtros" aria-label="Filtrar créditos" data-filtros hidden></nav>}
+  <div data-salida><Panel {...principal} cargando /></div>
+
+  <EstadosIsla principal={principal} />
+
+  {['neutra', 'exito', 'aviso', 'alerta'].map((variante) => <template data-sello={variante}><EtiquetaTecnica variante={variante as 'neutra'} texto=" " /></template>)}
+
+  {vista === 'lista' && (
+    <>
+      {filtros.flatMap((f) => [
+        <template data-filtro={f.clave} data-aplicado="no"><EtiquetaTecnica variante="filtro" texto={f.texto} href={f.href} /></template>,
+        <template data-filtro={f.clave} data-aplicado="si"><EtiquetaTecnica variante="filtro" texto={f.texto} href={f.href} aplicado /></template>,
+      ])}
+      <template data-estado="vacio">
+        <Panel titulo="Créditos">
+          <p class="gestion-vacio-titulo">No tienes créditos</p>
+          <p>Si cancelas o reprogramas una reserva con pagos, lo que pase a crédito aparecerá aquí.</p>
+          <div class="creditos-accion"><Boton variante="secundario" href="/app/reservas/">Ver mis reservas</Boton></div>
+        </Panel>
+      </template>
+      <template data-estado="vacio-filtro">
+        <Panel titulo="Créditos">
+          <p class="gestion-vacio-titulo" data-vacio></p>
+          <div class="creditos-accion"><Boton variante="secundario" href="#" data-otro></Boton></div>
+        </Panel>
+      </template>
+      <template data-estado="datos">
+        <div class="gestion-rejilla">
+          <div class="gestion-principal">
+            <div data-disponible hidden>
+              <Panel titulo="Disponible" variante="destacado">
+                <p class="creditos-monto"><span data-monto></span> para usar en tus reservas</p>
+                <p class="gestion-ayuda">Lo eliges al pagar una cuota.</p>
+              </Panel>
+            </div>
+            <Panel titulo="Créditos">
+              <p class="creditos-total" data-total></p>
+              <Tabla titulo="Créditos" columnas={['Origen', 'Saldo', 'Vence', 'Estado', '']} numericas={[1]} />
+            </Panel>
+          </div>
+          <div class="gestion-lateral">
+            <div data-lateral="info">
+              <Panel titulo="Cómo funciona" variante="lateral">
+                <p>Cada crédito vence 30 días después de generarse y te avisamos 7 días antes. Solo tú lo usas, en cualquier reserva tuya. Los créditos de nivel 1 y de caso excepcional admiten devolución; los de nivel 2 y los de reprogramación, no.</p>
+                <p><a class="creditos-enlace" href="/legal/condiciones-de-contratacion/">Leer las condiciones</a></p>
+              </Panel>
+            </div>
+            <div data-lateral="devolucion" hidden>
+              <Panel titulo="Pedir devolución" variante="lateral" id="devolucion">
+                <form novalidate class="gestion-formulario" data-formulario="devolucion">
+                  <dl class="gestion-datos"><div><dt>Saldo</dt><dd data-saldo-devolucion></dd></div></dl>
+                  <Campo tipo="area" id="devolucion-motivo" nombre="motivo" etiqueta="Motivo" obligatorio minlength="10" maxlength="500" ayuda="Cuéntanos por qué prefieres el dinero. Entre 10 y 500 caracteres." />
+                  <p>El estudio decide si te devuelve todo, una parte o nada, y te dice por qué. Mientras decide, este crédito no se usa ni vence. El dinero se devuelve fuera de la app.</p>
+                  <BarraAcciones variante="decision">
+                    <Boton slot="secundaria" variante="secundario" data-envio data-volver>Volver</Boton>
+                    <Boton slot="principal" tipo="submit" data-envio>Enviar solicitud</Boton>
+                  </BarraAcciones>
+                </form>
+              </Panel>
+            </div>
+          </div>
+        </div>
+      </template>
+      <template data-fila>
+        <tr>
+          <th scope="row"><a class="creditos-folio" data-folio href="#"></a><span class="gestion-motivo" data-tipo></span></th>
+          <td data-etiqueta="Saldo" class="tabla-num"><span data-saldo></span><span class="gestion-motivo" data-de hidden></span></td>
+          <td data-etiqueta="Vence"><span data-vence></span></td>
+          <td data-etiqueta="Estado"><span class="creditos-sellos" data-sellos></span><span class="gestion-motivo" data-devolucion hidden></span></td>
+          <td><Boton variante="secundario" data-pedir hidden>Pedir devolución<span class="visualmente-oculto" data-objeto></span></Boton></td>
+        </tr>
+      </template>
+    </>
+  )}
+
+  {vista === 'ficha' && (
+    <>
+      <template data-estado="vacio">
+        <Panel codigo="U4" titulo="Créditos"><p class="gestion-vacio-titulo">Sin créditos.</p></Panel>
+      </template>
+      <template data-estado="datos">
+        <Panel codigo="U4" titulo="Créditos">
+          <Tabla titulo="Créditos de esta persona" variante="compacta" columnas={['Origen', 'Tipo', 'Saldo', 'Vence', 'Estado']} numericas={[2]} />
+        </Panel>
+      </template>
+      <template data-fila>
+        <tr>
+          <th scope="row"><a class="creditos-folio" data-folio href="#"></a></th>
+          <td data-etiqueta="Tipo" data-tipo></td>
+          <td data-etiqueta="Saldo" class="tabla-num"><span data-saldo></span><span class="gestion-motivo" data-de hidden></span></td>
+          <td data-etiqueta="Vence"><span data-vence></span></td>
+          <td data-etiqueta="Estado"><span class="creditos-sellos" data-sellos></span><span class="gestion-motivo" data-devolucion hidden></span></td>
+        </tr>
+      </template>
+    </>
+  )}
+</bugalu-creditos>
+
+<script>
+  // @ts-nocheck
+  import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { listarCreditos, pedirDevolucion, disponible, vencePronto, textoDevolucion, fechaVence, TIPOS_CREDITO } from '../servicios/creditos.js';
+  import { faltan } from '../servicios/reservas.js';
+  import { soles } from '../servicios/formatos.js';
+  import { mostrarAviso, enfocarAviso, llenarAviso, quitarError, limpiarAvisos } from '../servicios/formulario.js';
+
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const filtrosOrden = ['vigentes', 'historial'];
+  // estado -> [texto, variante de la etiqueta]
+  const ESTADOS = { vigente: ['Vigente', 'exito'], agotado: ['Agotado', 'neutra'], vencido: ['Vencido', 'alerta'] };
+  const MOTIVO = 'Escribe el motivo, de 10 a 500 caracteres.';
+  const CONFLICTOS = {
+    devolucion_pendiente: 'Ya pediste la devolución de este crédito.',
+    credito_no_vigente: 'Este crédito ya no está vigente.',
+    devolucion_no_permitida: 'Este crédito no admite devolución.',
+  };
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+
+  // Un dato fuera de la lista cerrada no se usa en plantillas: respuesta inesperada (cae en "Algo salió mal").
+  const validar = (lista) => {
+    if (!Array.isArray(lista) || lista.some((c) => !c || typeof c !== 'object' || !Object.hasOwn(ESTADOS, c.estado))) throw new Error('respuesta_inesperada');
+    return lista;
+  };
+
+  class BugaluCreditos extends IslaGestion {
+    actual = null; // crédito del panel de devolución
+    boton = null; // botón de la fila que lo abrió
+
+    iniciar() {
+      this.addEventListener('click', (e) => {
+        const pedir = e.target.closest('[data-pedir]');
+        if (pedir) this.abrir(pedir);
+        else if (e.target.closest('[data-volver]')) this.cerrar();
+      });
+      this.addEventListener('keydown', (e) => e.key === 'Escape' && this.actual && !this.ocupado && this.cerrar());
+    }
+
+    alEnviar() {
+      this.solicitar();
+    }
+
+    // 401 y 403 llevan el texto de esta pantalla y su propio enlace (como mis reservas).
+    mostrar(estado) {
+      super.mostrar(estado);
+      if (this.vista !== 'lista') return;
+      const aviso = this.querySelector('[data-salida] .aviso');
+      if (estado === 'no-autenticado') {
+        llenarAviso(aviso, 'Tu sesión no es válida', 'Inicia sesión para ver tus reservas.');
+        const enlace = aviso.querySelector('.aviso-accion');
+        enlace.textContent = 'Ir al acceso';
+        enlace.href = `/acceso?${new URLSearchParams({ volver: location.pathname + location.search })}`;
+      } else if (estado === 'sin-permiso') {
+        aviso.querySelector('.aviso-titulo').textContent = 'No tienes permiso para ver estos créditos.';
+        aviso.querySelector('.aviso-texto')?.remove();
+        const enlace = aviso.querySelector('.aviso-accion');
+        enlace.textContent = 'Volver a mis reservas';
+        enlace.href = '/app/reservas/';
+      }
+    }
+
+    sello(variante, texto) {
+      const nodo = this.querySelector(`template[data-sello="${variante}"]`).content.cloneNode(true);
+      nodo.querySelector('.etiqueta > span:last-child').textContent = texto;
+      return nodo;
+    }
+
+    // Fila de un credito: origen, tipo, saldo, vencimiento, estado y devolucion, en texto.
+    fila(c, historial) {
+      const raiz = this.querySelector('template[data-fila]').content.cloneNode(true).firstElementChild;
+      const folio = raiz.querySelector('[data-folio]');
+      folio.textContent = c.origen?.folio ?? '';
+      folio.href = `/app/reservas/detalle?id=${encodeURIComponent(c.origen?.id_reserva ?? '')}`;
+      const tipo = TIPOS_CREDITO[c.tipo] ?? c.tipo;
+      const celdaTipo = raiz.querySelector('[data-tipo]');
+      celdaTipo.textContent = tipo;
+      raiz.querySelector('[data-saldo]').textContent = soles(c.saldo);
+      if (Number(c.monto) !== Number(c.saldo)) {
+        const de = raiz.querySelector('[data-de]');
+        de.hidden = false;
+        de.textContent = `de ${soles(c.monto)}`;
+      }
+      const ms = Date.parse(c.vence) - Date.now();
+      raiz.querySelector('[data-vence]').textContent = historial || c.estado !== 'vigente' || ms <= 0 ? fechaVence(c.vence) : `${fechaVence(c.vence)} · ${faltan(ms)}`;
+      const sellos = raiz.querySelector('[data-sellos]');
+      sellos.append(this.sello(...[ESTADOS[c.estado][1], ESTADOS[c.estado][0]]));
+      if (vencePronto(c)) sellos.append(' ', this.sello('aviso', 'Vence pronto'));
+      const texto = textoDevolucion(c.devolucion);
+      const dev = raiz.querySelector('[data-devolucion]');
+      dev.hidden = !texto;
+      dev.textContent = texto ?? '';
+      return raiz;
+    }
+
+    // --- Lista ---
+
+    async lista() {
+      this.cerrarPanel();
+      const ver = new URLSearchParams(location.search).get('ver') === 'historial' ? 'historial' : 'vigentes';
+      const todos = validar(await listarCreditos());
+      const nav = this.querySelector('[data-filtros]');
+      if (!todos.length) {
+        nav.hidden = true;
+        this.mostrar('vacio');
+        return 'No tienes créditos';
+      }
+      nav.replaceChildren(...filtrosOrden.map((clave) => this.querySelector(`template[data-filtro="${clave}"][data-aplicado="${clave === ver ? 'si' : 'no'}"]`).content.cloneNode(true)));
+      nav.hidden = false;
+      const vigentes = ver === 'vigentes';
+      const mios = todos.filter((c) => (c.estado === 'vigente') === vigentes).sort((a, b) => (vigentes ? 1 : -1) * (Date.parse(a.vence) - Date.parse(b.vence)));
+      if (!mios.length) {
+        this.mostrar('vacio-filtro');
+        const texto = vigentes ? 'No tienes créditos vigentes.' : 'Aún no hay créditos en tu historial.';
+        this.querySelector('[data-vacio]').textContent = texto;
+        const otro = this.querySelector('[data-otro]');
+        otro.textContent = vigentes ? 'Ver historial' : 'Ver vigentes';
+        otro.href = vigentes ? '/app/reservas/creditos?ver=historial' : '/app/reservas/creditos';
+        return texto;
+      }
+      this.mostrar('datos');
+      this.creditos = mios;
+      const filas = mios.map((c) => {
+        const raiz = this.fila(c, !vigentes);
+        const pedir = raiz.querySelector('[data-pedir]');
+        // Solo nivel 1 y caso excepcional vigentes, sin devolucion pedida ni decidida.
+        pedir.hidden = !(vigentes && ['nivel_1', 'excepcion'].includes(c.tipo) && c.estado === 'vigente' && !c.devolucion);
+        pedir.dataset.pedir = c.id;
+        raiz.querySelector('[data-objeto]').textContent = ` de ${c.origen?.folio ?? ''}`;
+        return raiz;
+      });
+      this.querySelector('tbody').replaceChildren(...filas);
+      const total = vigentes ? `${plural(mios.length, 'crédito vigente', 'créditos vigentes')}` : plural(mios.length, 'crédito en el historial', 'créditos en el historial');
+      this.querySelector('[data-total]').textContent = total;
+      const disp = disponible(todos);
+      const bloque = this.querySelector('[data-disponible]');
+      bloque.hidden = !vigentes;
+      this.querySelector('[data-monto]').textContent = soles(disp);
+      return vigentes ? `${total}, ${soles(disp)} disponible` : total;
+    }
+
+    // --- Ficha del cliente (Administrador): solo lectura ---
+
+    async ficha() {
+      const id = new URLSearchParams(location.search).get('id') ?? '';
+      const creditos = UUID.test(id) ? validar(await listarCreditos(id)) : [];
+      if (!creditos.length) {
+        this.mostrar('vacio');
+        return 'Sin créditos';
+      }
+      this.mostrar('datos');
+      this.querySelector('tbody').replaceChildren(...creditos.map((c) => this.fila(c, c.estado !== 'vigente')));
+      return plural(creditos.length, 'crédito', 'créditos');
+    }
+
+    // --- Pedir devolucion: el panel sustituye a "Cómo funciona" ---
+
+    abrir(boton) {
+      if (this.ocupado) return;
+      const c = this.creditos.find((x) => x.id === boton.dataset.pedir);
+      if (!c) return;
+      limpiarAvisos(this);
+      this.actual = c;
+      this.boton = boton;
+      const titulo = this.querySelector('[data-lateral="devolucion"] .panel-titulo');
+      titulo.replaceChildren('Pedir devolución · ', Object.assign(document.createElement('span'), { className: 'creditos-folio-titulo', textContent: c.origen?.folio ?? '' }));
+      this.querySelector('[data-saldo-devolucion]').textContent = soles(c.saldo);
+      const campo = this.querySelector('#devolucion-motivo');
+      campo.value = '';
+      quitarError(campo);
+      this.querySelector('[data-lateral="info"]').hidden = true;
+      this.querySelector('[data-lateral="devolucion"]').hidden = false;
+      titulo.tabIndex = -1;
+      titulo.focus();
+    }
+
+    // Vuelve a "Cómo funciona"; devuelve el foco al botón de la fila solo si se pide (Volver o Escape).
+    cerrar() {
+      if (this.ocupado) return;
+      const boton = this.boton;
+      this.cerrarPanel();
+      boton?.focus();
+    }
+
+    cerrarPanel() {
+      this.actual = null;
+      this.boton = null;
+      const info = this.querySelector('[data-lateral="info"]');
+      if (info) info.hidden = false;
+      const panel = this.querySelector('[data-lateral="devolucion"]');
+      if (panel) panel.hidden = true;
+    }
+
+    solicitar() {
+      const campo = this.querySelector('#devolucion-motivo');
+      quitarError(campo);
+      const motivo = campo.value.trim();
+      if (!this.validar(motivo.length < 10 || motivo.length > 500 ? [{ entrada: campo, mensaje: MOTIVO, texto: 'Motivo' }] : [])) return;
+      const c = this.actual;
+      super.enviar(this.querySelector('[data-formulario="devolucion"] [type="submit"]'), 'Enviando…', () => pedirDevolucion(c.id, motivo), async () => {
+        await this.cargar();
+        enfocarAviso(mostrarAviso(this, 'exito', 'Solicitud enviada', 'El estudio la revisa y te avisa por correo.'));
+      });
+    }
+
+    errorEnvio(error) {
+      if (error.estado === 409 || error.estado === 404) {
+        const texto = CONFLICTOS[error.codigo] ?? CONFLICTOS.credito_no_vigente;
+        this.cargar().then(() => enfocarAviso(mostrarAviso(this, 'informacion', texto)));
+        return true;
+      }
+      if (error.estado === 422) {
+        this.validar([{ entrada: this.querySelector('#devolucion-motivo'), mensaje: MOTIVO, texto: 'Motivo' }]);
+        return true;
+      }
+      return false;
+    }
+  }
+
+  if (!customElements.get('bugalu-creditos')) customElements.define('bugalu-creditos', BugaluCreditos);
+</script>
+
+<style>
+  .creditos {
+    display: block;
+  }
+  .creditos :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  .creditos-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+    margin-block-end: var(--espacio-4);
+  }
+  .creditos-filtros[hidden] {
+    display: none;
+  }
+  .creditos-total {
+    margin-block-end: var(--espacio-3);
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+    text-transform: uppercase;
+  }
+  .creditos-monto {
+    margin: 0 0 var(--espacio-2);
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-titulo);
+    font-size: var(--fuente-tamano-titulo-sm);
+    font-weight: var(--fuente-peso-titulo);
+  }
+  .creditos-accion {
+    margin-block-start: var(--espacio-3);
+  }
+  .creditos :global(.creditos-folio),
+  .creditos :global(.creditos-enlace) {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--medida-control-tactil);
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-weight: var(--fuente-peso-medio);
+  }
+  .creditos :global(.creditos-enlace) {
+    font-family: inherit;
+    font-weight: inherit;
+  }
+  .creditos :global(.creditos-folio-titulo) {
+    white-space: nowrap;
+  }
+  .creditos :global(.creditos-sellos) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+  }
+</style>

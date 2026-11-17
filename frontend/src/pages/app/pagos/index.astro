@@ -12,6 +12,7 @@ import Pagos from '../../../islas/Pagos.astro';
     ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Pagos' }]}
     descripcion="Pagos que registraron los clientes. Revisa la captura y aprueba o rechaza cada uno."
   >
+    <Boton slot="acciones" variante="secundario" href="/app/pagos/devoluciones">Devoluciones</Boton>
     <Boton slot="acciones" variante="secundario" href="/app/pagos/datos">Editar datos para pagar</Boton>
   </EncabezadoPantalla>
   <Pagos vista="lista" />

@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Creditos from '../../../islas/Creditos.astro';
+---
+
+<LayoutApp titulo="Mis créditos">
+  <EncabezadoPantalla
+    titulo="MIS CRÉDITOS"
+    indice="[P3] SALA / CRÉDITOS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Reservas', href: '/app/reservas/' }, { etiqueta: 'Créditos' }]}
+    descripcion="Lo que te queda a favor por cancelar o reprogramar. Úsalo al pagar una cuota antes de que venza."
+  />
+  <Creditos vista="lista" />
+</LayoutApp>

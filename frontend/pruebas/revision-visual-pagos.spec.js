@@ -34,7 +34,7 @@ const preparar = async (page, rol, r) => {
 test('B1: el parrafo "lo gestiona el estudio" no sale al cliente sin pagos', async ({ page }) => {
   await preparar(page, 'cliente', reserva());
   await page.goto(`/app/reservas/detalle?id=${ID}`);
-  await expect(page.getByRole('button', { name: 'Cancelar reserva' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Solicitar cancelación' })).toBeVisible();
   await expect(page.getByText(PEDIDO)).toBeHidden();
 });
 
@@ -43,12 +43,6 @@ test('B1: tampoco al Administrador con pagos', async ({ page }) => {
   await page.goto(`/app/reservas/detalle?id=${ID}`);
   await expect(page.getByRole('button', { name: 'Cancelar reserva', exact: true })).toBeVisible();
   await expect(page.getByText(PEDIDO)).toBeHidden();
-});
-
-test('B1: si lo ve el cliente con pagos', async ({ page }) => {
-  await preparar(page, 'cliente', reserva({ pago_por_validar: true, cuotas: cuotas({ estado: 'en_validacion', pagable: false, pagos: [pago({ estado: 'pendiente_validacion' })] }) }));
-  await page.goto(`/app/reservas/detalle?id=${ID}`);
-  await expect(page.getByText(PEDIDO)).toBeVisible();
 });
 
 test('B2: a 390 las partidas no pintan rotulos ni parten los importes', async ({ page }) => {

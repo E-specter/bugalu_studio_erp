@@ -220,7 +220,7 @@ for (const t of tamanos) {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/reserva R-2026-00001/i);
     await expect(page.locator('.encabezado-descripcion')).toHaveText('Grabación de voces · 18 dic 2026, 15:00–17:30');
     await expect(page.locator('.encabezado-ruta li')).toHaveText(['Inicio', 'Reservas', 'R-2026-00001']);
-    const datos = page.locator('dl');
+    const datos = page.getByRole('region', { name: /D1 Reserva/ });
     await expect(datos).toContainText('Pre-reservada');
     await expect(datos).toContainText('2 h 30 min');
     await expect(datos).toContainText('Sala principal');
@@ -242,7 +242,7 @@ for (const t of tamanos) {
     await expect(cuotas.getByRole('row', { name: /Al terminar la sesión/ })).toContainText('S/ 207,50');
     await expect(page.getByText(/Paga el anticipo antes del \d{1,2} \w{3}, \d{2}:\d{2}/i)).toBeVisible();
     await expect(page.getByText('faltan 2 d 3 h')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Cancelar reserva', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Solicitar cancelación' })).toBeVisible();
     await expect(page.locator('[aria-busy]')).toHaveCount(0);
     await sinViolaciones(page);
     expect(consola).toEqual([]);
@@ -280,7 +280,7 @@ for (const [nombre, extra, textos] of porEstado) {
     await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva(extra)));
     await ver(page);
     for (const texto of textos) await expect(page.locator('[data-estado-reserva]')).toContainText(texto);
-    await expect(page.getByRole('button', { name: 'Cancelar reserva' })).toHaveCount(0); // el cliente solo cancela pre-reservadas
+    await expect(page.getByRole('button', { name: 'Cancelar reserva' })).toHaveCount(0);
     await sinViolaciones(page);
   });
 }
@@ -295,7 +295,7 @@ test('detalle: el personal ve al cliente y no puede cancelar', async ({ page }) 
   await comoRol(page, 'personal');
   await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva({ cliente: 'Ana Pérez' })));
   await ver(page);
-  await expect(page.locator('dl')).toContainText('Ana Pérez');
+  await expect(page.getByRole('region', { name: /D1 Reserva/ })).toContainText('Ana Pérez');
   await expect(page.locator('.encabezado-ruta li')).toHaveText(['Inicio', 'Agenda', 'R-2026-00001']);
   await expect(page.getByRole('button', { name: 'Cancelar reserva' })).toHaveCount(0);
   await sinViolaciones(page);
@@ -306,90 +306,6 @@ test('detalle: el Administrador cancela también las confirmadas', async ({ page
   await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva({ cliente: 'Ana Pérez', estado: 'confirmada' })));
   await ver(page);
   await expect(page.getByRole('button', { name: 'Cancelar reserva' })).toBeVisible();
-});
-
-// --- 3. Cancelar ---
-test('cancelar: confirmación accesible, foco, y el estado se actualiza al confirmar', async ({ page }) => {
-  const consola = vigilarConsola(page);
-  const cancelar = await simular(page, 'POST', `/reservas/${ID}/cancelar`, json(200, reserva({ estado: 'cancelada', motivo_cancelacion: 'cliente' })));
-  await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva()));
-  page.on('dialog', (d) => { throw new Error(`diálogo nativo: ${d.message()}`); });
-  await ver(page);
-  const abrir = page.getByRole('button', { name: 'Cancelar reserva', exact: true });
-  await abrir.focus();
-  await page.keyboard.press('Enter');
-  const confirmacion = page.getByRole('region', { name: /Cancelar reserva R-2026-00001/ });
-  await expect(confirmacion).toBeVisible();
-  await expect(page.getByRole('heading', { name: /Cancelar reserva R-2026-00001/ })).toBeFocused();
-  await expect(confirmacion).toContainText('El horario se libera al momento y no se te cobra nada.');
-  await expect(confirmacion).toContainText('18 dic 2026');
-  await sinViolaciones(page);
-  await page.screenshot({ path: 'pruebas/capturas/reservas-cancelar-confirmar.png', fullPage: true });
-  // Escape vuelve sin cancelar y devuelve el foco al botón.
-  await page.keyboard.press('Escape');
-  await expect(confirmacion).toBeHidden();
-  await expect(abrir).toBeFocused();
-  expect(cancelar).toHaveLength(0);
-  await page.keyboard.press('Enter');
-  await page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' }).click();
-  expect(cancelar).toHaveLength(1);
-  const aviso = page.locator('[data-avisos] .aviso');
-  await expect(aviso).toContainText('Reserva cancelada. El horario quedó libre y no se te cobró nada.');
-  await expect(aviso).toBeFocused();
-  await expect(page.locator('[data-estado-reserva]')).toContainText('La cancelaste.');
-  await expect(page.locator('dl')).toContainText('Cancelada');
-  await expect(page.getByRole('button', { name: /Cancelar reserva/ })).toHaveCount(0);
-  await expect(confirmacion).toBeHidden();
-  await sinViolaciones(page);
-  expect(consola).toEqual([]);
-  await page.screenshot({ path: 'pruebas/capturas/reservas-cancelar-exito.png', fullPage: true });
-});
-
-test('cancelar: enviando bloquea los botones', async ({ page }) => {
-  let soltar;
-  const espera = new Promise((r) => (soltar = r));
-  await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva()));
-  await simular(page, 'POST', `/reservas/${ID}/cancelar`, async (r) => { await espera; await r.fulfill(json(200, reserva({ estado: 'cancelada', motivo_cancelacion: 'cliente' }))); });
-  await ver(page);
-  await page.getByRole('button', { name: 'Cancelar reserva', exact: true }).click();
-  await page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' }).click();
-  await expect(page.getByRole('button', { name: 'Cancelando…' })).toHaveAttribute('aria-busy', 'true');
-  await expect(page.getByRole('button', { name: 'Volver a la reserva' })).toBeDisabled();
-  soltar();
-  await expect(page.locator('[data-avisos] .aviso')).toContainText('Reserva cancelada');
-});
-
-const conflictos = [
-  ['tiene_pagos', 'Ya registraste un pago para esta reserva. La cancelación la gestiona el estudio: escríbele.'],
-  ['no_cancelable', 'Esta reserva ya no se puede cancelar: está confirmada.'],
-];
-for (const [codigo, texto] of conflictos) {
-  test(`cancelar: 409 ${codigo} se explica y el foco va al aviso`, async ({ page }) => {
-    let lecturas = 0;
-    await simular(page, 'GET', `/reservas/${ID}`, (r) => r.fulfill(json(200, reserva(codigo === 'no_cancelable' && lecturas++ ? { estado: 'confirmada' } : {}))));
-    await simular(page, 'POST', `/reservas/${ID}/cancelar`, (r) => r.fulfill(errorApi(409, codigo)));
-    await ver(page);
-    await page.getByRole('button', { name: 'Cancelar reserva', exact: true }).click();
-    await page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' }).click();
-    const aviso = page.locator('[data-avisos] .aviso');
-    await expect(aviso).toContainText(texto);
-    await expect(aviso).toBeFocused();
-    await expect(page.getByRole('button', { name: 'Volver a la reserva' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' })).toHaveCount(0);
-    await sinViolaciones(page);
-    await page.screenshot({ path: `pruebas/capturas/reservas-cancelar-${codigo}.png`, fullPage: true });
-  });
-}
-
-test('cancelar: un 503 deja el botón disponible y avisa sin Reintentar', async ({ page }) => {
-  await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva()));
-  await simular(page, 'POST', `/reservas/${ID}/cancelar`, (r) => r.fulfill(errorApi(503, 'x')));
-  await ver(page);
-  await page.getByRole('button', { name: 'Cancelar reserva', exact: true }).click();
-  await page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' }).click();
-  await expect(page.locator('[data-avisos] .aviso')).toContainText('El servicio no responde. Inténtalo de nuevo en unos minutos.');
-  await expect(page.getByRole('button', { name: 'Reintentar' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' })).toBeEnabled();
 });
 
 // --- 4. Estados de carga del detalle ---
@@ -453,7 +369,7 @@ test('detalle: la carga se ve con aria-busy y no deja violaciones', async ({ pag
   await sinViolaciones(page);
   await page.screenshot({ path: 'pruebas/capturas/reservas-detalle-carga.png', fullPage: true });
   soltar();
-  await expect(page.locator('dl')).toContainText('Luis Mora');
+  await expect(page.getByRole('region', { name: /D1 Reserva/ })).toContainText('Luis Mora');
 });
 
 // --- TAREA-RF04-7: correcciones de la revisión visual (B3, N11, N13, N14) ---
@@ -503,7 +419,7 @@ test.describe('N13 orden móvil del detalle', () => {
     await ver(page);
     const barra = page.locator('[data-estado-reserva]');
     await expect(barra).toBeVisible();
-    const [b, d1, cancelar] = await Promise.all([barra.boundingBox(), page.locator('.panel', { hasText: 'D1' }).first().boundingBox(), page.getByRole('button', { name: 'Cancelar reserva', exact: true }).boundingBox()]);
+    const [b, d1, cancelar] = await Promise.all([barra.boundingBox(), page.locator('.panel', { hasText: 'D1' }).first().boundingBox(), page.getByRole('button', { name: 'Solicitar cancelación' }).boundingBox()]);
     expect(b.y).toBeLessThan(d1.y);
     expect(cancelar.y).toBeLessThan(d1.y);
     expect(cancelar.y).toBeLessThan(1000);
@@ -517,16 +433,4 @@ test.describe('N13 orden móvil del detalle', () => {
     const [p, l] = await Promise.all([page.locator('.gestion-principal').boundingBox(), page.locator('.gestion-lateral').boundingBox()]);
     expect(l.x).toBeGreaterThan(p.x + p.width - 1);
   });
-});
-
-test('N14: "Volver a la reserva" devuelve el foco a "Cancelar reserva"', async ({ page }) => {
-  await simular(page, 'GET', `/reservas/${ID}`, json(200, reserva()));
-  await ver(page);
-  const abrir = page.getByRole('button', { name: 'Cancelar reserva', exact: true });
-  await abrir.click();
-  await expect(page.getByRole('heading', { name: /Cancelar reserva R-2026-00001/ })).toBeFocused();
-  await page.getByRole('button', { name: 'Volver a la reserva' }).click();
-  await expect(page.getByRole('region', { name: /Cancelar reserva R-2026-00001/ })).toBeHidden();
-  await expect(abrir).toBeVisible();
-  await expect(abrir).toBeFocused();
 });

@@ -66,7 +66,7 @@ for (const t of tamanos) {
     await expect(lateral).toContainText('Paga antes de');
     await expect(lateral).toContainText('faltan 2 d 3 h');
     await expect(page.locator('input[type=radio]')).toHaveCount(4);
-    expect(await page.locator('.casilla-etiqueta').allTextContents()).toEqual(['Transferencia bancaria', 'Yape', 'Plin', 'Tarjeta']);
+    expect(await page.locator('[data-metodos] .casilla-etiqueta').allTextContents()).toEqual(['Transferencia bancaria', 'Yape', 'Plin', 'Tarjeta']);
     await expect(page.getByText('En el POS del estudio o con el enlace del banco')).toBeVisible();
     await expect(page.getByText('Elige un método para ver los datos.')).toBeVisible();
     await page.getByRole('radio', { name: 'Transferencia bancaria' }).check();

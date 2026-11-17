@@ -16,8 +16,14 @@ export const listarMisReservas = () => pedir('/api/v1/reservas/mias');
 
 export const obtenerReserva = (id) => pedir(`/api/v1/reservas/${encodeURIComponent(id)}`);
 
-// `nota` (RF-06): obligatoria para el Administrador si hay pagos; sin ella no se manda cuerpo.
-export const cancelarReserva = (id, nota) => pedir(`/api/v1/reservas/${encodeURIComponent(id)}/cancelar`, { method: 'POST', ...(nota && { cuerpo: { nota } }) });
+// RF-18: `cuerpo` {nivel_esperado?, nota?, por?, aviso_en?}; sin campos no se manda cuerpo (cancelar sin pagos).
+export const cancelarReserva = (id, cuerpo = {}) => pedir(`/api/v1/reservas/${encodeURIComponent(id)}/cancelar`, { method: 'POST', ...(Object.keys(cuerpo).length && { cuerpo }) });
+// Vista previa de la cancelacion; solo el Administrador pasa `avisoEn` (ISO con zona).
+export const verCancelacion = (id, avisoEn) => pedir(`/api/v1/reservas/${encodeURIComponent(id)}/cancelacion${avisoEn ? `?${q({ aviso_en: avisoEn })}` : ''}`);
+// Personal y Administrador.
+export const marcarInasistencia = (id) => pedir(`/api/v1/reservas/${encodeURIComponent(id)}/inasistencia`, { method: 'POST' });
+// Administrador: tratar como nivel 1.
+export const aplicarExcepcion = (id, motivo) => pedir(`/api/v1/reservas/${encodeURIComponent(id)}/excepcion`, { method: 'POST', cuerpo: { motivo } });
 
 // Personal y administrador.
 export const listarReservas = ({ desde, hasta }) => pedir(`/api/v1/reservas?${q({ desde, hasta })}`);

@@ -14,11 +14,18 @@ import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
 import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
 
 interface Props {
-  vista: 'lista' | 'revisar' | 'datos';
+  vista: 'lista' | 'revisar' | 'datos' | 'devoluciones' | 'devolucion';
 }
 const { vista } = Astro.props;
 // Panel de la vista mientras carga o falla (codigos y titulos de la spec RF-05-pagos).
-const principal = { lista: { titulo: 'Pagos' }, revisar: { codigo: 'V1', titulo: 'Comprobante' }, datos: { codigo: 'D1', titulo: 'Datos para pagar' } }[vista];
+const principal = { lista: { titulo: 'Pagos' }, revisar: { codigo: 'V1', titulo: 'Comprobante' }, datos: { codigo: 'D1', titulo: 'Datos para pagar' }, devoluciones: { titulo: 'Devoluciones' }, devolucion: { codigo: 'V1', titulo: 'Solicitud' } }[vista];
+// RF-18: cola de devoluciones del Administrador (spec RF-18-devoluciones).
+const filtrosDevolucion = [
+  { clave: 'pendiente', texto: 'Pendientes', href: '/app/pagos/devoluciones' },
+  { clave: 'aprobada', texto: 'Aprobadas', href: '/app/pagos/devoluciones?estado=aprobada' },
+  { clave: 'realizada', texto: 'Realizadas', href: '/app/pagos/devoluciones?estado=realizada' },
+  { clave: 'rechazada', texto: 'Rechazadas', href: '/app/pagos/devoluciones?estado=rechazada' },
+];
 const filtros = [
   { clave: 'pendiente_validacion', texto: 'POR VALIDAR', href: '/app/pagos/' },
   { clave: 'aprobado', texto: 'APROBADOS', href: '/app/pagos/?estado=aprobado' },
@@ -40,7 +47,10 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
   <div data-avisos></div>
   <!-- Region viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
   <p class="visualmente-oculto" role="status" data-anuncio></p>
-  {vista === 'lista' && <nav class="pagos-filtros" aria-label="Filtrar por estado" data-filtros hidden></nav>}
+  {vista === 'lista' && (
+    <div data-aviso-devoluciones hidden class="pagos-aviso"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Ver devoluciones', href: '/app/pagos/devoluciones' }} /></div>
+  )}
+  {(vista === 'lista' || vista === 'devoluciones') && <nav class="pagos-filtros" aria-label="Filtrar por estado" data-filtros hidden></nav>}
   <div data-salida><Panel {...principal} cargando /></div>
 
   <EstadosIsla principal={principal} />
@@ -156,6 +166,100 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
     </>
   )}
 
+  {vista === 'devoluciones' && (
+    <>
+      {filtrosDevolucion.flatMap((f) => [
+        <template data-filtro={f.clave} data-aplicado="no"><EtiquetaTecnica variante="filtro" texto={f.texto} href={f.href} /></template>,
+        <template data-filtro={f.clave} data-aplicado="si"><EtiquetaTecnica variante="filtro" texto={f.texto} href={f.href} aplicado /></template>,
+      ])}
+      <template data-estado="vacio">
+        <Panel titulo="Devoluciones">
+          <p class="gestion-vacio-titulo" data-vacio-titulo></p>
+          <p data-vacio-texto></p>
+          <div class="pagos-aparte" data-ver-pendientes><Boton variante="secundario" href="/app/pagos/devoluciones">Ver pendientes</Boton></div>
+        </Panel>
+      </template>
+      <template data-estado="datos">
+        <Panel titulo="Devoluciones">
+          <p class="pagos-total" data-total></p>
+          <Tabla titulo="Devoluciones" columnas={['Reserva', 'Cliente', 'Monto', 'Solicitada', '']} numericas={[2]} />
+        </Panel>
+      </template>
+      <template data-fila>
+        <tr>
+          <th scope="row"><span class="pagos-folio" data-folio></span><span class="pagos-secundario" data-tipo></span></th>
+          <td data-etiqueta="Cliente" data-cliente></td>
+          <td class="tabla-num" data-etiqueta="Monto" data-monto></td>
+          <td data-etiqueta="Solicitada"><span data-fecha-celda></span><span class="pagos-secundario" data-fecha-extra hidden></span></td>
+          <td><Boton variante="secundario" href="#" data-revisar>Revisar devolución<span class="visualmente-oculto" data-objeto></span></Boton></td>
+        </tr>
+      </template>
+    </>
+  )}
+
+  {vista === 'devolucion' && (
+    <>
+      <template data-estado="no-encontrada">
+        <Panel codigo="[404]" titulo="Devolución no encontrada"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a devoluciones', href: '/app/pagos/devoluciones' }} /></Panel>
+      </template>
+      <template data-indicador="correcto"><div><IndicadorEstado variante="barra" tono="correcto" texto="Realizada" dato=" " activo /><p class="pagos-motivo" data-motivo></p></div></template>
+      <template data-indicador="problema"><div><IndicadorEstado variante="barra" tono="problema" texto="Rechazada" dato=" " activo /><p class="pagos-motivo" data-motivo></p></div></template>
+      <template data-estado="datos">
+        <div class="gestion-rejilla">
+          <div class="gestion-principal">
+            <Panel codigo="V1" titulo="Solicitud">
+              <dl class="gestion-datos">
+                <div><dt>Cliente</dt><dd data-campo="cliente"></dd></div>
+                <div><dt>Reserva</dt><dd><a class="pagos-enlace" data-reserva href="#"></a></dd></div>
+                <div><dt>Tipo</dt><dd data-campo="tipo"></dd></div>
+                <div><dt>Monto</dt><dd data-campo="monto"></dd></div>
+                <div><dt>Solicitada</dt><dd data-campo="solicitada"></dd></div>
+                <div data-fila="motivo"><dt>Motivo del cliente</dt><dd class="pagos-texto" data-campo="motivo"></dd></div>
+                <div data-fila="plazo"><dt>Plazo</dt><dd data-campo="plazo"></dd></div>
+              </dl>
+            </Panel>
+          </div>
+          <div class="gestion-lateral">
+            <div data-panel="decidir" hidden>
+              <Panel codigo="V2" titulo="Decisión" variante="lateral">
+                <form novalidate method="post" class="gestion-formulario" data-formulario="decidir">
+                  <div class="campo">
+                    <fieldset class="gestion-grupo">
+                      <legend>Decisión</legend>
+                      <Casilla tipo="radio" nombre="decision" valor="total" id="decision-total" etiqueta="Devolver todo" />
+                      <Casilla tipo="radio" nombre="decision" valor="parcial" id="decision-parcial" aria-controls="decision-campos-parcial" etiqueta="Devolver una parte" />
+                      <div id="decision-campos-parcial" hidden>
+                        <Campo id="decision-monto" nombre="monto" etiqueta="Monto a devolver (S/)" inputmode="decimal" autocomplete="off" />
+                      </div>
+                      <Casilla tipo="radio" nombre="decision" valor="rechazo" id="decision-rechazo" etiqueta="Rechazar" />
+                    </fieldset>
+                  </div>
+                  <Campo tipo="area" id="decision-motivo" nombre="motivo" etiqueta="Motivo" ayuda="El cliente lo verá. Obligatorio si rechazas." maxlength="500" />
+                  <p data-consecuencia hidden></p>
+                  <div><Boton tipo="submit" data-envio data-decidir>Registrar decisión</Boton></div>
+                </form>
+              </Panel>
+            </div>
+            <div data-panel="devolver" hidden>
+              <Panel codigo="V2" titulo="Devolver" variante="lateral">
+                <form novalidate method="post" class="gestion-formulario" data-formulario="realizada">
+                  <dl class="gestion-datos">
+                    <div><dt>Monto aprobado</dt><dd data-campo="aprobado"></dd></div>
+                    <div data-fila="plazo-devolver"><dt>Plazo</dt><dd data-campo="plazo-devolver"></dd></div>
+                  </dl>
+                  <Campo tipo="area" id="realizada-nota" nombre="nota" etiqueta="Nota" obligatorio maxlength="500" ayuda="Medio y número de operación. Por ejemplo: «Yape, operación 12345678»." />
+                  <p>El cliente recibe tu nota por correo y la ve en Mis créditos. No se puede deshacer.</p>
+                  <div><Boton tipo="submit" data-envio data-realizada>Marcar como realizada</Boton></div>
+                </form>
+              </Panel>
+            </div>
+            <div data-panel="resultado" hidden></div>
+          </div>
+        </div>
+      </template>
+    </>
+  )}
+
   {vista === 'datos' && (
     <template data-estado="datos">
       <div class="gestion-rejilla gestion-rejilla-simple">
@@ -185,6 +289,9 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
 <script>
   // @ts-nocheck
   import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { listarDevoluciones, obtenerDevolucion, decidirDevolucion, marcarRealizada } from '../servicios/creditos.js';
+  import { faltan } from '../servicios/reservas.js';
+  import { leerImporte, mostrarImporte } from '../servicios/formatos.js';
   import { listarPagos, obtenerPago, obtenerCaptura, aprobarPago, rechazarPago, obtenerInstrucciones, guardarInstrucciones, obtenerContacto, guardarContacto } from '../servicios/pagos.js';
   import { soles, porcentaje, fechaDe, horaDe, diaMes, diaMesAnio } from '../servicios/formatos.js';
   import { mostrarAviso, enfocarAviso, ponerError, quitarError, limpiarAvisos, llenarAviso } from '../servicios/formulario.js';
@@ -195,6 +302,14 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
   const ESTADOS_RESERVA = { pre_reservada: ['Pre-reservada', 'aviso'], confirmada: ['Confirmada', 'exito'], en_curso: ['En curso', 'activa'], finalizada: ['Finalizada', 'exito'], cancelada: ['Cancelada', 'alerta'] };
   // Estado de la URL -> [estado de la API, nombre en la lista, plural en el total]
   const LISTAS = { pendiente_validacion: ['por validar', 'pagos por validar', 'pago por validar'], aprobado: ['aprobados', 'pagos aprobados', 'pago aprobado'], rechazado: ['rechazados', 'pagos rechazados', 'pago rechazado'] };
+  // RF-18: devoluciones. Estado de la URL -> [nombre en el total, plural]; tipo -> texto.
+  const COLAS = { pendiente: ['pendiente', 'pendientes'], aprobada: ['aprobada', 'aprobadas'], realizada: ['realizada', 'realizadas'], rechazada: ['rechazada', 'rechazadas'] };
+  const TIPOS_DEVOLUCION = { nivel_1: 'Crédito de cancelación', estudio: 'Cancelación del estudio' };
+  const DIA = 864e5;
+  const AYUDA_DECISION = {
+    total: 'El crédito queda en S/ 0,00 y avisamos al cliente. Luego haces la devolución fuera de la app y la marcas como hecha. No se puede deshacer.',
+    rechazo: 'El crédito sigue igual y el cliente verá tu motivo. No se puede deshacer.',
+  };
   const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
   const hora = (iso) => `${diaMes(fechaDe(iso))}, ${horaDe(iso)}`;
   const horaAnio = (iso) => `${diaMesAnio(fechaDe(iso))}, ${horaDe(iso)}`;
@@ -216,11 +331,13 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
       'reserva-confirmada': ['Pago aprobado', 'La reserva quedó confirmada y avisamos al cliente.'],
       'pago-rechazado': ['Pago rechazado', 'Avisamos al cliente con el motivo.'],
       'datos-actualizados': ['Datos para pagar guardados', 'Los clientes ya ven los nuevos.'],
+      'devolucion-decidida': ['Decisión registrada', 'Avisamos al cliente por correo.'],
+      'devolucion-realizada': ['Devolución marcada como hecha', 'Avisamos al cliente con tu nota.'],
     };
 
     iniciar() {
       this.registro = new URLSearchParams(location.search).get('id') ?? '';
-      this.noEncontrada = ['No encontramos este pago.', ''];
+      this.noEncontrada = [this.vista === 'devolucion' ? 'No encontramos esta devolución.' : 'No encontramos este pago.', ''];
       this.addEventListener('click', (e) => {
         const boton = e.target.closest('button');
         if (!boton) return;
@@ -233,15 +350,23 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
       this.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && e.target.closest('[data-panel="rechazo"]')) this.cerrarRechazo();
       });
-      this.addEventListener('change', (e) => e.target.matches('[data-metodo-activo]') && this.avisarSinActivos());
+      this.addEventListener('change', (e) => {
+        if (e.target.matches('[data-metodo-activo]')) this.avisarSinActivos();
+        else if (e.target.matches('input[name="decision"]')) this.cambiarDecision();
+      });
+      this.addEventListener('input', (e) => e.target.id === 'decision-monto' && this.cambiarDecision(true));
     }
 
     alEnviar(formulario) {
-      if (formulario.dataset.formulario === 'rechazar') this.rechazar(formulario);
+      const cual = formulario.dataset.formulario;
+      if (cual === 'rechazar') this.rechazar(formulario);
+      else if (cual === 'decidir') this.decidir(formulario);
+      else if (cual === 'realizada') this.realizada(formulario);
       else this.guardar(formulario);
     }
 
     errorEnvio(error) {
+      if (this.vista === 'devolucion') return this.errorDevolucion(error);
       if (error.estado === 404 && this.vista === 'revisar') this.sustituir('no-encontrada');
       else if (error.codigo === 'pago_ya_validado') this.yaValidado();
       else if (error.estado === 422 && this.vista === 'revisar') {
@@ -274,6 +399,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
       nav.replaceChildren(...filtrosEstado.map((clave) => this.querySelector(`template[data-filtro="${clave}"][data-aplicado="${clave === estado ? 'si' : 'no'}"]`).content.cloneNode(true)));
       nav.hidden = false;
       const pagos = await listarPagos(estado === 'pendiente_validacion' ? undefined : estado);
+      this.avisarDevoluciones();
       const [nombre, varios, uno] = LISTAS[estado];
       if (estado === 'pendiente_validacion') this.emitir(pagos.length);
       if (!pagos.length) {
@@ -313,6 +439,201 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
       const total = plural(pagos.length, uno, varios);
       this.querySelector('[data-total]').textContent = total;
       return total;
+    }
+
+    // Durante el envío de la decisión, sus opciones también se bloquean.
+    bloquear(si) {
+      super.bloquear(si);
+      this.querySelectorAll('[data-formulario="decidir"] input, [data-formulario="decidir"] textarea, [data-formulario="realizada"] textarea').forEach((e) => (e.disabled = si));
+    }
+
+    // Trabajo de devoluciones sobre la lista; un fallo deja la lista sin aviso.
+    async avisarDevoluciones() {
+      const caja = this.querySelector('[data-aviso-devoluciones]');
+      try {
+        const [pendientes, aprobadas] = (await Promise.all([listarDevoluciones('pendiente'), listarDevoluciones('aprobada')])).map((l) => (Array.isArray(l) ? l.length : 0));
+        const partes = [pendientes && `${plural(pendientes, 'devolución', 'devoluciones')} por decidir`, aprobadas && `${pendientes ? aprobadas : plural(aprobadas, 'devolución', 'devoluciones')} por hacer`].filter(Boolean);
+        caja.hidden = !partes.length;
+        if (!partes.length) return;
+        const aviso = caja.querySelector('.aviso');
+        llenarAviso(aviso, `Tienes ${partes.join(' y ')}.`);
+        aviso.removeAttribute('role');
+      } catch {
+        caja.hidden = true;
+      }
+    }
+
+    // --- Devoluciones (cola del Administrador) ---
+
+    async devoluciones() {
+      const pedido = new URLSearchParams(location.search).get('estado');
+      const estado = Object.hasOwn(COLAS, pedido) ? pedido : 'pendiente';
+      const nav = this.querySelector('[data-filtros]');
+      nav.replaceChildren(...Object.keys(COLAS).map((clave) => this.querySelector(`template[data-filtro="${clave}"][data-aplicado="${clave === estado ? 'si' : 'no'}"]`).content.cloneNode(true)));
+      nav.hidden = false;
+      const lista = await listarDevoluciones(estado);
+      if (!Array.isArray(lista)) throw new Error('respuesta_inesperada');
+      const [uno, varios] = COLAS[estado];
+      if (!lista.length) {
+        this.mostrar('vacio');
+        const pendientes = estado === 'pendiente';
+        this.querySelector('[data-vacio-titulo]').textContent = pendientes ? 'No hay devoluciones por decidir' : `Aún no hay devoluciones ${varios}.`;
+        if (pendientes) {
+          this.querySelector('[data-vacio-texto]').textContent = 'Cuando un cliente pida la devolución de un crédito, aparecerá aquí.';
+          this.querySelector('[data-ver-pendientes]').remove();
+        } else this.querySelector('[data-vacio-texto]').remove();
+        return pendientes ? 'No hay devoluciones por decidir' : `Aún no hay devoluciones ${varios}`;
+      }
+      this.mostrar('datos');
+      // Pendientes y aprobadas, las más antiguas arriba (las del estudio, por su plazo); realizadas y rechazadas, las más recientes.
+      const clave = (d) => Date.parse(estado === 'realizada' ? d.realizada_en : estado === 'rechazada' ? d.decidida_en : estado === 'aprobada' && d.tipo === 'estudio' && d.limite ? d.limite : d.solicitada_en);
+      const ordenadas = [...lista].sort((a, b) => (estado === 'realizada' || estado === 'rechazada' ? -1 : 1) * (clave(a) - clave(b)));
+      this.querySelector('caption').textContent = `Devoluciones ${varios}`;
+      this.querySelector('thead th:nth-child(4)').textContent = { pendiente: 'Solicitada', aprobada: 'Plazo', realizada: 'Realizada', rechazada: 'Decidida' }[estado];
+      const modelo = this.querySelector('template[data-fila]');
+      this.querySelector('tbody').replaceChildren(...ordenadas.map((d) => {
+        const fila = modelo.content.cloneNode(true).firstElementChild;
+        fila.querySelector('[data-folio]').textContent = d.folio;
+        fila.querySelector('[data-tipo]').textContent = TIPOS_DEVOLUCION[d.tipo] ?? d.tipo;
+        const cliente = fila.querySelector('[data-cliente]');
+        cliente.textContent = d.cliente?.nombre ?? 'Sin nombre';
+        if (!d.cliente?.nombre) cliente.classList.add('pagos-sin-nombre');
+        const parcial = d.monto_aprobado !== undefined && d.monto_aprobado !== null && Number(d.monto_aprobado) < Number(d.monto_solicitado);
+        fila.querySelector('[data-monto]').textContent = parcial ? `${soles(d.monto_aprobado)} de ${soles(d.monto_solicitado)}` : soles(d.monto_aprobado ?? d.monto_solicitado);
+        const celda = fila.querySelector('[data-fecha-celda]');
+        const extra = fila.querySelector('[data-fecha-extra]');
+        if (estado === 'aprobada') {
+          const ms = d.limite ? Date.parse(d.limite) - Date.now() : null;
+          if (ms === null) celda.textContent = '—';
+          else if (ms > 0) celda.textContent = `${diaMes(fechaDe(d.limite))} · ${faltan(ms)}`;
+          else {
+            celda.append(this.sello('alerta', 'Fuera de plazo'));
+            extra.hidden = false;
+            extra.textContent = `Venció el ${diaMes(fechaDe(d.limite))}`;
+          }
+        } else if (estado === 'pendiente') {
+          const [texto, titulo] = fechaPago(d.solicitada_en);
+          celda.textContent = texto;
+          if (titulo) celda.title = titulo;
+        } else celda.textContent = hora(estado === 'realizada' ? d.realizada_en : d.decidida_en);
+        fila.querySelector('[data-revisar]').href = `/app/pagos/devoluciones/revisar?id=${encodeURIComponent(d.id)}`;
+        fila.querySelector('[data-objeto]').textContent = ` de ${d.folio}`;
+        return fila;
+      }));
+      const total = plural(lista.length, `devolución ${uno}`, `devoluciones ${varios}`);
+      this.querySelector('[data-total]').textContent = total;
+      return total;
+    }
+
+    // --- Revisar devolucion ---
+
+    async devolucion() {
+      if (!UUID.test(this.registro)) return this.noExiste();
+      let d;
+      try {
+        d = await obtenerDevolucion(this.registro);
+      } catch (error) {
+        if (error.estado === 404) return this.noExiste();
+        throw error;
+      }
+      if (!d || !Object.hasOwn(COLAS, d.estado)) throw new Error('respuesta_inesperada');
+      this.dev = d;
+      this.mostrar('datos');
+      const campo = (nombre, valor) => (this.querySelector(`[data-campo="${nombre}"]`).textContent = valor);
+      const cliente = d.cliente?.nombre ?? 'Sin nombre';
+      const plazo = d.limite ? (Date.parse(d.limite) > Date.now() ? `${diaMes(fechaDe(d.limite))} · ${faltan(Date.parse(d.limite) - Date.now())}` : `Venció el ${diaMes(fechaDe(d.limite))}`) : null;
+      campo('cliente', cliente);
+      const enlace = this.querySelector('[data-reserva]');
+      enlace.textContent = d.folio;
+      enlace.href = `/app/reservas/detalle?id=${encodeURIComponent(d.id_reserva)}`;
+      campo('tipo', TIPOS_DEVOLUCION[d.tipo] ?? d.tipo);
+      campo('monto', soles(d.monto_solicitado));
+      campo('solicitada', horaAnio(d.solicitada_en));
+      if (d.tipo === 'nivel_1') campo('motivo', d.motivo);
+      else this.querySelector('[data-fila="motivo"]').remove();
+      if (d.tipo === 'estudio' && plazo) campo('plazo', plazo);
+      else this.querySelector('[data-fila="plazo"]').remove();
+      this.querySelector('#decision-total').closest('.casilla').querySelector('.casilla-etiqueta').replaceChildren(`Devolver todo (${soles(d.monto_solicitado)})`);
+      if (d.estado === 'pendiente') this.querySelector('[data-panel="decidir"]').hidden = false;
+      else if (d.estado === 'aprobada') {
+        this.querySelector('[data-panel="devolver"]').hidden = false;
+        campo('aprobado', soles(d.monto_aprobado));
+        if (plazo) campo('plazo-devolver', plazo);
+        else this.querySelector('[data-fila="plazo-devolver"]').remove();
+      } else this.resultado(d);
+      this.encabezado(`${cliente} · ${TIPOS_DEVOLUCION[d.tipo] ?? d.tipo} de la reserva ${d.folio}`, d.folio);
+      return `Devolución de ${d.folio}`;
+    }
+
+    // Realizada o rechazada: la decisión se sustituye por el resultado, con su fecha y su texto.
+    resultado(d) {
+      const hecha = d.estado === 'realizada';
+      const bloque = this.querySelector(`template[data-indicador="${hecha ? 'correcto' : 'problema'}"]`).content.cloneNode(true);
+      bloque.querySelector('.indicador-dato').textContent = hora(hecha ? d.realizada_en : d.decidida_en);
+      bloque.querySelector('[data-motivo]').textContent = hecha ? `Nota: ${d.nota_realizada ?? ''}` : `Motivo: ${d.motivo_decision ?? ''}`;
+      const zona = this.querySelector('[data-panel="resultado"]');
+      zona.hidden = false;
+      zona.replaceChildren(bloque);
+    }
+
+    // La opción elegida decide el texto del botón, las consecuencias y si se pide el monto.
+    cambiarDecision(soloMonto = false) {
+      const d = this.querySelector('input[name="decision"]:checked')?.value;
+      if (!d) return;
+      this.querySelector('#decision-campos-parcial').hidden = d !== 'parcial';
+      const monto = leerImporte(this.querySelector('#decision-monto').value);
+      const texto = d === 'parcial' ? `Se descuenta ${monto ? soles(monto) : 'ese monto'} del crédito; el resto sigue como crédito. Avisamos al cliente. No se puede deshacer.` : AYUDA_DECISION[d];
+      const parrafo = this.querySelector('[data-consecuencia]');
+      parrafo.hidden = false;
+      parrafo.textContent = texto;
+      if (!soloMonto) this.querySelector('[data-decidir]').textContent = { total: 'Aprobar devolución total', parcial: 'Aprobar devolución parcial', rechazo: 'Rechazar devolución' }[d];
+    }
+
+    decidir(formulario) {
+      if (this.ocupado) return;
+      this.querySelectorAll('[data-formulario="decidir"] [aria-invalid="true"]').forEach(quitarError);
+      const d = formulario.querySelector('input[name="decision"]:checked')?.value;
+      const monto = formulario.querySelector('#decision-monto');
+      const motivo = formulario.querySelector('#decision-motivo');
+      const texto = motivo.value.trim();
+      const importe = leerImporte(monto.value);
+      const saldo = this.dev.monto_solicitado;
+      const errores = [];
+      if (!d) errores.push({ entrada: formulario.querySelector('#decision-total'), mensaje: 'Elige qué decides.', texto: 'Decisión' });
+      if (d === 'parcial' && (importe === null || Number(importe) < 0.01 || Number(importe) > Number(saldo))) errores.push({ entrada: monto, mensaje: `Escribe un monto entre S/ 0,01 y ${soles(saldo)}.`, texto: 'Monto a devolver' });
+      if (d && d !== 'total' && !texto) errores.push({ entrada: motivo, mensaje: d === 'rechazo' ? 'Escribe por qué la rechazas.' : 'Escribe el motivo de la devolución parcial.', texto: 'Motivo' });
+      else if (texto.length > 500) errores.push({ entrada: motivo, mensaje: 'El motivo admite hasta 500 caracteres.', texto: 'Motivo' });
+      else if (texto && texto.length < 10) errores.push({ entrada: motivo, mensaje: 'El motivo debe tener entre 10 y 500 caracteres.', texto: 'Motivo' });
+      if (!this.validar(errores)) return;
+      const cuerpo = { decision: d, ...(d === 'parcial' && { monto: importe }), ...(texto && { motivo: texto }) };
+      this.enviar(formulario.querySelector('[data-decidir]'), d === 'rechazo' ? 'Rechazando…' : 'Aprobando…', () => decidirDevolucion(this.registro, cuerpo), () => location.assign('/app/pagos/devoluciones?aviso=devolucion-decidida'), true);
+    }
+
+    realizada(formulario) {
+      if (this.ocupado) return;
+      const nota = formulario.querySelector('#realizada-nota');
+      quitarError(nota);
+      const texto = nota.value.trim();
+      const mensaje = !texto ? 'Escribe el medio y el número de operación.' : texto.length > 500 ? 'La nota admite hasta 500 caracteres.' : null;
+      if (!this.validar(mensaje ? [{ entrada: nota, mensaje, texto: 'Nota' }] : [])) return;
+      this.enviar(formulario.querySelector('[data-realizada]'), 'Guardando…', () => marcarRealizada(this.registro, texto), () => location.assign('/app/pagos/devoluciones?aviso=devolucion-realizada'), true);
+    }
+
+    errorDevolucion(error) {
+      if (error.estado === 404) this.sustituir('no-encontrada');
+      else if (error.estado === 409) {
+        limpiarAvisos(this);
+        const aviso = mostrarAviso(this, 'informacion', error.codigo === 'devolucion_no_aprobada' ? 'Esta devolución no está aprobada: no se puede marcar como realizada.' : 'Esta devolución ya se decidió, quizá desde otra sesión.');
+        this.cargar().then(() => enfocarAviso(aviso));
+      } else if (error.estado === 422) {
+        const d = this.querySelector('input[name="decision"]:checked')?.value;
+        const [entrada, mensaje, texto] =
+          this.dev?.estado === 'aprobada' ? [this.querySelector('#realizada-nota'), 'La nota admite hasta 500 caracteres.', 'Nota']
+          : error.codigo === 'monto_invalido' ? [this.querySelector('#decision-monto'), `Escribe un monto entre S/ 0,01 y ${soles(this.dev.monto_solicitado)}.`, 'Monto a devolver']
+          : [this.querySelector('#decision-motivo'), error.codigo === 'motivo_requerido' ? (d === 'rechazo' ? 'Escribe por qué la rechazas.' : 'Escribe el motivo de la devolución parcial.') : 'El motivo debe tener entre 10 y 500 caracteres.', 'Motivo'];
+        this.validar([{ entrada, mensaje, texto }]);
+      } else return false;
+      return true;
     }
 
     // --- Revisar ---
@@ -603,6 +924,12 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
     color: var(--color-texto-secundario);
     font-size: var(--fuente-tamano-pequeno);
     font-weight: var(--fuente-peso-regular);
+  }
+  .pagos-aviso {
+    margin-block-end: var(--espacio-4);
+  }
+  .pagos-texto {
+    white-space: pre-line;
   }
   .pagos-aparte {
     margin-block-start: var(--espacio-2);

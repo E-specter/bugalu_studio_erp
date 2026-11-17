@@ -13,7 +13,15 @@ import Reservas from '../../../islas/Reservas.astro';
     descripcion="Tus horarios en la sala, su estado y lo que falta pagar."
   >
     <!-- La isla lo quita si no hay reservas: el vacío ya trae su propio "Reservar sala". -->
-    <div slot="acciones" data-accion-encabezado><Boton href="/reservar/">Reservar sala</Boton></div>
+    <div slot="acciones" data-accion-encabezado class="acciones-reservas"><Boton variante="secundario" href="/app/reservas/creditos">Mis créditos</Boton><Boton href="/reservar/">Reservar sala</Boton></div>
   </EncabezadoPantalla>
   <Reservas vista="lista" />
 </LayoutApp>
+
+<style>
+  .acciones-reservas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-3);
+  }
+</style>

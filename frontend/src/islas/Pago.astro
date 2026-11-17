@@ -54,10 +54,27 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
             <div data-fila="vence"><dt>Paga antes de</dt><dd data-campo="vence"></dd></div>
           </dl>
           <p class="pago-total"><span class="pago-total-etiqueta">Importe de la cuota</span><span class="pago-total-importe" data-campo="importe"></span></p>
+          <dl class="gestion-datos pago-resumen pago-credito-resumen" data-aplicado hidden>
+            <div><dt>Pagado con crédito</dt><dd data-campo="pagado"></dd></div>
+            <div><dt>Falta pagar</dt><dd data-campo="falta"></dd></div>
+          </dl>
           <p class="gestion-ayuda" data-igv hidden></p>
           <div class="pago-rechazo" data-rechazo hidden><Aviso variante="aviso" titulo=" " texto=" " /></div>
         </Panel>
       </aside>
+      <div class="gestion-principal">
+      <!-- RF-18: P0 va fuera del formulario para que Enter en su monto no registre el pago. -->
+      <div data-p0 hidden>
+        <Panel codigo="P0" titulo="Crédito">
+          <div class="gestion-formulario">
+            <Casilla nombre="usar_credito" id="pago-usar-credito" aria-controls="pago-credito-campos" etiqueta="Usar mi crédito" />
+            <div class="gestion-formulario" id="pago-credito-campos" hidden>
+              <Campo id="pago-credito-monto" nombre="monto_credito" etiqueta="Monto del crédito (S/)" inputmode="decimal" autocomplete="off" ayuda=" " />
+              <div><Boton variante="secundario" data-envio data-aplicar-credito>Aplicar crédito</Boton></div>
+            </div>
+          </div>
+        </Panel>
+      </div>
       <form class="gestion-principal" novalidate enctype="multipart/form-data">
         <Panel codigo="P1" titulo="Método de pago">
           <div class="campo">
@@ -87,6 +104,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
           <p class="gestion-ayuda" data-lento hidden>Subiendo la captura. Con conexión lenta puede tardar un poco.</p>
         </div>
       </form>
+      </div>
     </div>
   </template>
 </bugalu-pago>
@@ -96,6 +114,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
   import { IslaGestion } from '../servicios/isla-gestion.js';
   import { obtenerReserva, absoluta, faltan, textoCuota, ultimoRechazo } from '../servicios/reservas.js';
   import { registrarPago, obtenerInstrucciones, obtenerContacto } from '../servicios/pagos.js';
+  import { listarCreditos, usarCredito, disponible } from '../servicios/creditos.js';
   import { fechaDe, horaDe, diaMesAnio, soles, porcentaje, leerImporte, mostrarImporte } from '../servicios/formatos.js';
   import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, llenarAviso } from '../servicios/formulario.js';
   import { listarTextosLegales } from '../servicios/textos-legales.js';
@@ -119,6 +138,8 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
     generica: 'Esta cuota ya no admite pagos.',
   };
   const OPERACION = /^[A-Za-z0-9-]{4,40}$/;
+  const centimos = (monto) => Math.round(Number(monto ?? 0) * 100);
+  const decimal = (c) => (c / 100).toFixed(2);
   const tecnica = (texto) => Object.assign(document.createElement('span'), { textContent: texto });
 
   class BugaluPago extends IslaGestion {
@@ -131,6 +152,18 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
       this.addEventListener('change', (e) => {
         if (e.target.matches('input[name="metodo"]')) this.datosMetodo();
         else if (e.target.id === 'pago-monto') this.ayudaMonto();
+        else if (e.target.id === 'pago-usar-credito') this.querySelector('#pago-credito-campos').hidden = !e.target.checked;
+      });
+      this.addEventListener('click', (e) => {
+        const boton = e.target.closest('[data-aplicar-credito]');
+        if (boton) this.aplicarCredito(boton);
+      });
+      // Enter en el monto del credito aplica el credito (no registra el pago: P0 no esta en el formulario).
+      this.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.id === 'pago-credito-monto') {
+          e.preventDefault();
+          this.aplicarCredito(this.querySelector('[data-aplicar-credito]'));
+        }
       });
       this.addEventListener('focusout', (e) => e.target.id === 'pago-monto' && this.ayudaMonto());
       this.addEventListener('cambio', () => this.revisarCaptura());
@@ -167,7 +200,8 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
       if (!UUID.test(id) || !UUID.test(cuota)) return this.mostrar('no-encontrada');
       let r, instrucciones;
       try {
-        [r, instrucciones] = await Promise.all([obtenerReserva(id), obtenerInstrucciones()]);
+        // Los creditos son un extra: sin ellos la pantalla sigue igual.
+        [r, instrucciones, this.creditos] = await Promise.all([obtenerReserva(id), obtenerInstrucciones(), listarCreditos().then((l) => (Array.isArray(l) ? l : []), () => [])]);
       } catch (error) {
         if (error.estado !== 404) throw error;
         return this.mostrar('no-encontrada');
@@ -254,10 +288,76 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
         llenarAviso(caja.querySelector('.aviso'), `Rechazamos tu pago del ${absoluta(rechazo.registrado_en)}: «${rechazo.motivo_rechazo}»`, 'Corrígelo y regístralo de nuevo.');
         caja.querySelector('.aviso').removeAttribute('role');
       }
-      this.querySelector('#pago-monto').value = mostrarImporte(c.monto);
+      // Lo ya aplicado (credito o captura): el resto se paga con captura.
+      this.falta = decimal(Math.max(centimos(c.monto) - centimos(c.pagado), 0));
+      const aplicado = centimos(c.pagado) > 0;
+      this.querySelector('[data-aplicado]').hidden = !aplicado;
+      if (aplicado) {
+        campo('pagado', soles(c.pagado));
+        campo('falta', soles(this.falta));
+      }
+      this.querySelector('#pago-monto').value = mostrarImporte(this.falta);
       this.querySelector('[data-volver]').href = this.urlReserva();
+      this.pintarCredito();
       this.pintarMetodos(activos);
       this.resumenPago();
+    }
+
+    // P0: solo si hay crédito disponible (sin devolución pendiente). Se puede usar hasta lo que falta de la cuota.
+    pintarCredito() {
+      const bloque = this.querySelector('[data-p0]');
+      const disp = disponible(this.creditos ?? []);
+      bloque.hidden = !(centimos(disp) > 0);
+      if (bloque.hidden) return;
+      this.maximoCredito = decimal(Math.min(centimos(disp), centimos(this.falta)));
+      this.querySelector('#pago-usar-credito').closest('.casilla').querySelector('.casilla-etiqueta').textContent = `Usar mi crédito (${soles(disp)} disponible)`;
+      this.querySelector('#pago-credito-monto-ayuda').textContent = `Hasta ${soles(this.maximoCredito)}. Se aplica al momento, sin validación, y no se puede deshacer.`;
+      const monto = this.querySelector('#pago-credito-monto');
+      if (!monto.value || centimos(leerImporte(monto.value)) > centimos(this.maximoCredito)) monto.value = mostrarImporte(this.maximoCredito);
+    }
+
+    aplicarCredito(boton) {
+      const campo = this.querySelector('#pago-credito-monto');
+      quitarError(campo);
+      const importe = leerImporte(campo.value);
+      const max = this.maximoCredito;
+      this.accion = 'credito';
+      if (importe === null || centimos(importe) <= 0 || centimos(importe) > centimos(max)) return this.errorMonto(`Escribe un monto mayor que 0 y de hasta ${soles(max)}.`);
+      this.enviar(boton, 'Aplicando…', () => usarCredito(this.cuota.id, { monto: importe }), (r) => this.tras(r, importe));
+    }
+
+    errorMonto(mensaje) {
+      this.validar([{ entrada: this.querySelector('#pago-credito-monto'), mensaje, texto: 'Monto del crédito' }]);
+    }
+
+    // Credito aplicado: si cubrio la cuota se va al detalle (la reserva ya esta confirmada si era el adelanto); si no, se recarga con lo que falta.
+    async tras(r, importe) {
+      const c = (r.cuotas ?? []).find((x) => x.id === this.cuota.id);
+      if (!c || c.estado === 'pagada' || centimos(c.pagado) >= centimos(c.monto)) {
+        const confirma = this.reserva.estado === 'pre_reservada' && r.estado === 'confirmada';
+        return location.assign(`${this.urlReserva()}&aviso=${confirma ? 'pagado-con-credito-confirmada' : 'pagado-con-credito'}`);
+      }
+      await this.cargar();
+      enfocarAviso(mostrarAviso(this, 'exito', `Aplicaste ${soles(importe)} de crédito`, `Paga los ${soles(decimal(centimos(c.monto) - centimos(c.pagado)))} que faltan con tu comprobante.`));
+    }
+
+    // Errores de aplicar el credito (spec RF-18-creditos, Estados).
+    async errorCredito(error) {
+      if (error.estado === 404) return this.sustituir('no-encontrada');
+      if (error.estado === 422) return this.errorMonto(`Escribe un monto mayor que 0 y de hasta ${soles(this.maximoCredito)}.`);
+      if (error.estado === 409 && error.codigo === 'credito_insuficiente') {
+        try {
+          this.creditos = await listarCreditos();
+        } catch {}
+        this.pintarCredito();
+        return this.errorMonto(`Tu crédito cambió: ahora tienes ${soles(disponible(this.creditos ?? []))}. Revisa el monto.`);
+      }
+      if (error.estado === 409) return this.yaNoPagable(error.codigo === 'cuota_pagada' ? 'cuota_pagada' : 'cuota_no_pagable');
+      const [titulo, texto] =
+        error.estado === 0 ? ['Sin conexión', 'Tus datos siguen aquí; revisa tu red y vuelve a intentarlo.']
+        : error.estado === 503 ? ['No pudimos aplicar el crédito: el servicio no responde', 'Tus datos siguen aquí; inténtalo en unos minutos.']
+        : ['Algo salió mal', 'Tus datos siguen aquí; inténtalo de nuevo.'];
+      enfocarAviso(mostrarAviso(this, 'error', titulo, texto));
     }
 
     // Resumen de lectura del pago (RF-17): es un extra, sin el se puede pagar igual.
@@ -310,8 +410,8 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
     // RN-04 admite pagar otro monto: la ayuda avisa, no es error.
     ayudaMonto() {
       const v = leerImporte(this.querySelector('#pago-monto').value);
-      const distinto = v !== null && Number(v) > 0 && Number(v) !== Number(this.cuota.monto);
-      this.querySelector('#pago-monto-ayuda').textContent = distinto ? `No coincide con la cuota (${soles(this.cuota.monto)}). Puedes registrarlo igual: el estudio lo revisará.` : AYUDA_MONTO;
+      const distinto = v !== null && Number(v) > 0 && Number(v) !== Number(this.falta);
+      this.querySelector('#pago-monto-ayuda').textContent = distinto ? `No coincide con la cuota (${soles(this.falta)}). Puedes registrarlo igual: el estudio lo revisará.` : AYUDA_MONTO;
     }
 
     revisarCaptura() {
@@ -328,6 +428,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
     }
 
     alEnviar() {
+      this.accion = 'pago';
       const entradas = this.entradas();
       const { metodo, monto, operacion, carga } = entradas;
       this.limpiarErrores();
@@ -364,7 +465,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
     // Durante el envio: campos y "Volver" bloqueados; a los 10 s, el aviso de subida lenta.
     bloquear(si) {
       super.bloquear(si);
-      this.querySelectorAll('form input, form .archivo-accion').forEach((e) => (e.disabled = si));
+      this.querySelectorAll('form input, form .archivo-accion, [data-p0] input').forEach((e) => (e.disabled = si));
       const volver = this.querySelector('form [data-volver]');
       if (si) volver?.setAttribute('aria-disabled', 'true');
       else volver?.removeAttribute('aria-disabled');
@@ -376,6 +477,10 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
     }
 
     errorEnvio(error) {
+      if (this.accion === 'credito') {
+        this.errorCredito(error);
+        return true;
+      }
       const { metodo, monto, operacion, carga } = this.entradas();
       const sobre = (entrada, mensaje, texto) => {
         this.limpiarErrores();
@@ -454,7 +559,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
   }
   /* El lateral va antes en el DOM: bajo el escritorio queda arriba (qué pagas y cuánto); en escritorio, a la derecha. */
   @media (min-width: 64em) { /* punto-quiebre-escritorio */
-    .pago :global(form.gestion-principal) {
+    .pago :global(.gestion-principal) {
       grid-column: 1;
       grid-row: 1;
     }

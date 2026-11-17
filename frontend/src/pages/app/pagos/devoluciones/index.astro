@@ -1,0 +1,18 @@
+---
+import LayoutApp from '../../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../../componentes/EncabezadoPantalla.astro';
+import Boton from '../../../../componentes/Boton.astro';
+import Pagos from '../../../../islas/Pagos.astro';
+---
+
+<LayoutApp titulo="Devoluciones">
+  <EncabezadoPantalla
+    titulo="DEVOLUCIONES"
+    indice="[A11] COBROS / DEVOLUCIONES"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Pagos', href: '/app/pagos/' }, { etiqueta: 'Devoluciones' }]}
+    descripcion="Devoluciones que pidieron los clientes y las de cancelaciones del estudio. Decide cada una y márcala cuando hayas devuelto el dinero."
+  >
+    <Boton slot="acciones" variante="secundario" href="/app/pagos/">Volver a pagos</Boton>
+  </EncabezadoPantalla>
+  <Pagos vista="devoluciones" />
+</LayoutApp>

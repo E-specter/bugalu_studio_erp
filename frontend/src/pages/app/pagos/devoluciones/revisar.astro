@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../../componentes/EncabezadoPantalla.astro';
+import Pagos from '../../../../islas/Pagos.astro';
+---
+
+<!-- La descripción y el último paso de la ruta reciben el cliente y el folio cuando la isla carga la devolución. -->
+<LayoutApp titulo="Revisar devolución">
+  <EncabezadoPantalla
+    titulo="REVISAR DEVOLUCIÓN"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Pagos', href: '/app/pagos/' }, { etiqueta: 'Devoluciones', href: '/app/pagos/devoluciones' }, { etiqueta: 'Revisar' }]}
+    descripcion="Lee la solicitud y decide, o márcala como realizada."
+  />
+  <Pagos vista="devolucion" />
+</LayoutApp>

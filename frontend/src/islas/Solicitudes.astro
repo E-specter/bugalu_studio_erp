@@ -6,6 +6,7 @@ import Campo from '../componentes/Campo.astro';
 import Casilla from '../componentes/Casilla.astro';
 import Tabla from '../componentes/Tabla.astro';
 import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import Creditos from './Creditos.astro';
 import PlantillasHistorial from '../componentes/internos/PlantillasHistorial.astro';
 import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.astro';
 
@@ -187,8 +188,11 @@ const opcionesRol = (cliente: boolean) => [
             </Panel>
           </div>
           <Panel codigo="U3" titulo="Textos aceptados"><div data-caja-historial aria-busy="true"><p class="total">Cargando…</p></div></Panel>
+          <div data-u4></div>
         </div>
       </template>
+      <!-- RF-18: U4 solo se monta si la persona es Cliente (así no se piden créditos que no existen). -->
+      <template data-ficha-creditos><Creditos vista="ficha" /></template>
     </>
   )}
 
@@ -481,6 +485,7 @@ const opcionesRol = (cliente: boolean) => [
       });
       if (u.documento_repetido) this.querySelector('[data-sello-documento]')?.append(' ', this.querySelector<HTMLTemplateElement>('template[data-sello="repetido"]')!.content.cloneNode(true));
       this.historial();
+      if (u.rol === 'cliente') this.querySelector('[data-u4]')!.append(this.querySelector<HTMLTemplateElement>('template[data-ficha-creditos]')!.content.cloneNode(true));
       this.querySelector<HTMLInputElement>(`[name="rol"][value="${u.rol}"]`)!.checked = true;
       this.querySelector<HTMLInputElement>('[name="especialidad"]')!.value = u.especialidad ?? '';
       if (yo.id !== u.id) this.querySelector('[data-propio]')!.remove();

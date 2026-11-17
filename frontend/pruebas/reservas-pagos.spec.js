@@ -60,9 +60,7 @@ for (const t of tamanos) {
     await expect(page.getByText('Pago por validar', { exact: true })).toBeVisible();
     await expect(page.getByRole('row', { name: /Al reservar/ })).toContainText('En validación');
     await expect(page.getByRole('link', { name: /Registrar pago/ })).toHaveCount(0);
-    await expect(page.getByText('Ya registraste un pago, así que la cancelación la gestiona el estudio. Escríbele y te dirá qué pasa con tu pago.')).toBeVisible();
-    await expect(page.getByText('WhatsApp 999 000 111')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Cancelar reserva' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Solicitar cancelación' })).toBeVisible();
     await sinViolaciones(page);
     await page.screenshot({ path: `pruebas/capturas/reservas-detalle-validacion-${t.nombre}.png`, fullPage: true });
   });
@@ -148,83 +146,6 @@ test('detalle: ?aviso=pago-registrado muestra el aviso con foco y quita el pará
   await expect(page.locator('[data-avisos] .aviso')).toHaveCount(0);
 });
 
-// --- Cancelar como Administrador (RF-06 CA-04) ---
-const conPagos = () => reserva({ cliente: 'Ana Pérez', estado: 'confirmada', vence_pago: null, cuotas: cuotas(pagada) });
-const abrirCancelar = async (page) => {
-  await page.getByRole('button', { name: 'Cancelar reserva', exact: true }).click();
-  return page.getByRole('region', { name: /Cancelar reserva R-2026-00001/ });
-};
-
-test('cancelar (Administrador con pagos): nota obligatoria, consecuencias propias y envío con la nota', async ({ page }) => {
-  await comoRol(page, 'administrador');
-  await con(page, conPagos());
-  const cancelar = await simular(page, 'POST', `/reservas/${ID}/cancelar`, json(200, { ...conPagos(), estado: 'cancelada', motivo_cancelacion: 'administrador', nota_cancelacion: 'Devolvemos todo' }));
-  await ver(page);
-  const panel = await abrirCancelar(page);
-  await expect(panel).toContainText('La app no devuelve dinero: gestiona el reembolso por tu cuenta y explícalo en la nota. El cliente la verá en su reserva y en el correo.');
-  const nota = page.getByLabel(/Nota sobre el reembolso/);
-  await expect(nota).toHaveAttribute('maxlength', '300');
-  await expect(panel).toContainText('Por ejemplo: «Devolvemos S/ 225,00 por Yape en 48 h» o «Sin devolución: cancelación fuera de plazo».');
-  await sinViolaciones(page);
-  await page.screenshot({ path: 'pruebas/capturas/reservas-cancelar-admin-nota.png', fullPage: true });
-  await page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' }).click();
-  await expect(page.getByText('Escribe qué pasa con el pago: cómo se devuelve o por qué no.', { exact: true }).first()).toBeVisible();
-  await expect(nota).toHaveAttribute('aria-invalid', 'true');
-  expect(cancelar).toHaveLength(0);
-  await nota.fill('Devolvemos todo');
-  await page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' }).click();
-  await expect(page.locator('[data-avisos] .aviso')).toContainText('Reserva cancelada');
-  expect(cancelar[0].cuerpo).toEqual({ nota: 'Devolvemos todo' });
-  await expect(barra(page)).toContainText('Nota del estudio: Devolvemos todo');
-});
-
-test('cancelar (Administrador con pagos): 422 nota_requerida y datos_invalidos van bajo la nota', async ({ page }) => {
-  await comoRol(page, 'administrador');
-  await con(page, conPagos());
-  let codigo = 'nota_requerida';
-  await simular(page, 'POST', `/reservas/${ID}/cancelar`, (r) => r.fulfill(errorApi(422, codigo)));
-  await ver(page);
-  await abrirCancelar(page);
-  await page.getByLabel(/Nota sobre el reembolso/).fill('x');
-  await page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' }).click();
-  await expect(page.getByText('Escribe qué pasa con el pago: cómo se devuelve o por qué no.', { exact: true }).first()).toBeVisible();
-  await expect(page.locator('[data-avisos] .aviso')).toBeFocused();
-  codigo = 'datos_invalidos';
-  await page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' }).click();
-  await expect(page.getByText('La nota admite hasta 300 caracteres.', { exact: true }).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' })).toBeEnabled();
-  await sinViolaciones(page);
-});
-
-test('cancelar (Administrador sin pagos): no pide nota y no manda cuerpo', async ({ page }) => {
-  await comoRol(page, 'administrador');
-  await con(page, reserva({ cliente: 'Ana Pérez', estado: 'confirmada', vence_pago: null }));
-  const cancelar = await simular(page, 'POST', `/reservas/${ID}/cancelar`, json(200, reserva({ estado: 'cancelada', motivo_cancelacion: 'administrador' })));
-  await ver(page);
-  const panel = await abrirCancelar(page);
-  await expect(page.getByLabel(/Nota sobre el reembolso/)).toBeHidden();
-  await expect(panel).not.toContainText('La app no devuelve dinero');
-  await page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' }).click();
-  await expect(page.locator('[data-avisos] .aviso')).toContainText('Reserva cancelada');
-  expect(cancelar[0].cuerpo).toBeNull();
-});
-
-test('cancelar (cliente): 409 tiene_pagos recarga y manda al estudio', async ({ page }) => {
-  let lecturas = 0;
-  await simular(page, 'GET', `/reservas/${ID}`, (r) => r.fulfill(json(200, lecturas++ ? reserva({ pago_por_validar: true, cuotas: cuotas(enValidacion) }) : reserva())));
-  await simular(page, 'POST', `/reservas/${ID}/cancelar`, (r) => r.fulfill(errorApi(409, 'tiene_pagos')));
-  await ver(page);
-  await page.getByRole('button', { name: 'Cancelar reserva', exact: true }).click();
-  await page.getByRole('button', { name: 'Cancelar reserva R-2026-00001' }).click();
-  const aviso = page.locator('[data-avisos] .aviso');
-  await expect(aviso).toContainText('Ya registraste un pago para esta reserva. La cancelación la gestiona el estudio: escríbele.');
-  await expect(aviso).toHaveClass(/aviso-informacion/);
-  await expect(aviso).toBeFocused();
-  await expect(page.getByText('Ya registraste un pago, así que la cancelación la gestiona el estudio.')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Cancelar reserva/ })).toHaveCount(0);
-  await sinViolaciones(page);
-});
-
 // --- Lista: columna PAGO ---
 test('lista: la columna PAGO dice pago por validar, saldo, pagada o nada', async ({ page }) => {
   const lista = [
@@ -250,36 +171,3 @@ test('lista: la columna PAGO dice pago por validar, saldo, pagada o nada', async
   await expect(fila('E-5')).toContainText('Resto: S/ 207,50');
   await expect(fila('F-6').getByRole('cell').nth(3)).toHaveText('—');
 });
-
-// --- Contacto del estudio: toda reserva cancelable con pagos (RN-20, RF-06 CA-04) ---
-const AVISO_PIDE = 'Ya registraste un pago, así que la cancelación la gestiona el estudio. Escríbele y te dirá qué pasa con tu pago.';
-test('detalle: confirmada con pagos pide la cancelación al estudio y muestra su contacto', async ({ page }) => {
-  await con(page, reserva({ estado: 'confirmada', vence_pago: null, cuotas: cuotas(pagada, { pagable: true }) }));
-  await ver(page);
-  await expect(page.getByText(AVISO_PIDE)).toBeVisible();
-  await expect(page.getByText('WhatsApp 999 000 111')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Cancelar reserva' })).toHaveCount(0);
-  await sinViolaciones(page);
-  await page.screenshot({ path: 'pruebas/capturas/reservas-detalle-confirmada-pide-estudio.png', fullPage: true });
-});
-
-for (const estado of ['en_curso', 'finalizada', 'cancelada']) {
-  test(`detalle: ${estado} no ofrece pedir la cancelación al estudio`, async ({ page }) => {
-    await con(page, reserva({ estado, vence_pago: null, motivo_cancelacion: estado === 'cancelada' ? 'cliente' : null, cuotas: cuotas(pagada, { pagable: true }) }));
-    await ver(page);
-    await expect(barra(page)).toBeVisible();
-    await expect(page.getByText(AVISO_PIDE)).toBeHidden();
-    await expect(page.getByText('WhatsApp 999 000 111')).toBeHidden();
-  });
-}
-
-for (const rol of ['personal', 'administrador']) {
-  test(`detalle: ${rol} con la reserva confirmada y con pagos no ve el aviso al cliente`, async ({ page }) => {
-    await comoRol(page, rol);
-    await con(page, reserva({ estado: 'confirmada', vence_pago: null, cuotas: cuotas(pagada, { pagable: true }) }));
-    await ver(page);
-    await expect(barra(page)).toBeVisible();
-    await expect(page.getByText(AVISO_PIDE)).toBeHidden();
-    await expect(page.getByText('WhatsApp 999 000 111')).toBeHidden();
-  });
-}
