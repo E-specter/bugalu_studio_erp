@@ -1,10 +1,11 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from bugalu.modulos.notificaciones.aplicacion.enviar_pendientes.caso_de_uso import enviar_pendientes
 from bugalu.modulos.notificaciones.dominio.correo import Correo
-from bugalu.modulos.notificaciones.dominio.puertos import Pendiente
+from bugalu.modulos.notificaciones.dominio.puertos import DatosReserva, Pendiente
 
 DATOS = {"folio": "BG-1", "inicio": "2027-03-10T15:00:00+00:00", "fin": "2027-03-10T17:00:00+00:00"}
 
@@ -13,6 +14,7 @@ class LoteFalso:
     def __init__(self, pendientes: list[Pendiente]) -> None:
         self.pendientes = pendientes
         self.instrucciones: list[tuple[str, str]] = []
+        self.reservas: dict[UUID, DatosReserva] = {}
         self.enviadas: list[UUID] = []
         self.fallos: dict[UUID, str] = {}
 
@@ -80,3 +82,43 @@ async def test_tipo_desconocido_es_un_fallo() -> None:
     bandeja = BandejaFalsa([p])
     assert await enviar_pendientes(bandeja, EnviadorFalso()) == 0
     assert p.id in bandeja.lote.fallos
+
+
+async def test_el_correo_sale_con_la_plantilla_y_la_url_publica_configurada() -> None:
+    bandeja, enviador = BandejaFalsa([pendiente()]), EnviadorFalso()
+    await enviar_pendientes(bandeja, enviador, url_publica="https://erp.bugalu.pe/")
+    correo = enviador.enviados[0]
+    assert correo.html.startswith("<!doctype html>") and correo.evento is None
+    assert "https://erp.bugalu.pe/reservar/" in correo.cuerpo
+    assert "https://erp.bugalu.pe//" not in correo.cuerpo
+
+
+async def test_aviso_confirmado_sale_con_ics_de_la_reserva_de_la_bandeja() -> None:
+    datos = {
+        "id_reserva": "r-1", "folio": "BG-1", "hito": "al_reservar", "monto": 10,
+        "reserva_confirmada": True,
+    }  # fmt: skip
+    p = Pendiente(uuid4(), "pago_aprobado", "a@b.pe", datos, 0, datetime(2027, 3, 1, tzinfo=UTC))
+    bandeja, enviador = BandejaFalsa([p]), EnviadorFalso()
+    bandeja.lote.reservas[p.id] = DatosReserva(
+        datetime(2027, 3, 10, 15, tzinfo=UTC),
+        datetime(2027, 3, 10, 17, tzinfo=UTC),
+        "Grabación",
+        "Sala A",
+        True,
+    )
+    assert await enviar_pendientes(bandeja, enviador, remitente="no-responder@bugalu.pe") == 1
+    evento = enviador.enviados[0].evento
+    assert evento is not None and evento.metodo == "REQUEST"
+    assert "ORGANIZER;CN=Bugalú Studio:mailto:no-responder@bugalu.pe" in evento.ics
+
+
+async def test_aviso_confirmado_sin_datos_de_la_reserva_es_un_fallo_para_reintentar() -> None:
+    datos = {
+        "id_reserva": "r-1", "folio": "BG-1", "hito": "al_reservar", "monto": 10,
+        "reserva_confirmada": True,
+    }  # fmt: skip
+    p = Pendiente(uuid4(), "pago_aprobado", "a@b.pe", datos, 0, datetime(2027, 3, 1, tzinfo=UTC))
+    bandeja = BandejaFalsa([p])
+    assert await enviar_pendientes(bandeja, EnviadorFalso()) == 0
+    assert bandeja.lote.fallos == {p.id: "ValueError"}

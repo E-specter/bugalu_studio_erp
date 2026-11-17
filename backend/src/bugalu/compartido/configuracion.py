@@ -26,6 +26,8 @@ class Configuracion(BaseSettings):
     smtp_host: str = "127.0.0.1"
     smtp_puerto: int = 45625
     correo_remitente: str = "no-responder@bugalu.pe"
+    # URL publica de la plataforma (sin barra final): enlaces de los correos (ADR-016).
+    url_publica: str = "http://127.0.0.1:4321"
     # Cuenta de Google del estudio (ADR-011): con usuario hacen falta clave y STARTTLS.
     smtp_usuario: str = ""
     smtp_clave: SecretStr = SecretStr("")

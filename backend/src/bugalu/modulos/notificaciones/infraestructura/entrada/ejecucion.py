@@ -23,7 +23,12 @@ async def enviar_una_vez(pool: AsyncConnectionPool, configuracion: Configuracion
         configuracion.smtp_clave.get_secret_value(),
         configuracion.smtp_starttls,
     )
-    return await enviar_pendientes(BandejaPostgres(pool), enviador)
+    return await enviar_pendientes(
+        BandejaPostgres(pool),
+        enviador,
+        url_publica=configuracion.url_publica,
+        remitente=configuracion.correo_remitente,
+    )
 
 
 async def repetir(accion: Callable[[], Awaitable[object]], intervalo: float) -> None:
