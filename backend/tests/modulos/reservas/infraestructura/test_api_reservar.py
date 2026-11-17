@@ -513,13 +513,16 @@ async def test_nadie_cancela_la_reserva_ajena_y_la_fila_queda_intacta(
 ) -> None:
     id_ = await _crear(cliente, cliente_a, sala, catalogo)
     antes = sql("select * from public.reserva where id = %s", id_)
-    for intruso in (cliente_b, personal):
+    for intruso, estado, cod in (
+        (cliente_b, 404, "no_encontrado"),  # RF-18 CA-15: otro cliente no ve que existe
+        (personal, 403, "sin_permiso"),
+    ):
         r = await cliente.post(f"{RESERVAS}/{id_}/cancelar", headers=con(intruso))
-        assert r.status_code == 403 and codigo(r) == "sin_permiso"
+        assert r.status_code == estado and codigo(r) == cod
     assert sql("select * from public.reserva where id = %s", id_) == antes
 
 
-async def test_con_pagos_el_cliente_recibe_tiene_pagos_y_el_administrador_exige_nota(
+async def test_con_pagos_el_cliente_debe_dar_su_nivel_y_el_administrador_exige_nota(
     cliente: AsyncClient,
     dia: str,
     sala: str,
@@ -534,11 +537,11 @@ async def test_con_pagos_el_cliente_recibe_tiene_pagos_y_el_administrador_exige_
         id_,
     )
     r = await cliente.post(f"{RESERVAS}/{id_}/cancelar", headers=con(cliente_a))
-    assert r.status_code == 409 and codigo(r) == "tiene_pagos"
+    assert r.status_code == 409 and codigo(r) == "nivel_cambiado"  # RF-18 retira tiene_pagos
     r = await cliente.post(
         f"{RESERVAS}/{id_}/cancelar", json={"nota": "reembolso"}, headers=con(cliente_a)
     )
-    assert r.status_code == 409 and codigo(r) == "tiene_pagos"
+    assert r.status_code == 409 and codigo(r) == "nivel_cambiado"
     r = await cliente.post(f"{RESERVAS}/{id_}/cancelar", headers=con(administrador))
     assert r.status_code == 422 and codigo(r) == "nota_requerida"
     assert r.json()["error"]["detalles"] == {"campo": "nota"}

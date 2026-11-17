@@ -63,8 +63,10 @@ select has_function('public', 'parametros_vigentes', 'existe parametros_vigentes
 select is(
   public.parametros_vigentes(),
   '{"porcentaje_igv": "10.50", "precios_incluyen_igv": false, "horas_limite_pago": 1, "horas_nivel_1": 48,
-    "horas_nivel_2": 24, "porcentaje_adelanto": 50}'::jsonb,
-  'parametros_vigentes junta IGV y parametros');
+    "horas_nivel_2": 24, "porcentaje_adelanto": 50, "porcentaje_penalizacion_nivel_2": 25,
+    "minutos_tolerancia_inasistencia": 15, "dias_vigencia_credito": 30, "reprogramaciones_nivel_1": 2,
+    "reprogramaciones_nivel_2": 1}'::jsonb,
+  'parametros_vigentes junta IGV y parametros (RF-18 suma los de cancelacion)');
 set local role anon;
 select is((select public.parametros_vigentes()->>'porcentaje_adelanto'), '50', 'anon ejecuta parametros_vigentes (la simulacion es publica)');
 reset role;

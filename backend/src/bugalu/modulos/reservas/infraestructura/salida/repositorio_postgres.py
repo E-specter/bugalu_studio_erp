@@ -1,40 +1,56 @@
+import json
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from psycopg import AsyncConnection, errors
+from psycopg import AsyncConnection, Error, errors
 from psycopg.types.json import Jsonb
 
 from bugalu.compartido.errores import (
+    AvisoInvalido,
     DatosInvalidos,
+    ErrorDeNegocio,
+    ExcepcionNoAplicable,
+    ExcepcionYaAplicada,
     FranjaSolapada,
+    NivelCambiado,
+    NoAplicable,
     NoCancelable,
     NoEncontrado,
     NotaRequerida,
     SinPermiso,
     TextoDesactualizado,
-    TienePagos,
+    ToleranciaNoCumplida,
     TramoNoDisponible,
 )
 from bugalu.modulos.catalogo.dominio.precio import desglosar_igv_incluido
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo
 from bugalu.modulos.reservas.dominio.modelos import (
     PARAMETROS,
+    CancelacionReserva,
     Cierre,
     CuotaReserva,
+    Excepcion,
     Franja,
     NuevaReserva,
     PagoCuota,
+    Politica,
     Referencia,
+    Reprogramacion,
     RequisitosReserva,
     Reserva,
     ReservaVisible,
     Sala,
     ServicioReservado,
+    VistaCancelacion,
 )
 from bugalu.modulos.reservas.dominio.reserva import cuota_pagable, estado_de_cuota
+from bugalu.modulos.reservas.infraestructura.salida.devoluciones_sql import (
+    DEVOLUCION,
+    devolucion_desde_fila,
+)
 
 _TOPE_SUGERENCIA = 300
 _RESERVA = (
@@ -43,10 +59,72 @@ _RESERVA = (
     "case when r.id_cliente = (select auth.uid()) or public.es_administrador() "
     "then r.nota_cancelacion end, public.hay_pago_por_validar(r.id), r.parametros_aplicados, "
     "(select a.version from public.aceptacion a "
-    "where a.contexto = 'reserva' and a.id_operacion = r.id) "
+    "where a.contexto = 'reserva' and a.id_operacion = r.id), "
+    "r.eleccion_estudio, r.aviso_en, r.nivel_cancelacion, r.cancelacion_por, "
+    "r.pagado_cancelacion, r.retenido, r.credito_generado, r.id_cancelador, "
+    "r.excepcion_motivo, r.excepcion_por, r.excepcion_en "
     "from public.reserva r join public.sala_tecnica sa on sa.id = r.id_sala "
     "join public.servicio se on se.id = r.id_servicio "
 )
+
+
+# P0001/22023 de las funciones de cancelacion (mensaje = codigo) y su error de negocio.
+_NEGOCIO = {
+    "no_cancelable": (NoCancelable, "La reserva ya no se puede cancelar."),
+    "no_aplicable": (NoAplicable, "La reserva no admite esa accion ahora."),
+    "tolerancia_no_cumplida": (ToleranciaNoCumplida, "Aun no pasa la tolerancia de inasistencia."),
+    "excepcion_no_aplicable": (ExcepcionNoAplicable, "Esa reserva no admite el caso excepcional."),
+    "excepcion_ya_aplicada": (ExcepcionYaAplicada, "El caso excepcional ya se aplico."),
+}
+_INVALIDOS = {
+    "nota_invalida": ("La nota debe tener de 1 a 300 caracteres.", "nota"),
+    "por_invalido": ("`por` es cliente o estudio.", "por"),
+    "motivo_invalido": ("El motivo debe tener de 10 a 500 caracteres.", "motivo"),
+}
+
+
+def _vista(f: tuple[Any, ...]) -> VistaCancelacion:
+    centimos = Decimal("0.01")  # la base devuelve `0` sin escala en los ceros
+    return VistaCancelacion(f[0], f[1], *(f[i].quantize(centimos) for i in (2, 3, 4, 5)), *f[6:])
+
+
+def _traducir(error: Error) -> ErrorDeNegocio:
+    """Errores de las funciones de cancelacion, inasistencia y excepcion a errores de negocio."""
+    if isinstance(error, errors.NoDataFound):
+        return NoEncontrado("No existe la reserva.")
+    if isinstance(error, errors.InsufficientPrivilege):
+        return SinPermiso("No tienes permiso para esa accion.")
+    if isinstance(error, errors.InvalidParameterValue):
+        mensaje, campo = _INVALIDOS.get(
+            error.diag.message_primary or "", ("Datos invalidos.", "cuerpo")
+        )
+        return DatosInvalidos(mensaje, {"campo": campo})
+    codigo = error.diag.message_primary
+    if codigo == "nota_requerida":
+        return NotaRequerida("Indica una nota.", {"campo": "nota"})
+    if codigo == "aviso_invalido":
+        return AvisoInvalido(
+            "El aviso no puede ser futuro ni anterior a la reserva.", {"campo": "aviso_en"}
+        )
+    if codigo == "nivel_cambiado":
+        vista = _vista(tuple(_detalle_vista(error.diag.message_detail or "{}")))
+        return NivelCambiado("El nivel cambio: revisa la vista previa.", vista.a_json())
+    clase, mensaje = _NEGOCIO.get(
+        codigo or "", (NoCancelable, "La reserva ya no se puede cancelar.")
+    )
+    return clase(mensaje)
+
+
+def _detalle_vista(texto: str) -> list[Any]:
+    d = json.loads(texto)
+    return [
+        d["nivel"],
+        Decimal(str(d["anticipacion_horas"])),
+        *(Decimal(d[k]) for k in ("pagado", "en_validacion", "retenido", "credito")),
+        datetime.fromisoformat(d["credito_vence"]) if d["credito_vence"] else None,
+        d["puede_reprogramar"],
+        d["reprogramaciones_restantes"],
+    ]
 
 
 def _con_impuesto(precio: dict[str, Any], aplicados: dict[str, Any]) -> dict[str, Any]:
@@ -64,6 +142,30 @@ def _con_impuesto(precio: dict[str, Any], aplicados: dict[str, Any]) -> dict[str
     }
     adelanto = str(Decimal(aplicados["porcentaje_adelanto"]).quantize(Decimal("0.01")))
     return {**precio, "impuesto": impuesto, "porcentaje_adelanto": adelanto}
+
+
+def _cancelacion(
+    f: tuple[Any, ...], nombres: Mapping[UUID, str | None]
+) -> CancelacionReserva | None:
+    """Solo si la reserva se cancelo o se marco no asistio por la politica de RF-18."""
+    if f[20] is None:
+        return None
+
+    def quien(id_: UUID | None) -> Referencia | None:
+        return Referencia(id_, nombres[id_]) if id_ is not None and id_ in nombres else None
+
+    excepcion = Excepcion(f[27], quien(f[28]), f[29]) if f[29] is not None else None
+    return CancelacionReserva(
+        nivel=f[21],
+        aviso_en=f[20],
+        por=f[22],
+        pagado=f[23],
+        retenido=f[24],
+        credito=f[25],
+        nota=f[15],
+        registrada_por=quien(f[26]),
+        excepcion=excepcion,
+    )
 
 
 class RepositorioReservasPostgres:
@@ -322,7 +424,7 @@ class RepositorioReservasPostgres:
                 pagos.setdefault(f[0], []).append(PagoCuota(*f[1:]))
             estados = {f[0]: f[2] for f in filas}
             for f in await self._filas(
-                "select id, id_reserva, hito, monto, estado from public.cuota "
+                "select id, id_reserva, hito, monto, estado, pagado from public.cuota "
                 "where id_reserva = any(%s) order by hito",
                 (ids,),
             ):
@@ -336,6 +438,7 @@ class RepositorioReservasPostgres:
                         estado,
                         cuota_pagable(estado, f[2], estados[f[1]]),
                         tuple(de_la_cuota),
+                        f[5],
                     )
                 )
             for f in await self._filas(
@@ -345,6 +448,9 @@ class RepositorioReservasPostgres:
                 (ids,),
             ):
                 especialistas.setdefault(f[0], []).append(Referencia(f[1], f[2]))
+        nombres = await self._nombres_de_personas(filas)
+        reprogramaciones = await self._reprogramaciones(ids)
+        devoluciones = await self._devoluciones_del_estudio(ids)
         return [
             Reserva(
                 id=f[0],
@@ -364,9 +470,47 @@ class RepositorioReservasPostgres:
                 version_condiciones=f[18],
                 especialistas=tuple(especialistas.get(f[0], [])),
                 cuotas=tuple(cuotas.get(f[0], [])),
+                pagado=sum((c.pagado for c in cuotas.get(f[0], [])), Decimal("0.00")),
+                politica=Politica.desde_parametros(f[17]),
+                cancelacion=_cancelacion(f, nombres),
+                reprogramaciones=tuple(reprogramaciones.get(f[0], [])),
+                eleccion_estudio=f[19],
+                devolucion=devoluciones.get(f[0]),
             )
             for f in filas
         ]
+
+    async def _nombres_de_personas(self, filas: Sequence[Any]) -> Mapping[UUID, str | None]:
+        """Quien registro la cancelacion o la excepcion; solo personal y administrador los ven."""
+        ids = list({i for f in filas for i in (f[26], f[28]) if i})
+        return await self.nombres_de_clientes(ids)
+
+    async def _reprogramaciones(self, ids: Sequence[UUID]) -> dict[UUID, list[Reprogramacion]]:
+        resultado: dict[UUID, list[Reprogramacion]] = {}
+        if not ids:
+            return resultado
+        filas = await self._filas(
+            "select id_reserva, anterior_inicio, nuevo_inicio, nivel, penalizacion, "
+            "total_anterior, total_nuevo, id_autor, en from public.reprogramacion "
+            "where id_reserva = any(%s) "
+            "order by en, id",
+            (ids,),
+        )
+        nombres = await self.nombres_de_clientes([f[7] for f in filas if f[7]])
+        for f in filas:
+            por = Referencia(f[7], nombres[f[7]]) if f[7] in nombres else None
+            resultado.setdefault(f[0], []).append(
+                Reprogramacion(f[1], f[2], f[3], f[4], f[5], f[6], por, f[8])
+            )
+        return resultado
+
+    async def _devoluciones_del_estudio(self, ids: Sequence[UUID]) -> dict[UUID, Any]:
+        if not ids:
+            return {}
+        filas = await self._filas(
+            f"{DEVOLUCION}where d.tipo = 'estudio' and d.id_reserva = any(%s)", (ids,)
+        )
+        return {f[2]: devolucion_desde_fila(f) for f in filas}
 
     async def obtener_reserva(self, id_reserva: UUID) -> Reserva | None:
         encontradas = await self._reservas("r.id = %s", (id_reserva,))
@@ -381,24 +525,50 @@ class RepositorioReservasPostgres:
     async def listar_en_rango(self, desde: datetime, hasta: datetime) -> list[Reserva]:
         return await self._reservas("r.inicio < %s and r.fin_buffer > %s", (hasta, desde))
 
-    async def cancelar_reserva(self, id_reserva: UUID, nota: str | None = None) -> None:
+    async def cancelar_reserva(
+        self,
+        id_reserva: UUID,
+        nota: str | None = None,
+        nivel_esperado: int | None = None,
+        por: str | None = None,
+        aviso_en: datetime | None = None,
+    ) -> None:
         try:
             await self._conexion.execute(
-                "select public.cancelar_reserva(%s, %s)", (id_reserva, nota)
+                "select public.cancelar_reserva(%s, %s, %s, %s, %s)",
+                (id_reserva, nota, nivel_esperado, por, aviso_en),
             )
-        except errors.NoDataFound:
-            raise NoEncontrado("No existe la reserva.") from None
-        except errors.InsufficientPrivilege:
-            raise SinPermiso("Esa reserva no es tuya.") from None
-        except errors.RaiseException as error:
-            if error.diag.message_primary == "tiene_pagos":
-                raise TienePagos("La reserva ya tiene pagos registrados.") from None
-            if error.diag.message_primary == "nota_requerida":
-                raise NotaRequerida(
-                    "Indica una nota sobre el reembolso.", {"campo": "nota"}
-                ) from None
-            raise NoCancelable("La reserva ya no se puede cancelar.") from None
-        except errors.InvalidParameterValue:
-            raise DatosInvalidos(
-                "La nota debe tener de 1 a 300 caracteres.", {"campo": "nota"}
-            ) from None
+        except (errors.NoDataFound, errors.InsufficientPrivilege, errors.RaiseException) as e:
+            raise _traducir(e) from None
+        except errors.InvalidParameterValue as e:
+            raise _traducir(e) from None
+
+    async def vista_cancelacion(
+        self, id_reserva: UUID, aviso_en: datetime | None = None
+    ) -> VistaCancelacion:
+        try:
+            filas = await self._filas(
+                "select * from public.vista_cancelacion(%s, %s)", (id_reserva, aviso_en)
+            )
+        except (errors.NoDataFound, errors.InsufficientPrivilege, errors.RaiseException) as e:
+            raise _traducir(e) from None
+        return _vista(filas[0])
+
+    async def marcar_inasistencia(self, id_reserva: UUID) -> None:
+        try:
+            await self._conexion.execute("select public.marcar_inasistencia(%s)", (id_reserva,))
+        except (errors.NoDataFound, errors.InsufficientPrivilege, errors.RaiseException) as e:
+            raise _traducir(e) from None
+
+    async def aplicar_excepcion(self, id_reserva: UUID, motivo: str) -> None:
+        try:
+            await self._conexion.execute(
+                "select public.aplicar_excepcion(%s, %s)", (id_reserva, motivo)
+            )
+        except (
+            errors.NoDataFound,
+            errors.InsufficientPrivilege,
+            errors.RaiseException,
+            errors.InvalidParameterValue,
+        ) as e:
+            raise _traducir(e) from None

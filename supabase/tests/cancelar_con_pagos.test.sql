@@ -35,17 +35,17 @@ select ('cccccccc-0000-0000-0000-00000000000' || right(id::text, 1))::uuid, id, 
 from public.reserva;
 update public.instruccion_pago set texto = 'Cuenta de prueba', activo = true where metodo = 'yape';
 
-select has_function('public', 'cancelar_reserva', array['uuid', 'text'], 'cancelar_reserva(id, nota)');
+select has_function('public', 'cancelar_reserva', array['uuid', 'text', 'integer', 'text', 'timestamp with time zone'], 'cancelar_reserva(id, nota, nivel, por, aviso)');
 select has_function('public', 'hay_pago_por_validar', array['uuid'], 'existe hay_pago_por_validar');
 select has_column('public', 'reserva', 'nota_cancelacion', 'reserva.nota_cancelacion');
 select throws_ok($$update public.reserva set nota_cancelacion = repeat('x', 301)$$, '23514', null, 'la nota admite 300 caracteres como maximo');
 select throws_ok($$update public.reserva set nota_cancelacion = E'a\u0007b'$$, '23514', null, 'la nota no admite controles');
 
--- c1 (dueno) con pagos: tiene_pagos, tambien con nota
+-- c1 (dueno) con pagos: debe confirmar el nivel (RF-18 retira tiene_pagos), tambien con nota
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c1","role":"authenticated"}', true);
-select throws_ok($$select public.cancelar_reserva('bbbbbbbb-0000-0000-0000-000000000001', 'quiero mi dinero')$$, 'P0001', 'tiene_pagos', 'el dueno con pagos recibe tiene_pagos aun con nota');
-select throws_ok($$select public.cancelar_reserva('bbbbbbbb-0000-0000-0000-000000000001')$$, 'P0001', 'tiene_pagos', 'y sin nota');
+select throws_ok($$select public.cancelar_reserva('bbbbbbbb-0000-0000-0000-000000000001', 'quiero mi dinero')$$, 'P0001', 'nivel_cambiado', 'el dueno con pagos debe dar el nivel esperado aun con nota');
+select throws_ok($$select public.cancelar_reserva('bbbbbbbb-0000-0000-0000-000000000001')$$, 'P0001', 'nivel_cambiado', 'y sin nota');
 select lives_ok($$select public.cancelar_reserva('bbbbbbbb-0000-0000-0000-000000000003')$$, 'el dueno cancela sin pagos y sin nota');
 select lives_ok($$select public.cancelar_reserva('bbbbbbbb-0000-0000-0000-000000000004', '  Me surgio un viaje  ')$$, 'el dueno cancela sin pagos con nota opcional');
 reset role;

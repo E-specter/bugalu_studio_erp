@@ -97,16 +97,17 @@ def cuotas_de(total: Decimal, anticipo: Decimal) -> list[tuple[str, Decimal]]:
 
 
 def estado_de_cuota(estado_base: str, pagos: Iterable[PagoCuota]) -> str:
-    """`pendiente` | `en_validacion` | `pagada` (ADR-010): un pago en validacion pasa a la cuota."""
-    if estado_base == "pagada":
-        return "pagada"
+    """`pendiente` | `en_validacion` | `pagada` | `anulada` (ADR-010, RF-18): un pago en validacion
+    pasa a la cuota."""
+    if estado_base in ("pagada", "anulada"):
+        return estado_base
     return (
         "en_validacion" if any(p.estado == "pendiente_validacion" for p in pagos) else "pendiente"
     )
 
 
 def cuota_pagable(estado_cuota: str, hito: str, estado_reserva: str) -> bool:
-    """CA-02: pendiente, reserva no cancelada y `al_terminar` solo desde que se confirma."""
-    if estado_cuota != "pendiente" or estado_reserva == "cancelada":
+    """CA-02: pendiente, reserva viva y `al_terminar` solo desde que se confirma."""
+    if estado_cuota != "pendiente" or estado_reserva in ("cancelada", "no_asistio"):
         return False
     return hito != "al_terminar" or estado_reserva in ("confirmada", "en_curso", "finalizada")

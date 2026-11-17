@@ -99,7 +99,7 @@ def _vigente(sql: Ejecutar, cuota: str, plazo: str = "1 hour") -> str:
     return reserva
 
 
-def test_cancelar_del_cliente_espera_al_pago_y_recibe_tiene_pagos(
+def test_cancelar_del_cliente_espera_al_pago_y_debe_dar_su_nivel(
     configuracion: Configuracion,
     cliente_a: UsuarioDePrueba,
     cuota_de: Cuota,
@@ -113,7 +113,7 @@ def test_cancelar_del_cliente_espera_al_pago_y_recibe_tiene_pagos(
         cancelacion = hilo.submit(_cancelar, configuracion, cliente_a, reserva, None)
         _espera(cancelacion)
         pago.commit()
-        assert "tiene_pagos" in cancelacion.result(20)
+        assert "nivel_cambiado" in cancelacion.result(20)
     assert _estado(sql, reserva) == ("pre_reservada", None)
     assert sql("select estado from public.comprobante_pago")[0][0] == "pendiente_validacion"
 

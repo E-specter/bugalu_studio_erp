@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import (
@@ -168,10 +168,14 @@ class NuevoCierre(BaseModel):
 
 
 class Cancelacion(BaseModel):
-    """Nota del reembolso: obligatoria para el administrador si hay pagos (lo decide la base)."""
+    """Cuerpo de cancelar (RF-18). El cliente da `nivel_esperado`; `por` y `aviso_en` son del
+    administrador. La nota es obligatoria segun el caso (lo decide la base)."""
 
     model_config = ConfigDict(extra="forbid")
+    nivel_esperado: Annotated[int, Field(ge=1, le=3)] | None = None
     nota: Annotated[TextoLargo, Field(max_length=300)] | None = None
+    por: Literal["cliente", "estudio"] | None = None
+    aviso_en: Instante | None = None
 
     @field_validator("nota", mode="before")
     @classmethod
@@ -222,6 +226,128 @@ class Cuota(BaseModel):
     estado: str
     pagable: bool
     pagos: list[PagoDeCuota]
+    pagado: Decimal
+
+
+class Excepcion(BaseModel):
+    motivo: str
+    por: Referencia | None
+    en: datetime
+
+
+class CancelacionReserva(BaseModel):
+    nivel: int | None
+    aviso_en: datetime
+    por: str
+    pagado: Decimal
+    retenido: Decimal
+    credito: Decimal
+    nota: str | None
+    registrada_por: Referencia | None
+    excepcion: Excepcion | None = None
+
+
+class ReprogramacionReserva(BaseModel):
+    anterior_inicio: datetime
+    nuevo_inicio: datetime
+    nivel: int | None
+    penalizacion: Decimal
+    total_anterior: Decimal
+    total_nuevo: Decimal
+    por: Referencia | None
+    en: datetime
+
+
+class Politica(BaseModel):
+    horas_nivel_1: int
+    horas_nivel_2: int
+    porcentaje_penalizacion_nivel_2: int
+    minutos_tolerancia_inasistencia: int
+    dias_vigencia_credito: int
+    reprogramaciones_nivel_1: int
+    reprogramaciones_nivel_2: int
+
+
+class Devolucion(BaseModel):
+    id: UUID
+    id_credito: UUID | None
+    id_reserva: UUID
+    folio: str
+    cliente: Referencia
+    tipo: str
+    motivo: str
+    monto_solicitado: Decimal
+    solicitada_en: datetime
+    estado: str
+    monto_aprobado: Decimal | None = None
+    motivo_decision: str | None = None
+    decidida_en: datetime | None = None
+    nota_realizada: str | None = None
+    realizada_en: datetime | None = None
+    limite: datetime | None = None
+
+    @classmethod
+    def desde_dominio(cls, d: modelos.Devolucion) -> Devolucion:
+        def lima(i: datetime | None) -> datetime | None:
+            return i.astimezone(LIMA) if i else None
+
+        return cls(
+            **{
+                **vars(d),
+                "cliente": Referencia(id=d.cliente.id, nombre=d.cliente.nombre),
+                "solicitada_en": d.solicitada_en.astimezone(LIMA),
+                "decidida_en": lima(d.decidida_en),
+                "realizada_en": lima(d.realizada_en),
+                "limite": lima(d.limite),
+            }
+        )
+
+
+class VistaCancelacion(BaseModel):
+    nivel: int | None
+    anticipacion_horas: float
+    pagado: Decimal
+    en_validacion: Decimal
+    retenido: Decimal
+    credito: Decimal
+    credito_vence: datetime | None
+    puede_reprogramar: bool
+    reprogramaciones_restantes: int
+
+    @classmethod
+    def desde_dominio(cls, v: modelos.VistaCancelacion) -> VistaCancelacion:
+        return cls(
+            **{
+                **vars(v),
+                "credito_vence": v.credito_vence.astimezone(LIMA) if v.credito_vence else None,
+            }
+        )
+
+
+class NuevaExcepcion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    motivo: Annotated[TextoLargo, Field(min_length=10)]
+
+
+def _referencia(r: modelos.Referencia | None) -> Referencia | None:
+    return Referencia(id=r.id, nombre=r.nombre) if r else None
+
+
+def _cancelacion(c: modelos.CancelacionReserva) -> CancelacionReserva:
+    campos = {
+        **vars(c),
+        "aviso_en": c.aviso_en.astimezone(LIMA),
+        "registrada_por": _referencia(c.registrada_por),
+    }
+    if c.excepcion:  # opcional: solo se emite si se aplico
+        campos["excepcion"] = Excepcion(
+            motivo=c.excepcion.motivo,
+            por=_referencia(c.excepcion.por),
+            en=c.excepcion.en.astimezone(LIMA),
+        )
+    else:
+        del campos["excepcion"]
+    return CancelacionReserva(**campos)
 
 
 class Reserva(BaseModel):
@@ -242,6 +368,12 @@ class Reserva(BaseModel):
     cliente: Referencia | None = None
     nota_cancelacion: str | None = None
     version_condiciones: str | None = None
+    pagado: Decimal
+    politica: Politica | None
+    reprogramaciones: list[ReprogramacionReserva]
+    cancelacion: CancelacionReserva | None = None
+    eleccion_estudio: str | None = None
+    devolucion: Devolucion | None = None
 
     @classmethod
     def desde_dominio(cls, r: modelos.Reserva) -> Reserva:
@@ -278,9 +410,26 @@ class Reserva(BaseModel):
             nota_cancelacion=r.nota_cancelacion,
             version_condiciones=r.version_condiciones,
             vence_pago=lima(r.vence_pago),
+            pagado=r.pagado,
+            politica=Politica(**vars(r.politica)) if r.politica else None,
+            reprogramaciones=[
+                ReprogramacionReserva(
+                    **{
+                        **vars(g),
+                        "anterior_inicio": g.anterior_inicio.astimezone(LIMA),
+                        "nuevo_inicio": g.nuevo_inicio.astimezone(LIMA),
+                        "en": g.en.astimezone(LIMA),
+                        "por": _referencia(g.por),
+                    }
+                )
+                for g in r.reprogramaciones
+            ],
             **(
                 {"cliente": Referencia(id=r.cliente.id, nombre=r.cliente.nombre)}
                 if r.cliente
                 else {}
             ),
+            **({"cancelacion": _cancelacion(r.cancelacion)} if r.cancelacion else {}),
+            **({"eleccion_estudio": r.eleccion_estudio} if r.eleccion_estudio else {}),
+            **({"devolucion": Devolucion.desde_dominio(r.devolucion)} if r.devolucion else {}),
         )

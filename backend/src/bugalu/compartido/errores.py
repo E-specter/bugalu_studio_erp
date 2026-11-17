@@ -114,8 +114,64 @@ class TramoNoDisponible(Conflicto):
     codigo = "tramo_no_disponible"
 
 
-class TienePagos(Conflicto):
-    codigo = "tiene_pagos"
+class NivelCambiado(Conflicto):
+    codigo = "nivel_cambiado"
+
+
+class AvisoInvalido(DatosInvalidos):
+    codigo = "aviso_invalido"
+
+
+class ToleranciaNoCumplida(Conflicto):
+    codigo = "tolerancia_no_cumplida"
+
+
+class NoAplicable(Conflicto):
+    codigo = "no_aplicable"
+
+
+class ExcepcionNoAplicable(Conflicto):
+    codigo = "excepcion_no_aplicable"
+
+
+class ExcepcionYaAplicada(Conflicto):
+    codigo = "excepcion_ya_aplicada"
+
+
+class CreditoInsuficiente(Conflicto):
+    codigo = "credito_insuficiente"
+
+
+class NoPagable(Conflicto):
+    codigo = "no_pagable"
+
+
+class MontoInvalido(DatosInvalidos):
+    codigo = "monto_invalido"
+
+
+class MotivoRequerido(DatosInvalidos):
+    codigo = "motivo_requerido"
+
+
+class DevolucionNoPermitida(Conflicto):
+    codigo = "devolucion_no_permitida"
+
+
+class DevolucionPendiente(Conflicto):
+    codigo = "devolucion_pendiente"
+
+
+class CreditoNoVigente(Conflicto):
+    codigo = "credito_no_vigente"
+
+
+class DevolucionDecidida(Conflicto):
+    codigo = "devolucion_decidida"
+
+
+class DevolucionNoAprobada(Conflicto):
+    codigo = "devolucion_no_aprobada"
 
 
 class NotaRequerida(DatosInvalidos):

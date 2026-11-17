@@ -9,6 +9,7 @@ from bugalu.compartido.errores import (
     CuotaPagada,
     DatosInvalidos,
     MetodoNoDisponible,
+    MontoInvalido,
     NoEncontrado,
     OperacionDuplicada,
     PagoEnValidacion,
@@ -32,6 +33,7 @@ _NEGOCIO = {
     "metodo_no_disponible": (MetodoNoDisponible, "Ese metodo de pago no esta disponible."),
     "operacion_duplicada": (OperacionDuplicada, "Ese numero de operacion ya esta registrado."),
     "pago_ya_validado": (PagoYaValidado, "El pago ya fue validado."),
+    "monto_invalido": (MontoInvalido, "El monto debe ser el que falta de la cuota."),
 }
 _INDICES = {
     "comprobante_pago_pendiente_uq": "pago_en_validacion",

@@ -13,6 +13,7 @@ from bugalu.modulos.reservas.dominio.modelos import (
     Reserva,
     ReservaVisible,
     Sala,
+    VistaCancelacion,
 )
 
 
@@ -118,6 +119,29 @@ class RepositorioReservas(Protocol):
 
     async def listar_en_rango(self, desde: datetime, hasta: datetime) -> list[Reserva]: ...
 
-    async def cancelar_reserva(self, id_reserva: UUID, nota: str | None = None) -> None:
-        """NoEncontrado, SinPermiso, NoCancelable, TienePagos, NotaRequerida o DatosInvalidos."""
+    async def cancelar_reserva(
+        self,
+        id_reserva: UUID,
+        nota: str | None = None,
+        nivel_esperado: int | None = None,
+        por: str | None = None,
+        aviso_en: datetime | None = None,
+    ) -> None:
+        """La base calcula el nivel y los montos. NoEncontrado, SinPermiso, NoCancelable,
+        NotaRequerida, AvisoInvalido, NivelCambiado (con la vista nueva en `detalles`) o
+        DatosInvalidos."""
+        ...
+
+    async def vista_cancelacion(
+        self, id_reserva: UUID, aviso_en: datetime | None = None
+    ) -> VistaCancelacion:
+        """Sin cambiar nada. NoEncontrado, SinPermiso, NoCancelable o AvisoInvalido."""
+        ...
+
+    async def marcar_inasistencia(self, id_reserva: UUID) -> None:
+        """NoEncontrado, SinPermiso, NoAplicable o ToleranciaNoCumplida."""
+        ...
+
+    async def aplicar_excepcion(self, id_reserva: UUID, motivo: str) -> None:
+        """NoEncontrado, SinPermiso, ExcepcionNoAplicable, ExcepcionYaAplicada o DatosInvalidos."""
         ...

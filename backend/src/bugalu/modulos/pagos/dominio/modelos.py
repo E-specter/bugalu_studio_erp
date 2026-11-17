@@ -3,6 +3,8 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
+from bugalu.modulos.reservas.dominio.modelos import Devolucion
+
 
 @dataclass(frozen=True)
 class NuevoPago:
@@ -64,3 +66,23 @@ class CapturaFirmada:
     url: str
     expira_en: datetime
     tipo: str  # "imagen" | "pdf"
+
+
+@dataclass(frozen=True)
+class OrigenCredito:
+    id_reserva: UUID
+    folio: str
+
+
+@dataclass(frozen=True)
+class Credito:
+    """RF-18 CA-05: saldo a favor del cliente, con su origen y la ultima devolucion pedida."""
+
+    id: UUID
+    monto: Decimal
+    saldo: Decimal
+    vence: datetime
+    estado: str  # vigente | agotado | vencido
+    tipo: str  # nivel_1 | nivel_2 | reprogramacion | excepcion
+    origen: OrigenCredito
+    devolucion: Devolucion | None = None

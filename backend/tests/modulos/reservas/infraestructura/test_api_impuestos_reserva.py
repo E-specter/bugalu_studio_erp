@@ -22,6 +22,11 @@ APLICADOS = {
     "horas_nivel_1": 48,
     "horas_nivel_2": 24,
     "porcentaje_adelanto": 50,
+    "porcentaje_penalizacion_nivel_2": 25,  # RF-18: la foto trae los parametros de cancelacion
+    "minutos_tolerancia_inasistencia": 15,
+    "dias_vigencia_credito": 30,
+    "reprogramaciones_nivel_1": 2,
+    "reprogramaciones_nivel_2": 1,
 }
 
 

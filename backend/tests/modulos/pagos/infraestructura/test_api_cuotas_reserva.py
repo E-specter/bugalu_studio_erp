@@ -37,6 +37,7 @@ async def test_cuota_pendiente_es_pagable_y_sin_pagos(
         "estado": "pendiente",
         "pagable": True,
         "pagos": [],
+        "pagado": "0.00",
     }
 
 

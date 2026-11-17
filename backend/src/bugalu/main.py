@@ -23,6 +23,9 @@ from bugalu.modulos.notificaciones.infraestructura.entrada.ejecucion import (
 )
 from bugalu.modulos.pagos.infraestructura.entrada.http.limite import LimitePagos
 from bugalu.modulos.pagos.infraestructura.entrada.http.router import router as router_pagos
+from bugalu.modulos.pagos.infraestructura.entrada.http.router_creditos import (
+    router as router_creditos,
+)
 from bugalu.modulos.reservas.infraestructura.entrada.http.router import router as router_reservas
 
 
@@ -72,4 +75,5 @@ def crear_app() -> FastAPI:
     app.include_router(router_cambios, prefix="/api/v1")
     app.include_router(router_reservas, prefix="/api/v1")
     app.include_router(router_pagos, prefix="/api/v1")
+    app.include_router(router_creditos, prefix="/api/v1")
     return app

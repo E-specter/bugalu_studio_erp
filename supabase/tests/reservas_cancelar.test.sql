@@ -30,7 +30,7 @@ where se.nombre = 'Ensayo';
 insert into public.cuota (id_reserva, hito, monto, estado)
 select id, 'al_reservar', 25, 'pagada' from public.reserva where inicio = '2027-05-02 10:00-05';
 
-select has_function('public', 'cancelar_reserva', array['uuid', 'text'], 'existe cancelar_reserva');
+select has_function('public', 'cancelar_reserva', array['uuid', 'text', 'integer', 'text', 'timestamp with time zone'], 'existe cancelar_reserva');
 select has_function('public', 'existe_reserva', array['uuid'], 'existe existe_reserva');
 select has_function('public', 'plazos_pago', 'existe plazos_pago');
 select has_function('public', 'encolar_aviso_reserva', array['uuid'], 'existe encolar_aviso_reserva');
@@ -58,7 +58,7 @@ select is((select count(*)::int from public.reserva r join antes a using (id, in
 select lives_ok($$insert into public.reserva (id_cliente, id_sala, id_servicio, inicio, fin, total, vence_pago)
   select auth.uid(), sa.id, se.id, '2027-05-01 10:00-05', '2027-05-01 11:00-05', 1, '2099-01-01'
   from public.sala_tecnica sa, public.servicio se where se.nombre = 'Ensayo'$$, 'el tramo cancelado queda libre');
-select throws_ok($$select public.cancelar_reserva((select id from public.reserva where inicio = '2027-05-02 10:00-05'))$$, 'P0001', 'tiene_pagos', 'con pagos: tiene_pagos');
+select throws_ok($$select public.cancelar_reserva((select id from public.reserva where inicio = '2027-05-02 10:00-05'))$$, 'P0001', 'nivel_cambiado', 'con pagos sin nivel esperado: nivel_cambiado (RF-18)');
 select throws_ok($$select public.cancelar_reserva((select id from public.reserva where inicio = '2027-05-03 10:00-05'))$$, 'P0001', 'no_cancelable', 'ya cancelada: no_cancelable');
 select throws_ok($$select public.cancelar_reserva((select id from public.reserva where inicio = '2027-05-04 10:00-05'))$$, 'P0001', 'no_cancelable', 'finalizada: no_cancelable');
 select throws_ok($$select public.cancelar_reserva((select id from public.reserva where inicio = '2027-05-07 10:00-05'))$$, 'P0001', 'no_cancelable', 'en curso: no_cancelable');
@@ -71,7 +71,7 @@ select set_config('prueba.id_c2', (select id::text from public.reserva where ini
 select set_config('prueba.id_ad', (select id::text from public.reserva where inicio = '2027-05-06 10:00-05'), true);
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c1","role":"authenticated"}', true);
-select throws_ok($$select public.cancelar_reserva(current_setting('prueba.id_c2')::uuid)$$, '42501', null, 'c1 no cancela la de c2');
+select throws_ok($$select public.cancelar_reserva(current_setting('prueba.id_c2')::uuid)$$, 'P0002', null, 'c1 no cancela la de c2: para el no existe (404)');
 select is(public.existe_reserva(current_setting('prueba.id_c2')::uuid), true, 'existe_reserva ve la ajena sin darla');
 select is(public.existe_reserva(gen_random_uuid()), false, 'existe_reserva falso si no existe');
 select is((select dias from public.plazos_pago()), 3, 'plazos_pago: dias');

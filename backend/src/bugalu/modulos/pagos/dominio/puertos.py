@@ -1,8 +1,10 @@
+from decimal import Decimal
 from typing import Protocol
 from uuid import UUID
 
 from bugalu.modulos.pagos.dominio.instrucciones import Instruccion
-from bugalu.modulos.pagos.dominio.modelos import NuevoPago, Pago
+from bugalu.modulos.pagos.dominio.modelos import Credito, NuevoPago, Pago
+from bugalu.modulos.reservas.dominio.modelos import Devolucion
 
 
 class RepositorioPagos(Protocol):
@@ -54,3 +56,33 @@ class RepositorioDatosPago(Protocol):
     async def obtener_contacto(self) -> str: ...
 
     async def guardar_contacto(self, texto: str) -> None: ...
+
+
+class RepositorioCreditos(Protocol):
+    """Creditos, su uso y devoluciones (RF-18). Los errores de la base ya vienen traducidos."""
+
+    async def es_administrador(self) -> bool: ...
+
+    async def es_personal(self) -> bool: ...
+
+    async def listar_creditos(self, id_cliente: UUID) -> list[Credito]: ...
+
+    async def aplicar_credito(
+        self, id_cuota: UUID, monto: Decimal, id_credito: UUID | None
+    ) -> UUID:
+        """Devuelve la reserva de la cuota."""
+        ...
+
+    async def solicitar_devolucion(self, id_credito: UUID, motivo: str) -> UUID: ...
+
+    async def obtener_devolucion(self, id_devolucion: UUID) -> Devolucion | None:
+        """Solo las que la RLS deja ver (el dueno y el administrador)."""
+        ...
+
+    async def listar_devoluciones(self, estado: str) -> list[Devolucion]: ...
+
+    async def decidir_devolucion(
+        self, id_devolucion: UUID, decision: str, monto: Decimal | None, motivo: str | None
+    ) -> None: ...
+
+    async def marcar_devolucion_realizada(self, id_devolucion: UUID, nota: str) -> None: ...

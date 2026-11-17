@@ -14,6 +14,7 @@ from bugalu.modulos.catalogo.infraestructura.entrada.http.esquemas import (
 from bugalu.modulos.reservas.aplicacion.actualizar_parametros.caso_de_uso import (
     ActualizarParametros,
 )
+from bugalu.modulos.reservas.aplicacion.aplicar_excepcion.caso_de_uso import AplicarExcepcion
 from bugalu.modulos.reservas.aplicacion.cancelar_reserva.caso_de_uso import CancelarReserva
 from bugalu.modulos.reservas.aplicacion.consultar_disponibilidad.caso_de_uso import (
     ConsultarDisponibilidad,
@@ -21,6 +22,7 @@ from bugalu.modulos.reservas.aplicacion.consultar_disponibilidad.caso_de_uso imp
 from bugalu.modulos.reservas.aplicacion.listar_mis_reservas.caso_de_uso import ListarMisReservas
 from bugalu.modulos.reservas.aplicacion.listar_reservas.caso_de_uso import ListarReservas
 from bugalu.modulos.reservas.aplicacion.listar_salas.caso_de_uso import ListarSalas
+from bugalu.modulos.reservas.aplicacion.marcar_inasistencia.caso_de_uso import MarcarInasistencia
 from bugalu.modulos.reservas.aplicacion.obtener_parametros.caso_de_uso import ObtenerParametros
 from bugalu.modulos.reservas.aplicacion.obtener_reserva.caso_de_uso import ObtenerReserva
 from bugalu.modulos.reservas.aplicacion.publicar_franjas.caso_de_uso import PublicarFranjas
@@ -29,6 +31,9 @@ from bugalu.modulos.reservas.aplicacion.registrar_cierre.caso_de_uso import Regi
 from bugalu.modulos.reservas.aplicacion.registrar_reserva.caso_de_uso import RegistrarReserva
 from bugalu.modulos.reservas.aplicacion.retirar_franja.caso_de_uso import RetirarFranja
 from bugalu.modulos.reservas.aplicacion.sugerir_franjas.caso_de_uso import SugerirFranjas
+from bugalu.modulos.reservas.aplicacion.vista_cancelacion.caso_de_uso import (
+    VistaCancelacion as VistaCancelacionCaso,
+)
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo as TramoDominio
 from bugalu.modulos.reservas.infraestructura.entrada.http.esquemas import (
     Cancelacion,
@@ -36,12 +41,14 @@ from bugalu.modulos.reservas.infraestructura.entrada.http.esquemas import (
     Disponibilidad,
     Franja,
     Instante,
+    NuevaExcepcion,
     NuevaReserva,
     NuevasFranjas,
     NuevoCierre,
     Reserva,
     Sala,
     Tramo,
+    VistaCancelacion,
 )
 from bugalu.modulos.reservas.infraestructura.salida.cotizador_catalogo import CotizadorCatalogo
 from bugalu.modulos.reservas.infraestructura.salida.repositorio_postgres import (
@@ -281,18 +288,71 @@ async def obtener_reserva(request: Request, claims: Claims, id_reserva: UUID) ->
     return Reserva.desde_dominio(reserva)
 
 
+@router.get(
+    "/reservas/{id_reserva}/cancelacion",
+    response_model=VistaCancelacion,
+    summary="Vista previa de la cancelacion: nivel, retencion y credito; sin cambiar nada",
+    responses=_respuestas(401, 403, 404, 409, 422),
+)
+async def vista_cancelacion(
+    request: Request,
+    claims: Claims,
+    id_reserva: UUID,
+    aviso_en: Annotated[Instante | None, Query()] = None,
+) -> VistaCancelacion:
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        vista = await VistaCancelacionCaso(RepositorioReservasPostgres(conexion)).ejecutar(
+            id_reserva, aviso_en
+        )
+    return VistaCancelacion.desde_dominio(vista)
+
+
 @router.post(
     "/reservas/{id_reserva}/cancelar",
     response_model=Reserva,
     response_model_exclude_unset=True,
-    summary="Cancela: el dueno sin pagos; el administrador tambien, con nota si hay pagos",
+    summary="Cancela con la politica de niveles (RF-18): el dueno con su nivel esperado; "
+    "el administrador por el estudio o en nombre del cliente",
     responses=_respuestas(401, 403, 404, 409, 422),
 )
 async def cancelar_reserva(
     request: Request, claims: Claims, id_reserva: UUID, cuerpo: Cancelacion | None = None
 ) -> Reserva:
+    cuerpo = cuerpo or Cancelacion()
     async with transaccion_con_identidad(_pool(request), claims) as conexion:
         reserva = await CancelarReserva(RepositorioReservasPostgres(conexion)).ejecutar(
-            id_reserva, cuerpo.nota if cuerpo else None
+            id_reserva, cuerpo.nota, cuerpo.nivel_esperado, cuerpo.por, cuerpo.aviso_en
+        )
+    return Reserva.desde_dominio(reserva)
+
+
+@router.post(
+    "/reservas/{id_reserva}/inasistencia",
+    response_model=Reserva,
+    response_model_exclude_unset=True,
+    summary="Marca la inasistencia, desde la tolerancia hasta el fin (personal o administrador)",
+    responses=_respuestas(401, 403, 404, 409),
+)
+async def marcar_inasistencia(request: Request, claims: Claims, id_reserva: UUID) -> Reserva:
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        reserva = await MarcarInasistencia(RepositorioReservasPostgres(conexion)).ejecutar(
+            id_reserva
+        )
+    return Reserva.desde_dominio(reserva)
+
+
+@router.post(
+    "/reservas/{id_reserva}/excepcion",
+    response_model=Reserva,
+    response_model_exclude_unset=True,
+    summary="Trata como nivel 1 una cancelacion de nivel 2 o 3, o una inasistencia (administrador)",
+    responses=_respuestas(401, 403, 404, 409, 422),
+)
+async def aplicar_excepcion(
+    request: Request, claims: Claims, id_reserva: UUID, cuerpo: NuevaExcepcion
+) -> Reserva:
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        reserva = await AplicarExcepcion(RepositorioReservasPostgres(conexion)).ejecutar(
+            id_reserva, cuerpo.motivo
         )
     return Reserva.desde_dominio(reserva)

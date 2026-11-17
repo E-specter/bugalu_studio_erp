@@ -186,6 +186,10 @@ def redactar(
         return _reserva_creada(datos, instrucciones)
     if tipo == "reserva_finalizada_saldo":
         return _reserva_finalizada_saldo(datos, instrucciones)
+    from bugalu.modulos.notificaciones.dominio.redaccion_rf18 import REDACTORES_RF18
+
+    if tipo in REDACTORES_RF18:  # importacion tardia: ese modulo usa los ayudantes de este
+        return REDACTORES_RF18[tipo](datos)
     if tipo not in _REDACTORES:
         raise ValueError(f"tipo de notificacion desconocido: {tipo}")
     return _REDACTORES[tipo](datos)
