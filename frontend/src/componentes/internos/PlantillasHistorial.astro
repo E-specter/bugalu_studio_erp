@@ -1,0 +1,37 @@
+---
+// Pieza interna: plantillas de la tabla de textos aceptados que clonan las islas (servicios/historial-aceptaciones.js).
+import Aviso from '../Aviso.astro';
+import Boton from '../Boton.astro';
+import Tabla from '../Tabla.astro';
+---
+
+<template data-historial="vacio"><p class="historial-ayuda"></p></template>
+<template data-historial="error">
+  <Aviso variante="error" titulo=" ">
+    <div class="historial-reintentar"><Boton variante="secundario" data-reintentar-historial>Reintentar</Boton></div>
+  </Aviso>
+</template>
+<template data-historial="tabla"><Tabla titulo=" " columnas={['Texto', 'Dónde', 'Fecha', 'Estado']} variante="compacta" /></template>
+<template data-historial="fila">
+  <tr>
+    <th scope="row"><span data-nombre></span> <a data-version></a></th>
+    <td data-etiqueta="Dónde" data-donde></td>
+    <td data-etiqueta="Fecha" data-fecha></td>
+    <td data-etiqueta="Estado" data-retirada></td>
+  </tr>
+</template>
+
+<style>
+  .historial-ayuda {
+    margin: 0;
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+    line-height: var(--fuente-interlineado-interfaz);
+  }
+  .historial-reintentar {
+    margin-block-start: var(--espacio-2);
+  }
+  :global([data-donde] a) {
+    color: var(--color-texto-principal);
+  }
+</style>

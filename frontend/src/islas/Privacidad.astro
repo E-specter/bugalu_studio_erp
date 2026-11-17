@@ -3,9 +3,9 @@
 import Panel from '../componentes/Panel.astro';
 import Aviso from '../componentes/Aviso.astro';
 import Boton from '../componentes/Boton.astro';
-import Tabla from '../componentes/Tabla.astro';
 import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.astro';
 import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLegal.astro';
+import PlantillasHistorial from '../componentes/internos/PlantillasHistorial.astro';
 
 const volver = '/acceso?volver=%2Fapp%2Fperfil%2Fprivacidad%2F';
 ---
@@ -18,6 +18,7 @@ const volver = '/acceso?volver=%2Fapp%2Fperfil%2Fprivacidad%2F';
 
   <PlantillasFormulario />
   <PlantillasResumenLegal />
+  <PlantillasHistorial />
 
   <template data-estado="cargando"><Panel titulo="Promociones" cargando /></template>
   <template data-estado="no-autenticado">
@@ -40,23 +41,8 @@ const volver = '/acceso?volver=%2Fapp%2Fperfil%2Fprivacidad%2F';
         <Panel codigo="P2" titulo="Usos promocionales"><div data-bloque="usos"></div></Panel>
         <div><Boton tipo="submit" data-principal>Guardar preferencias</Boton></div>
       </form>
-      <Panel codigo="P3" titulo="Textos aceptados"><div data-historial aria-busy="true"><p class="privacidad-ayuda">Cargando…</p></div></Panel>
+      <Panel codigo="P3" titulo="Textos aceptados"><div data-caja-historial aria-busy="true"><p class="privacidad-ayuda">Cargando…</p></div></Panel>
     </div>
-  </template>
-  <template data-estado="historial-vacio"><p class="privacidad-ayuda">Aún no has aceptado ningún texto.</p></template>
-  <template data-estado="historial-error">
-    <Aviso variante="error" titulo="No pudimos cargar tus textos aceptados.">
-      <div class="privacidad-reintentar"><Boton variante="secundario" data-reintentar-historial>Reintentar</Boton></div>
-    </Aviso>
-  </template>
-  <template data-estado="historial"><Tabla titulo="Textos que aceptaste" columnas={['Texto', 'Dónde', 'Fecha', 'Estado']} variante="compacta" /></template>
-  <template data-fila>
-    <tr>
-      <th scope="row"><span data-nombre></span> <a data-version></a></th>
-      <td data-etiqueta="Dónde" data-donde></td>
-      <td data-etiqueta="Fecha" data-fecha></td>
-      <td data-etiqueta="Estado" data-retirada></td>
-    </tr>
   </template>
   <noscript>
     <style is:inline>bugalu-privacidad [data-salida] { display: none; }</style>
@@ -67,18 +53,18 @@ const volver = '/acceso?volver=%2Fapp%2Fperfil%2Fprivacidad%2F';
 <script>
   // @ts-nocheck
   import { obtenerPerfil } from '../servicios/api.js';
-  import { listarTextosLegales, tipos } from '../servicios/textos-legales.js';
-  import { guardarConsentimientos, misAceptaciones, vigenteDe, enlacesDe, enlaceTexto, dondeAcepto } from '../servicios/aceptaciones.js';
+  import { listarTextosLegales } from '../servicios/textos-legales.js';
+  import { guardarConsentimientos, misAceptaciones, vigenteDe, enlacesDe } from '../servicios/aceptaciones.js';
+  import { pintarHistorial } from '../servicios/historial-aceptaciones.js';
   import { resumenLegal, errorResumen } from '../servicios/resumen-legal.js';
   import { mostrarAviso, enfocarAviso, limpiarAvisos } from '../servicios/formulario.js';
-  import { fechaDe, horaDe, diaMesAnio } from '../servicios/formatos.js';
 
   const AVISO_TELEFONO = 'Añade tu teléfono en Tus datos para elegir WhatsApp.';
   const CASILLAS = {
     promociones: [['promociones_correo', 'Quiero recibir promociones por correo.'], ['promociones_whatsapp', 'Quiero recibir promociones por WhatsApp.']],
     usos: [['fotos_videos', 'Autorizo al estudio a usar fotos y videos del proceso en que aparezco.'], ['excluir_material', 'No quiero que el estudio use mi material en sus promociones.']],
   };
-  const TEXTO = { promociones: ['politica_privacidad', 'promociones', 'Promociones'], usos: ['condiciones_contratacion', 'usos_promocionales', 'Usos promocionales'] };
+  const TEXTO = { promociones: ['politica_privacidad', 'promociones', 'Política de privacidad'], usos: ['condiciones_contratacion', 'usos_promocionales', 'Condiciones de contratación'] };
 
   function textoDeError(error) {
     return error.codigo === 'sin_conexion' ? ['Sin conexión', 'No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo.'] : ['No pudimos cargar tu perfil', 'Algo salió mal. Inténtalo de nuevo.'];
@@ -221,36 +207,8 @@ const volver = '/acceso?volver=%2Fapp%2Fperfil%2Fprivacidad%2F';
     }
 
     // P3: lo aceptado, lo mas reciente primero.
-    async historial() {
-      const caja = this.querySelector('[data-historial]');
-      caja.setAttribute('aria-busy', 'true');
-      let lista;
-      try {
-        lista = await misAceptaciones();
-        if (!Array.isArray(lista)) throw new Error('lista');
-      } catch {
-        caja.replaceChildren(this.plantilla('historial-error'));
-        caja.querySelector('[role]')?.removeAttribute('role');
-        return caja.setAttribute('aria-busy', 'false');
-      }
-      caja.setAttribute('aria-busy', 'false');
-      if (!lista.length) return caja.replaceChildren(this.plantilla('historial-vacio'));
-      const tabla = this.plantilla('historial');
-      const molde = this.querySelector('template[data-fila]');
-      tabla.querySelector('tbody').append(
-        ...[...lista].sort((a, b) => Date.parse(b.aceptada_en) - Date.parse(a.aceptada_en)).map((a) => {
-          const fila = molde.content.cloneNode(true);
-          fila.querySelector('[data-nombre]').textContent = tipos[a.tipo]?.nombre ?? a.tipo;
-          const enlace = fila.querySelector('[data-version]');
-          if (tipos[a.tipo]) Object.assign(enlace, { href: enlaceTexto(a.tipo, a.version), textContent: `versión ${a.version}` });
-          else enlace.replaceWith(`versión ${a.version}`);
-          fila.querySelector('[data-donde]').textContent = dondeAcepto[a.contexto] ?? a.contexto;
-          fila.querySelector('[data-fecha]').textContent = `${diaMesAnio(fechaDe(a.aceptada_en))}, ${horaDe(a.aceptada_en)}`;
-          fila.querySelector('[data-retirada]').textContent = a.retirada_en ? `Retirado el ${diaMesAnio(fechaDe(a.retirada_en))}` : '—';
-          return fila;
-        }),
-      );
-      caja.replaceChildren(tabla);
+    historial() {
+      return pintarHistorial(this, this.querySelector("[data-caja-historial]"), misAceptaciones, { tabla: 'Textos que aceptaste', vacio: 'Aún no has aceptado ningún texto.', error: 'No pudimos cargar tus textos aceptados.' });
     }
   }
   if (!customElements.get('bugalu-privacidad')) customElements.define('bugalu-privacidad', BugaluPrivacidad);

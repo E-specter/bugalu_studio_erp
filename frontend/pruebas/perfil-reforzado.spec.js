@@ -7,6 +7,8 @@ import { t, TEXTOS, perfilApi } from './ayudas-rf17.js';
 const ACEPTACIONES = [
   { id: 'a1', tipo: 'terminos_uso', version: '1.0.0', contexto: 'registro', id_operacion: 'o1', aceptada_en: '2026-11-10T15:00:00Z', retirada_en: null },
   { id: 'a2', tipo: 'politica_privacidad', version: '1.2.3', contexto: 'promociones', id_operacion: 'o2', aceptada_en: '2026-11-12T15:00:00Z', retirada_en: '2026-12-03T15:00:00Z' },
+  { id: 'a3', tipo: 'condiciones_contratacion', version: '2.0.0', contexto: 'reserva', id_operacion: 'r-77', aceptada_en: '2026-11-11T15:00:00Z', retirada_en: null },
+  { id: 'a4', tipo: 'condiciones_contratacion', version: '2.0.0', contexto: 'reserva', id_operacion: null, aceptada_en: '2026-11-09T15:00:00Z', retirada_en: null },
 ];
 
 async function montar(page, { perfilR = perfilApi(), mias = json(200, []) } = {}) {
@@ -32,6 +34,8 @@ test.describe('/app/perfil reforzado', () => {
       await montar(page, { perfilR: perfilApi({ redes: [{ red: 'instagram', valor: '@ana' }], domicilio: 'Av. Lima 123', datos_para_reservar: false, telefono: null }) });
       await page.goto('/app/perfil');
       await expect(page.getByRole('heading', { level: 2, name: /Identidad/ })).toBeVisible();
+      await expect(page.getByText('(opcional)')).toHaveCount(0); // N9: solo NOMBRE se marca, como "(obligatorio)"
+      await expect(page.getByText('Nombre (obligatorio)')).toBeVisible();
       await expect(page.getByRole('radio', { name: /Individual/ })).toBeChecked();
       await expect(page.getByRole('radio', { name: /Agrupación/ })).not.toBeChecked();
       await expect(page.getByLabel('Tipo de documento')).toHaveValue('dni');
@@ -100,6 +104,9 @@ test.describe('/app/perfil reforzado', () => {
     await guardar(page).click();
     await expect(page.getByText('Escribe el nombre del integrante.')).toBeVisible();
     await expect(page.getByText('Escribe qué hace en la agrupación, por ejemplo, voz.')).toBeVisible();
+    // N7: NOMBRE y ROL en columnas iguales; la ayuda de ROL no sale de su columna.
+    const [nombre, rol] = await Promise.all([page.getByLabel('Nombre del integrante'), page.getByLabel(/^Rol/)].map((l) => l.evaluate((e) => e.getBoundingClientRect().width)));
+    expect(Math.abs(nombre - rol)).toBeLessThan(2);
     await page.getByLabel('Nombre del integrante').fill('Luis');
     await page.getByLabel(/Rol/).fill('Voz');
     await guardar(page).click();
@@ -108,6 +115,7 @@ test.describe('/app/perfil reforzado', () => {
     await page.getByRole('checkbox', { name: /Declaro que represento a la agrupación/ }).check();
     await guardar(page).click();
     await expect(page.locator('.aviso-titulo', { hasText: 'Cambios guardados.' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Saltar al contenido' })).not.toBeFocused(); // N1: el foco queda en la pagina, no en el enlace de salto
     expect(orden).toEqual(['aceptar', 'perfil']);
     expect(vistas.aceptar[0].cuerpo).toEqual({ contexto: 'registro', textos: [{ tipo: 'declaracion_agrupacion', version: '1.0.0' }] });
     expect(vistas.parches[0].cuerpo).toMatchObject({ modalidad: 'agrupacion', integrantes: [{ nombre: 'Luis', rol: 'Voz' }] });
@@ -191,12 +199,16 @@ test.describe('/app/perfil/privacidad', () => {
       await expect(page.getByRole('link', { name: /Leer la Política de privacidad|Leer el texto completo \(versión 1\.2\.3\)/ })).toHaveAttribute('href', '/legal/privacidad/?version=1.2.3');
       const tabla = page.getByRole('table', { name: 'Textos que aceptaste' });
       const filas = tabla.locator('tbody tr');
-      await expect(filas).toHaveCount(2);
+      await expect(filas).toHaveCount(4);
+      await expect(page.getByRole('group', { name: 'Política de privacidad' })).toBeVisible(); // B1: el resumen nombra el texto
+      await expect(page.getByRole('group', { name: 'Condiciones de contratación' })).toBeVisible();
+      await expect(filas.nth(1).getByRole('link', { name: 'Reserva' })).toHaveAttribute('href', '/app/reservas/detalle?id=r-77'); // B2
+      await expect(filas.nth(3).getByRole('link', { name: 'Reserva' })).toHaveCount(0);
       await expect(filas.first()).toContainText('Política de privacidad');
       await expect(filas.first()).toContainText('Promociones');
       await expect(filas.first()).toContainText('Retirado el 3 dic 2026');
-      await expect(filas.nth(1)).toContainText('Registro');
-      await expect(filas.nth(1)).toContainText('—');
+      await expect(filas.nth(2)).toContainText('Registro');
+      await expect(filas.nth(2)).toContainText('—');
       await expect(filas.first().getByRole('link', { name: /1\.2\.3/ })).toHaveAttribute('href', '/legal/privacidad/?version=1.2.3');
       await sinViolaciones(page);
       await page.screenshot({ path: `pruebas/capturas/perfil-privacidad-${tm.nombre}.png`, fullPage: true });

@@ -6,6 +6,7 @@ import Campo from '../componentes/Campo.astro';
 import Casilla from '../componentes/Casilla.astro';
 import Tabla from '../componentes/Tabla.astro';
 import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import PlantillasHistorial from '../componentes/internos/PlantillasHistorial.astro';
 import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.astro';
 
 interface Props {
@@ -156,6 +157,7 @@ const opcionesRol = (cliente: boolean) => [
       <template data-estado="no-encontrada">
         <Panel codigo="U1" titulo="Persona"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a usuarios', href: '/app/usuarios' }} /></Panel>
       </template>
+      <template data-sello="repetido"><EtiquetaTecnica variante="aviso" texto="REPETIDO" /></template>
       <template data-estado="datos">
         <div class="revisar">
           <Panel codigo="U1" titulo="Persona">
@@ -164,6 +166,11 @@ const opcionesRol = (cliente: boolean) => [
               <div><dt>Correo</dt><dd data-campo="correo"></dd></div>
               <div data-fila="telefono"><dt>Teléfono</dt><dd data-campo="telefono"></dd></div>
               <div data-fila="nombre_artistico"><dt>Nombre artístico</dt><dd data-campo="nombre_artistico"></dd></div>
+              <div data-fila="modalidad"><dt>Modalidad</dt><dd data-campo="modalidad"></dd></div>
+              <div data-fila="documento"><dt>Documento</dt><dd><span data-campo="documento"></span><span data-sello-documento></span></dd></div>
+              <div data-fila="domicilio"><dt>Domicilio</dt><dd data-campo="domicilio"></dd></div>
+              <div data-fila="redes"><dt>Redes</dt><dd data-campo="redes"></dd></div>
+              <div data-fila="integrantes"><dt>Integrantes</dt><dd data-campo="integrantes"></dd></div>
             </dl>
           </Panel>
           <div class="lateral">
@@ -179,12 +186,14 @@ const opcionesRol = (cliente: boolean) => [
               </form>
             </Panel>
           </div>
+          <Panel codigo="U3" titulo="Textos aceptados"><div data-caja-historial aria-busy="true"><p class="total">Cargando…</p></div></Panel>
         </div>
       </template>
     </>
   )}
 
   <PlantillasFormulario />
+  <PlantillasHistorial />
 
   <noscript>
     <style is:inline>bugalu-solicitudes [data-salida] { display: none; }</style>
@@ -195,6 +204,8 @@ const opcionesRol = (cliente: boolean) => [
 <script>
   import { listarSolicitudes, aprobarSolicitud, rechazarSolicitud, listarUsuarios, cambiarUsuario } from '../servicios/administracion.js';
   import { obtenerPerfil } from '../servicios/api.js';
+  import { aceptacionesDe } from '../servicios/aceptaciones.js';
+  import { pintarHistorial } from '../servicios/historial-aceptaciones.js';
   import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, llenarAviso, formatearFecha } from '../servicios/formulario.js';
 
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -246,6 +257,7 @@ const opcionesRol = (cliente: boolean) => [
       this.avisoDeUrl();
       this.addEventListener('click', (e) => {
         if ((e.target as Element).closest('[data-reintentar]')) this.cargar(true);
+        if ((e.target as Element).closest('[data-reintentar-historial]')) this.historial();
       });
       this.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -458,12 +470,27 @@ const opcionesRol = (cliente: boolean) => [
       rolValido(u.rol);
       this.yo = yo;
       this.mostrar('datos');
-      this.llenarDatos({ nombre: u.nombre ?? 'Sin nombre', correo: u.correo, telefono: u.telefono, nombre_artistico: u.nombre_artistico });
+      const nombresRed: Record<string, string> = { instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook', youtube: 'YouTube', spotify: 'Spotify', otra: 'Otra' };
+      this.llenarDatos({
+        nombre: u.nombre ?? 'Sin nombre', correo: u.correo, telefono: u.telefono, nombre_artistico: u.nombre_artistico,
+        modalidad: u.modalidad === 'agrupacion' ? 'Agrupación' : u.modalidad === 'individual' ? 'Individual' : null,
+        documento: u.documento ? `${String(u.documento.tipo).toUpperCase()} ${u.documento.numero}` : null,
+        domicilio: u.domicilio,
+        redes: u.redes?.length ? u.redes.map((r: any) => `${nombresRed[r.red] ?? r.red}: ${r.valor}`).join(' · ') : null,
+        integrantes: u.integrantes?.length ? u.integrantes.map((i: any) => `${i.nombre}, ${i.rol}`).join(' · ') : null,
+      });
+      if (u.documento_repetido) this.querySelector('[data-sello-documento]')?.append(' ', this.querySelector<HTMLTemplateElement>('template[data-sello="repetido"]')!.content.cloneNode(true));
+      this.historial();
       this.querySelector<HTMLInputElement>(`[name="rol"][value="${u.rol}"]`)!.checked = true;
       this.querySelector<HTMLInputElement>('[name="especialidad"]')!.value = u.especialidad ?? '';
       if (yo.id !== u.id) this.querySelector('[data-propio]')!.remove();
       this.encabezado(u.nombre ?? u.correo, `El rol decide qué ve ${u.nombre ?? u.correo} en el sistema.`);
       return `Usuario ${u.nombre ?? u.correo}`;
+    }
+
+    // U3: lo que la persona aceptó, para que el Administrador lo consulte; no bloquea el resto de la ficha.
+    historial() {
+      return pintarHistorial(this, this.querySelector('[data-caja-historial]')!, () => aceptacionesDe(this.registro), { tabla: 'Textos que aceptó esta persona', vacio: 'Esta persona aún no ha aceptado ningún texto.', error: 'No pudimos cargar los textos aceptados.' });
     }
 
     guardar(form: HTMLFormElement) {

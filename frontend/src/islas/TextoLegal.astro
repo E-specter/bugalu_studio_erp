@@ -259,6 +259,11 @@ const directorio = tipo === 'directorio';
     gap: var(--espacio-6);
     max-inline-size: var(--medida-linea-lectura);
   }
+  /* Los avisos de estado (404, error, sin JS) se limitan como el aviso y el resumen de la pagina normal. */
+  .texto :global([data-salida] > .aviso),
+  .texto :global(noscript .aviso) {
+    max-inline-size: var(--medida-linea-lectura);
+  }
   .texto :global(.texto-avisos:empty) {
     display: none;
   }

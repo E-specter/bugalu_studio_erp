@@ -33,7 +33,7 @@ const redes = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['facebook', 'F
         <Panel codigo="A1" titulo="Tus datos" ayuda="Así te verá el estudio.">
           <div class="perfil-campos">
             <Campo nombre="nombre" etiqueta="Nombre" autocomplete="name" obligatorio />
-            <Campo tipo="tel" nombre="telefono" etiqueta="Teléfono (opcional)" ayuda="Solo números; con + y código de país si no es de Perú. Lo necesitas para reservar." autocomplete="tel" />
+            <Campo tipo="tel" nombre="telefono" etiqueta="Teléfono" ayuda="Solo números; con + y código de país si no es de Perú. Lo necesitas para reservar." autocomplete="tel" />
             <div data-solo-cliente><Campo nombre="nombre_artistico" etiqueta="Nombre artístico o proyecto" /></div>
           </div>
         </Panel>
@@ -102,7 +102,7 @@ const redes = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['facebook', 'F
     </div>
   </template>
   <template data-fila="integrante">
-    <div class="perfil-fila">
+    <div class="perfil-fila perfil-fila-integrante">
       <Campo nombre="nombre_integrante" etiqueta="Nombre del integrante" autocomplete="off" />
       <Campo nombre="rol_integrante" etiqueta="Rol" ayuda="Por ejemplo, voz o batería." autocomplete="off" />
       <Boton variante="secundario" data-quitar>Quitar integrante</Boton>
@@ -665,6 +665,9 @@ const redes = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['facebook', 'F
     }
     .perfil :global(.perfil-fila) {
       grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+    }
+    .perfil :global(.perfil-fila-integrante) {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; /* NOMBRE y ROL del mismo ancho: la ayuda de ROL cabe debajo de su etiqueta */
     }
   }
   .perfil :global([data-requisitos]:not(:empty)) {

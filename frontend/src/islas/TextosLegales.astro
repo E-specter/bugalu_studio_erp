@@ -57,7 +57,7 @@ const cambios = [
       <template data-sello="sin-publicar"><EtiquetaTecnica variante="aviso" texto="SIN PUBLICAR" /></template>
       <template data-estado="retirar">
         <Panel titulo="Retirar versión">
-          <p>Se borra el contenido y no se puede recuperar. La versión vigente sigue rigiendo.</p>
+          <p class="textos-retiro-texto">Se borra el contenido y no se puede recuperar. La versión vigente sigue rigiendo.</p>
           <BarraAcciones variante="decision">
             <Boton slot="secundaria" variante="secundario" data-volver>Volver</Boton>
             <Boton slot="principal" variante="peligro" data-envio data-confirmar-retiro>Retirar versión</Boton>
@@ -79,7 +79,7 @@ const cambios = [
               </dl>
               <div class="campo">
                 <fieldset class="gestion-grupo">
-                  <legend>Tipo de cambio</legend>
+                  <legend>Tipo de cambio (obligatorio)</legend>
                   {cambios.map((c) => <Casilla tipo="radio" nombre="tipo_cambio" valor={c.valor} etiqueta={c.etiqueta} detalle={c.detalle} id={`cambio-${c.valor}`} />)}
                 </fieldset>
               </div>
@@ -331,7 +331,7 @@ const cambios = [
         if (!esFecha(fecha)) errores.push({ entrada: campo('vigente_desde'), mensaje: 'Elige desde cuándo rige.', texto: 'Vigente desde' });
         else if (fecha < this.fechaMinima) errores.push({ entrada: campo('vigente_desde'), mensaje: `Elige una fecha desde el ${diaMesAnio(this.fechaMinima)}: los clientes necesitan 15 días de aviso.`, texto: 'Vigente desde' });
       }
-      if (!primero.value.trim()) errores.push({ entrada: primero, mensaje: 'Escribe el resumen.', texto: 'Resumen' });
+      if (!primero.value.trim()) errores.push({ entrada: primero, mensaje: 'Escribe el resumen.', texto: `Resumen de ${contextos[tipos[this.tipoTexto].contextos[0]].toLowerCase()}` });
       const contenido = campo('contenido').value.trim();
       if (!contenido) errores.push({ entrada: campo('contenido'), mensaje: 'Escribe el contenido.', texto: 'Contenido' });
       if (!this.validar(errores, ['campo', 'campos'])) return null;
@@ -404,6 +404,9 @@ const cambios = [
     display: flex;
     flex-direction: column;
     gap: var(--espacio-2);
+  }
+  .textos-retiro-texto {
+    margin-block-end: var(--espacio-4);
   }
   .textos :global(.textos-plano) {
     white-space: pre-wrap;

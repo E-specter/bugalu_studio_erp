@@ -80,6 +80,7 @@ test('publico: version inexistente es 404 de la vista, con enlace a la vigente',
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await sinViolaciones(page);
   expect(consola).toEqual([]);
+  expect(await page.locator('[data-salida] > .aviso').evaluate((e) => getComputedStyle(e).maxWidth)).not.toBe('none'); // N6: el aviso de estado respeta la medida de lectura
   await page.screenshot({ path: 'pruebas/capturas/textos-legales-404-1440.png', fullPage: true });
 });
 
@@ -163,6 +164,7 @@ test.describe('sin JavaScript', () => {
     await expect(page.locator('noscript a[href="https://wa.me/51925530800"]')).toHaveText('+51 925 530 800');
     await expect(page.getByText('Cargando…')).toBeHidden();
     await expect(page.getByRole('contentinfo').getByRole('link', { name: 'Libro de Reclamaciones' })).toBeVisible();
+    expect(await page.locator('noscript .aviso').evaluate((e) => getComputedStyle(e).maxWidth)).not.toBe('none'); // N6
     await page.screenshot({ path: 'pruebas/capturas/textos-legales-sin-js-1440.png', fullPage: true });
   });
 });
@@ -253,6 +255,9 @@ test('admin: retirar pide confirmar, Volver devuelve el foco y Retirar borra la 
   await expect(page.getByRole('heading', { level: 2, name: /retirar versión 1.1.0 de términos de uso/i })).toBeFocused();
   await expect(page.getByText('Se borra el contenido y no se puede recuperar. La versión vigente sigue rigiendo.')).toBeVisible();
   await sinViolaciones(page);
+  // N2: aire entre el parrafo y la barra Decision (espacio-4 = 16 px).
+  const aire = await page.evaluate(() => document.querySelector('.textos-retiro-texto').nextElementSibling.getBoundingClientRect().top - document.querySelector('.textos-retiro-texto').getBoundingClientRect().bottom);
+  expect(aire).toBeGreaterThanOrEqual(16);
   await page.screenshot({ path: 'pruebas/capturas/textos-admin-retirar-1440.png', fullPage: true });
   await page.getByRole('button', { name: 'Volver' }).click();
   await expect(page.getByRole('link', { name: 'Publicar versión de Términos de uso' })).toBeFocused();
@@ -382,8 +387,11 @@ test('admin: validacion con errores bajo cada campo y resumen', async ({ page })
   await admin(page);
   await page.goto('/app/textos/publicar?tipo=terminos_uso');
   await page.getByRole('button', { name: 'Revisar y publicar' }).click();
-  await expect(page.locator('.aviso-error')).toBeFocused();
+  await expect(page.locator('.aviso-error')).toBeFocused(); // N1: el foco va al resumen, no al enlace de salto
+  await expect(page.getByRole('link', { name: 'Saltar al contenido' })).not.toBeFocused();
   await expect(page.getByText('Revisa 5 campos')).toBeVisible();
+  await expect(page.locator('.aviso-error').getByRole('link', { name: 'Resumen de registro' })).toBeVisible(); // N8: nombra el campo, no "Resumen"
+  await expect(page.getByRole('group', { name: 'Tipo de cambio (obligatorio)' })).toBeVisible();
   await expect(page.getByText('Elige el tipo de cambio.')).toBeVisible();
   await expect(page.getByText('Escribe la versión como 1.2.0.')).toBeVisible();
   await expect(page.getByText('Elige desde cuándo rige.')).toBeVisible();
@@ -402,6 +410,7 @@ test('admin: revision antes de publicar, volver a editar conserva todo y publica
   await page.getByLabel(/^Resumen de cambios/).fill('Cambia el plazo de cancelación.');
   await page.getByRole('button', { name: 'Revisar y publicar' }).click();
   await expect(page.getByRole('heading', { level: 2, name: /R1 revisa antes de publicar/i })).toBeFocused();
+  await expect(page.getByRole('link', { name: 'Saltar al contenido' })).not.toBeFocused();
   await expect(page.getByText('Al publicarla no podrás editarla. Avisaremos por correo a todos los clientes y regirá desde el 10 dic 2026 para las operaciones nuevas.')).toBeVisible();
   await expect(page.getByText('Cada cliente tendrá que aceptarlos de nuevo para reservar.')).toBeVisible();
   await expect(page.getByText('# Título')).toBeVisible();
@@ -606,4 +615,60 @@ test('usuarios: valor desconocido de documento se ignora', async ({ page }) => {
   const api = await simular(page, 'GET', '/usuarios', json(200, USUARIOS));
   await page.goto('/app/usuarios?documento=x');
   expect(api[0].url.search).toBe('');
+});
+
+// --- 8. Ficha de persona del Administrador (U1 ampliado y U3 textos aceptados) ---
+const UID = '11111111-1111-4111-8111-111111111111';
+const FICHA = {
+  id: UID, nombre: 'Ana Pérez', correo: 'ana@correo.com', rol: 'cliente', especialidad: null, telefono: '987654321', nombre_artistico: 'Ana y los Ecos',
+  modalidad: 'agrupacion', documento: { tipo: 'dni', numero: '12345678' }, documento_repetido: true, domicilio: 'Av. Lima 123',
+  redes: [{ red: 'instagram', valor: '@ana' }], integrantes: [{ nombre: 'Luis', rol: 'Voz' }],
+};
+const ACEPTADOS = [
+  { id: 'a1', tipo: 'terminos_uso', version: '1.0.0', contexto: 'registro', id_operacion: 'o1', aceptada_en: '2026-11-10T15:00:00Z', retirada_en: null },
+  { id: 'a2', tipo: 'politica_privacidad', version: '1.2.3', contexto: 'promociones', id_operacion: 'o2', aceptada_en: '2026-11-12T15:00:00Z', retirada_en: '2026-12-03T15:00:00Z' },
+];
+const fichaApi = async (page, aceptaciones) => {
+  await comoAdministrador(page);
+  await simular(page, 'GET', '/usuarios', json(200, [FICHA]));
+  return simular(page, 'GET', `/usuarios/${UID}/aceptaciones`, aceptaciones);
+};
+
+for (const t of tamanos) {
+  test(`ficha: identidad y textos aceptados de la persona a ${t.nombre}`, async ({ page }) => {
+    const consola = vigilarConsola(page);
+    await page.setViewportSize({ width: t.ancho, height: t.alto });
+    const api = await fichaApi(page, json(200, ACEPTADOS));
+    await page.goto(`/app/usuarios/editar?id=${UID}`);
+    const persona = page.getByRole('region', { name: /Persona/ });
+    await expect(persona).toContainText('Agrupación');
+    await expect(persona).toContainText('DNI 12345678');
+    await expect(persona).toContainText('REPETIDO');
+    await expect(persona).toContainText('Av. Lima 123');
+    await expect(persona).toContainText('Instagram: @ana');
+    await expect(persona).toContainText('Luis, Voz');
+    const filas = page.getByRole('table', { name: 'Textos que aceptó esta persona' }).locator('tbody tr');
+    await expect(filas).toHaveCount(2);
+    await expect(filas.first()).toContainText('Política de privacidad');
+    await expect(filas.first()).toContainText('Retirado el 3 dic 2026');
+    await expect(filas.nth(1)).toContainText('—');
+    expect(api).toHaveLength(1);
+    await sinViolaciones(page);
+    await page.screenshot({ path: `pruebas/capturas/usuarios-ficha-${t.nombre}.png`, fullPage: true });
+    expect(consola).toEqual([]);
+  });
+}
+
+test('ficha: sin aceptaciones y con error en U3 (el resto sigue usable)', async ({ page }) => {
+  await fichaApi(page, json(200, []));
+  await page.goto(`/app/usuarios/editar?id=${UID}`);
+  await expect(page.getByText('Esta persona aún no ha aceptado ningún texto.')).toBeVisible();
+  const otra = await page.context().newPage();
+  await comoAdministrador(otra);
+  await simular(otra, 'GET', '/usuarios', json(200, [FICHA]));
+  await simular(otra, 'GET', `/usuarios/${UID}/aceptaciones`, (r) => r.fulfill(errorApi(503, 'x')));
+  await otra.goto(`/app/usuarios/editar?id=${UID}`);
+  await expect(otra.getByText('No pudimos cargar los textos aceptados.')).toBeVisible();
+  await expect(otra.getByRole('button', { name: 'Reintentar' })).toBeVisible();
+  await expect(otra.getByRole('button', { name: 'Guardar rol y especialidad' })).toBeEnabled();
 });

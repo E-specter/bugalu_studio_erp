@@ -42,9 +42,11 @@ const { titulo } = Astro.props;
     font-weight: var(--fuente-peso-titulo);
     text-transform: uppercase;
     transform: translateY(-200%);
+    clip-path: inset(50%); /* fuera de foco no se pinta ni en capturas de pagina completa */
   }
   .saltar:focus {
     transform: none;
+    clip-path: none;
   }
   /* El título que recibe el foco por programa (paso cargado, panel abierto) no dibuja anillo; los avisos enfocados lo conservan (estados comunes). */
   :is(h1, h2)[tabindex='-1']:focus {

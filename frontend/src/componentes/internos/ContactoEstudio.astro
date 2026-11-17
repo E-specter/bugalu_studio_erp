@@ -3,23 +3,25 @@
 ---
 
 <ul class="contacto">
-  <li>Correo: <a href="mailto:somos.bugalu.studio@gmail.com">somos.bugalu.studio@gmail.com</a></li>
-  <li>WhatsApp: <a href="https://wa.me/51925530800">+51 925 530 800</a></li>
-  <li>En persona, con un profesional autorizado del estudio, en la sede de La Molina.</li>
+  <li><span>Correo: <a href="mailto:somos.bugalu.studio@gmail.com">somos.bugalu.studio@gmail.com</a></span></li>
+  <li><span>WhatsApp: <a href="https://wa.me/51925530800">+51 925 530 800</a></span></li>
+  <li><span>En persona, con un profesional autorizado del estudio, en la sede de La Molina.</span></li>
 </ul>
 
 <style>
   .contacto {
     display: flex;
     flex-direction: column;
-    gap: var(--espacio-2);
+    gap: 0; /* la altura tactil de cada fila ya las separa */
     margin: 0;
     padding-inline-start: var(--espacio-5);
   }
+  .contacto li {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--medida-control-tactil); /* objetivo tactil (WCAG 2.5.8): las tres filas miden igual */
+  }
   .contacto a {
-    display: inline-block;
-    min-block-size: var(--medida-control-tactil); /* objetivo tactil (WCAG 2.5.8) */
-    line-height: var(--medida-control-tactil);
     color: var(--color-texto-principal);
   }
 </style>

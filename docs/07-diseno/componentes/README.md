@@ -80,6 +80,7 @@ Rutas relativas a `frontend/src/`. Islas en `islas/<Nombre>.astro`.
 | Pieza | Qué es | La usan |
 |---|---|---|
 | `ContactoEstudio.astro` | Canales del estudio (correo, WhatsApp, sede) de las páginas sin JS y del Libro de Reclamaciones provisional | `TextoLegal`, `/libro-de-reclamaciones/` |
+| `PlantillasHistorial.astro` | Plantillas (vacío, error, tabla Compacta y fila) de la tabla de textos aceptados; las llena `servicios/historial-aceptaciones.js` (`pintarHistorial`). Enlaza la reserva por `id_operacion` | `Privacidad` (P3), `Solicitudes` (U3 de la ficha de persona) |
 | `Icono.astro` + `lucide.js` | SVG en línea de un icono de la [tabla de iconos](../fundamentos/iconografia-imagen.md#iconos), decorativo (`aria-hidden`), `medida-icono-sm` o `-md` | Todos los que llevan icono |
 | `MensajeError.astro` | Mensaje de error con `alert-triangle` en `color-texto-alerta` ([estados comunes](#estados-comunes), Error) | [campo](campo.md), [casilla](casilla.md) (error de grupo) |
 

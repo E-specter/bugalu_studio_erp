@@ -30,7 +30,7 @@ const enlaces = [
 
 <style>
   .pie {
-    padding: var(--espacio-6) var(--espacio-4);
+    padding-block: var(--espacio-6);
     background: var(--color-fondo-lienzo);
     border-block-start: var(--borde-grosor-base) solid var(--color-borde-fuerte);
   }
@@ -38,8 +38,10 @@ const enlaces = [
     display: flex;
     flex-direction: column;
     gap: var(--espacio-3);
+    box-sizing: border-box;
     max-inline-size: var(--medida-contenedor-max);
     margin-inline: auto;
+    padding-inline: var(--espacio-4); /* misma retícula que el <main> de LayoutPublico */
   }
   .pie-enlaces {
     display: flex;
@@ -64,6 +66,7 @@ const enlaces = [
   }
   .pie-acceso .pie-contenido {
     max-inline-size: none;
+    padding-inline: 0;
   }
   .pie-acceso .pie-enlaces a {
     font-size: var(--fuente-tamano-micro);
@@ -74,11 +77,16 @@ const enlaces = [
     font-family: var(--fuente-familia-tecnica);
     font-size: var(--fuente-tamano-micro);
   }
+  @media (min-width: 90em) { /* punto-quiebre-amplio */
+    .pie-completa .pie-contenido {
+      padding-inline: var(--espacio-12);
+    }
+  }
   @media (min-width: 37.5em) { /* punto-quiebre-tableta: en fila */
     .pie-enlaces {
       flex-direction: row;
       flex-wrap: wrap;
-      gap: var(--espacio-4);
+      column-gap: var(--espacio-4); /* la altura tactil de cada enlace ya separa las filas */
     }
   }
 </style>
