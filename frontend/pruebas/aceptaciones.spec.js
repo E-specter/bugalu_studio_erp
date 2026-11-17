@@ -325,11 +325,12 @@ test.describe('04 Confirmar con condiciones', () => {
     await expect(page.getByLabel('Qué necesitas (opcional)')).toHaveValue('Voz y guitarra');
   });
 
-  test('cerrar sesión borra el detalle guardado', async ({ page }) => {
+  test('cerrar sesión borra el detalle guardado y la cifra del aviso de reprogramar', async ({ page }) => {
     await montarReserva(page);
     await page.goto(PASO4);
     await page.getByLabel('Qué necesitas (opcional)').fill('Voz y guitarra');
     expect(await page.evaluate(() => Object.keys(sessionStorage).length)).toBeGreaterThan(0);
+    await page.evaluate(() => sessionStorage.setItem('bugalu:reserva-detalle-reprogramada:r1', '50.00'));
     await page.goto('/app/perfil');
     await page.locator('.cabecera-menu > summary').click();
     await page.getByRole('button', { name: 'Cerrar sesión' }).click();

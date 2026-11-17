@@ -234,7 +234,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
                       <Casilla tipo="radio" nombre="decision" valor="rechazo" id="decision-rechazo" etiqueta="Rechazar" />
                     </fieldset>
                   </div>
-                  <Campo tipo="area" id="decision-motivo" nombre="motivo" etiqueta="Motivo" ayuda="El cliente lo verá. Obligatorio si rechazas." maxlength="500" />
+                  <Campo tipo="area" id="decision-motivo" nombre="motivo" etiqueta="Motivo" ayuda="El cliente lo verá. Obligatorio si devuelves una parte o rechazas." maxlength="500" />
                   <p data-consecuencia hidden></p>
                   <div><Boton tipo="submit" data-envio data-decidir>Registrar decisión</Boton></div>
                 </form>
@@ -542,6 +542,11 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
       const campo = (nombre, valor) => (this.querySelector(`[data-campo="${nombre}"]`).textContent = valor);
       const cliente = d.cliente?.nombre ?? 'Sin nombre';
       const plazo = d.limite ? (Date.parse(d.limite) > Date.now() ? `${diaMes(fechaDe(d.limite))} · ${faltan(Date.parse(d.limite) - Date.now())}` : `Venció el ${diaMes(fechaDe(d.limite))}`) : null;
+      const vencido = d.limite && Date.parse(d.limite) <= Date.now();
+      const plazoEn = (nombre) => {
+        campo(nombre, plazo);
+        if (vencido) this.querySelector(`[data-campo="${nombre}"]`).append(' ', this.sello('alerta', 'Fuera de plazo'));
+      };
       campo('cliente', cliente);
       const enlace = this.querySelector('[data-reserva]');
       enlace.textContent = d.folio;
@@ -551,14 +556,14 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
       campo('solicitada', horaAnio(d.solicitada_en));
       if (d.tipo === 'nivel_1') campo('motivo', d.motivo);
       else this.querySelector('[data-fila="motivo"]').remove();
-      if (d.tipo === 'estudio' && plazo) campo('plazo', plazo);
+      if (d.tipo === 'estudio' && plazo) plazoEn('plazo');
       else this.querySelector('[data-fila="plazo"]').remove();
       this.querySelector('#decision-total').closest('.casilla').querySelector('.casilla-etiqueta').replaceChildren(`Devolver todo (${soles(d.monto_solicitado)})`);
       if (d.estado === 'pendiente') this.querySelector('[data-panel="decidir"]').hidden = false;
       else if (d.estado === 'aprobada') {
         this.querySelector('[data-panel="devolver"]').hidden = false;
         campo('aprobado', soles(d.monto_aprobado));
-        if (plazo) campo('plazo-devolver', plazo);
+        if (plazo) plazoEn('plazo-devolver');
         else this.querySelector('[data-fila="plazo-devolver"]').remove();
       } else this.resultado(d);
       this.encabezado(`${cliente} · ${TIPOS_DEVOLUCION[d.tipo] ?? d.tipo} de la reserva ${d.folio}`, d.folio);
@@ -603,7 +608,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
       if (d === 'parcial' && (importe === null || Number(importe) < 0.01 || Number(importe) > Number(saldo))) errores.push({ entrada: monto, mensaje: `Escribe un monto entre S/ 0,01 y ${soles(saldo)}.`, texto: 'Monto a devolver' });
       if (d && d !== 'total' && !texto) errores.push({ entrada: motivo, mensaje: d === 'rechazo' ? 'Escribe por qué la rechazas.' : 'Escribe el motivo de la devolución parcial.', texto: 'Motivo' });
       else if (texto.length > 500) errores.push({ entrada: motivo, mensaje: 'El motivo admite hasta 500 caracteres.', texto: 'Motivo' });
-      else if (texto && texto.length < 10) errores.push({ entrada: motivo, mensaje: 'El motivo debe tener entre 10 y 500 caracteres.', texto: 'Motivo' });
+      else if (d !== 'total' && texto && texto.length < 10) errores.push({ entrada: motivo, mensaje: 'El motivo debe tener entre 10 y 500 caracteres.', texto: 'Motivo' });
       if (!this.validar(errores)) return;
       const cuerpo = { decision: d, ...(d === 'parcial' && { monto: importe }), ...(texto && { motivo: texto }) };
       this.enviar(formulario.querySelector('[data-decidir]'), d === 'rechazo' ? 'Rechazando…' : 'Aprobando…', () => decidirDevolucion(this.registro, cuerpo), () => location.assign('/app/pagos/devoluciones?aviso=devolucion-decidida'), true);

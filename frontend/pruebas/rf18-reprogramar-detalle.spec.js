@@ -346,7 +346,7 @@ test('detalle: un enlace armado con &credito= no muestra esa cifra; sin vista gu
   expect(new URL(page.url()).search).toBe(`?id=${ID}`);
 });
 
-test('detalle: la vista guardada sin crédito (0.00) no menciona ningún crédito, y un valor inválido se trata como ausente', async ({ page }) => {
+test('detalle: la vista guardada sin crédito (0.00) no menciona ningún crédito', async ({ page }) => {
   await con(page, reserva());
   await previa(page, vista(1));
   await guardar(page, '0.00');

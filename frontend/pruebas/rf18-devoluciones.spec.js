@@ -212,6 +212,17 @@ test('revisar: devolver todo, el texto del botón sigue a la opción y vuelve a 
   await sinViolaciones(page);
 });
 
+test('revisar: devolver todo, el motivo es opcional y sin mínimo, hasta 500', async ({ page }) => {
+  await simular(page, 'GET', `/devoluciones/${DV1}`, json(200, devolucion()));
+  const envios = await simular(page, 'POST', `/devoluciones/${DV1}/decidir`, json(200, devolucion({ estado: 'aprobada', monto_aprobado: '100.00' })));
+  await colas(page, {});
+  await revisar(page);
+  await opcion(page, /Devolver todo/).check();
+  await page.getByLabel(/^Motivo/).fill('corto');
+  await enviar(page, 'Aprobar devolución total').click();
+  expect(envios[0].cuerpo).toEqual({ decision: 'total', motivo: 'corto' });
+});
+
 test('revisar: devolución parcial valida el monto y el motivo, y manda el monto como texto decimal', async ({ page }) => {
   await simular(page, 'GET', `/devoluciones/${DV1}`, json(200, devolucion()));
   const envios = await simular(page, 'POST', `/devoluciones/${DV1}/decidir`, json(200, devolucion({ estado: 'aprobada', monto_aprobado: '60.00' })));
@@ -247,7 +258,7 @@ test('revisar: rechazar exige el motivo (10 a 500) y lo manda', async ({ page })
   await revisar(page);
   await opcion(page, 'Rechazar').check();
   await expect(decidir(page)).toContainText('El crédito sigue igual y el cliente verá tu motivo');
-  await expect(decidir(page)).toContainText('El cliente lo verá. Obligatorio si rechazas.');
+  await expect(decidir(page)).toContainText('El cliente lo verá. Obligatorio si devuelves una parte o rechazas.');
   await enviar(page, 'Rechazar devolución').click();
   await expect(page.getByText('Escribe por qué la rechazas.').first()).toBeVisible();
   await page.getByLabel(/^Motivo/).fill('corto');
@@ -347,6 +358,17 @@ test('revisar: aprobada pide la nota, la valida y marca como realizada', async (
   await page.waitForURL(/aviso=devolucion-realizada/);
   await expect(aviso(page)).toContainText('Devolución marcada como hecha. Avisamos al cliente con tu nota.');
   expect(consola).toEqual([]);
+});
+
+test('revisar: la del estudio con el plazo vencido muestra FUERA DE PLAZO junto a "Venció el"', async ({ page }) => {
+  await simular(page, 'GET', `/devoluciones/${DV1}`, json(200, APROBADA({ tipo: 'estudio', id_credito: null, monto_aprobado: '300.00', monto_solicitado: '300.00', limite: '2026-11-10T23:59:59-05:00' })));
+  await revisar(page);
+  for (const region of [/V1 Solicitud/i, /V2 Devolver/i]) {
+    await expect(page.getByRole('region', { name: region })).toContainText('Venció el 10 nov');
+    await expect(page.getByRole('region', { name: region })).toContainText('Fuera de plazo');
+  }
+  await sinViolaciones(page);
+  await page.screenshot({ path: 'pruebas/capturas/rf18-devolucion-revisar-fuera-de-plazo.png', fullPage: true });
 });
 
 test('revisar: la del estudio muestra su plazo en la solicitud y en el panel', async ({ page }) => {
