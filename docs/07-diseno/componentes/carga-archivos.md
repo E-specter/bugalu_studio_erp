@@ -23,6 +23,7 @@ depende_de: [diseno-tokens, comp-barra-progreso, arq-frontend-islas]
 | Entregable de audio | WAV; validación técnica completa; historial en [lista de eventos](lista-eventos.md) Terminal | [RF-09](../../03-requerimientos/RF-09.md) |
 | Captura de pago | Imagen (JPG, PNG) o PDF, un archivo de hasta 5 MB; miniatura en vez de onda; sin validación técnica. Ver abajo | [RF-05](../../03-requerimientos/RF-05.md), [RF-11](../../03-requerimientos/RF-11.md) |
 | Referencias | Audio o enlace; varios archivos | Brief de proyecto |
+| Adjuntos de reclamo | PDF, JPG o PNG; de 0 a 3 archivos de hasta 5 MB cada uno; como Captura de pago, pero varios. Ver abajo | [RF-16](../../03-requerimientos/RF-16.md) |
 
 ### Captura de pago
 
@@ -33,6 +34,14 @@ Primera variante que se implementa ([registrar pago](../pantallas/RF-05-registra
 - Anatomía: etiqueta y ayuda del [campo](campo.md) → control "Seleccionar archivo" (`upload`) con el aspecto del [botón](boton.md) Secundario → al elegir, [archivo](archivo.md) Adjunto (miniatura si es imagen, `file` si es PDF; metadato "PNG · 1,2 MB") con "Quitar"; quitar devuelve el foco a "Seleccionar archivo".
 - **Control visible = `<label for>` del input real.** El `<input type="file">` queda visualmente oculto (no `display: none`: sigue en el formulario y recibe el foco); el `<label>` con aspecto de Secundario abre el selector con clic y su anillo de foco se pinta cuando el input tiene `:focus-visible` (selector hermano). Con adjunto, el input sale del orden de teclado y la parada es "Quitar". Error: borde `color-texto-alerta` en el label. Mientras se envía el formulario, "Quitar" está deshabilitado como el resto de controles.
 - Validación en el navegador como primera capa (la del servidor, por la firma, manda): tamaño > 5 MB y tipo fuera de `accept` → error del campo con [estados comunes](README.md#estados-comunes) Error y el texto de la pantalla.
+
+### Adjuntos de reclamo
+
+Decisión del brief (TAREA-RF16-1): la Captura de pago con tres cambios, sin zona de soltar ni progreso.
+
+- **Varios archivos:** `<input type="file" multiple accept="application/pdf,image/jpeg,image/png">`. Cada elección **se suma** a la lista (no la reemplaza) hasta 3; la isla guarda los `File` en memoria y la pantalla los manda como `adjuntos[]` en su `FormData` (el formulario ya se envía por JS, [formulario de RF-16](../pantallas/RF-16-formulario.md)). Con 3, el control se oculta y la ayuda dice "Máximo 3 archivos."
+- **Lista:** un [archivo](archivo.md) Adjunto por archivo, en el orden elegido, cada uno con su "Quitar"; quitar lleva el foco al siguiente "Quitar" o, si no queda ninguno, al control.
+- **Error por archivo:** tipo fuera de `accept` o más de 5 MB no entra en la lista; el error del campo nombra el archivo y la regla. Si el servidor rechaza uno ya en la lista (413, 422 `adjunto_no_permitido`), ese [archivo](archivo.md) toma el estado Error (borde `color-texto-alerta` y mensaje debajo) hasta que se quite.
 
 ## Estados
 
@@ -63,4 +72,4 @@ Usa [barra-progreso](barra-progreso.md), [indicador-estado](indicador-estado.md)
 
 ## Código
 
-Isla `frontend/src/islas/CargaArchivos.astro` que registra `<bugalu-carga-archivos>`; atributos `variante` (`captura|audio|referencias`), `accept`, `max-mb`, `nombre` (el `name` del input), `endpoint` (solo audio y referencias).
+Isla `frontend/src/islas/CargaArchivos.astro` que registra `<bugalu-carga-archivos>`; atributos `variante` (`captura|reclamo|audio|referencias`), `accept`, `max-mb`, `nombre` (el `name` del input), `endpoint` (solo audio y referencias).

@@ -17,7 +17,7 @@ depende_de: [RF-17, RF-16, ADR-012, diseno-brief, patron-estructura-app, patron-
 
 ## Páginas públicas
 
-1. Se llega desde el [pie público](../componentes/pie-publico.md), el menú de la [cabecera](../componentes/cabecera-app.md), el enlace de un [resumen legal](../componentes/resumen-legal.md) (con `?version=`) o el historial del [perfil](RF-17-perfil.md).
+1. Se llega desde el [pie público](../componentes/pie-publico.md) (también en App, variante Acceso), el enlace de un [resumen legal](../componentes/resumen-legal.md) (con `?version=`) o el historial del [perfil](RF-17-perfil.md).
 2. Sin `version`, se muestra la vigente (`GET /textos-legales`: la del `tipo` que no está `programada`); con `version`, esa (`GET /textos-legales/{tipo}/versiones/{version}`).
 
 | Región | Componente | Contenido |
@@ -81,5 +81,5 @@ En [usuarios](RF-01-solicitudes.md#composición): las etiquetas Filtro suman "Do
 - **leader / dev-backend:** `contenido` es Markdown y las páginas son estáticas: renderizarlo en el navegador pide una dependencia. Proponemos que la API devuelva también `contenido_html` saneado (lista blanca de etiquetas).
 - **leader:** un texto legal no debería depender de JavaScript para leerse; con salida estática y textos en la base, el `<noscript>` solo puede dar el contacto. Alternativa: generar las páginas al publicar.
 - **leader / dev-backend:** documento repetido: proponemos `documento_repetido` en el `Perfil` que ve el Administrador y el filtro `GET /usuarios?documento_repetido=true`.
-- **leader:** la ruta y el contenido provisional de `/libro-de-reclamaciones` hasta que [RF-16](../../03-requerimientos/RF-16.md) tenga pantalla (la ley pide el enlace siempre visible).
+- Resuelto: `/libro-de-reclamaciones/` ya tiene pantalla ([formulario de RF-16](RF-16-formulario.md)).
 - **leader:** el texto `autorizacion_menor` entra en la lista y en `/legal/` con la etapa B.

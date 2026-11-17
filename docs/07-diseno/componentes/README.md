@@ -55,6 +55,7 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Marco de registro | [marco-registro](marco-registro.md) | `componentes/MarcoRegistro.astro` | Implementado |
 | Resumen legal | [resumen-legal](resumen-legal.md) | `componentes/ResumenLegal.astro` | Implementado (RF-17): plantillas en `componentes/internos/PlantillasResumenLegal.astro`; las islas lo llenan con `servicios/resumen-legal.js` (Aceptación, Reserva, Pago, Perfil, Privacidad) |
 | Pie público | [pie-publico](pie-publico.md) | `componentes/PiePublico.astro` | Implementado (Completa en `LayoutPublico`; Acceso en `layouts/Acceso.astro`) |
+| Hoja de reclamación | [hoja-reclamacion](hoja-reclamacion.md) | `componentes/HojaReclamacion.astro` + `servicios/hoja-reclamacion.js` | Borrador (RF-16) |
 | Calendario | [calendario](calendario.md) | isla `<bugalu-calendario>` | Implementado |
 | Reproductor | [reproductor](reproductor.md) | isla `<bugalu-reproductor>` | Borrador |
 | Carga de archivos | [carga-archivos](carga-archivos.md) | isla `<bugalu-carga-archivos>` (`islas/CargaArchivos.astro`) | Implementado (Captura de pago; audio y referencias entran con su RF) |
@@ -66,6 +67,8 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Textos legales del Administrador | [textos legales](../pantallas/RF-17-textos-legales.md#administrador-textos) | isla `<bugalu-textos-legales vista="lista\|publicar">` (`islas/TextosLegales.astro`) | Implementado |
 | Aceptación de textos | [registro y aceptaciones](../pantallas/RF-17-registro-y-aceptaciones.md) | isla `<bugalu-aceptacion>` (`islas/Aceptacion.astro`; `/acceso/textos`) | Implementado |
 | Privacidad y consentimientos | [perfil](../pantallas/RF-17-perfil.md) | isla `<bugalu-privacidad>` (`islas/Privacidad.astro`; `/app/perfil/privacidad`) | Implementado |
+| Libro de Reclamaciones | [formulario](../pantallas/RF-16-formulario.md) | isla `<bugalu-reclamacion>` (`islas/Reclamacion.astro`; `/libro-de-reclamaciones/` y, con `transcripcion`, `/app/reclamos/transcribir`) | Borrador |
+| Reclamos de la app | [mis reclamos](../pantallas/RF-16-mis-reclamos.md), [bandeja](../pantallas/RF-16-bandeja.md) | isla `<bugalu-reclamos vista="lista\|detalle">` (`islas/Reclamos.astro`; `/app/reclamos/`) | Borrador |
 
 Rutas relativas a `frontend/src/`. Islas en `islas/<Nombre>.astro`.
 
@@ -81,7 +84,7 @@ Rutas relativas a `frontend/src/`. Islas en `islas/<Nombre>.astro`.
 
 | Pieza | Qué es | La usan |
 |---|---|---|
-| `ContactoEstudio.astro` | Canales del estudio (correo, WhatsApp, sede) de las páginas sin JS y del Libro de Reclamaciones provisional | `TextoLegal`, `/libro-de-reclamaciones/` |
+| `ContactoEstudio.astro` | Canales del estudio (correo, WhatsApp, sede) de las páginas sin JS y de los errores del Libro de Reclamaciones | `TextoLegal`, `/libro-de-reclamaciones/` |
 | `PlantillasHistorial.astro` | Plantillas (vacío, error, tabla Compacta y fila) de la tabla de textos aceptados; las llena `servicios/historial-aceptaciones.js` (`pintarHistorial`). Enlaza la reserva por `id_operacion` | `Privacidad` (P3), `Solicitudes` (U3 de la ficha de persona) |
 | `Icono.astro` + `lucide.js` | SVG en línea de un icono de la [tabla de iconos](../fundamentos/iconografia-imagen.md#iconos), decorativo (`aria-hidden`), `medida-icono-sm` o `-md` | Todos los que llevan icono |
 | `MensajeError.astro` | Mensaje de error con `alert-triangle` en `color-texto-alerta` ([estados comunes](#estados-comunes), Error) | [campo](campo.md), [casilla](casilla.md) (error de grupo) |

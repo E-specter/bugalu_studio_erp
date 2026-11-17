@@ -27,7 +27,7 @@ depende_de: [diseno-tokens, comp-etiqueta-tecnica]
 
 ## Estados
 
-Las acciones cumplen los [estados comunes](README.md#estados-comunes). Descarga no habilitada (pago pendiente, [RF-11](../../03-requerimientos/RF-11.md)): botón deshabilitado con motivo visible ("Disponible al validar el pago de posproducción").
+Las acciones cumplen los [estados comunes](README.md#estados-comunes). Rechazado por el servidor (Adjunto, [carga de archivos](carga-archivos.md#adjuntos-de-reclamo)): borde `color-texto-alerta` y mensaje de error común debajo, unido a "Quitar" con `aria-describedby`. Descarga no habilitada (pago pendiente, [RF-11](../../03-requerimientos/RF-11.md)): botón deshabilitado con motivo visible ("Disponible al validar el pago de posproducción").
 
 ## Tokens
 

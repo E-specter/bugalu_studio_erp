@@ -53,6 +53,7 @@ Variables de `backend/.env` (`.env` está ignorado por git):
 | `EXIGIR_INTEGRACION` | Solo pruebas, opcional. `EXIGIR_INTEGRACION=1` (CI) convierte el salto de las pruebas de integración, cuando no hay stack o `.env`, en fallo. Sin ella se saltan con el motivo. Las pruebas unitarias no dependen de `backend/.env` |
 | `ORIGENES_PERMITIDOS` | Orígenes del frontend, separados por comas (`http://localhost:4321,http://127.0.0.1:4321`). Vacío = sin CORS: el navegador bloquea las llamadas del frontend |
 | `SMTP_HOST` / `SMTP_PUERTO` | Servidor de correo de la bandeja `notificacion`. En local, Mailpit: `127.0.0.1` y `45625` (`[local_smtp] smtp_port` en `supabase/config.toml`); los correos se ven en `http://127.0.0.1:45624` |
+| `URL_PUBLICA` | URL pública de la plataforma, sin barra final, para los enlaces de los correos (botón, pie, calendario). Local: `http://127.0.0.1:4321`; en producción, el dominio real. No es un secreto |
 | `SMTP_USUARIO` / `SMTP_CLAVE` / `SMTP_STARTTLS` | Vacías en local (Mailpit, sin credenciales). En producción, la cuenta de Google del estudio: [correo-gmail](correo-gmail.md) |
 | `CORREO_REMITENTE` | Remitente de los avisos de reserva |
 | `INTERVALO_ENVIO_CORREOS` | Segundos entre envíos de la tarea periódica de la API (por defecto 30; `0` la desactiva, como en las pruebas). Para enviar una vez a mano: `uv run python -m bugalu.herramientas.enviar_correos` |

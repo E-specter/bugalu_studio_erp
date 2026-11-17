@@ -20,13 +20,13 @@ Pie de las páginas que ve cualquiera: identifica al proveedor y enlaza siempre 
 | Variante | Dónde | Diferencia |
 |---|---|---|
 | Completa | Landing (`layouts/LayoutPublico.astro`), [textos legales](../pantallas/RF-17-textos-legales.md#páginas-públicas) y estructura Flujo | Las dos filas |
-| Acceso | Pie de la estructura Acceso ([acceso](../pantallas/RF-01-acceso.md#composición)) | Solo la fila de enlaces, sobre el pie técnico existente y con su tipografía (`fuente-tamano-micro`) |
+| Acceso | Pie de la estructura Acceso ([acceso](../pantallas/RF-01-acceso.md#composición)) y de la estructura App | Solo la fila de enlaces, con `fuente-tamano-micro`. En Acceso va sobre el pie técnico existente; en App, al final de la columna de contenido (bajo `<main>`, fuera de él), con la regla superior y relleno `espacio-4` |
 
-En la estructura App no se pinta: el menú de la [cabecera](cabecera-app.md) ofrece "Textos legales" y "Libro de Reclamaciones".
+En App el pie sustituye a los enlaces legales que antes iban en el menú de la [cabecera](cabecera-app.md) (TAREA-RF16-1): la ley pide el enlace al Libro de Reclamaciones a la vista, no detrás de un menú ([RF-16](../../03-requerimientos/RF-16.md) CA-01).
 
 ## Estados
 
-Estático. Mientras [RF-16](../../03-requerimientos/RF-16.md) no tenga pantalla, el enlace del Libro de Reclamaciones apunta a `/libro-de-reclamaciones`, que muestra cómo presentar un reclamo por el canal que fije `leader` (ver Pendientes de la [spec](../pantallas/RF-17-textos-legales.md#pendientes)).
+Estático. El enlace del Libro de Reclamaciones lleva al [formulario de RF-16](../pantallas/RF-16-formulario.md) con un clic, con el texto exacto "Libro de Reclamaciones" y sin icono (el texto manda).
 
 ## Tokens
 
@@ -34,7 +34,7 @@ Estático. Mientras [RF-16](../../03-requerimientos/RF-16.md) no tenga pantalla,
 
 ## Relaciones
 
-Cierra las estructuras Landing y Flujo ([estructura de app](../patrones/estructura-app.md)). Los enlaces a cada texto llevan a su versión vigente.
+Cierra las estructuras Landing, Flujo, Acceso y App ([estructura de app](../patrones/estructura-app.md)). Los enlaces a cada texto llevan a su versión vigente.
 
 ## Accesibilidad
 
