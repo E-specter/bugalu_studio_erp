@@ -34,7 +34,8 @@ class ReemplazarFoto:
         La anterior sigue en el almacenamiento hasta que el llamador confirme la transaccion y
         llame a `confirmar`; si la base falla, `descartar` borra la nueva y la anterior sigue.
         """
-        perfil = await self._repo.obtener_profesional(id_profesional)
+        # La fila queda bloqueada hasta el commit: otro reemplazo espera y ve la ruta ya alternada.
+        perfil = await self._repo.obtener_profesional(id_profesional, para_actualizar=True)
         if perfil is None:
             raise NoEncontrado("No existe el profesional.")
         await exigir_gestion(self._repo, id_actor, id_profesional)

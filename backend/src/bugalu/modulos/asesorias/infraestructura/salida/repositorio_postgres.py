@@ -43,9 +43,15 @@ def _traduciendo() -> Iterator[None]:
     except errors.InsufficientPrivilege as error:
         raise SinPermiso("No tienes permiso para esta operacion.") from error
     except errors.RaiseException as error:
-        mensaje = {"perfil_existente": PerfilExistente, "rol_no_admitido": RolNoAdmitido}
-        if clase := mensaje.get(error.diag.message_primary or ""):
-            raise clase("El rol de ese usuario no admite un perfil de profesional.") from error
+        mensajes = {
+            "perfil_existente": (PerfilExistente, "Ese usuario ya tiene un perfil de profesional."),
+            "rol_no_admitido": (
+                RolNoAdmitido,
+                "El rol de ese usuario no admite un perfil de profesional.",
+            ),
+        }
+        if caso := mensajes.get(error.diag.message_primary or ""):
+            raise caso[0](caso[1]) from error
         raise
     except errors.InvalidParameterValue as error:
         raise DatosInvalidos(
@@ -132,8 +138,11 @@ class RepositorioAsesoriasPostgres:
         )
         return [_profesional(f) for f in filas]
 
-    async def obtener_profesional(self, id_profesional: UUID) -> Profesional | None:
-        filas = await self._filas(f"{_PERFIL} where p.id = %s", (id_profesional,))
+    async def obtener_profesional(
+        self, id_profesional: UUID, para_actualizar: bool = False
+    ) -> Profesional | None:
+        bloqueo = " for update of p" if para_actualizar else ""
+        filas = await self._filas(f"{_PERFIL} where p.id = %s{bloqueo}", (id_profesional,))
         return _profesional(filas[0]) if filas else None
 
     async def crear_perfil(self, id_usuario: UUID) -> None:

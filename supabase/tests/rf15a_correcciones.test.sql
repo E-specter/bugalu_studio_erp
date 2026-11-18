@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(23);
 
 -- Correcciones de la auditoria de RF-15 etapa A (ronda 1): B1 (el profesional no es cliente de sala ni de pagos),
 -- perfil solo de quien conserva el rol y foto en dos rutas fijas por perfil.
@@ -48,7 +48,14 @@ select is((select count(*)::int from public.reserva where id_cliente = '00000000
 select ok(not (select public.es_profesional() from (select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c1"}', true)) x),
   'es_profesional() es falso para un cliente');
 
--- Clara pasa a ser profesional conservando su reserva: ya no usa credito ni paga.
+-- Ronda 2: la base no deja pasar a profesional a quien tiene reserva viva y credito vigente (BG003); Clara sigue cliente.
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ad","role":"authenticated"}', true);
+select throws_ok($$select public.asignar_rol('00000000-0000-0000-0000-0000000000c1', 'profesional', null)$$, 'BG003', null,
+  'un cliente con operaciones vivas no pasa a profesional');
+reset role;
+select is((select rol from public.usuario where id = '00000000-0000-0000-0000-0000000000c1'), 'cliente', 'y conserva su rol');
+-- Para probar lo que sigue, la fila se cambia directo (sin pasar por asignar_rol): su reserva y su credito siguen vivos.
 update public.usuario set rol = 'profesional' where id = '00000000-0000-0000-0000-0000000000c1';
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c1","role":"authenticated"}', true);

@@ -161,6 +161,12 @@ async def test_la_foto_se_sube_a_una_ruta_fija_por_perfil_y_se_guarda() -> None:
     assert repo.escrituras == [f"foto:{PABLO}/foto-1"]
 
 
+async def test_reemplazar_lee_el_perfil_bloqueando_la_fila() -> None:
+    repo, almacen = RepositorioFalso(), AlmacenFalso()
+    await ReemplazarFoto(repo, almacen).ejecutar(PABLO, PABLO, JPEG)
+    assert repo.bloqueos == [True]
+
+
 async def test_reemplazar_alterna_la_ruta_y_no_borra_la_anterior_hasta_confirmar() -> None:
     repo, almacen = RepositorioFalso(), AlmacenFalso()
     repo.perfiles[PABLO] = perfil(PABLO, foto_ruta=f"{PABLO}/foto-1")

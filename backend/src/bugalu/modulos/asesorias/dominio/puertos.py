@@ -25,7 +25,9 @@ class RepositorioAsesorias(Protocol):
         self, id_especialidad: UUID | None, solo_publicados: bool
     ) -> list[Profesional]: ...
 
-    async def obtener_profesional(self, id_profesional: UUID) -> Profesional | None:
+    async def obtener_profesional(
+        self, id_profesional: UUID, para_actualizar: bool = False
+    ) -> Profesional | None:
         """La RLS decide: publicado, o el propio, o todo para el administrador."""
         ...
 

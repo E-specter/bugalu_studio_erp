@@ -45,6 +45,16 @@ class UltimoAdministrador(Conflicto):
         super().__init__("No puede quedar el sistema sin administradores.")
 
 
+class ClienteConOperaciones(Conflicto):
+    codigo = "cliente_con_operaciones"
+
+    def __init__(self, detalles: dict[str, Any]) -> None:
+        super().__init__(
+            "El usuario tiene reservas, creditos, pagos o devoluciones vivos como cliente.",
+            detalles,
+        )
+
+
 class VerificacionNoValida(Conflicto):
     codigo = "verificacion_no_valida"
 

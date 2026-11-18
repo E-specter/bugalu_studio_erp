@@ -36,6 +36,7 @@ class RepositorioFalso:
         self.horarios: list[Horario] = []
         self.vivas: list[UUID] = []
         self.escrituras: list[str] = []
+        self.bloqueos: list[bool] = []
         self.impuestos = ConfiguracionImpuestos(D("18"), True)
         self.minima, self.maxima = 2, 8
 
@@ -73,7 +74,10 @@ class RepositorioFalso:
             and (id_especialidad is None or id_especialidad in {e.id for e in p.especialidades})
         ]  # fmt: skip
 
-    async def obtener_profesional(self, id_profesional: UUID) -> Profesional | None:
+    async def obtener_profesional(
+        self, id_profesional: UUID, para_actualizar: bool = False
+    ) -> Profesional | None:
+        self.bloqueos.append(para_actualizar)
         return self.perfiles.get(id_profesional)
 
     async def actualizar_perfil(self, id_profesional: UUID, campos: Mapping[str, Any]) -> None:
