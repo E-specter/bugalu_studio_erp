@@ -54,7 +54,7 @@ Estado del estudio: **Hecho** · **Pendiente** · **Por confirmar** (el estudio 
 | Sin patrones engañosos y con canales de atención accesibles y permanentes (D. Leg. 1729, 2026: arts. 24 y 56) | Casillas sin marcar, cancelar tan fácil como contratar, sin presión | Sí; su reglamento estaba pendiente [verificar] | Reglas en [resumenes-para-pantallas](../08-legal/resumenes-para-pantallas.md) | En diseño |
 | Promociones solo con consentimiento (art. 58.1 e, Ley 32323) | Correos y WhatsApp promocionales | Sí, si se envían | Casilla aparte y baja inmediata | En diseño |
 | Términos de uso, política de privacidad y condiciones revisados por un abogado | Contratar por la web y probar lo aceptado ([RF-17](../03-requerimientos/RF-17.md)) | Sí | Honorarios del abogado | Borradores 0.2.0 y 0.3.0 |
-| Cartel con las reglas de uso del estudio, formato de acta de daños e inventario de equipos con fotos y valor de referencia | Que el cliente conozca las reglas en el local y que el estudio pueda probar el estado previo y el monto de un daño ([condiciones](../08-legal/condiciones-de-contratacion.md#uso-del-estudio-y-daños)) | Recomendado | Impresión; hoja de inventario | Pendiente |
+| Cartel por sala con las reglas de uso y su aforo (el del cálculo de aforo del ITSE, el mismo que registra el sistema), formato de acta de daños e inventario de equipos con fotos, fecha y precio de compra | Que el cliente conozca las reglas y el aforo en el local, y que el estudio pueda probar el estado previo y calcular la reposición con depreciación ([uso del estudio y daños](../08-legal/condiciones-uso-y-danos.md)) | Recomendado | Impresión; hoja de inventario | Pendiente |
 
 ## 5. Propiedad intelectual
 
