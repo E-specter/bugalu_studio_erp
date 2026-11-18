@@ -26,6 +26,10 @@ from bugalu.modulos.pagos.infraestructura.entrada.http.router import router as r
 from bugalu.modulos.pagos.infraestructura.entrada.http.router_creditos import (
     router as router_creditos,
 )
+from bugalu.modulos.reclamaciones.infraestructura.entrada.http.limite import LimiteReclamaciones
+from bugalu.modulos.reclamaciones.infraestructura.entrada.http.router import (
+    router as router_reclamaciones,
+)
 from bugalu.modulos.reservas.infraestructura.entrada.http.router import router as router_reservas
 
 
@@ -59,6 +63,7 @@ def crear_app() -> FastAPI:
         lifespan=_ciclo_de_vida,
         responses={422: {"model": RespuestaError, "description": "Datos invalidos"}},
     )
+    app.add_middleware(LimiteReclamaciones)
     app.add_middleware(LimitePagos)  # antes de CORS: la respuesta 413 conserva sus cabeceras
     if origenes := obtener_configuracion().lista_origenes_permitidos:
         app.add_middleware(
@@ -76,4 +81,5 @@ def crear_app() -> FastAPI:
     app.include_router(router_reservas, prefix="/api/v1")
     app.include_router(router_pagos, prefix="/api/v1")
     app.include_router(router_creditos, prefix="/api/v1")
+    app.include_router(router_reclamaciones, prefix="/api/v1")
     return app

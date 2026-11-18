@@ -27,11 +27,20 @@ class Aviso:
     etiqueta: str
     para_admin: bool  # pie de Administracion en vez del de Cuenta
     texto_boton: str
-    ruta: str  # relativa a la URL publica; admite {campos} de los datos del aviso
+    ruta: str  # relativa a la URL publica (o absoluta); admite {campos} de los datos del aviso
+    para_reclamo: bool = (
+        False  # pie del Libro de Reclamaciones: quien reclama puede no tener cuenta
+    )
 
 
 def _aviso(etiqueta: str, texto: str, ruta: str, admin: bool = False) -> Aviso:
     return Aviso(etiqueta, admin, texto, ruta)
+
+
+_DETALLE_HOJA = "/app/reclamos/detalle?id={id}"
+_LIBRO = "LIBRO DE RECLAMACIONES"
+_COPIA_HOJA = Aviso(_LIBRO, False, "Ver mi hoja", _DETALLE_HOJA, True)
+_SIN_CUENTA = Aviso(_LIBRO, False, "Escribirnos por WhatsApp", "https://wa.me/51925530800", True)
 
 
 _VER_MI = _aviso("RESERVA", "Ver mi reserva", _DETALLE)
@@ -58,7 +67,23 @@ AVISOS: dict[str, Aviso] = {
     "devolucion_decidida": _aviso("DEVOLUCIÓN", "Ver mis créditos", _CREDITOS),
     "devolucion_realizada": _aviso("DEVOLUCIÓN", "Ver mis créditos", _CREDITOS),
     "texto_legal_nuevo": _aviso("TEXTOS LEGALES", "Leer el texto", "/legal/{ruta}/"),
+    "reclamacion_registrada": _COPIA_HOJA,
+    "reclamacion_recibida": _aviso(_LIBRO, "Revisar la hoja", _DETALLE_HOJA, True),
+    "reclamacion_respondida": _COPIA_HOJA,
+    "reclamaciones_por_vencer": _aviso(
+        _LIBRO, "Ver hojas pendientes", "/app/reclamos/?estado=pendiente", True
+    ),
 }
+_SIN_CUENTA_SI_FALTA = frozenset({"reclamacion_registrada", "reclamacion_respondida"})
+
+
+def _aviso_de(tipo: str, datos: dict[str, Any]) -> Aviso:
+    """Quien reclama puede no tener cuenta: la copia y la respuesta lo mandan a WhatsApp."""
+    if tipo in _SIN_CUENTA_SI_FALTA and not datos.get("con_cuenta"):
+        return _SIN_CUENTA
+    return AVISOS.get(tipo, _GENERICO)
+
+
 _GENERICO = _aviso("AVISO", "Ir a la plataforma", "/app")
 
 
@@ -212,12 +237,14 @@ def _html_evento(e: BloqueEvento) -> str:
     )
 
 
-def _pie(para_admin: bool, url: str) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+def _pie(
+    para_admin: bool, url: str, para_reclamo: bool = False
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
     util = (
         [("Panel de Bugalú", f"{url}/app")]
         if para_admin
         else [
-            ("Mis reservas", f"{url}/app/reservas"),
+            *([] if para_reclamo else [("Mis reservas", f"{url}/app/reservas")]),
             ("WhatsApp", "https://wa.me/51925530800"),
             ("Instagram", "https://www.instagram.com/bugalu.studio"),
             ("TikTok", "https://www.tiktok.com/@bugalu.studio"),
@@ -239,9 +266,19 @@ _MOTIVO_CUENTA = (
     "Te enviamos este aviso porque tienes una cuenta en la plataforma de Bugalú Studio. "
     "Es parte del servicio, no publicidad."
 )
+_MOTIVO_RECLAMO = (
+    "Te enviamos este correo porque presentaste una hoja en el Libro de Reclamaciones de "
+    "Bugalú Studio."
+)
 _MOTIVO_ADMIN = (
     "Te enviamos este aviso porque eres Administrador en la plataforma de Bugalú Studio."
 )
+
+
+def _motivo(aviso: Aviso) -> str:
+    if aviso.para_admin:
+        return _MOTIVO_ADMIN
+    return _MOTIVO_RECLAMO if aviso.para_reclamo else _MOTIVO_CUENTA
 
 
 def _enlaces_html(enlaces: list[tuple[str, str]]) -> str:
@@ -252,9 +289,9 @@ def _enlaces_html(enlaces: list[tuple[str, str]]) -> str:
 
 
 def _html_pie(aviso: Aviso, url: str) -> str:
-    util, legales = _pie(aviso.para_admin, url)
+    util, legales = _pie(aviso.para_admin, url, aviso.para_reclamo)
     ayuda = "" if aviso.para_admin else f'<p class="b-sec" style="margin:0 0 8px;">{_AYUDA}</p>\n'
-    motivo = _MOTIVO_ADMIN if aviso.para_admin else _MOTIVO_CUENTA
+    motivo = _motivo(aviso)
     return (
         '<tr><td class="b-relleno b-regla" style="padding:16px;border-top:2px solid #262757;'
         f'font-family:{_SANS};font-size:12px;line-height:18px;color:#4A4B7D;">\n'
@@ -269,18 +306,18 @@ def _html_pie(aviso: Aviso, url: str) -> str:
 
 
 def _texto_pie(aviso: Aviso, url: str) -> str:
-    util, legales = _pie(aviso.para_admin, url)
+    util, legales = _pie(aviso.para_admin, url, aviso.para_reclamo)
     if aviso.para_admin:
         lineas = [f"{util[0][0]}: {util[0][1]}"]
     else:
         lineas = [
             _AYUDA,
-            f"{util[0][0]}: {util[0][1]}",
+            *([] if aviso.para_reclamo else [f"{util[0][0]}: {util[0][1]}"]),
             "WhatsApp: +51 925 530 800 · Instagram y TikTok: @bugalu.studio · "
             "Facebook: facebook.com/bugalu.studio",
         ]
     lineas += [f"{t}: {u}" for t, u in legales]
-    lineas += [_EMPRESA, _MOTIVO_ADMIN if aviso.para_admin else _MOTIVO_CUENTA]
+    lineas += [_EMPRESA, _motivo(aviso)]
     return "\n".join(["--", "Bugalú Studio · Converge y crea.", *lineas])
 
 
@@ -297,6 +334,8 @@ def _texto_evento(e: BloqueEvento) -> str:
 
 
 def _url_boton(aviso: Aviso, datos: dict[str, Any], url: str) -> str:
+    if aviso.ruta.startswith("https://"):
+        return aviso.ruta
     campos = {k: quote(str(v), safe="") for k, v in datos.items()}
     if "tipo" in datos:
         campos["ruta"] = _RUTAS_LEGALES.get(str(datos["tipo"]), quote(str(datos["tipo"])))
@@ -313,7 +352,7 @@ def componer(
 ) -> tuple[str, str]:
     """Devuelve (texto plano, HTML) del aviso ya redactado."""
     url = url_publica.rstrip("/")
-    aviso = AVISOS.get(tipo, _GENERICO)
+    aviso = _aviso_de(tipo, datos)
     destino = _url_boton(aviso, datos, url)
     bloques = bloques_del_cuerpo(cuerpo)
 

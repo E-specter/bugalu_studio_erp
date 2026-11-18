@@ -11,6 +11,7 @@ from bugalu.modulos.notificaciones.dominio.formato import (
     _soles,
     formatear_soles,
 )
+from bugalu.modulos.notificaciones.dominio.redaccion_rf16 import REDACTORES_RF16
 from bugalu.modulos.notificaciones.dominio.redaccion_rf18 import REDACTORES_RF18
 
 Instrucciones = Sequence[tuple[str, str]]  # (metodo, texto) de los metodos activos
@@ -167,6 +168,8 @@ def redactar(
         return _reserva_finalizada_saldo(datos, instrucciones)
     if tipo in REDACTORES_RF18:
         return REDACTORES_RF18[tipo](datos)
+    if tipo in REDACTORES_RF16:
+        return REDACTORES_RF16[tipo](datos)
     if tipo not in _REDACTORES:
         raise ValueError(f"tipo de notificacion desconocido: {tipo}")
     return _REDACTORES[tipo](datos)

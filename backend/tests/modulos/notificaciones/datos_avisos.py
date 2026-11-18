@@ -51,4 +51,25 @@ DATOS_AVISOS: dict[str, dict[str, Any]] = {
         "tipo": "terminos_uso", "tipo_cambio": "mayor", "version": 3,
         "vigente_desde": "2027-03-10T15:00:00+00:00", "resumen_cambios": "Nuevos plazos <b>.",
     },
+    "reclamacion_registrada": {
+        "id": "h-1", "numero": "000000042-2026", "creada_en": "2027-03-10T20:30:00+00:00",
+        "vence_respuesta": "2027-04-01T04:59:59+00:00", "tipo": "reclamo", "nombre": "Ana Torres",
+        "tipo_documento": "dni", "documento": "12345678", "domicilio": "Av. Lima 123", "telefono": None,
+        "correo": "ana@x.pe", "es_menor": False, "representante": None, "bien_tipo": "servicio",
+        "monto": 50, "descripcion": None, "medio_respuesta": "correo", "adjuntos": [],
+        "detalle": "No fue lo pactado.", "pedido": "Devolución.", "con_cuenta": True,
+    },
+    "reclamacion_recibida": {
+        "id": "h-1", "numero": "000000042-2026", "tipo": "queja", "nombre": "Ana Torres",
+        "creada_en": "2027-03-10T20:30:00+00:00", "vence_respuesta": "2027-04-01T04:59:59+00:00",
+        "medio_respuesta": "carta", "adjuntos": 1,
+    },
+    "reclamacion_respondida": {
+        "id": "h-1", "numero": "000000042-2026", "tipo": "reclamo", "creada_en": "2027-03-10T20:30:00+00:00",
+        "texto": "Revisamos tu caso.", "enviada_en": "2027-03-15T15:00:00+00:00", "con_cuenta": False,
+    },
+    "reclamaciones_por_vencer": {"hojas": [{
+        "id": "h-1", "numero": "000000042-2026", "tipo": None,
+        "vence_respuesta": "2027-04-01T04:59:59+00:00", "dias": 3,
+    }]},
 }  # fmt: skip

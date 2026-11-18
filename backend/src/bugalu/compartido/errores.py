@@ -302,3 +302,32 @@ class AutorizacionMenorPendiente(Conflicto):
 
 class TelefonoRequerido(DatosInvalidos):
     codigo = "telefono_requerido"
+
+
+class ConfirmacionDeHojaRequerida(Conflicto):
+    codigo = "confirmacion_requerida"
+
+    def __init__(self) -> None:
+        super().__init__("Confirma la hoja antes de enviarla.")
+
+
+class DemasiadasSolicitudes(ErrorDeNegocio):
+    codigo = "demasiadas_solicitudes"
+    estado_http = 429
+
+
+class YaRespondida(Conflicto):
+    codigo = "ya_respondida"
+
+
+class AdjuntoMuyGrande(ErrorDeNegocio):
+    codigo = "adjunto_muy_grande"
+    estado_http = 413
+
+
+class AdjuntoNoPermitido(DatosInvalidos):
+    codigo = "adjunto_no_permitido"
+
+
+class DemasiadosAdjuntos(DatosInvalidos):
+    codigo = "demasiados_adjuntos"

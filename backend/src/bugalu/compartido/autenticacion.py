@@ -84,6 +84,19 @@ def obtener_claims_opcionales(
     return obtener_claims(credenciales, resolutor, configuracion)
 
 
+def obtener_claims_o_visitante(
+    credenciales: Annotated[HTTPAuthorizationCredentials | None, Depends(_esquema)],
+    resolutor: Annotated[ResolutorClave, Depends(obtener_resolutor_clave)],
+    configuracion: Annotated[Configuracion, Depends(obtener_configuracion)],
+) -> dict[str, Any] | None:
+    """Alta publica (RF-16): un token vencido o manipulado se trata como visitante (nunca 401);
+    si no se puede verificar por una caida de Auth, sigue siendo 503."""
+    try:
+        return obtener_claims_opcionales(credenciales, resolutor, configuracion)
+    except NoAutenticado:
+        return None
+
+
 def obtener_token(
     _claims: Annotated[dict[str, Any], Depends(obtener_claims)],
     credenciales: Annotated[HTTPAuthorizationCredentials | None, Depends(_esquema)],
