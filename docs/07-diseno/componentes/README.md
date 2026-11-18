@@ -36,7 +36,7 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Aviso | [aviso](aviso.md) | `componentes/Aviso.astro` + isla `<bugalu-aviso>` (descartable) | Implementado |
 | Indicador de estado | [indicador-estado](indicador-estado.md) | `componentes/IndicadorEstado.astro` | Implementado |
 | Barra de progreso | [barra-progreso](barra-progreso.md) | `componentes/BarraProgreso.astro` | Borrador |
-| Avatar | [avatar](avatar.md) | `componentes/Avatar.astro` | Borrador |
+| Avatar | [avatar](avatar.md) | `componentes/Avatar.astro` | Borrador (RF-15 suma Foto, Miniatura y Retrato) |
 | Métrica | [metrica](metrica.md) | `componentes/Metrica.astro` | Borrador |
 | Panel | [panel](panel.md) | `componentes/Panel.astro` | Implementado |
 | Encabezado de pantalla | [encabezado-pantalla](encabezado-pantalla.md) | `componentes/EncabezadoPantalla.astro` | Implementado |
@@ -48,6 +48,7 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Resumen persistente | [resumen-persistente](resumen-persistente.md) | `componentes/ResumenPersistente.astro` | Borrador |
 | Tabla | [tabla](tabla.md) | `componentes/Tabla.astro` | Implementado |
 | Tarjeta de proyecto | [tarjeta-proyecto](tarjeta-proyecto.md) | `componentes/TarjetaProyecto.astro` | Borrador |
+| Tarjeta de profesional | [tarjeta-profesional](tarjeta-profesional.md) | `componentes/TarjetaProfesional.astro` | Borrador (RF-15) |
 | Lista de eventos | [lista-eventos](lista-eventos.md) | `componentes/ListaEventos.astro` | Borrador |
 | Archivo | [archivo](archivo.md) | `componentes/Archivo.astro` | Implementado (Adjunto y Lectura; Descarga entra con RF-12) |
 | Tarjeta de versión | [tarjeta-version](tarjeta-version.md) | `componentes/TarjetaVersion.astro` | Borrador |

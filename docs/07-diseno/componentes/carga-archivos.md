@@ -24,6 +24,7 @@ depende_de: [diseno-tokens, comp-barra-progreso, arq-frontend-islas]
 | Captura de pago | Imagen (JPG, PNG) o PDF, un archivo de hasta 5 MB; miniatura en vez de onda; sin validación técnica. Ver abajo | [RF-05](../../03-requerimientos/RF-05.md), [RF-11](../../03-requerimientos/RF-11.md) |
 | Referencias | Audio o enlace; varios archivos | Brief de proyecto |
 | Adjuntos de reclamo | PDF, JPG o PNG; de 0 a 3 archivos de hasta 5 MB cada uno; como Captura de pago, pero varios. Ver abajo | [RF-16](../../03-requerimientos/RF-16.md) |
+| Foto de perfil | JPG, PNG o WebP, un archivo de hasta 2 MB; se sube sola, no con el formulario. Ver abajo | [RF-15](../../03-requerimientos/RF-15.md) |
 
 ### Captura de pago
 
@@ -42,6 +43,14 @@ Decisión del brief (TAREA-RF16-1): la Captura de pago con tres cambios, sin zon
 - **Varios archivos:** `<input type="file" multiple accept="application/pdf,image/jpeg,image/png">`. Cada elección **se suma** a la lista (no la reemplaza) hasta 3; la isla guarda los `File` en memoria y la pantalla los manda como `adjuntos[]` en su `FormData` (el formulario ya se envía por JS, [formulario de RF-16](../pantallas/RF-16-formulario.md)). Con 3, el control se oculta y la ayuda dice "Máximo 3 archivos."
 - **Lista:** un [archivo](archivo.md) Adjunto por archivo, en el orden elegido, cada uno con su "Quitar"; quitar lleva el foco al siguiente "Quitar" o, si no queda ninguno, al control.
 - **Error por archivo:** tipo fuera de `accept` o más de 5 MB no entra en la lista; el error del campo nombra el archivo y la regla. Si el servidor rechaza uno ya en la lista (413, 422 `adjunto_no_permitido`), ese [archivo](archivo.md) toma el estado Error (borde `color-texto-alerta` y mensaje debajo) hasta que se quite.
+
+### Foto de perfil
+
+Decisión del brief (TAREA-RF15-1): la Captura de pago con dos cambios; la usa la [ficha del profesional](../pantallas/RF-15-ficha.md).
+
+- **Se sube sola:** la foto tiene su endpoint (`PUT /profesionales/{id}/foto`, `multipart/form-data`, campo `archivo`), así que vive en su propio `<form>`, fuera del de la ficha. Elegir el archivo no sube nada: muestra la vista previa en el [avatar](avatar.md) Miniatura y habilita "Subir foto" (Secundario) del formulario; quitar la elección vuelve a la foto actual.
+- **Con foto guardada:** el avatar la muestra y, debajo, "Cambiar foto" (el control de elegir) y "Quitar foto" (Secundario, `DELETE …/foto`). Sin foto: las iniciales y "Elegir foto".
+- `accept="image/jpeg,image/png,image/webp"`; tamaño > 2 MB o tipo fuera de `accept` → error del campo con el texto de la pantalla, sin vista previa. El servidor valida por el contenido y manda (413, 422).
 
 ## Estados
 
@@ -72,4 +81,4 @@ Usa [barra-progreso](barra-progreso.md), [indicador-estado](indicador-estado.md)
 
 ## Código
 
-Isla `frontend/src/islas/CargaArchivos.astro` que registra `<bugalu-carga-archivos>`; atributos `variante` (`captura|reclamo|audio|referencias`), `accept`, `max-mb`, `nombre` (el `name` del input), `endpoint` (solo audio y referencias).
+Isla `frontend/src/islas/CargaArchivos.astro` que registra `<bugalu-carga-archivos>`; atributos `variante` (`captura|reclamo|foto|audio|referencias`), `accept`, `max-mb`, `nombre` (el `name` del input), `endpoint` (solo audio y referencias).
