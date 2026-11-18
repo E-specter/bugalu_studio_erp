@@ -7,6 +7,7 @@ class Rol(StrEnum):
     CLIENTE = "cliente"
     PERSONAL = "personal"
     ADMINISTRADOR = "administrador"
+    PROFESIONAL = "profesional"  # RF-15: perfil publico y horarios propios; sin acceso de personal
 
 
 @dataclass(frozen=True)

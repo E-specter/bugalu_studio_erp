@@ -72,7 +72,8 @@ class PrevisualizarCambio:
             nombre,
             [(c, a, n) for c, (a, n) in diferencias.items()],
             ejemplos,
-            await self._catalogo.contar_operaciones_vigentes(),
+            # shortcut: las asesorias vivas del profesional llegan en la etapa B (hoy no hay)
+            0 if recurso == "profesional" else await self._catalogo.contar_operaciones_vigentes(),
         )
 
     async def _ejemplos(
@@ -83,6 +84,8 @@ class PrevisualizarCambio:
         diferencias: Mapping[str, tuple[str, str]],
         ahora: datetime,
     ) -> list[Ejemplo]:
+        if recurso == "profesional":
+            return impacto.ejemplos_profesional(diferencias)
         if recurso == "parametros":
             return impacto.ejemplos_parametros(antes, despues, set(diferencias), ahora)
         if recurso == "impuestos":

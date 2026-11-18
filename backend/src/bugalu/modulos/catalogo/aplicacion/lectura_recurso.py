@@ -18,6 +18,10 @@ async def cargar(
     elif recurso == "especialista" and id_recurso:
         for especialista in await catalogo.obtener_especialistas([id_recurso]):
             return especialista.nombre, especialista
+    elif recurso == "profesional" and id_recurso:
+        encontrado = await catalogo.obtener_precios_profesional(id_recurso)
+        if encontrado:
+            return encontrado
     elif recurso == "impuestos":
         return "Impuestos", await catalogo.obtener_impuestos()
     elif recurso == "recargos":
@@ -34,5 +38,6 @@ def valores(recurso: str, objeto: Any) -> dict[str, str]:
         "impuestos": sensibles.valores_impuestos,
         "recargos": sensibles.valores_recargos,
         "parametros": sensibles.valores_parametros,
+        "profesional": dict,  # ya son {precio_30, precio_60} en texto canonico
     }
     return leer[recurso](objeto)

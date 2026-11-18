@@ -130,6 +130,23 @@ class RepositorioCatalogoPostgres:
             "select public.bloquear_recurso_sensible(%s, %s)", (recurso, id_recurso)
         )
 
+    async def obtener_precios_profesional(
+        self, id_profesional: UUID
+    ) -> tuple[str, dict[str, str]] | None:
+        filas = await self._filas(
+            "select coalesce(public.nombre_profesional(p.id), 'Profesional'), "
+            "(select to_char(precio, 'FM999999990.00') from public.precio_asesoria "
+            " where id_profesional = p.id and minutos = 30), "
+            "(select to_char(precio, 'FM999999990.00') from public.precio_asesoria "
+            " where id_profesional = p.id and minutos = 60) "
+            "from public.perfil_profesional p where p.id = %s",
+            (id_profesional,),
+        )
+        if not filas:
+            return None
+        nombre, p30, p60 = filas[0]
+        return nombre, {"precio_30": p30 or "no_ofrece", "precio_60": p60 or "no_ofrece"}
+
     async def contar_operaciones_vigentes(self) -> int:
         filas = await self._filas(
             "select count(*) from public.reserva "

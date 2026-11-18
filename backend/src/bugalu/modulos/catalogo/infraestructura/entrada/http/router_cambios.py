@@ -55,12 +55,14 @@ _MODELOS: dict[str, type[BaseModel]] = {
     "especialista": e.SensiblesEspecialista,
     "recargos": e.CambiosRecargos,
     "parametros": e.CambiosParametros,
+    "profesional": e.SensiblesProfesional,
 }
 
 
 def _texto_de_cambios(cuerpo: e.NuevaPrevisualizacion) -> dict[str, str]:
     """Valida `cambios` como el endpoint del recurso y lo pasa a {campo: texto canonico}."""
-    if (cuerpo.id_recurso is not None) != (cuerpo.recurso in ("servicio", "especialista")):
+    con_id = cuerpo.recurso in ("servicio", "especialista", "profesional")
+    if (cuerpo.id_recurso is not None) != con_id:
         raise DatosInvalidos(
             "id_recurso solo va en servicio y especialista.", {"campo": "id_recurso"}
         )
@@ -71,6 +73,8 @@ def _texto_de_cambios(cuerpo: e.NuevaPrevisualizacion) -> dict[str, str]:
         raise DatosInvalidos(f"Datos invalidos: {campo}.", {"campo": campo}) from error
     if isinstance(modelo, e.CambiosRecargos):
         return modelo.a_texto()
+    if isinstance(modelo, e.SensiblesProfesional):
+        return modelo.precios.a_texto()
     propuesto = {c: sensibles.texto(v) for c, v in modelo.model_dump(exclude_unset=True).items()}
     if extra := [c for c in propuesto if c not in sensibles.SENSIBLES[cuerpo.recurso]]:
         raise DatosInvalidos(f"Datos invalidos: {extra[0]}.", {"campo": extra[0]})
@@ -112,6 +116,7 @@ def _valor(recurso: str, objeto: Any) -> dict[str, Any]:
         "impuestos": e.Impuestos.desde_dominio,
         "recargos": e.Recargos.desde_dominio,
         "parametros": lambda valores: e.Parametros(**valores),
+        "profesional": lambda precios: e.PreciosTexto(**precios),
     }
     valor: dict[str, Any] = construir[recurso](objeto).model_dump(mode="json")
     return valor

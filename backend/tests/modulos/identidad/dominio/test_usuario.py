@@ -14,4 +14,4 @@ def test_usuario_es_inmutable() -> None:
 
 def test_rol_se_construye_desde_su_valor_de_base_de_datos() -> None:
     assert Rol("personal") is Rol.PERSONAL
-    assert {r.value for r in Rol} == {"cliente", "personal", "administrador"}
+    assert {r.value for r in Rol} == {"cliente", "personal", "administrador", "profesional"}

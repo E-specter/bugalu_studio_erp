@@ -335,3 +335,23 @@ class FechaOriginalInvalida(DatosInvalidos):
 
 class DemasiadosAdjuntos(DatosInvalidos):
     codigo = "demasiados_adjuntos"
+
+
+class EspecialidadDuplicada(Conflicto):
+    codigo = "especialidad_duplicada"
+
+
+class PerfilExistente(Conflicto):
+    codigo = "perfil_existente"
+
+
+class RolNoAdmitido(DatosInvalidos):
+    codigo = "rol_no_admitido"
+
+
+class HorarioSolapado(Conflicto):
+    codigo = "horario_solapado"
+
+
+class HorarioConAsesorias(Conflicto):
+    codigo = "horario_con_asesorias"

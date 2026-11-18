@@ -9,6 +9,7 @@ from bugalu.compartido.base_datos import crear_pool
 from bugalu.compartido.configuracion import obtener_configuracion
 from bugalu.compartido.esquemas import RespuestaError
 from bugalu.compartido.manejadores_http import registrar_manejadores
+from bugalu.modulos.asesorias.infraestructura.entrada.http.router import router as router_asesorias
 from bugalu.modulos.catalogo.infraestructura.entrada.http.router import router as router_catalogo
 from bugalu.modulos.catalogo.infraestructura.entrada.http.router_cambios import (
     router as router_cambios,
@@ -83,4 +84,5 @@ def crear_app() -> FastAPI:
     app.include_router(router_pagos, prefix="/api/v1")
     app.include_router(router_creditos, prefix="/api/v1")
     app.include_router(router_reclamaciones, prefix="/api/v1")
+    app.include_router(router_asesorias, prefix="/api/v1")
     return app

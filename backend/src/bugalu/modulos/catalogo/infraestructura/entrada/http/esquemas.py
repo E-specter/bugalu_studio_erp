@@ -240,7 +240,7 @@ class NuevaSimulacion(BaseModel):
 
 # --- RF-20: cambios sensibles -------------------------------------------------------------------
 
-Recurso = Literal["impuestos", "servicio", "especialista", "recargos", "parametros"]
+Recurso = Literal["impuestos", "servicio", "especialista", "recargos", "parametros", "profesional"]
 PorcentajeIgv = Annotated[
     Decimal, Field(ge=0, le=Decimal("99.99"), max_digits=4, decimal_places=2, allow_inf_nan=False)
 ]
@@ -260,6 +260,34 @@ class SensiblesEspecialista(_Cuerpo):
     monto_fijo: Monto | None = None
     monto_variable: Monto | None = None
     unidad: Unidad | None = None
+
+
+PrecioAsesoria = Annotated[
+    Decimal, Field(gt=0, max_digits=10, decimal_places=2, allow_inf_nan=False)
+]
+
+
+class PreciosProfesional(_Cuerpo):
+    """`cambios.precios` de un profesional (RF-15 CA-04); null = no ofrece esa duracion."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    p30: PrecioAsesoria | None = Field(default=None, alias="30")
+    p60: PrecioAsesoria | None = Field(default=None, alias="60")
+
+    def a_texto(self) -> dict[str, str]:
+        enviados = self.model_dump(by_alias=True, exclude_unset=True)
+        return {f"precio_{minutos}": sensibles.texto(v) for minutos, v in enviados.items()}
+
+
+class PreciosTexto(BaseModel):
+    """Valor de un profesional tras confirmar: precio de cada duracion o `no_ofrece`."""
+
+    precio_30: str
+    precio_60: str
+
+
+class SensiblesProfesional(_Cuerpo):
+    precios: PreciosProfesional
 
 
 class NuevaPrevisualizacion(BaseModel):

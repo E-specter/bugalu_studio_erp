@@ -127,6 +127,20 @@ def ejemplos_impuestos(
     ]
 
 
+def ejemplos_profesional(diferencias: Mapping[str, tuple[str, str]]) -> list[Ejemplo]:
+    """Precio de una asesoria de 30 min y de 1 h (RF-15 CA-04); `no_ofrece` va como texto."""
+    nombres = {"precio_30": "Asesoría de 30 min", "precio_60": "Asesoría de 1 h"}
+    return [
+        Ejemplo(
+            nombres[campo],
+            antes,
+            despues,
+            TEXTO if "no_ofrece" in (antes, despues) else IMPORTE,
+        )
+        for campo, (antes, despues) in diferencias.items()
+    ]
+
+
 def _nivel(horas_de_aviso: int, p: Mapping[str, int]) -> str:
     if horas_de_aviso > p["horas_nivel_1"]:
         return "Nivel 1: sin cargo"

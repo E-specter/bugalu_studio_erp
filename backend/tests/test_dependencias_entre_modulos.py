@@ -14,6 +14,7 @@ PERMITIDOS: dict[str, set[str]] = {
     "reclamaciones": set(),
     "reservas": {"catalogo"},
     "pagos": {"catalogo", "reservas"},
+    "asesorias": {"catalogo", "reservas"},
 }
 
 

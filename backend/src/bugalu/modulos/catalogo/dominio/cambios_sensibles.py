@@ -48,12 +48,15 @@ SENSIBLES: dict[str, tuple[str, ...]] = {
         "feriado.porcentaje",
     ),
     "parametros": PARAMETROS_SENSIBLES,
+    "profesional": ("precio_30", "precio_60"),  # RF-15 CA-04; `no_ofrece` = sin precio
 }
 _BOOLEANOS = frozenset({"precios_incluyen_igv", "activo"})
 _HORAS = frozenset({"noche.desde", "noche.hasta"})
 
 
 def texto(valor: Any) -> str:
+    if valor is None:
+        return "no_ofrece"
     if isinstance(valor, bool):
         return "true" if valor else "false"
     if isinstance(valor, Decimal):
@@ -124,6 +127,8 @@ def tipados(cambios: Mapping[str, str]) -> dict[str, Any]:
 
 def aplicar(recurso: str, actual: Any, cambios: Mapping[str, str]) -> Any:
     """El recurso (objeto de dominio, o {clave: entero} en parametros) con los cambios puestos."""
+    if recurso == "profesional":  # los precios ya van en texto canonico
+        return {**actual, **cambios}
     nuevos = tipados(cambios)
     if recurso == "parametros":
         return {**actual, **nuevos}
