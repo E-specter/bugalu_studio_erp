@@ -22,7 +22,7 @@ Antes de cada aceptación, la interfaz muestra el resumen de su paso, un enlace 
 
 **Resumen:** Para crear tu cuenta te pedimos datos verdaderos: nombre, documento de identidad, teléfono y correo (domicilio y redes son opcionales). Los usamos para gestionar tus reservas, pagos y avisos, se guardan en un servidor del estudio y solo los compartimos con quienes nos ayudan a prestarte el servicio, como Google para los correos. Puedes ver, corregir o pedir que borremos tus datos cuando quieras.
 
-**Casilla (obligatoria):** "Acepto los [Términos de uso](terminos-de-uso.md) (versión 0.2.0) y he leído la [Política de privacidad](politica-de-privacidad.md) (versión 0.2.0)."
+**Casilla (obligatoria):** "Acepto los [Términos de uso](terminos-de-uso.md) (versión 0.2.0) y he leído la [Política de privacidad](politica-de-privacidad.md) (versión 0.3.0)."
 
 **Si es una agrupación, casilla adicional (obligatoria):** "Declaro que represento a la agrupación, que sus integrantes me autorizaron a contratar por ella y a dar sus datos, y que conocen estos textos."
 

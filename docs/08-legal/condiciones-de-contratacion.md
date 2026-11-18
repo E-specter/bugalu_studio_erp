@@ -90,7 +90,7 @@ Si cancelamos tu sesión o asesoría por cualquier motivo (falla técnica, ausen
 - **Reprogramar sin costo** a un horario libre, o
 - **La devolución íntegra** de lo pagado, por el mismo medio, en un máximo de 7 días hábiles.
 
-Si elegiste a un profesional o especialista y no puede atenderte, te proponemos otro; puedes aceptarlo o cancelar con devolución íntegra.
+Si elegiste a un especialista para tu sesión y no puede atenderte, te proponemos otro; puedes aceptarlo o cancelar con devolución íntegra. En una asesoría, reprogramas sin costo con el mismo profesional o recibes la devolución íntegra; si prefieres a otro profesional, agendas una asesoría nueva.
 
 ## Casos excepcionales
 
@@ -101,7 +101,7 @@ Ante una emergencia de salud, un duelo familiar, un desastre o un paro de transp
 - Eliges a un profesional, uno de sus horarios publicados y una duración de 30 o 60 minutos, con precio fijo.
 - **Presencial:** en un ambiente del estudio apartado de la sala o en un lugar acordado. **Virtual:** por videollamada de Google Meet; el enlace llega en tu correo de confirmación.
 - La asesoría queda pendiente de pago hasta que validamos tu pago; si no pagas, vence con los mismos plazos que una reserva de sala ([plazo de pago](#plazo-de-pago-y-vencimiento-de-la-pre-reserva)).
-- Te recordamos la cita por correo 24 horas antes. Se aplica la misma política de reprogramación por niveles, sin devolución.
+- Te recordamos la cita por correo 24 horas antes. Se aplica la misma política por niveles, sin devolución en dinero: al reprogramar se conserva el precio, y en el nivel 2 la penalización del 25 % se paga hasta 48 horas después de la asesoría.
 - Al terminar, el profesional la marca como realizada o como inasistencia, en cuyo caso no hay devolución. Si la realizaste, te enviamos una constancia de asistencia.
 - La asesoría orienta tu proyecto; no te obliga a contratar nada más.
 

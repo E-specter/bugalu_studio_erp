@@ -2,7 +2,7 @@
 id: legal-politica-de-privacidad
 titulo: Política de privacidad
 estado: borrador
-version: 0.2.0
+version: 0.3.0
 vigente_desde: por definir
 depende_de: [ADR-003, ADR-010, ADR-011, ADR-012, ADR-014, ADR-015, RF-17, RF-19]
 ---
@@ -11,7 +11,7 @@ depende_de: [ADR-003, ADR-010, ADR-011, ADR-012, ADR-014, ADR-015, RF-17, RF-19]
 
 > **Borrador para revisión legal. No es asesoría legal ni está vigente.** Lo redactó el equipo del proyecto para que lo revise un abogado colegiado en el Perú antes de publicarlo ([ADR-012](../00-proyecto/decisiones/ADR-012-textos-legales-y-consentimientos.md)). "[verificar]" marca datos o normas por confirmar; "[cifra por confirmar]", valores que el estudio aún no decide.
 
-**Versión 0.2.0 · Vigente desde: [fecha por definir]**
+**Versión 0.3.0 · Vigente desde: [fecha por definir]**
 
 Aquí te contamos qué datos tuyos tratamos, para qué, con quién los compartimos, cuánto tiempo los guardamos y cómo ejercer tus derechos, conforme a la Ley 29733, Ley de Protección de Datos Personales, y su reglamento (Decreto Supremo 016-2024-JUS).
 
@@ -70,6 +70,7 @@ La casilla de promociones es opcional, nunca viene marcada y no es condición pa
 No vendemos tus datos. Los comparten solo estas personas y empresas, y solo para las finalidades de arriba:
 
 - **El personal del estudio**, según su función: el personal asignado ve tu nombre y tu servicio; solo el Administrador ve tus pagos y capturas.
+- **El profesional de tu asesoría**, sea del estudio o externo: ve tu nombre, tu nombre artístico, tu teléfono y tu correo para coordinar la cita, nunca tu documento, tu domicilio ni tus pagos [verificar si el profesional externo es encargado del tratamiento y qué contrato firma].
 - **Nuestro propio servidor.** La base de datos, la autenticación y el almacenamiento de archivos funcionan con el software Supabase instalado en un servidor del estudio en Lima; la empresa Supabase no recibe tus datos [verificar si cambia el alojamiento]. Las páginas públicas pueden alojarse en un servicio de hosting estático [verificar proveedor: vería tu dirección IP].
 - **Google LLC (Estados Unidos):** envía nuestros correos (Gmail), guarda los eventos de tus reservas y asesorías en el calendario del estudio (nombre, servicio, fecha y hora; no te invitamos desde Google: el evento te llega como archivo `.ics` en nuestro correo), genera las videollamadas de Meet y, si lo eliges, te identifica al entrar con Google.
 - **Meta Platforms, Inc. (Estados Unidos):** te identifica si entras con Facebook y transmite nuestras conversaciones si nos escribes por WhatsApp.
