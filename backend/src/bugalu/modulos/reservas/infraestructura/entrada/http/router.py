@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -43,6 +43,7 @@ from bugalu.modulos.reservas.aplicacion.sugerir_franjas.caso_de_uso import Suger
 from bugalu.modulos.reservas.aplicacion.vista_cancelacion.caso_de_uso import (
     VistaCancelacion as VistaCancelacionCaso,
 )
+from bugalu.modulos.reservas.dominio.disponibilidad import LIMA
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo as TramoDominio
 from bugalu.modulos.reservas.infraestructura.entrada.http.esquemas import (
     CambiosSala,
@@ -114,7 +115,7 @@ async def listar_salas(request: Request) -> list[Sala]:
 async def actualizar_sala(
     request: Request, claims: Claims, id_sala: UUID, cuerpo: CambiosSala
 ) -> Sala:
-    hoy = (datetime.now(UTC) + timedelta(hours=-5)).date()  # Lima no tiene horario de verano
+    hoy = datetime.now(LIMA).date()
     async with transaccion_con_identidad(_pool(request), claims) as conexion:
         sala = await ActualizarSala(RepositorioReservasPostgres(conexion)).ejecutar(
             id_sala, cuerpo.aforo, cuerpo.itse_certificado, cuerpo.itse_vence, hoy

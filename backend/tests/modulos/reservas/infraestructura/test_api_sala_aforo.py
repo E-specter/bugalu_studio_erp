@@ -10,8 +10,10 @@ from typing import Any
 import jwt
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
+from bugalu.compartido.configuracion import obtener_configuracion
+from bugalu.main import crear_app
 from tests.conftest import UsuarioDePrueba
 from tests.modulos.reservas.infraestructura.conftest import Ejecutar, con
 
@@ -91,6 +93,14 @@ async def test_un_vencimiento_pasado_es_422_itse_vencido_y_no_guarda(
         ({"itse_certificado": "A" * 41}, "itse_certificado"),
         ({"itse_certificado": "A\nB"}, "itse_certificado"),
         ({"itse_certificado": "A\rB"}, "itse_certificado"),
+        ({"itse_certificado": "A\x0bB"}, "itse_certificado"),
+        ({"itse_certificado": "A\x0cB"}, "itse_certificado"),
+        ({"itse_certificado": "A\x85B"}, "itse_certificado"),
+        ({"itse_certificado": "A\x1bB"}, "itse_certificado"),
+        ({"itse_certificado": "A\x00B"}, "itse_certificado"),
+        ({"itse_certificado": "A\tB"}, "itse_certificado"),
+        ({"itse_certificado": "A\u2028B"}, "itse_certificado"),
+        ({"itse_certificado": "A\x7fB"}, "itse_certificado"),
         ({"itse_certificado": 5}, "itse_certificado"),
         ({"itse_certificado": None}, "itse_certificado"),
         ({"itse_vence": "31/12/2099"}, "itse_vence"),
@@ -206,3 +216,19 @@ async def test_openapi_declara_los_codigos_de_patch_salas(app: FastAPI) -> None:
     respuestas = app.openapi()["paths"]["/api/v1/salas/{id_sala}"]["patch"]["responses"]
     for codigo in ("200", "401", "403", "404", "422", "503"):
         assert codigo in respuestas
+
+
+async def test_503_con_la_base_caida_nunca_500(
+    monkeypatch: pytest.MonkeyPatch, administrador: UsuarioDePrueba, sala: str
+) -> None:
+    monkeypatch.setenv("URL_BASE_DATOS", "postgresql://u:p@127.0.0.1:1/db")
+    monkeypatch.setenv("TIMEOUT_POOL_SEGUNDOS", "0.5")
+    obtener_configuracion.cache_clear()
+    app = crear_app()
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c,
+    ):
+        r = await c.patch(_url(sala), json=OK, headers=con(administrador))
+    assert r.status_code == 503
+    assert r.json()["error"]["codigo"] == "base_de_datos_no_disponible"

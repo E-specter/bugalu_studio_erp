@@ -65,9 +65,7 @@ def _fecha_iso(valor: object) -> object:
 class CambiosSala(BaseModel):
     model_config = ConfigDict(extra="forbid")
     aforo: Annotated[int, Field(strict=True, ge=1, le=200)]
-    itse_certificado: Annotated[
-        str, StringConstraints(strict=True, strip_whitespace=True, pattern=r"^[^\r\n]{1,40}$")
-    ]
+    itse_certificado: Annotated[TextoCorto, Field(max_length=40)]
     itse_vence: Annotated[date, BeforeValidator(_fecha_iso)]
 
 

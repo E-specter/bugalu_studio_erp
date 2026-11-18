@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(13);
+select plan(15);
 
 -- RF-03 ampliacion: aforo, certificado ITSE y vencimiento por sala (CA-10). Los tres juntos o los tres nulos.
 insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data)
@@ -23,6 +23,9 @@ select throws_ok($$update public.sala_tecnica set itse_certificado = '' where id
 select throws_ok($$update public.sala_tecnica set itse_certificado = repeat('A', 41) where id = '00000000-0000-0000-0000-0000000005a1'$$, '23514', null, 'certificado de 41 no');
 select throws_ok($$update public.sala_tecnica set itse_certificado = E'A\nB' where id = '00000000-0000-0000-0000-0000000005a1'$$, '23514', null, 'certificado con salto de linea no');
 select throws_ok($$update public.sala_tecnica set itse_vence = null where id = '00000000-0000-0000-0000-0000000005a1'$$, '23514', null, 'dos presentes y uno nulo no');
+
+select throws_ok($$update public.sala_tecnica set itse_certificado = E'A	B' where id = '00000000-0000-0000-0000-0000000005a1'$$, '23514', null, 'certificado con tabulador no');
+select throws_ok($$update public.sala_tecnica set itse_certificado = E'AB' where id = '00000000-0000-0000-0000-0000000005a1'$$, '23514', null, 'certificado con control vertical no');
 
 -- anon y cliente no escriben; la fila queda intacta.
 set local role anon;
