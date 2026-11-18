@@ -1,7 +1,12 @@
 """Limpieza de los recorridos reales (RF-01 y reservas): borra los usuarios de prueba y todo lo que crearon
 (aceptaciones por cascada, reservas con sus cuotas, comprobantes y especialistas, franjas, cierres, avisos) y comprueba que no quedan huerfanos.
 
-Uso (desde backend/): uv run python ../frontend/pruebas/real/limpiar.py [--avisos-desde=<iso>] <correo>...
+RF-15 etapa A: tambien borra los perfiles de profesional (con sus horarios, precios y especialidades elegidas, por cascada), las especialidades
+de prueba (`--especialidades=<prefijo del nombre>`) y el registro y las confirmaciones de cambios sensibles del recurso `profesional` de esas cuentas.
+El registro de cambios es inmutable (trigger): solo en esta base de pruebas se apaga un instante para quitar las filas del recurso `profesional` de las cuentas de la corrida.
+Los objetos del bucket `profesionales` los vacia el recorrido por la API de Storage antes de llamar a este script.
+
+Uso (desde backend/): uv run python ../frontend/pruebas/real/limpiar.py [--avisos-desde=<iso>] [--especialidades=<prefijo>] <correo>...
 Mismo criterio que backend/tests/conftest.py: solo se apaga el trigger del ultimo administrador.
 """
 
@@ -13,6 +18,7 @@ from bugalu.compartido.configuracion import Configuracion
 
 # --avisos-desde=<iso>: borra tambien los avisos `texto_legal_nuevo` encolados desde ese instante (una version mayor o menor avisa a todos los clientes).
 desde = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--avisos-desde=")), "infinity")
+prefijo_especialidades = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--especialidades=")), None)
 correos = [c.lower() for c in sys.argv[1:] if not c.startswith("--")]
 with psycopg.connect(Configuracion().url_base_datos_admin) as conexion:
     ids = [f[0] for f in conexion.execute("select id from auth.users where lower(email) = any(%s)", (correos,))]
@@ -26,11 +32,19 @@ with psycopg.connect(Configuracion().url_base_datos_admin) as conexion:
     conexion.execute("delete from public.intento_reclamacion where creado_en >= %s", (desde,))
     conexion.execute("delete from public.franja_sala where id_publicador = any(%s)", (ids,))
     conexion.execute("delete from public.cierre_sala where id_autor = any(%s)", (ids,))
+    # RF-15: el registro de cambios del recurso `profesional` (id_recurso = id de la cuenta) y sus confirmaciones. El registro no tiene FK: se borra aqui.
+    conexion.execute("alter table public.registro_cambio disable trigger registro_cambio_sin_edicion")
+    conexion.execute("delete from public.registro_cambio where recurso = 'profesional' and id_recurso = any(%s)", (ids,))
+    conexion.execute("alter table public.registro_cambio enable trigger registro_cambio_sin_edicion")
+    conexion.execute("delete from public.confirmacion_cambio where recurso = 'profesional' and id_recurso = any(%s)", (ids,))
     trigger = "alter table public.usuario {} trigger usuario_conserva_administrador"
     conexion.execute(trigger.format("disable"))
     conexion.execute("delete from public.solicitud_acceso where id_usuario = any(%s) or id_revisor = any(%s)", (ids, ids))
     conexion.execute("delete from auth.users where id = any(%s)", (ids,))
     conexion.execute(trigger.format("enable"))
+    # Las especialidades no se borran por la API; las de prueba se van aqui, ya sin perfiles que las elijan (la FK de perfil_especialidad cae con el perfil).
+    if prefijo_especialidades:
+        conexion.execute("delete from public.especialidad_asesoria where nombre like %s", (prefijo_especialidades + "%",))
     restos = conexion.execute(
         """select (select count(*) from public.usuario u where not exists (select 1 from auth.users a where a.id = u.id))
                 + (select count(*) from public.solicitud_acceso s where not exists (select 1 from auth.users a where a.id = s.id_usuario))
@@ -48,8 +62,16 @@ with psycopg.connect(Configuracion().url_base_datos_admin) as conexion:
                 + (select count(*) from public.franja_sala where id_publicador is null)
                 + (select count(*) from public.cierre_sala where id_autor is null)
                 + (select count(*) from public.aceptacion a where not exists (select 1 from public.usuario u where u.id = a.id_usuario))
-                + (select count(*) from public.notificacion where tipo = 'texto_legal_nuevo' and creada_en >= %s)""",
-        (correos, ids, correos, desde),
+                + (select count(*) from public.notificacion where tipo = 'texto_legal_nuevo' and creada_en >= %s)
+                + (select count(*) from public.perfil_profesional p where not exists (select 1 from public.usuario u where u.id = p.id))
+                + (select count(*) from public.perfil_especialidad e where not exists (select 1 from public.perfil_profesional p where p.id = e.id_profesional))
+                + (select count(*) from public.precio_asesoria e where not exists (select 1 from public.perfil_profesional p where p.id = e.id_profesional))
+                + (select count(*) from public.horario_profesional h where not exists (select 1 from public.perfil_profesional p where p.id = h.id_profesional))
+                + (select count(*) from public.perfil_profesional where id = any(%s))
+                + (select count(*) from public.registro_cambio where recurso = 'profesional' and id_recurso = any(%s))
+                + (select count(*) from public.confirmacion_cambio where recurso = 'profesional' and id_recurso = any(%s))
+                + (select count(*) from public.especialidad_asesoria where %s::text is not null and nombre like %s::text || '%%')""",
+        (correos, ids, correos, desde, ids, ids, ids, prefijo_especialidades, prefijo_especialidades),
     ).fetchone()
 if restos != (0,):
     sys.exit(f"Quedaron {restos[0]} restos de las pruebas en la base.")

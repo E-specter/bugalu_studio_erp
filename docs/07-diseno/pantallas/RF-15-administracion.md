@@ -43,6 +43,8 @@ En [usuarios](RF-01-solicitudes.md#composición), sin pantalla nueva:
 - U2 suma la casilla Radio **Profesional artístico**, detalle "Da asesorías y publica sus horarios. Entra con correo y contraseña." Con ella marcada, ESPECIALIDAD se oculta (las de asesoría van en su ficha) y se envía `PATCH /usuarios/{id} {rol: "profesional"}`.
 - Éxito al asignar: redirige a `/app/asesorias/?aviso=profesional-asignado`. Quitar el rol: vuelve a Usuarios como hoy.
 - 409 `profesional_con_asesorias`: aviso Error "{Nombre} tiene asesorías pendientes o confirmadas. Cancélalas o espera a que terminen antes de quitarle el rol." Datos conservados.
+- 409 `cliente_con_operaciones` (al asignar): aviso Error "{Nombre} tiene reservas, créditos, pagos o devoluciones vivos", detalle "Espera a que terminen o resuélvelos antes de asignarle el rol de profesional." Datos conservados.
+- "Crear mi ficha" (decisión 8, auditoría del frontend A): botón Secundario en las acciones de la cabecera de la lista, junto a Especialidades y Asignar rol, solo para el Administrador que aún no tiene ficha; hace `POST /profesionales {id_usuario}` con su id y abre su ficha.
 
 ## Ficha de un profesional
 

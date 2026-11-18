@@ -542,7 +542,7 @@ const opcionesRol = (cliente: boolean) => [
         await accion();
         return location.assign(destino());
       } catch (error: any) {
-        if (error.estado === 401 || error.estado === 403 || error.estado === 404 || (error.estado === 409 && error.codigo !== 'ultimo_administrador' && error.codigo !== 'profesional_con_asesorias')) {
+        if (error.estado === 401 || error.estado === 403 || error.estado === 404 || (error.estado === 409 && !['ultimo_administrador', 'profesional_con_asesorias', 'cliente_con_operaciones'].includes(error.codigo))) {
           const estado = error.estado === 401 ? 'no-autenticado' : error.estado === 403 ? 'sin-permiso' : 'no-encontrada';
           this.mostrar(estado);
           this.querySelectorAll('[data-salida] [role]').forEach((e) => e.removeAttribute('role'));
@@ -555,6 +555,7 @@ const opcionesRol = (cliente: boolean) => [
         const [titulo, texto] =
           error.codigo === 'ultimo_administrador' ? ['No puedes quitar el último administrador', 'Da el rol de Administrador a otra persona antes de cambiar este.']
           : error.codigo === 'profesional_con_asesorias' ? [`${this.nombrePersona} tiene asesorías pendientes o confirmadas`, 'Cancélalas o espera a que terminen antes de quitarle el rol.']
+          : error.codigo === 'cliente_con_operaciones' ? [`${this.nombrePersona} tiene reservas, créditos, pagos o devoluciones vivos`, 'Espera a que terminen o resuélvelos antes de asignarle el rol de profesional.']
           : error.estado === 422 ? [error.mensaje, undefined]
           : mensajeError(error);
         enfocarAviso(mostrarAviso(this, 'error', titulo, texto));

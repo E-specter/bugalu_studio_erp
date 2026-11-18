@@ -19,7 +19,7 @@ const admin = persona('admin', 'Aldo Reclamos');
 const cliente = persona('cliente', 'Clara Reclamante');
 const visitante = { nombre: 'Víctor Visitante', correo: `rf16-${marca}-visita@prueba.bugalu.pe` };
 const fisica = { nombre: 'Fabiola Fisica', correo: `rf16-${marca}-fisica@prueba.bugalu.pe` };
-const reintento = { nombre: 'Rita Reintento', correo: `rf16-${marca}-reintento@prueba.bugalu.pe` };
+const reintento = { nombre: `Rita Reintento ${marca}`, correo: `rf16-${marca}-reintento@prueba.bugalu.pe` };
 const correos = [admin.correo, cliente.correo, visitante.correo, fisica.correo, reintento.correo];
 const desde = new Date().toISOString(); // avisos e intentos de limite que se borran desde este instante
 
