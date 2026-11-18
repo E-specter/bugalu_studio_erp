@@ -1,13 +1,13 @@
 ---
 // Variante captura de pago (carga-archivos.md): un <input type="file" name="captura"> real dentro del <form> de la pantalla, que
-// lo envia en su multipart. Sin zona de soltar ni progreso. Sin JS queda el input nativo; la isla pone el boton y el adjunto.
+// lo envia en su multipart (variante foto: la subida la hace la pantalla, con su propio endpoint). Sin zona de soltar ni progreso. Sin JS queda el input nativo; la isla pone el boton y el adjunto.
 import Campo from '../componentes/Campo.astro';
 import Archivo from '../componentes/Archivo.astro';
 import Icono from '../componentes/internos/Icono.astro';
 import MensajeError from '../componentes/internos/MensajeError.astro';
 
 interface Props {
-  variante?: 'captura' | 'reclamo';
+  variante?: 'captura' | 'reclamo' | 'foto';
   maxArchivos?: number;
   etiqueta: string;
   ayuda?: string;
@@ -16,17 +16,19 @@ interface Props {
   accept?: string;
   maxMb?: number;
   obligatorio?: boolean;
+  textoBoton?: string;
 }
-const { variante = 'captura', maxArchivos = 3, etiqueta, ayuda, nombre = 'captura', id = `carga-${nombre}`, accept = 'image/jpeg,image/png,application/pdf', maxMb = 5, obligatorio = false } = Astro.props;
+const { variante = 'captura', maxArchivos = 3, etiqueta, ayuda, nombre = 'captura', id = `carga-${nombre}`, accept = variante === 'foto' ? 'image/jpeg,image/png,image/webp' : 'image/jpeg,image/png,application/pdf', maxMb = variante === 'foto' ? 2 : 5, obligatorio = false, textoBoton = variante === 'foto' ? 'Elegir foto' : 'Seleccionar archivo' } = Astro.props;
 const reclamo = variante === 'reclamo';
+const foto = variante === 'foto';
 ---
 
 <bugalu-carga-archivos variante={variante} max-mb={maxMb} max-archivos={maxArchivos} accept={accept}>
   <!-- Campo pinta <input type={tipo}> para cualquier tipo que no sea area, selector, password ni search: 'file' funciona aunque su tipado no lo liste. -->
   <Campo tipo={'file' as 'text'} {nombre} {etiqueta} {ayuda} {id} {obligatorio} accept={accept} multiple={reclamo || undefined} />
-  <template data-boton><label class="carga-boton"><Icono nombre="upload" />Seleccionar archivo</label></template>
-  <template data-archivo><Archivo nombre=" " tipo="pdf" metadato=" " /></template>
-  {reclamo && <template data-plantilla="error"><MensajeError id="" texto=" " /></template>}
+  <template data-boton><label class="carga-boton"><Icono nombre="upload" /><span data-texto>{textoBoton}</span></label></template>
+  <template data-archivo><Archivo nombre=" " tipo={foto ? 'imagen' : 'pdf'} metadato=" " /></template>
+  {(reclamo || foto) && <template data-plantilla="error"><MensajeError id="" texto=" " /></template>}
 </bugalu-carga-archivos>
 
 <script>
@@ -34,9 +36,17 @@ const reclamo = variante === 'reclamo';
   import { tamanoArchivo as tamano } from '../servicios/hoja-reclamacion.js';
   import { ponerError, quitarError } from '../servicios/formulario.js';
   const MB = 1048576;
-  const TIPOS = { 'image/jpeg': 'JPG', 'image/png': 'PNG', 'application/pdf': 'PDF' };
+  const TIPOS = { 'image/jpeg': 'JPG', 'image/png': 'PNG', 'image/webp': 'WEBP', 'application/pdf': 'PDF' };
 
   class BugaluCargaArchivos extends HTMLElement {
+    static observedAttributes = ['texto-boton'];
+
+    // Foto de perfil: el texto del control cambia con la foto guardada ("Elegir foto" / "Cambiar foto").
+    attributeChangedCallback(_nombre, _antes, valor) {
+      const texto = this.querySelector('.carga-boton [data-texto]');
+      if (texto && valor) texto.textContent = valor;
+    }
+
     connectedCallback() {
       this.entrada = this.querySelector('input[type="file"]');
       this.boton = this.querySelector('template[data-boton]').content.firstElementChild.cloneNode(true);
@@ -51,6 +61,51 @@ const reclamo = variante === 'reclamo';
       if (this.getAttribute('variante') === 'reclamo') return this.iniciarReclamo();
       this.entrada.addEventListener('change', () => this.cambiar());
       this.adjunto.addEventListener('click', (e) => e.target.closest('.archivo-accion') && this.quitar());
+      if (this.getAttribute('texto-boton')) this.attributeChangedCallback('', '', this.getAttribute('texto-boton'));
+    }
+
+    // --- Foto de perfil: una imagen que se sube aparte; la vista previa la pinta la pantalla en su avatar ---
+
+    errorFoto(f) {
+      if (f.size > Number(this.getAttribute('max-mb')) * MB) return `La foto pesa más de ${this.getAttribute('max-mb')} MB. Elige una más liviana.`;
+      if (!this.getAttribute('accept').split(',').includes(f.type)) return 'Elige una foto JPG, PNG o WebP.';
+      return null;
+    }
+
+    cambiarFoto(quitado) {
+      const f = this.archivo;
+      quitarError(this.entrada);
+      this.adjunto.replaceChildren();
+      const motivo = f && this.errorFoto(f);
+      if (motivo) {
+        this.entrada.value = '';
+        ponerError(this, this.entrada, motivo);
+        this.estado.textContent = motivo;
+      }
+      const valida = f && !motivo;
+      this.adjunto.hidden = !valida;
+      this.boton.hidden = Boolean(valida);
+      if (valida) {
+        const nodo = this.querySelector('template[data-archivo]').content.firstElementChild.cloneNode(true);
+        nodo.querySelector('.archivo-nombre').textContent = f.name;
+        nodo.querySelector('.archivo-nombre').title = f.name;
+        nodo.querySelector('.archivo-metadato').textContent = `${TIPOS[f.type] ?? ''} · ${tamano(f.size)}`;
+        nodo.querySelector('.archivo-accion').setAttribute('aria-label', `Quitar ${f.name}`);
+        this.adjunto.append(nodo);
+        this.estado.textContent = `Foto elegida: ${f.name}, ${tamano(f.size)}. Pulsa Subir foto para guardarla.`;
+        this.entrada.tabIndex = -1;
+        nodo.querySelector('.archivo-accion').focus();
+      } else {
+        this.entrada.removeAttribute('tabindex');
+        if (!motivo) this.estado.textContent = quitado ? `Quitaste ${quitado}.` : '';
+      }
+      this.dispatchEvent(new CustomEvent('cambio', { bubbles: true }));
+    }
+
+    // Tras subir o quitar la foto: vuelve a "sin elegir".
+    reiniciar() {
+      this.entrada.value = '';
+      this.cambiarFoto(null);
     }
 
     // --- Adjuntos de reclamo: varios archivos que se suman (hasta max-archivos) y viajan en el FormData de la pantalla ---
@@ -171,6 +226,7 @@ const reclamo = variante === 'reclamo';
     }
 
     cambiar(quitado = null) {
+      if (this.getAttribute('variante') === 'foto') return this.cambiarFoto(quitado);
       const f = this.archivo;
       const enfocado = document.activeElement === this.entrada;
       URL.revokeObjectURL(this.vista ?? '');

@@ -32,11 +32,14 @@ export class IslaGestion extends HTMLElement {
   vista = '';
   avisosUrl = {}; // lista cerrada de claves ?aviso= -> [titulo, texto?]
   noEncontrada = ['No encontramos esto', 'Puede que el enlace esté mal escrito.'];
+  textosEstado = {}; // la subclase cambia el texto de 'no-autenticado' o 'sin-permiso' (p. ej. RF-15: "para los profesionales")
+  mensajeError = mensajeError; // y el de los errores de carga (p. ej. "El directorio no responde")
 
   connectedCallback() {
     this.vista = this.getAttribute('vista');
     this.avisoDeUrl();
-    this.addEventListener('click', (e) => e.target.closest('[data-reintentar]') && this.cargar(true));
+    // El Reintentar de un calendario anidado (perfil publico) es del calendario, no de la isla.
+    this.addEventListener('click', (e) => { const b = e.target.closest('[data-reintentar]'); if (b && !b.closest('bugalu-calendario')) this.cargar(true); });
     this.addEventListener('submit', (e) => {
       e.preventDefault();
       this.alEnviar(e.target);
@@ -60,7 +63,7 @@ export class IslaGestion extends HTMLElement {
   mostrar(estado) {
     const plantilla = this.querySelector(`template[data-estado="${estado}"]`);
     this.querySelector('[data-salida]').replaceChildren(plantilla.content.cloneNode(true));
-    const [titulo, texto] = (estado === 'no-encontrada' ? this.noEncontrada : textos[estado]) ?? [];
+    const [titulo, texto] = (estado === 'no-encontrada' ? this.noEncontrada : this.textosEstado[estado] ?? textos[estado]) ?? [];
     const aviso = this.querySelector('[data-salida] .aviso');
     if (aviso && titulo) llenarAviso(aviso, titulo, texto);
     if (estado === 'no-autenticado') this.querySelector('.aviso-accion').href = `/acceso/interno?${new URLSearchParams({ volver: location.pathname + location.search })}`;
@@ -99,7 +102,7 @@ export class IslaGestion extends HTMLElement {
     else if (error.estado === 403) this.mostrar('sin-permiso');
     else {
       this.mostrar('error');
-      llenarAviso(this.querySelector('[data-salida] .aviso'), ...mensajeError(error));
+      llenarAviso(this.querySelector('[data-salida] .aviso'), ...this.mensajeError(error));
     }
   }
 
@@ -162,7 +165,7 @@ export class IslaGestion extends HTMLElement {
       soltar();
       if (error.estado === 401 || error.estado === 403) return this.sustituir(error.estado === 401 ? 'no-autenticado' : 'sin-permiso');
       if (this.errorEnvio?.(error)) return;
-      enfocarAviso(mostrarAviso(this, 'error', ...(error.estado === 422 && error.mensaje ? [error.mensaje] : mensajeError(error))));
+      enfocarAviso(mostrarAviso(this, 'error', ...(error.estado === 422 && error.mensaje ? [error.mensaje] : this.mensajeError(error))));
       return;
     }
     // Con `navega`, el boton sigue bloqueado hasta salir de la pantalla (evita un segundo envio); solo se suelta si falla.

@@ -20,12 +20,15 @@ const filtros = [
   { clave: 'todos', texto: 'Todos', href: '/app/usuarios' },
   { clave: 'cliente', texto: 'Clientes', href: '/app/usuarios?rol=cliente' },
   { clave: 'personal', texto: 'Personal', href: '/app/usuarios?rol=personal' },
+  { clave: 'profesional', texto: 'Profesionales', href: '/app/usuarios?rol=profesional' },
   { clave: 'administrador', texto: 'Administradores', href: '/app/usuarios?rol=administrador' },
   { clave: 'documento', texto: 'Documento repetido', href: '/app/usuarios?documento=repetido' },
 ];
 const opcionesRol = (cliente: boolean) => [
   ...(cliente ? [{ valor: 'cliente', etiqueta: 'Cliente', detalle: 'Solo ve su portal de artista.' }] : []),
   { valor: 'personal', etiqueta: 'Personal del estudio', detalle: 'Entra al panel interno.' },
+  // RF-15: solo al cambiar el rol de una cuenta (la solicitud de acceso no lo ofrece).
+  ...(cliente ? [{ valor: 'profesional', etiqueta: 'Profesional artístico', detalle: 'Da asesorías y publica sus horarios. Entra con correo y contraseña.' }] : []),
   { valor: 'administrador', etiqueta: 'Administrador', detalle: 'Además, aprueba solicitudes, valida pagos y cambia roles.' },
 ];
 ---
@@ -213,7 +216,7 @@ const opcionesRol = (cliente: boolean) => [
   import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, llenarAviso, formatearFecha } from '../servicios/formulario.js';
 
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const roles: Record<string, string> = { cliente: 'Cliente', personal: 'Personal', administrador: 'Administrador' };
+  const roles: Record<string, string> = { cliente: 'Cliente', personal: 'Personal', profesional: 'Profesional', administrador: 'Administrador' };
 
   // Lista cerrada de claves ?aviso= (estados-sistema): el texto sale de aqui, nunca de la URL.
   const avisosUrl: Record<string, [string, string?]> = {
@@ -254,6 +257,8 @@ const opcionesRol = (cliente: boolean) => [
     vista = '';
     registro = '';
     yo: any = null;
+    rolOriginal = '';
+    nombrePersona = '';
 
     connectedCallback() {
       this.vista = this.getAttribute('vista')!;
@@ -488,6 +493,12 @@ const opcionesRol = (cliente: boolean) => [
       if (u.rol === 'cliente') this.querySelector('[data-u4]')!.append(this.querySelector<HTMLTemplateElement>('template[data-ficha-creditos]')!.content.cloneNode(true));
       this.querySelector<HTMLInputElement>(`[name="rol"][value="${u.rol}"]`)!.checked = true;
       this.querySelector<HTMLInputElement>('[name="especialidad"]')!.value = u.especialidad ?? '';
+      // RF-15: la especialidad de un profesional artistico va en su ficha (las de asesoria), no aqui.
+      this.rolOriginal = u.rol;
+      this.nombrePersona = u.nombre ?? u.correo;
+      const alternar = () => (this.querySelector<HTMLInputElement>('[name="especialidad"]')!.closest('.campo') as HTMLElement).hidden = this.querySelector<HTMLInputElement>('[name="rol"]:checked')!.value === 'profesional';
+      this.querySelectorAll('[name="rol"]').forEach((r) => r.addEventListener('change', alternar));
+      alternar();
       if (yo.id !== u.id) this.querySelector('[data-propio]')!.remove();
       this.encabezado(u.nombre ?? u.correo, `El rol decide qué ve ${u.nombre ?? u.correo} en el sistema.`);
       return `Usuario ${u.nombre ?? u.correo}`;
@@ -503,9 +514,9 @@ const opcionesRol = (cliente: boolean) => [
       limpiarAvisos(this);
       const rol = form.querySelector<HTMLInputElement>('[name="rol"]:checked')!.value;
       const especialidad = form.querySelector<HTMLInputElement>('[name="especialidad"]')!.value.trim() || null;
-      // Si se quita a si mismo el rol de Administrador, ya no puede ver /app/usuarios.
-      const destino = () => (this.yo?.id === this.registro && rol !== 'administrador' ? '/app/' : '/app/usuarios?aviso=usuario-actualizado');
-      this.enviar(form, 'Guardando…', () => cambiarUsuario(this.registro, { rol, especialidad }), destino);
+      // Si se quita a si mismo el rol de Administrador, ya no puede ver /app/usuarios. Al asignar Profesional, la ficha nace sola: sigue la lista de profesionales.
+      const destino = () => (this.yo?.id === this.registro && rol !== 'administrador' ? '/app/' : rol === 'profesional' && this.rolOriginal !== 'profesional' ? '/app/asesorias/?aviso=profesional-asignado' : '/app/usuarios?aviso=usuario-actualizado');
+      this.enviar(form, 'Guardando…', () => cambiarUsuario(this.registro, rol === 'profesional' ? { rol } : { rol, especialidad }), destino);
     }
 
     // --- Envio comun: carga, bloqueo del resto, y respuestas ---
@@ -531,7 +542,7 @@ const opcionesRol = (cliente: boolean) => [
         await accion();
         return location.assign(destino());
       } catch (error: any) {
-        if (error.estado === 401 || error.estado === 403 || error.estado === 404 || (error.estado === 409 && error.codigo !== 'ultimo_administrador')) {
+        if (error.estado === 401 || error.estado === 403 || error.estado === 404 || (error.estado === 409 && error.codigo !== 'ultimo_administrador' && error.codigo !== 'profesional_con_asesorias')) {
           const estado = error.estado === 401 ? 'no-autenticado' : error.estado === 403 ? 'sin-permiso' : 'no-encontrada';
           this.mostrar(estado);
           this.querySelectorAll('[data-salida] [role]').forEach((e) => e.removeAttribute('role'));
@@ -543,6 +554,7 @@ const opcionesRol = (cliente: boolean) => [
         boton.textContent = original;
         const [titulo, texto] =
           error.codigo === 'ultimo_administrador' ? ['No puedes quitar el último administrador', 'Da el rol de Administrador a otra persona antes de cambiar este.']
+          : error.codigo === 'profesional_con_asesorias' ? [`${this.nombrePersona} tiene asesorías pendientes o confirmadas`, 'Cancélalas o espera a que terminen antes de quitarle el rol.']
           : error.estado === 422 ? [error.mensaje, undefined]
           : mensajeError(error);
         enfocarAviso(mostrarAviso(this, 'error', titulo, texto));

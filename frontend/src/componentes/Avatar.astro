@@ -1,0 +1,71 @@
+---
+// Ficha: docs/07-diseno/componentes/avatar.md. Decorativo (`aria-hidden`) porque el nombre va al lado; con foto, la imagen cubre las
+// iniciales y la isla que lo pinta en el navegador la quita si no carga (servicios/avatar.js).
+interface Props {
+  nombre: string;
+  tamano?: 'sm' | 'md' | 'miniatura' | 'retrato';
+  rol?: 'cliente' | 'personal' | 'profesional';
+  foto?: string;
+}
+const { nombre, tamano = 'md', rol = 'cliente', foto, class: clase } = Astro.props as Props & { class?: string };
+// Letra inicial de la primera y de la ultima palabra (una sola palabra: su inicial).
+const palabras = nombre.trim().split(/\s+/).filter(Boolean);
+const iniciales = (palabras.length > 1 ? palabras[0][0] + palabras[palabras.length - 1][0] : (palabras[0]?.[0] ?? '')).toUpperCase();
+const lado = { sm: 26, md: 38, miniatura: 96, retrato: 344 }[tamano];
+---
+
+<span class:list={['avatar', `avatar-${tamano}`, rol === 'personal' && 'avatar-personal', clase]} aria-hidden="true">
+  <span class="avatar-iniciales">{iniciales}</span>
+  {foto && <img class="avatar-foto" src={foto} alt="" width={lado} height={lado} loading={tamano === 'retrato' ? undefined : 'lazy'} />}
+</span>
+
+<style>
+  .avatar {
+    position: relative;
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    box-sizing: border-box;
+    overflow: hidden;
+    border: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+    border-radius: var(--borde-radio-ninguno);
+    background: var(--color-fondo-destacado);
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-weight: var(--fuente-peso-medio);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+  .avatar-personal {
+    background: var(--color-fondo-invertido);
+    color: var(--color-texto-invertido);
+  }
+  .avatar-sm {
+    inline-size: var(--medida-avatar-sm);
+    block-size: var(--medida-avatar-sm);
+    font-size: var(--fuente-tamano-micro);
+  }
+  .avatar-md {
+    inline-size: var(--medida-avatar-md);
+    block-size: var(--medida-avatar-md);
+    font-size: var(--fuente-tamano-base);
+  }
+  .avatar-miniatura {
+    inline-size: var(--medida-miniatura);
+    block-size: var(--medida-miniatura);
+    font-size: var(--fuente-tamano-titulo-md);
+  }
+  .avatar-retrato {
+    inline-size: 100%;
+    max-inline-size: var(--medida-columna-lateral);
+    aspect-ratio: 1;
+    font-size: var(--fuente-tamano-display);
+  }
+  .avatar-foto {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+</style>

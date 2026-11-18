@@ -1,0 +1,18 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Boton from '../../../componentes/Boton.astro';
+import Profesional from '../../../islas/Profesional.astro';
+---
+
+<LayoutApp titulo="Horarios de un profesional">
+  <EncabezadoPantalla
+    titulo="Horarios del profesional"
+    indice="[A13] ASESORÍAS / HORARIOS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Asesorías', href: '/app/asesorias/' }, { etiqueta: 'Profesional', href: '/app/asesorias/' }, { etiqueta: 'Horarios' }]}
+    descripcion="Publica o retira los horarios del profesional, semana a semana."
+  >
+    <Boton slot="acciones" variante="secundario" href="#" data-accion="ficha">Volver a la ficha del profesional</Boton>
+  </EncabezadoPantalla>
+  <Profesional vista="horarios" admin />
+</LayoutApp>

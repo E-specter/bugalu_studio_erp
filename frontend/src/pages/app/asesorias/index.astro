@@ -1,0 +1,19 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Boton from '../../../componentes/Boton.astro';
+import Profesionales from '../../../islas/Profesionales.astro';
+---
+
+<LayoutApp titulo="Profesionales">
+  <EncabezadoPantalla
+    titulo="Profesionales"
+    indice="[A13] ASESORÍAS / PROFESIONALES"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Asesorías' }]}
+    descripcion="Quién da asesorías, qué cobra y si ya se ve en el directorio."
+  >
+    <Boton slot="acciones" variante="secundario" href="/app/asesorias/especialidades">Especialidades</Boton>
+    <Boton slot="acciones" variante="secundario" href="/app/usuarios">Asignar rol de profesional</Boton>
+  </EncabezadoPantalla>
+  <Profesionales vista="lista" />
+</LayoutApp>

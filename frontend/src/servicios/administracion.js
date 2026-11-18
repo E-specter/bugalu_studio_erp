@@ -15,5 +15,10 @@ export const listarUsuarios = (rol, documentoRepetido = false) => {
   return pedir(`/api/v1/usuarios${consulta ? `?${consulta}` : ''}`);
 };
 
+/**
+ * Profesional artistico: solo `rol` (sus especialidades van en su ficha).
+ * @param {string} id
+ * @param {{rol: string, especialidad?: string | null}} cambios
+ */
 export const cambiarUsuario = (id, { rol, especialidad }) =>
   pedir(`/api/v1/usuarios/${encodeURIComponent(id)}`, { method: 'PATCH', cuerpo: { rol, especialidad } });

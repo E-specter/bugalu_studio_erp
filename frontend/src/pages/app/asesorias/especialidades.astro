@@ -1,0 +1,18 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Boton from '../../../componentes/Boton.astro';
+import Profesionales from '../../../islas/Profesionales.astro';
+---
+
+<LayoutApp titulo="Especialidades">
+  <EncabezadoPantalla
+    titulo="Especialidades"
+    indice="[A14] ASESORÍAS / ESPECIALIDADES"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Asesorías', href: '/app/asesorias/' }, { etiqueta: 'Especialidades' }]}
+    descripcion="Las que pueden elegir los profesionales y filtrar los artistas. No se borran: se desactivan."
+  >
+    <Boton slot="acciones" variante="secundario" href="/app/asesorias/">Volver a profesionales</Boton>
+  </EncabezadoPantalla>
+  <Profesionales vista="especialidades" />
+</LayoutApp>

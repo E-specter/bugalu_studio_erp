@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Profesional from '../../../islas/Profesional.astro';
+---
+
+<LayoutApp titulo="Mis horarios">
+  <EncabezadoPantalla
+    titulo="Mis horarios"
+    indice="[E2] ASESORÍAS / HORARIOS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Horarios' }]}
+    descripcion="Publica cuándo pueden agendar contigo, semana a semana. Los clientes eligen dentro de estos bloques."
+  />
+  <Profesional vista="horarios" />
+</LayoutApp>

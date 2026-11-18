@@ -1,0 +1,834 @@
+---
+// <bugalu-profesional vista="ficha|horarios" admin?>: la ficha publica y los horarios de un profesional (specs RF-15-ficha y RF-15-horarios).
+// Una sola isla para el propio profesional y para el Administrador (`admin`: el profesional sale de ?id= y se suman estado y precios).
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Casilla from '../componentes/Casilla.astro';
+import Tabla from '../componentes/Tabla.astro';
+import Avatar from '../componentes/Avatar.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import CargaArchivos from './CargaArchivos.astro';
+import CambioSensible from './CambioSensible.astro';
+import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+
+interface Props {
+  vista: 'ficha' | 'horarios';
+  admin?: boolean;
+}
+const { vista, admin = false } = Astro.props;
+const principal = vista === 'ficha' ? { codigo: admin ? 'A1' : 'F1', titulo: admin ? 'Estado y precios' : 'Presentación' } : { codigo: 'H1', titulo: 'Publicados' };
+const noEncontrada = admin ? { etiqueta: 'Volver a profesionales', href: '/app/asesorias/' } : { etiqueta: 'Volver al inicio', href: '/app/' };
+const redes = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['facebook', 'Facebook'], ['youtube', 'YouTube'], ['spotify', 'Spotify'], ['otra', 'Otra']];
+const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
+---
+
+<EstilosGestion />
+
+<bugalu-profesional class="profesional" data-gestion vista={vista} admin={admin ? '' : undefined}>
+  <div data-avisos></div>
+  <!-- Region viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  <div data-salida><Panel {...principal} cargando /></div>
+  {admin && vista === 'ficha' && <CambioSensible />}
+
+  <EstadosIsla {principal} {noEncontrada} />
+
+  <template data-sello="exito"><EtiquetaTecnica variante="exito" texto=" " /></template>
+  <template data-sello="aviso"><EtiquetaTecnica variante="aviso" texto=" " /></template>
+
+  {vista === 'ficha' && (
+    <>
+      <template data-estado="datos">
+        <div data-falta hidden><Aviso variante="informacion" titulo=" " texto=" " /></div>
+        <div class="gestion-rejilla">
+          <form novalidate method="post" class="gestion-principal" data-formulario="ficha">
+            {admin && (
+              <Panel codigo="A1" titulo="Estado y precios">
+                <fieldset class="gestion-grupo">
+                  <legend>Estado y precios</legend>
+                  <Casilla nombre="activo" etiqueta="Activo" detalle="Se publica cuando además tiene una especialidad y un precio." />
+                  <div class="gestion-fila-campos">
+                    <Campo nombre="precio_30" etiqueta="Precio 30 min (S/)" ayuda="Déjalo vacío si no ofrece esta duración." {...ayudaImporte} />
+                    <Campo nombre="precio_60" etiqueta="Precio 1 h (S/)" ayuda="Déjalo vacío si no ofrece esta duración." {...ayudaImporte} />
+                  </div>
+                  <p class="gestion-ayuda" data-ayuda-igv hidden></p>
+                  <Aviso variante="informacion" titulo="Los precios valen para las asesorías nuevas; las ya agendadas guardan el suyo." />
+                </fieldset>
+              </Panel>
+            )}
+            <Panel codigo="F1" titulo="Presentación">
+              <div class="gestion-formulario">
+                <dl class="gestion-datos"><div><dt>Nombre</dt><dd data-campo="nombre"></dd></div></dl>
+                <p class="gestion-ayuda">{admin ? 'Es el de su cuenta. Cámbialo en ' : 'Es el de tu cuenta. Cámbialo en '}<a href={admin ? '/app/usuarios' : '/app/perfil'}>{admin ? 'Usuarios' : 'Mi perfil'}</a>.</p>
+                <Campo nombre="nombre_artistico" etiqueta="Nombre artístico" ayuda="Opcional. Si lo tienes, se muestra primero." maxlength="80" autocomplete="off" />
+                <Campo tipo="area" nombre="presentacion" etiqueta="Presentación" ayuda="Opcional. Cuenta qué haces y cómo puedes ayudar. Máximo 600 caracteres." maxlength="600" rows="5" />
+              </div>
+            </Panel>
+            <Panel codigo="F2" titulo="Especialidades">
+              <div class="campo" data-grupo-especialidades>
+                <fieldset class="gestion-grupo">
+                  <legend>Especialidades</legend>
+                  <p class="gestion-ayuda">Elige de 1 a 5.</p>
+                  <div class="gestion-grupo" data-especialidades></div>
+                </fieldset>
+              </div>
+              <p data-sin-especialidades hidden>Aún no hay especialidades. El Administrador debe crearlas antes de que elijas.</p>
+            </Panel>
+            <Panel codigo="F3" titulo="Redes">
+              <div class="gestion-formulario">
+                <div class="prof-filas" data-filas="red"></div>
+                <div><Boton variante="secundario" data-anadir-red>Añadir red</Boton></div>
+                <p class="gestion-ayuda" data-maximo-redes hidden>Máximo 5 redes.</p>
+              </div>
+            </Panel>
+            <div><Boton tipo="submit" data-envio>Guardar ficha</Boton></div>
+          </form>
+          <div class="gestion-lateral">
+            <Panel codigo="F4" titulo="Foto" variante="lateral">
+              <form novalidate method="post" class="gestion-formulario" data-formulario="foto">
+                <Avatar nombre=" " tamano="miniatura" rol="profesional" />
+                <CargaArchivos variante="foto" nombre="foto" etiqueta="Foto de perfil" ayuda={admin ? 'JPG, PNG o WebP, hasta 2 MB. Sin foto, se muestran sus iniciales.' : 'JPG, PNG o WebP, hasta 2 MB. Sin foto, se muestran tus iniciales.'} />
+                <div class="prof-acciones">
+                  <Boton tipo="submit" variante="secundario" data-envio data-subir-foto hidden>Subir foto</Boton>
+                  <Boton variante="secundario" data-envio data-quitar-foto hidden>Quitar foto</Boton>
+                </div>
+                <div data-foto-aviso></div>
+              </form>
+            </Panel>
+            <Panel codigo="F5" titulo="Publicación" variante="lateral">
+              <dl class="gestion-datos">
+                <div><dt>Estado</dt><dd data-publicacion></dd></div>
+                {!admin && <div><dt>Activo</dt><dd data-activo></dd></div>}
+                {!admin && <div><dt>Precios</dt><dd data-precios></dd></div>}
+              </dl>
+              {!admin && <p class="gestion-ayuda">La activación y los precios los fija el Administrador.</p>}
+              {!admin && <p><a href="/app/horarios/">Mis horarios</a></p>}
+            </Panel>
+          </div>
+        </div>
+      </template>
+      <template data-fila="red">
+        <fieldset class="gestion-grupo prof-fila">
+          <legend class="visualmente-oculto">Red</legend>
+          <Campo tipo="selector" nombre="red" etiqueta="Red">
+            {redes.map(([valor, nombre]) => <option value={valor}>{nombre}</option>)}
+          </Campo>
+          <Campo nombre="valor_red" etiqueta="Usuario o enlace" autocomplete="off" />
+          <Boton variante="secundario" data-quitar-red>Quitar red</Boton>
+        </fieldset>
+      </template>
+      <template data-casilla-especialidad><Casilla nombre="especialidades" etiqueta=" " valor="" /></template>
+    </>
+  )}
+
+  {vista === 'horarios' && (
+    <>
+      <template data-estado="datos">
+        <div class="gestion-periodo">
+          <p class="gestion-periodo-titulo" data-titulo-semana></p>
+          <nav class="gestion-periodo-enlaces" aria-label="Semana" data-periodo>
+            <EtiquetaTecnica texto="Semana anterior" href="#" />
+            <EtiquetaTecnica texto="Esta semana" href="#" />
+            <EtiquetaTecnica texto="Semana siguiente" href="#" />
+          </nav>
+        </div>
+        <div class="prof-nota" data-sin-publicar hidden><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Ver qué falta', href: '/app/ficha/' }} /></div>
+        <div class="gestion-principal">
+          <Panel codigo="H1" titulo="Publicados">
+            <div data-h1-vacio hidden>
+              <p class="gestion-vacio-titulo">No hay horarios publicados esta semana</p>
+              <p data-propuesta>Abajo tienes una propuesta: edítala y publícala.</p>
+            </div>
+            <Tabla titulo="Horarios publicados" columnas={['Día', 'Horario', 'Asesorías', '']} />
+          </Panel>
+          <Panel codigo="H2" titulo="Publicar horarios">
+            <p data-pasada hidden>Esta semana ya pasó.</p>
+            <form novalidate method="post" class="gestion-formulario" data-formulario="publicar">
+              <div data-nota="plantilla" hidden><Aviso variante="informacion" titulo=" " texto=" " /></div>
+              <div data-nota="sin-sugerencia" hidden><Aviso variante="informacion" titulo="No hay una semana anterior que copiar. Añade los bloques de cada día." /></div>
+              <p class="gestion-ayuda" data-nota="publicada" hidden>Para sumar horas, añade bloques y publícalos.</p>
+              <p class="gestion-ayuda">Bloques en horas en punto o y media, de al menos 30 minutos y sin cruzarse. Horario de Lima.</p>
+              <div class="gestion-formulario" data-dias></div>
+              <div><Boton tipo="submit" data-envio>Publicar horarios</Boton></div>
+            </form>
+          </Panel>
+        </div>
+      </template>
+      <template data-fila-publicada>
+        <tr>
+          <th scope="row" data-dia></th>
+          <td data-etiqueta="Horario" data-horario></td>
+          <td data-etiqueta="Asesorías" data-asesorias></td>
+          <td>
+            <Boton variante="peligro" data-envio data-retirar>Retirar bloque<span class="visualmente-oculto" data-objeto></span></Boton>
+            <span class="gestion-motivo" data-motivo hidden>Tiene asesorías agendadas</span>
+          </td>
+        </tr>
+      </template>
+      <template data-dia>
+        <fieldset class="gestion-grupo prof-dia" data-dia-editor>
+          <legend data-leyenda></legend>
+          <div class="prof-filas" data-filas></div>
+          <div><Boton variante="secundario" data-anadir>Añadir bloque<span class="visualmente-oculto" data-objeto></span></Boton></div>
+        </fieldset>
+      </template>
+      <template data-fila-edicion>
+        <div class="prof-bloque" role="group">
+          <Campo tipo="time" nombre="desde" etiqueta="Desde" step="1800" />
+          <Campo tipo="time" nombre="hasta" etiqueta="Hasta" step="1800" />
+          <Boton variante="secundario" icono="x" data-quitar aria-label="Quitar bloque" />
+        </div>
+      </template>
+    </>
+  )}
+</bugalu-profesional>
+
+<script>
+  // @ts-nocheck
+  import { IslaGestion, hacerUnico } from '../servicios/isla-gestion.js';
+  import { obtenerPerfil } from '../servicios/api.js';
+  import { obtenerImpuestos } from '../servicios/catalogo.js';
+  import {
+    obtenerProfesional, actualizarProfesional, subirFoto, quitarFoto, listarEspecialidades,
+    obtenerDisponibilidadProfesional, obtenerSugerenciaHorarios, publicarHorarios, retirarHorario,
+  } from '../servicios/asesorias.js';
+  import { ponerAvatar } from '../servicios/avatar.js';
+  import { hoyLima, fechaDe, horaDe, instante, sumarDias, lunesDe, semanaDe, rangoSemana, diaCorto, diaLargo, diaMes, nombreDia, leerImporte, mostrarImporte, soles, porcentaje, duracionReserva } from '../servicios/formatos.js';
+  import { ponerError, quitarError, mostrarAviso, enfocarAviso, limpiarAvisos, llenarAviso } from '../servicios/formulario.js';
+
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  const minutos = (hora) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5));
+  const finEnMinutos = (hasta) => minutos(hasta) || 1440; // HASTA 00:00 es la medianoche del dia siguiente
+  const finInstante = (fecha, hasta) => (finEnMinutos(hasta) === 1440 ? instante(sumarDias(fecha, 1), '00:00') : instante(fecha, hasta));
+  const horario = (inicio, fin) => `${horaDe(inicio)}–${horaDe(fin)}`;
+  const ERROR_IMPORTE = 'Escribe un importe mayor que 0, con hasta dos decimales, como 80,00.';
+
+  class BugaluProfesional extends IslaGestion {
+    admin = false;
+    id = '';
+    cargado = null;
+    contador = 0;
+
+    iniciar() {
+      this.admin = this.hasAttribute('admin');
+      if (!this.admin) this.textosEstado = { 'sin-permiso': ['Esta sección es para los profesionales de asesoría.'] };
+      this.noEncontrada = this.admin
+        ? ['No encontramos a este profesional.']
+        : ['Tu cuenta ya no tiene ficha de profesional', 'Si crees que es un error, habla con el Administrador.'];
+      this.avisosUrl = {};
+      this.addEventListener('click', (e) => {
+        const boton = e.target.closest('button');
+        if (!boton || boton.getAttribute('aria-disabled') === 'true') return;
+        if (boton.matches('[data-anadir-red]')) this.anadirRed();
+        else if (boton.matches('[data-quitar-red]')) this.quitarRed(boton.closest('.prof-fila'));
+        else if (boton.matches('[data-quitar-foto]')) this.quitarLaFoto(boton);
+        else if (boton.matches('[data-anadir]')) this.anadirBloque(boton.closest('fieldset'));
+        else if (boton.matches('[data-quitar]')) this.quitarBloque(boton.closest('.prof-bloque'));
+        else if (boton.matches('[data-retirar]')) this.retirar(boton);
+      });
+      this.addEventListener('input', (e) => e.target.closest('.prof-bloque') && this.etiquetarQuitar(e.target.closest('.prof-bloque')));
+      this.addEventListener('cambio', (e) => e.target.closest('bugalu-carga-archivos') && this.alCambiarFoto(e.target.closest('bugalu-carga-archivos')));
+    }
+
+    alEnviar(formulario) {
+      const accion = formulario.dataset.formulario;
+      if (accion === 'ficha') this.guardarFicha(formulario);
+      else if (accion === 'foto') this.subirLaFoto(formulario);
+      else this.publicar(formulario);
+    }
+
+    // 404: la ficha, el profesional o la ruta ya no existen.
+    fallo(error) {
+      if (error.estado === 404) return this.mostrar('no-encontrada');
+      super.fallo(error);
+    }
+
+    async terminado(titulo, texto) {
+      await this.cargar();
+      enfocarAviso(mostrarAviso(this, 'exito', titulo, texto));
+    }
+
+    // El profesional de la vista: el de la URL (Administrador) o el propio (GET /perfil, solo profesional o Administrador).
+    async idDeVista() {
+      if (this.admin) {
+        const id = new URLSearchParams(location.search).get('id');
+        if (!id) throw Object.assign(new Error('sin id'), { estado: 404 });
+        return id;
+      }
+      const yo = await obtenerPerfil();
+      if (yo.rol !== 'profesional' && yo.rol !== 'administrador') throw Object.assign(new Error('sin permiso'), { estado: 403 });
+      return yo.id;
+    }
+
+    titulo(texto) {
+      document.querySelector('.encabezado-titulo').textContent = texto;
+    }
+
+    // Enlace de la ranura `acciones` del encabezado (vive en la pagina, fuera de la isla).
+    accion(clave, href, texto) {
+      const enlace = document.querySelector(`[data-accion="${clave}"]`);
+      if (!enlace) return;
+      enlace.hidden = !href;
+      if (href) enlace.href = href;
+      if (texto) enlace.firstChild.textContent = texto;
+    }
+
+    sello(tipo, texto) {
+      const nodo = this.querySelector(`template[data-sello="${tipo}"]`).content.cloneNode(true);
+      nodo.querySelector('.etiqueta > span:last-child').textContent = texto;
+      return nodo;
+    }
+
+    // Lo que falta para ser publico, en el orden de la spec.
+    falta(p) {
+      const sus = this.admin;
+      return [
+        !p.activo && (sus ? 'activar el perfil' : 'que el Administrador active tu perfil'),
+        !p.especialidades.length && (sus ? 'que elija al menos una especialidad' : 'elegir al menos una especialidad'),
+        !p.duraciones.length && (sus ? 'fijar sus precios' : 'que el Administrador fije tus precios'),
+      ].filter(Boolean);
+    }
+
+    // ----- Ficha -----
+
+    async ficha() {
+      limpiarAvisos(this);
+      this.id = await this.idDeVista();
+      const [p, catalogo, impuestos] = await Promise.all([
+        obtenerProfesional(this.id),
+        listarEspecialidades(),
+        this.admin ? obtenerImpuestos().catch(() => null) : null,
+      ]);
+      this.cargado = p;
+      this.catalogo = catalogo;
+      const mostrado = p.nombre_artistico || p.nombre;
+      this.mostrar('datos');
+      this.querySelector('[data-campo="nombre"]').textContent = p.nombre;
+      this.querySelector('[name="nombre_artistico"]').value = p.nombre_artistico ?? '';
+      this.querySelector('[name="presentacion"]').value = p.presentacion ?? '';
+      this.pintarEspecialidades(catalogo, p.especialidades.map((e) => e.id));
+      for (const r of p.redes ?? []) this.anadirRed([r.red, r.valor], false);
+      this.limitesRedes();
+      this.pintarFoto(p);
+      this.pintarPublicacion(p);
+      if (this.admin) this.pintarEstadoYPrecios(p, impuestos);
+      if (this.admin) {
+        this.titulo(`Ficha de ${mostrado}`);
+        this.encabezado(`Activa a ${mostrado}, fija sus precios y revisa lo que muestra en el directorio.`, mostrado);
+        this.accion('horarios', `/app/asesorias/horarios?id=${encodeURIComponent(this.id)}`, `Horarios de ${mostrado}`);
+      } else this.accion('perfil-publico', p.publicado ? `/asesorias/profesional/?id=${encodeURIComponent(this.id)}` : '');
+      return `Ficha de ${mostrado}`;
+    }
+
+    pintarEspecialidades(catalogo, marcadas) {
+      this.querySelector('[data-sin-especialidades]').hidden = catalogo.length > 0;
+      this.querySelector('[data-grupo-especialidades]').hidden = catalogo.length === 0;
+      const modelo = this.querySelector('template[data-casilla-especialidad]');
+      this.querySelector('[data-especialidades]').replaceChildren(...catalogo.map((e, i) => {
+        const casilla = modelo.content.cloneNode(true);
+        casilla.querySelector('.casilla-etiqueta').textContent = e.nombre;
+        const entrada = casilla.querySelector('input');
+        entrada.value = e.id;
+        entrada.id = `especialidad-${i}`;
+        entrada.checked = marcadas.includes(e.id);
+        return casilla;
+      }));
+    }
+
+    pintarEstadoYPrecios(p, impuestos) {
+      this.querySelector('[name="activo"]').checked = p.activo;
+      for (const min of [30, 60]) {
+        const d = p.duraciones.find((x) => x.minutos === min);
+        this.querySelector(`[name="precio_${min}"]`).value = d ? mostrarImporte(d.precio) : '';
+      }
+      const ayuda = this.querySelector('[data-ayuda-igv]');
+      if (impuestos) {
+        ayuda.hidden = false;
+        const pct = porcentaje(impuestos.porcentaje_igv);
+        ayuda.textContent = impuestos.precios_incluyen_igv ? `Lo que paga el cliente, con IGV (${pct}) incluido.` : `Sin IGV: el IGV (${pct}) se suma al total.`;
+      }
+    }
+
+    pintarPublicacion(p) {
+      const falta = this.falta(p);
+      const caja = this.querySelector('[data-falta]');
+      caja.hidden = p.publicado;
+      if (!p.publicado) llenarAviso(caja.querySelector('.aviso'), this.admin ? `El perfil de ${p.nombre_artistico || p.nombre} aún no es público` : 'Tu perfil aún no es público', `Falta: ${falta.join(', ')}.`);
+      caja.querySelector('.aviso')?.removeAttribute('role');
+      const estado = this.querySelector('[data-publicacion]');
+      estado.replaceChildren(p.publicado ? this.sello('exito', 'PUBLICADO') : this.sello('aviso', 'SIN PUBLICAR'));
+      if (this.admin) return;
+      this.querySelector('[data-activo]').textContent = p.activo ? 'Sí' : 'No';
+      const lineas = [30, 60].map((min) => {
+        const d = p.duraciones.find((x) => x.minutos === min);
+        return d ? `${duracionReserva(min)} · ${soles(d.precio)}` : `No ofreces asesorías de ${duracionReserva(min)}`;
+      });
+      this.querySelector('[data-precios]').replaceChildren(...lineas.map((t) => Object.assign(document.createElement('span'), { className: 'prof-linea', textContent: t })));
+    }
+
+    // --- F3: filas de redes (formularios.md, filas repetibles) ---
+
+    anadirRed(valores = [], enfocar = true) {
+      const lista = this.querySelector('[data-filas="red"]');
+      if (lista.children.length >= 5) return;
+      const fila = this.querySelector('template[data-fila="red"]').content.cloneNode(true);
+      hacerUnico(fila, `r${++this.contador}`);
+      const campos = fila.querySelectorAll('input, select');
+      valores.forEach((v, i) => v !== undefined && (campos[i].value = v));
+      lista.append(fila);
+      this.limitesRedes();
+      if (enfocar) lista.lastElementChild.querySelector('select').focus();
+    }
+
+    quitarRed(fila) {
+      const siguiente = fila.nextElementSibling ?? fila.previousElementSibling;
+      fila.remove();
+      this.limitesRedes();
+      (siguiente?.querySelector('input, select') ?? this.querySelector('[data-anadir-red]')).focus();
+    }
+
+    limitesRedes() {
+      const filas = [...this.querySelectorAll('[data-filas="red"] .prof-fila')];
+      filas.forEach((f, i) => {
+        f.querySelector('legend').textContent = `Red ${i + 1}`;
+        f.querySelector('[data-quitar-red]').setAttribute('aria-label', `Quitar red ${i + 1}`);
+      });
+      this.querySelector('[data-anadir-red]').hidden = filas.length >= 5;
+      this.querySelector('[data-maximo-redes]').hidden = filas.length < 5;
+    }
+
+    guardarFicha(formulario) {
+      if (this.ocupado) return;
+      const errores = [];
+      const campo = (nombre) => formulario.querySelector(`[name="${nombre}"]`);
+      const artistico = campo('nombre_artistico');
+      const presentacion = campo('presentacion');
+      [artistico, presentacion].forEach(quitarError);
+      const marcadas = [...formulario.querySelectorAll('[name="especialidades"]:checked')];
+      const primera = formulario.querySelector('[name="especialidades"]');
+      if (primera) quitarError(primera);
+      if (artistico.value.trim().length > 80) errores.push({ entrada: artistico, mensaje: 'El nombre artístico admite hasta 80 caracteres.', texto: 'Nombre artístico' });
+      if (presentacion.value.trim().length > 600) errores.push({ entrada: presentacion, mensaje: 'La presentación admite hasta 600 caracteres.', texto: 'Presentación' });
+      if (primera && !this.admin && !marcadas.length) errores.push({ entrada: primera, mensaje: 'Elige al menos una especialidad.', texto: 'Especialidades' });
+      if (marcadas.length > 5) errores.push({ entrada: primera, mensaje: 'Elige como máximo 5 especialidades.', texto: 'Especialidades' });
+      const filas = [...formulario.querySelectorAll('[data-filas="red"] .prof-fila')];
+      const redes = filas.map((f) => ({ red: f.querySelector('select').value, valor: f.querySelector('[name="valor_red"]').value.trim() }));
+      filas.forEach((f, i) => {
+        const entrada = f.querySelector('[name="valor_red"]');
+        quitarError(entrada);
+        if (!redes[i].valor) errores.push({ entrada, mensaje: 'Escribe tu usuario o el enlace.', texto: `Red ${i + 1}` });
+      });
+      // Importes (Administrador): vacio = no ofrece esa duracion.
+      const precios = {};
+      if (this.admin) {
+        for (const min of [30, 60]) {
+          const entrada = campo(`precio_${min}`);
+          quitarError(entrada);
+          const texto = entrada.value.trim();
+          const valor = texto === '' ? null : leerImporte(texto);
+          if (texto !== '' && (valor === null || Number(valor) <= 0)) errores.push({ entrada, mensaje: ERROR_IMPORTE, texto: `Precio ${duracionReserva(min)}` });
+          precios[min] = valor;
+        }
+      }
+      if (!this.validar(errores)) return;
+      const cuerpo = {
+        nombre_artistico: artistico.value.trim() || null,
+        presentacion: presentacion.value.trim() || null,
+        redes,
+        ...(marcadas.length && { especialidades: marcadas.map((c) => c.value) }),
+        ...(this.admin && { activo: campo('activo').checked }),
+      };
+      const antes = this.cargado;
+      const mostrado = cuerpo.nombre_artistico || antes.nombre;
+      const exito = async (r) => {
+        const nuevo = r?.publicado && !antes.publicado;
+        await this.cargar();
+        const guardada = this.admin ? `Ficha de ${mostrado} guardada` : 'Ficha guardada';
+        const registro = this.admin && this.ctx?.conRegistro ? { enlace: { texto: 'Ver en el registro de cambios', href: '/app/cambios?recurso=profesional' } } : undefined;
+        enfocarAviso(nuevo ? mostrarAviso(this, 'exito', guardada, 'Ya está en el directorio.', registro) : mostrarAviso(this, 'exito', `${guardada}.`, '', registro));
+      };
+      const cambiados = this.admin ? [30, 60].filter((m) => (precios[m] ?? null) !== this.precioCargado(m)) : [];
+      this.ctx = null;
+      if (cambiados.length) {
+        const cambios = { precios: Object.fromEntries(cambiados.map((m) => [String(m), precios[m] === null ? null : Number(precios[m])])) }; // contrato: numeros, null = no ofrece
+        this.ctx = {
+          formulario, conRegistro: true, cuerpo, peticion: { recurso: 'profesional', id_recurso: this.id, cambios },
+          resto: () => actualizarProfesional(this.id, cuerpo), restoNombre: 'la ficha', cambiado: 'Los precios se cambiaron', exito,
+        };
+        return this.revisar(this.ctx);
+      }
+      // Sin precios cambiados el PATCH no los lleva; si el servidor aun asi exige confirmacion (428), se abre la misma revision.
+      this.cuerpoFicha = cuerpo;
+      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => actualizarProfesional(this.id, cuerpo), exito);
+    }
+
+    precioCargado(min) {
+      const d = this.cargado.duraciones.find((x) => x.minutos === min);
+      return d ? leerImporte(d.precio) : null;
+    }
+
+    errorEnvio(error) {
+      const aviso = (variante, titulo, texto, extra) => enfocarAviso(mostrarAviso(this, variante, titulo, texto, extra));
+      if (error.estado === 428 && error.codigo === 'confirmacion_requerida') {
+        // Red de seguridad: la revision se arma con lo que dice el servidor (`detalles.campos`) si la isla no vio cambios.
+        const ctx = this.ctx;
+        if (ctx && Object.keys(ctx.peticion.cambios).length) return this.revisar(ctx), true;
+        const campos = (error.detalles?.campos ?? []).filter((c) => /^precio_(30|60)$/.test(c));
+        const formulario = this.querySelector('[data-formulario="ficha"]');
+        if (!campos.length || !formulario) return false;
+        const cambios = { precios: Object.fromEntries(campos.map((c) => { const v = leerImporte(formulario.querySelector(`[name="${c}"]`).value); return [c.slice(-2), v === null ? null : Number(v)]; })) };
+        this.revisar({ formulario, conRegistro: true, peticion: { recurso: 'profesional', id_recurso: this.id, cambios }, resto: () => actualizarProfesional(this.id, this.cuerpoFicha ?? {}), restoNombre: 'la ficha', cambiado: 'Los precios se cambiaron', exito: async () => this.terminado('Ficha guardada.') });
+        return true;
+      }
+      if (error.estado === 409 && error.codigo === 'horario_solapado') aviso('error', 'Uno de los bloques se cruza con otro ya publicado', 'Revisa las horas y vuelve a publicar.');
+      else if (error.estado === 409 && error.codigo === 'horario_con_asesorias') this.avisoConAsesorias(error);
+      else if (error.estado === 404 && this.vista === 'horarios' && this.retirando) {
+        this.cargar().then(() => aviso('informacion', 'Ese bloque ya no existe', 'Actualizamos la semana.'));
+      } else if (error.estado === 404) this.sustituir('no-encontrada');
+      else if (error.estado === 413 || (error.estado === 422 && error.codigo === 'formato_no_admitido')) this.errorFoto(error);
+      else if (error.estado === 422 && error.detalles?.campo === 'especialidades') this.especialidadInactiva();
+      else if (error.estado === 422 && error.detalles?.campo && this.querySelector(`[name="${this.nombreCampo(error.detalles.campo)}"]`)) {
+        const entrada = this.querySelector(`[name="${this.nombreCampo(error.detalles.campo)}"]`);
+        const mensajes = { nombre_artistico: 'El nombre artístico admite hasta 80 caracteres.', presentacion: 'La presentación admite hasta 600 caracteres.' };
+        this.validar([{ entrada, mensaje: mensajes[entrada.name] ?? (entrada.name.startsWith('precio_') ? ERROR_IMPORTE : error.mensaje), texto: this.etiqueta(entrada) }]);
+      } else return false;
+      return true;
+    }
+
+    nombreCampo(campo) {
+      return /30/.test(campo) ? 'precio_30' : /60/.test(campo) ? 'precio_60' : campo;
+    }
+
+    // Una especialidad elegida se desactivo: se recarga el catalogo y se conserva lo demas.
+    async especialidadInactiva() {
+      const marcadas = [...this.querySelectorAll('[name="especialidades"]:checked')].map((c) => c.value);
+      try {
+        this.catalogo = await listarEspecialidades();
+      } catch {
+        return enfocarAviso(mostrarAviso(this, 'error', ...this.mensajeError({ estado: 0 })));
+      }
+      this.pintarEspecialidades(this.catalogo, marcadas);
+      enfocarAviso(mostrarAviso(this, 'informacion', 'Una especialidad ya no está disponible y la quitamos', 'Revisa y vuelve a guardar.'));
+    }
+
+    // --- F4: foto ---
+
+    pintarFoto(p) {
+      const form = this.querySelector('[data-formulario="foto"]');
+      this.foto = form;
+      const avatar = form.querySelector('.avatar');
+      ponerAvatar(avatar, p.nombre_artistico || p.nombre, p.foto_url, this.admin ? 'Foto actual' : 'Tu foto actual');
+      form.querySelector('[data-quitar-foto]').hidden = !p.foto_url;
+      form.querySelector('bugalu-carga-archivos').setAttribute('texto-boton', p.foto_url ? 'Cambiar foto' : 'Elegir foto');
+    }
+
+    alCambiarFoto(carga) {
+      const f = carga.archivo;
+      const form = this.foto;
+      form.querySelector('[data-subir-foto]').hidden = !f;
+      const p = this.cargado;
+      URL.revokeObjectURL(this.vistaPrevia ?? '');
+      this.vistaPrevia = f ? URL.createObjectURL(f) : null;
+      ponerAvatar(form.querySelector('.avatar'), p.nombre_artistico || p.nombre, this.vistaPrevia ?? p.foto_url, f ? 'Vista previa de la foto elegida' : (this.admin ? 'Foto actual' : 'Tu foto actual'));
+    }
+
+    subirLaFoto(formulario) {
+      const carga = formulario.querySelector('bugalu-carga-archivos');
+      const f = carga.archivo;
+      if (!f || this.ocupado) return;
+      this.enviar(formulario.querySelector('[data-subir-foto]'), 'Subiendo…', () => subirFoto(this.id, f), (p) => {
+        this.cargado = { ...this.cargado, ...p };
+        this.pintarFoto(this.cargado);
+        carga.reiniciar();
+        formulario.querySelector('[data-subir-foto]').hidden = true;
+        this.avisoFoto('Foto actualizada.');
+      });
+    }
+
+    quitarLaFoto(boton) {
+      this.enviar(boton, 'Quitando…', () => quitarFoto(this.id), () => {
+        this.cargado = { ...this.cargado, foto_url: null };
+        this.pintarFoto(this.cargado);
+        this.avisoFoto(this.admin ? 'Foto quitada. Se mostrarán sus iniciales.' : 'Foto quitada. Se mostrarán tus iniciales.');
+      });
+    }
+
+    avisoFoto(titulo) {
+      const zona = this.querySelector('[data-foto-aviso]');
+      const nodo = this.querySelector('template[data-plantilla="aviso-exito"]').content.cloneNode(true);
+      llenarAviso(nodo.querySelector('.aviso'), titulo);
+      zona.replaceChildren(nodo);
+      enfocarAviso(zona.querySelector('.aviso'));
+    }
+
+    // 413 y 422 del servidor: el mismo texto que la validacion del navegador; la foto anterior sigue.
+    errorFoto(error) {
+      const carga = this.querySelector('bugalu-carga-archivos');
+      carga.reiniciar();
+      this.foto.querySelector('[data-subir-foto]').hidden = true;
+      ponerError(this, carga.entrada, error.estado === 413 ? 'La foto pesa más de 2 MB. Elige una más liviana.' : 'Elige una foto JPG, PNG o WebP.');
+      carga.entrada.focus();
+    }
+
+    // ----- Horarios -----
+
+    async horarios() {
+      limpiarAvisos(this);
+      this.id = await this.idDeVista();
+      const parametro = new URLSearchParams(location.search).get('semana');
+      const actual = lunesDe(semanaDe(hoyLima()));
+      let lunes = lunesDe(parametro) ?? actual;
+      const invalida = () => mostrarAviso(this, 'informacion', 'La semana del enlace no es válida', 'Te mostramos esta semana.');
+      if (parametro !== null && !lunesDe(parametro)) invalida();
+      const p = await obtenerProfesional(this.id);
+      this.cargado = p;
+      const mostrado = p.nombre_artistico || p.nombre;
+      const pedir = (l) => obtenerDisponibilidadProfesional({ profesional: this.id, desde: instante(l, '00:00'), hasta: instante(sumarDias(l, 7), '00:00') });
+      let disponibilidad;
+      try {
+        disponibilidad = await pedir(lunes);
+      } catch (error) {
+        if (error.estado !== 422 || lunes === actual) throw error;
+        invalida();
+        lunes = actual;
+        disponibilidad = await pedir(lunes);
+      }
+      this.lunes = lunes;
+      const horarios = [...disponibilidad.horarios].sort((a, b) => a.inicio.localeCompare(b.inicio));
+      const pasada = sumarDias(lunes, 7) <= hoyLima();
+      const sugerencia = horarios.length || pasada ? [] : (await obtenerSugerenciaHorarios(this.id, semanaDe(lunes))).filter((s) => Date.parse(s.inicio) > Date.now());
+
+      this.mostrar('datos');
+      this.pintarPeriodo(lunes);
+      this.pintarSinPublicar(p, mostrado);
+      this.pintarPublicados(horarios, disponibilidad.ocupados ?? [], sugerencia.length > 0);
+      this.pintarEditor(lunes, horarios, sugerencia, pasada);
+      if (this.admin) {
+        this.titulo(`Horarios de ${mostrado}`);
+        this.encabezado(`Publica o retira los horarios de ${mostrado}, semana a semana.`);
+        const migas = document.querySelectorAll('.encabezado-ruta li');
+        const crumb = migas[2]?.querySelector('a');
+        if (crumb) { crumb.textContent = mostrado; crumb.href = `/app/asesorias/profesional?id=${encodeURIComponent(this.id)}`; }
+        this.accion('ficha', `/app/asesorias/profesional?id=${encodeURIComponent(this.id)}`, `Volver a la ficha de ${mostrado}`);
+      }
+      return plural(horarios.length, 'bloque publicado', 'bloques publicados') + ' esta semana';
+    }
+
+    enlaceSemana(lunes) {
+      const consulta = new URLSearchParams({ ...(this.admin && { id: this.id }), semana: semanaDe(lunes) });
+      return `${this.admin ? '/app/asesorias/horarios' : '/app/horarios/'}?${consulta}`;
+    }
+
+    pintarPeriodo(lunes) {
+      const [anterior, hoy, siguiente] = this.querySelectorAll('[data-periodo] a');
+      anterior.href = this.enlaceSemana(sumarDias(lunes, -7));
+      siguiente.href = this.enlaceSemana(sumarDias(lunes, 7));
+      hoy.href = this.admin ? `/app/asesorias/horarios?${new URLSearchParams({ id: this.id })}` : '/app/horarios/';
+      this.querySelector('[data-titulo-semana]').textContent = rangoSemana(lunes);
+    }
+
+    pintarSinPublicar(p, mostrado) {
+      const caja = this.querySelector('[data-sin-publicar]');
+      caja.hidden = p.publicado;
+      if (p.publicado) return;
+      const aviso = caja.querySelector('.aviso');
+      llenarAviso(aviso, this.admin ? `El perfil de ${mostrado} aún no es público: los artistas no verán estos horarios hasta que lo sea.` : 'Tu perfil aún no es público: los artistas no verán estos horarios hasta que lo sea.');
+      aviso.removeAttribute('role');
+      aviso.querySelector('.aviso-accion').href = this.admin ? `/app/asesorias/profesional?id=${encodeURIComponent(this.id)}` : '/app/ficha/';
+    }
+
+    pintarPublicados(horarios, ocupados, hayPropuesta) {
+      this.querySelector('[data-h1-vacio]').hidden = horarios.length > 0;
+      if (!hayPropuesta) this.querySelector('[data-propuesta]')?.remove();
+      const tabla = this.querySelector('[data-h1-vacio]').nextElementSibling;
+      tabla.hidden = horarios.length === 0;
+      const plantilla = this.querySelector('template[data-fila-publicada]');
+      tabla.querySelector('tbody').replaceChildren(...horarios.map((h, i) => {
+        const fila = plantilla.content.cloneNode(true).firstElementChild;
+        const asesorias = ocupados.filter((o) => Date.parse(o.inicio) < Date.parse(h.fin) && Date.parse(o.fin) > Date.parse(h.inicio)).length;
+        const fecha = fechaDe(h.inicio);
+        fila.querySelector('[data-dia]').textContent = diaCorto(fecha);
+        fila.querySelector('[data-horario]').textContent = horario(h.inicio, h.fin);
+        const yaEmpezo = Date.parse(h.inicio) <= Date.now();
+        fila.querySelector('[data-asesorias]').textContent = yaEmpezo ? 'Pasado' : asesorias ? plural(asesorias, 'asesoría', 'asesorías') : '—';
+        const boton = fila.querySelector('[data-retirar]');
+        if (yaEmpezo) {
+          boton.remove();
+          fila.querySelector('[data-motivo]').remove();
+          return fila;
+        }
+        boton.dataset.id = h.id;
+        fila.querySelector('[data-objeto]').textContent = ` del ${nombreDia(fecha)} ${Number(fecha.slice(8))} de ${horaDe(h.inicio)} a ${horaDe(h.fin)}`;
+        if (asesorias) {
+          const motivo = fila.querySelector('[data-motivo]');
+          motivo.id = `motivo-horario-${i}`;
+          motivo.hidden = false;
+          boton.setAttribute('aria-disabled', 'true');
+          boton.setAttribute('aria-describedby', motivo.id);
+        } else fila.querySelector('[data-motivo]').remove();
+        return fila;
+      }));
+    }
+
+    // --- Editor: un fieldset por dia desde hoy, filas DESDE / HASTA ---
+
+    pintarEditor(lunes, horarios, sugerencia, pasada) {
+      this.querySelector('[data-pasada]').hidden = !pasada;
+      this.querySelector('[data-formulario="publicar"]').hidden = pasada;
+      if (pasada) return;
+      const plantilla = this.querySelector('template[data-dia]');
+      const hoy = hoyLima();
+      const dias = Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i)).filter((f) => f >= hoy);
+      this.querySelector('[data-dias]').replaceChildren(...dias.map((fecha) => {
+        const dia = plantilla.content.cloneNode(true).firstElementChild;
+        dia.dataset.fecha = fecha;
+        dia.querySelector('legend').textContent = diaLargo(fecha);
+        dia.querySelector('[data-objeto]').textContent = ` al ${nombreDia(fecha)}`;
+        return dia;
+      }));
+      if (horarios.length) this.querySelector('[data-nota="publicada"]').hidden = false;
+      else if (sugerencia.length) {
+        const caja = this.querySelector('[data-nota="plantilla"]');
+        caja.hidden = false;
+        llenarAviso(caja.querySelector('.aviso'), `Te proponemos ${this.admin ? 'la' : 'tu'} última semana publicada. Cambia lo que haga falta antes de publicar.`);
+        caja.querySelector('.aviso').removeAttribute('role');
+      } else this.querySelector('[data-nota="sin-sugerencia"]').hidden = false;
+      this.querySelectorAll('[data-nota] .aviso').forEach((a) => a.removeAttribute('role'));
+      for (const s of sugerencia) {
+        const dia = this.querySelector(`fieldset[data-fecha="${fechaDe(s.inicio)}"]`);
+        if (dia) this.anadirBloque(dia, horaDe(s.inicio), horaDe(s.fin), false);
+      }
+    }
+
+    anadirBloque(dia, desde = '', hasta = '', enfocar = true) {
+      const fila = this.querySelector('template[data-fila-edicion]').content.cloneNode(true);
+      hacerUnico(fila, `b${++this.contador}`);
+      const grupo = fila.firstElementChild;
+      grupo.setAttribute('aria-label', `Bloque del ${nombreDia(dia.dataset.fecha)}`);
+      grupo.querySelector('[name="desde"]').value = desde;
+      grupo.querySelector('[name="hasta"]').value = hasta;
+      dia.querySelector('[data-filas]').append(fila);
+      this.etiquetarQuitar(grupo);
+      if (enfocar) grupo.querySelector('[name="desde"]').focus();
+    }
+
+    quitarBloque(fila) {
+      const dia = fila.closest('fieldset');
+      fila.remove();
+      dia.querySelector('[data-anadir]').focus();
+    }
+
+    etiquetarQuitar(fila) {
+      const desde = fila.querySelector('[name="desde"]').value;
+      const hasta = fila.querySelector('[name="hasta"]').value;
+      const dia = nombreDia(fila.closest('fieldset').dataset.fecha);
+      fila.querySelector('[data-quitar]').setAttribute('aria-label', desde && hasta ? `Quitar bloque de ${desde} a ${hasta} del ${dia}` : `Quitar bloque del ${dia}`);
+    }
+
+    // Valida las filas (por fila, un solo error) y publica solo las completas.
+    publicar(formulario) {
+      if (this.ocupado) return;
+      this.retirando = false;
+      const errores = [];
+      const horarios = [];
+      const ahora = Date.now();
+      for (const dia of formulario.querySelectorAll('fieldset[data-fecha]')) {
+        const leyenda = dia.querySelector('legend').textContent;
+        const filas = [...dia.querySelectorAll('.prof-bloque')].map((f) => ({ desde: f.querySelector('[name="desde"]'), hasta: f.querySelector('[name="hasta"]') })).filter((f) => f.desde.value || f.hasta.value);
+        const validas = [];
+        const fallo = (entrada, mensaje, campo) => errores.push({ entrada, mensaje, texto: `${leyenda} · ${campo}` });
+        for (const f of filas) {
+          [f.desde, f.hasta].forEach(quitarError);
+          const { value: d } = f.desde;
+          const { value: h } = f.hasta;
+          if (!d) fallo(f.desde, 'Elige la hora de inicio.', 'Desde');
+          else if (!h) fallo(f.hasta, 'Elige la hora de fin.', 'Hasta');
+          else if (minutos(d) % 30) fallo(f.desde, 'Usa horas en punto o y media.', 'Desde');
+          else if (minutos(h) % 30) fallo(f.hasta, 'Usa horas en punto o y media.', 'Hasta');
+          else if (finEnMinutos(h) <= minutos(d)) fallo(f.hasta, 'La hora de fin debe ser posterior a la de inicio.', 'Hasta');
+          else if (Date.parse(instante(dia.dataset.fecha, d)) <= ahora) fallo(f.desde, 'Esa hora ya pasó. Elige una hora futura.', 'Desde');
+          else validas.push({ ...f, ini: minutos(d), fin: finEnMinutos(h), d, h });
+        }
+        const marcadas = new Set();
+        validas.forEach((a, i) => validas.slice(i + 1).forEach((b) => {
+          if (a.ini >= b.fin || b.ini >= a.fin) return;
+          for (const [x, y] of [[a, b], [b, a]]) {
+            if (marcadas.has(x)) continue;
+            marcadas.add(x);
+            fallo(x.desde, `Se cruza con el bloque de ${y.d}–${y.h} del mismo día.`, 'Desde');
+          }
+        }));
+        validas.forEach((f) => horarios.push({ inicio: instante(dia.dataset.fecha, f.d), fin: finInstante(dia.dataset.fecha, f.h) }));
+      }
+      if (!this.validar(errores, ['bloque', 'bloques'])) return;
+      if (!horarios.length) return enfocarAviso(mostrarAviso(this, 'error', 'Añade al menos un bloque', 'Pon las horas de inicio y de fin de cada día que abras.'));
+      const publicado = this.cargado.publicado;
+      const ya = this.admin ? 'Ya se ven en su perfil.' : 'Ya se ven en tu perfil.';
+      this.enviar(formulario.querySelector('[data-envio]'), 'Publicando…', () => publicarHorarios(this.id, horarios), () => (publicado ? this.terminado('Horarios publicados', ya) : this.terminado('Horarios publicados.')));
+    }
+
+    retirar(boton) {
+      this.retirando = true;
+      this.enviar(boton, 'Retirando…', () => retirarHorario(this.id, boton.dataset.id), () => this.terminado('Bloque retirado.'));
+    }
+
+    avisoConAsesorias(error) {
+      const aviso = mostrarAviso(this, 'error', 'Este bloque tiene asesorías agendadas', this.admin ? 'Cancélalas o reprográmalas antes de retirarlo.' : 'Pide al Administrador que las cancele o reprograme antes de retirarlo.');
+      const lista = document.createElement('ul');
+      for (const a of error.detalles?.asesorias ?? []) lista.append(Object.assign(document.createElement('li'), { textContent: `${a.folio} · ${diaMes(fechaDe(a.inicio))}, ${horaDe(a.inicio)}` }));
+      if (lista.children.length) aviso.querySelector('.aviso-cuerpo').append(lista);
+      enfocarAviso(aviso);
+    }
+  }
+
+  if (!customElements.get('bugalu-profesional')) customElements.define('bugalu-profesional', BugaluProfesional);
+</script>
+
+<style>
+  .profesional {
+    display: block;
+  }
+  .profesional :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  .profesional :global([data-falta]:not([hidden])),
+  .profesional :global(.prof-nota:not([hidden])) {
+    margin-block-end: var(--espacio-4);
+  }
+  .profesional :global(.prof-filas) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+  }
+  .profesional :global(.prof-fila) {
+    padding-block-end: var(--espacio-3);
+    border-block-end: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+  }
+  .profesional :global(.prof-fila > .boton) {
+    align-self: flex-start;
+  }
+  .profesional :global(.prof-bloque) {
+    display: grid;
+    gap: var(--espacio-3);
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+  }
+  .profesional :global(.prof-dia) {
+    padding-block-end: var(--espacio-4);
+    border-block-end: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+  }
+  .profesional :global(.prof-acciones) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+  }
+  .profesional :global(.prof-linea) {
+    display: block;
+  }
+  .profesional :global([data-foto-aviso]:empty) {
+    display: none;
+  }
+</style>

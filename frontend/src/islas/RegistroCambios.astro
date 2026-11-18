@@ -9,7 +9,7 @@ import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
 import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
 
 const principal = { titulo: 'Cambios' };
-const recursos = [['', 'Todos'], ['impuestos', 'Impuestos'], ['servicio', 'Servicios'], ['especialista', 'Especialistas'], ['recargos', 'Recargos'], ['parametros', 'Parámetros']];
+const recursos = [['', 'Todos'], ['impuestos', 'Impuestos'], ['servicio', 'Servicios'], ['especialista', 'Especialistas'], ['recargos', 'Recargos'], ['parametros', 'Parámetros'], ['profesional', 'Profesionales']];
 ---
 
 <EstilosGestion />
@@ -71,7 +71,7 @@ const recursos = [['', 'Todos'], ['impuestos', 'Impuestos'], ['servicio', 'Servi
   import { hoyLima, esFecha, sumarDias, fechaDe, horaDe, diaMes, diaMesAnio } from '../servicios/formatos.js';
   import { mostrarAviso, enfocarAviso, quitarError } from '../servicios/formulario.js';
 
-  const RECURSOS = { impuestos: 'IMPUESTOS', servicio: 'SERVICIO', especialista: 'ESPECIALISTA', recargos: 'RECARGOS', parametros: 'PARÁMETROS' };
+  const RECURSOS = { impuestos: 'IMPUESTOS', servicio: 'SERVICIO', especialista: 'ESPECIALISTA', recargos: 'RECARGOS', parametros: 'PARÁMETROS', profesional: 'PROFESIONAL' };
   const ERROR_RANGO = 'Elige una fecha final igual o posterior a la inicial, con hasta 366 días de diferencia.';
   const DIA_MS = 864e5;
   const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;

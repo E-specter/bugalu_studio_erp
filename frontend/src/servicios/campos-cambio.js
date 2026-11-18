@@ -15,6 +15,8 @@ export const CAMPOS = {
   'noche.hasta': ['NOCHE HASTA', sinFormato],
   'fin_de_semana.porcentaje': ['FIN DE SEMANA (%)', porcentaje],
   'feriado.porcentaje': ['FERIADO (%)', porcentaje],
+  precio_30: ['PRECIO 30 MIN', (v) => (v === 'no_ofrece' ? 'No ofrece' : soles(v))], // RF-15: asesoria del profesional
+  precio_60: ['PRECIO 1 H', (v) => (v === 'no_ofrece' ? 'No ofrece' : soles(v))],
   porcentaje_igv: ['PORCENTAJE DE IGV', porcentaje],
   precios_incluyen_igv: ['LOS PRECIOS INCLUYEN IGV', (v) => (String(v) === 'true' ? 'Sí' : 'No')],
   dias_limite_pago: ['DÍAS ANTES DEL INICIO', unidad('día', 'días')],

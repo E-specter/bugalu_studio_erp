@@ -8,7 +8,7 @@ import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
 import Icono from '../componentes/internos/Icono.astro';
 
 interface Props {
-  modo: 'reserva' | 'personal';
+  modo: 'reserva' | 'personal' | 'asesoria';
 }
 const { modo } = Astro.props;
 const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
@@ -37,7 +37,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
     <Panel titulo=" ">
       <div slot="acciones" class="cal-barra" data-barra></div>
       <p class="cal-vacio-titulo">Aún no hay horarios publicados</p>
-      <p>Publicamos la agenda semana a semana. Mira la siguiente semana o vuelve pronto.</p>
+      <p data-vacio-texto>Publicamos la agenda semana a semana. Mira la siguiente semana o vuelve pronto.</p>
       <div class="cal-acciones">
         <Boton variante="secundario" href="#" data-siguiente>Ver semana siguiente</Boton>
         <Boton variante="secundario" href="#" data-publicar hidden>Publicar franjas de esta semana</Boton>
@@ -82,6 +82,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
     </tr>
   </template>
   <template data-aviso="informacion"><Aviso variante="informacion" titulo=" " texto=" " /></template>
+  <template data-aviso="sesion"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Iniciar sesión', href: '/acceso' }} /></template>
 
   <!-- Piezas del catálogo que la isla clona al construir la cuadrícula. -->
   {filtros.map((v) => <template data-pieza={`etiqueta-${v}`}><EtiquetaTecnica variante={v} texto=" " /></template>)}
@@ -104,6 +105,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
 
 <script>
   import { listarSalas, obtenerDisponibilidad, listarMisReservas, listarReservas } from '../servicios/reservas.js';
+  import { obtenerDisponibilidadProfesional } from '../servicios/asesorias.js';
   import { obtenerPerfil } from '../servicios/api.js';
   import { obtenerToken } from '../servicios/sesion.js';
   import { llenarAviso } from '../servicios/formulario.js';
@@ -117,6 +119,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
   // Estados con bloque unido (rowspan); la media hora libre nunca se une: cada una es un botón.
   const UNIBLES = ['ocupado', 'propio', 'cerrado', 'noreservable', 'pasado'];
   const TEXTO: Record<string, string> = { libre: 'LIBRE', ocupado: 'OCUPADO', propio: 'TU RESERVA', cerrado: 'CERRADO', noreservable: 'NO RESERVABLE', pasado: 'PASADO' };
+  const TEXTO_ASESORIA: Record<string, string> = { ...TEXTO, propio: 'TU ASESORÍA' };
 
   const dur = (m: number) => [Math.floor(m / 60) && `${Math.floor(m / 60)} h`, m % 60 && `${m % 60} min`].filter(Boolean).join(' ') || '0 min';
   const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
@@ -138,11 +141,12 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
     return e;
   }
 
-  const textoError = (e: any): [string, string?] =>
-    e.estado === 503 ? ['El calendario no responde', 'Inténtalo de nuevo en unos minutos.'] : e.estado === 0 ? ['Sin conexión', 'Revisa tu red y vuelve a intentarlo.'] : ['Algo salió mal al cargar el calendario.'];
+  const textoError = (e: any, que = 'calendario'): [string, string?] =>
+    e.estado === 503 ? [que === 'calendario' ? 'El calendario no responde' : 'Los horarios no responden', 'Inténtalo de nuevo en unos minutos.'] : e.estado === 0 ? ['Sin conexión', 'Revisa tu red y vuelve a intentarlo.'] : [`Algo salió mal al cargar ${que === 'calendario' ? 'el calendario' : 'los horarios'}.`];
 
   class BugaluCalendario extends HTMLElement {
-    static observedAttributes = ['duracion'];
+    sesionCaducada = false;
+    static observedAttributes = ['duracion', 'profesional'];
     modo = 'reserva';
     estado: any = {};
     salas: any[] | null = null;
@@ -166,7 +170,8 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
         const selector = (e.target as Element).closest<HTMLSelectElement>('select[name="sala"]');
         if (selector) this.ir({ sala: selector.value });
       });
-      this.cargar();
+      // Asesoria: la pagina pone el atributo `profesional` cuando el perfil ya cargo ("el calendario espera al perfil").
+      if (this.modo !== 'asesoria' || this.getAttribute('profesional')) this.cargar();
     }
 
     disconnectedCallback() {
@@ -174,6 +179,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
     }
 
     attributeChangedCallback(nombre: string, _antes: string | null, valor: string | null) {
+      if (nombre === 'profesional' && valor && this.isConnected && this.modo === 'asesoria') this.cargar();
       if (nombre === 'duracion' && this.estado) {
         this.estado.duracion = duracionValida(valor);
         if (this.datos) this.pintar();
@@ -252,6 +258,13 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
     avisos() {
       const zona = this.querySelector('[data-avisos]')!;
       zona.replaceChildren();
+      if (this.sesionCaducada) {
+        const sesion = this.querySelector<HTMLTemplateElement>('template[data-aviso="sesion"]')!.content.firstElementChild!.cloneNode(true) as HTMLElement;
+        llenarAviso(sesion, 'Tu sesión caducó', 'Inicia sesión para ver tus asesorías en el calendario.');
+        sesion.removeAttribute('role');
+        sesion.querySelector<HTMLAnchorElement>('.aviso-accion')!.href = `/acceso?${new URLSearchParams({ volver: location.pathname + location.search })}`;
+        zona.append(sesion);
+      }
       if (!this.avisoFecha) return;
       const aviso = (this.querySelector<HTMLTemplateElement>('template[data-aviso="informacion"]')!.content.firstElementChild!.cloneNode(true)) as HTMLElement;
       llenarAviso(aviso, 'La fecha del enlace no es válida', 'Te mostramos esta semana.');
@@ -311,10 +324,10 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       } else if (error.estado === 403) {
         this.mostrar('sin-permiso');
         llenarAviso(this.querySelector('[data-salida] .aviso')!, 'La agenda es solo para el equipo del estudio.', undefined as any);
-      } else if (error.estado === 404) this.sinSala();
+      } else if (error.estado === 404 && this.modo !== 'asesoria') this.sinSala();
       else {
         this.mostrar('error');
-        llenarAviso(this.querySelector('[data-salida] .aviso')!, ...(textoError(error) as [string, string]));
+        llenarAviso(this.querySelector('[data-salida] .aviso')!, ...(textoError(error, this.modo === 'asesoria' ? 'horarios' : 'calendario') as [string, string]));
       }
     }
 
@@ -331,6 +344,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
     // Devuelve el texto del anuncio (o null si lo da el aviso del estado).
     async resolver(): Promise<string | null> {
       const { vista } = this.estado;
+      if (this.modo === 'asesoria') return this.resolverAsesoria();
       if (this.modo === 'personal') {
         const yo = await obtenerPerfil();
         this.rol = yo.rol;
@@ -368,6 +382,26 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       return anuncio;
     }
 
+    // Disponibilidad del profesional: los `horarios` hacen de franjas, sin cierres ni margen. Con sesion caducada (401) se repite sin ella.
+    async resolverAsesoria(): Promise<string | null> {
+      const { desde, hasta } = this.rango();
+      const pedido = { profesional: this.getAttribute('profesional')!, desde: instante(desde, '00:00'), hasta: instante(hasta, '00:00') };
+      let datos;
+      this.sesionCaducada = false;
+      try {
+        datos = await obtenerDisponibilidadProfesional(pedido);
+      } catch (error: any) {
+        if (error.estado !== 401) throw error;
+        this.sesionCaducada = true;
+        datos = await obtenerDisponibilidadProfesional({ ...pedido, anonimo: true });
+      }
+      this.avisos();
+      this.datos = { ...datos, franjas: datos.horarios, cierres: [] };
+      this.propias = {};
+      if (!datos.horarios.length) return this.pintarVacio();
+      return this.pintar();
+    }
+
     // Un inicio restaurado desde la URL emite el mismo evento que al elegirlo, para que Reserva limite la duración. Reserva lo vuelve a pedir al enlazarse (sin datos aún, no hace nada: lo emitirá al cargar).
     avisarInicio() {
       const { inicio } = this.estado;
@@ -388,6 +422,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       siguiente.textContent = mes ? 'Ver mes siguiente' : 'Ver semana siguiente';
       siguiente.href = this.url({ ...this.estado, fecha: this.desplazada(1) });
       siguiente.dataset.periodo = 'siguiente';
+      if (this.modo === 'asesoria') this.querySelector('[data-vacio-texto]')!.textContent = `${this.getAttribute('nombre') ?? 'El profesional'} publica su agenda semana a semana. Mira ${mes ? 'el mes siguiente' : 'la siguiente'} o vuelve pronto.`;
       const publicar = this.querySelector<HTMLAnchorElement>('[data-publicar]')!;
       if (this.modo === 'personal' && this.rol === 'administrador') {
         publicar.hidden = false;
@@ -424,6 +459,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
         a.dataset.enlace = `vista-${v}`;
         return a;
       }));
+      if (this.modo === 'asesoria') return [periodo, vistasNav];
       const salas = this.salas!;
       let sala: HTMLElement;
       if (salas.length > 1 && !this.hasAttribute('sala-fija')) {
@@ -458,7 +494,9 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
         const oc = choca(ocupados, s, s + MEDIA);
         if (oc >= 0) return { e: d.ocupados[oc].propia ? 'propio' : 'ocupado', clave: `o${oc}`, oc, s };
         if (s < ahora) return { e: 'pasado', clave: 'p', s };
-        const cabe = enFranja(s + MEDIA) && choca(cierres, s, s + 2 * MEDIA) < 0 && choca(ocupados, s, s + 2 * MEDIA) < 0 && s >= desde && s < hasta;
+        // Sala: la media hora y los 30 min de margen que la siguen caben en la franja; asesoria: no hay margen entre asesorias.
+        const margen = this.modo === 'asesoria' ? 0 : MEDIA;
+        const cabe = (!margen || enFranja(s + MEDIA)) && choca(cierres, s, s + MEDIA + margen) < 0 && choca(ocupados, s, s + MEDIA + margen) < 0 && s >= desde && s < hasta;
         return cabe ? { e: 'libre', clave: 'l', s } : { e: 'noreservable', clave: 'n', s };
       };
       // Minutos que caben desde un inicio: el hueco seguido menos el margen de 30 min, con tope de 8 h.
@@ -487,11 +525,15 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       const cuerpo = this.querySelector('[data-cuerpo]')!;
       const estados = new Set<string>();
       cuerpo.replaceChildren(...(lista ? this.mes() : this.semana(estados)));
-      this.querySelector('[data-leyenda]')!.replaceChildren(...[...estados].map((e) => h('li', {}, (() => { const t = this.pieza('etiqueta-neutra'); t.querySelector('span')!.textContent = TEXTO[e]; return t; })())));
+      this.querySelector('[data-leyenda]')!.replaceChildren(...[...estados].map((e) => h('li', {}, (() => { const t = this.pieza('etiqueta-neutra'); t.querySelector('span')!.textContent = this.textos[e]; return t; })())));
       this.fijarTabulable();
       const dias = this.datos.dias.filter((x: any) => !lista || x.fecha.slice(0, 7) === this.estado.fecha.slice(0, 7));
       const total = dias.reduce((s: number, x: any) => s + x.minutos_libres, 0);
       return `${capital(titulo)}: ${totalTexto(total)}.`;
+    }
+
+    get textos() {
+      return this.modo === 'asesoria' ? TEXTO_ASESORIA : TEXTO;
     }
 
     texto(el: HTMLElement | null, t: string) {
@@ -585,6 +627,8 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
 
     // Contenido de un bloque unido, el mismo en la tabla y en la lista de días.
     contenidoBloque(c: any): HTMLElement[] {
+      // Asesoria: nunca datos de nadie; la propia es solo texto (sin folio ni enlace hasta la etapa B).
+      if (this.modo === 'asesoria') return [c.e === 'ocupado' ? this.etiqueta('neutra', 'OCUPADO') : h('span', { class: 'cal-texto' }, this.textos[c.e])];
       if (c.e === 'cerrado') return [this.pieza('icono-lock'), h('span', { class: 'cal-texto' }, 'CERRADO', h('span', { class: 'cal-motivo' }, this.datos.cierres[c.ci].motivo))];
       if (c.e === 'ocupado' || c.e === 'propio') {
         const r = this.reservaDe(c);
@@ -601,16 +645,18 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
         }
         return [this.etiqueta('neutra', 'OCUPADO')];
       }
-      return [h('span', { class: 'cal-texto' }, TEXTO[c.e])];
+      return [h('span', { class: 'cal-texto' }, this.textos[c.e])];
     }
 
-    celda(c: any, dia: number, largo: number, grid: boolean) {
+    celda(c: any, dia: number, filas: number, grid: boolean) {
       c.dia = dia;
+      // Asesoria (solo lectura): el nombre accesible de la celda va oculto antes de su texto.
+      const nombre = (fin: number) => (this.modo === 'asesoria' ? [h('span', { class: 'visualmente-oculto' }, `${largo(c.f)}, ${hm(c.s)}${fin ? ` a ${hm(fin)}` : ''}, `)] : []);
       if (c.e === 'libre') {
-        if (!grid) return h('td', { class: 'cal-celda cal-celda-libre' }, h('span', { class: 'cal-texto' }, 'LIBRE'));
+        if (!grid) return h('td', { class: 'cal-celda cal-celda-libre' }, ...nombre(0), h('span', { class: 'cal-texto' }, 'LIBRE'));
         return h('td', { class: 'cal-celda' }, this.botonLibre(c));
       }
-      return h('td', { class: 'cal-celda', rowspan: largo > 1 ? largo : null, 'data-estado': c.e }, ...this.contenidoBloque(c));
+      return h('td', { class: 'cal-celda', rowspan: filas > 1 ? filas : null, 'data-estado': c.e }, ...nombre(c.s + filas * MEDIA), ...this.contenidoBloque(c));
     }
 
     botonLibre(c: any) {
@@ -667,9 +713,9 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
         const contenido = this.contenidoBloque(c);
         const enlace = contenido.find((x) => x.tagName === 'A') as HTMLElement | undefined;
         if (enlace) { enlace.removeAttribute('data-nav'); return [enlace]; }
-        return [c.e === 'propio' ? 'TU RESERVA' : 'OCUPADO'];
+        return [this.textos[c.e]];
       }
-      return [TEXTO[c.e]];
+      return [this.textos[c.e]];
     }
 
     // --- Mes ---

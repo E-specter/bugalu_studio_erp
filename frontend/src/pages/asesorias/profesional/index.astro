@@ -1,0 +1,23 @@
+---
+import LayoutPublico from '../../../layouts/LayoutPublico.astro';
+import Directorio from '../../../islas/Directorio.astro';
+import Icono from '../../../componentes/internos/Icono.astro';
+---
+
+<LayoutPublico titulo="Perfil · Asesorías">
+  <p class="volver"><a href="/asesorias/"><Icono nombre="chevron-left" />Volver al directorio</a></p>
+  <Directorio vista="perfil" />
+</LayoutPublico>
+
+<style>
+  .volver {
+    margin: 0 0 var(--espacio-6);
+  }
+  .volver a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--espacio-1);
+    min-block-size: var(--medida-control-tactil);
+    color: var(--color-texto-principal);
+  }
+</style>

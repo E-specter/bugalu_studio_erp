@@ -12,15 +12,18 @@ interface Props {
 }
 const { titulo } = Astro.props;
 // Los destinos con `solo` (roles separados por espacio) nacen ocultos y el script los muestra según el rol del perfil (la API es la barrera real: 403).
-// Etiquetas de 9 caracteres como máximo (navegación táctil). Orden de navegacion-lateral.md#variantes; la barra táctil admite cinco: del sexto en adelante del Administrador (Franjas, Tarifas, Cambios, Textos y Reclamos) van al menú de la cabecera.
+// Etiquetas de 9 caracteres como máximo (navegación táctil). Orden de navegacion-lateral.md#variantes; la barra táctil admite cinco: del sexto en adelante del Administrador (Franjas, Asesorías, Tarifas, Cambios, Textos y Reclamos) van al menú de la cabecera.
 const destinos = [
   { etiqueta: 'Inicio', href: '/app/', icono: 'house' as const },
   { etiqueta: 'Reservas', href: '/app/reservas/', icono: 'calendar-check' as const, solo: 'cliente' },
   { etiqueta: 'Agenda', href: '/app/agenda/', icono: 'calendar' as const, solo: 'personal administrador' },
+  { etiqueta: 'Ficha', href: '/app/ficha/', icono: 'id-card' as const, solo: 'profesional' },
+  { etiqueta: 'Horarios', href: '/app/horarios/', icono: 'calendar-cog' as const, solo: 'profesional' },
   { etiqueta: 'Pagos', href: '/app/pagos/', icono: 'receipt' as const, solo: 'administrador', vivo: 'pagos' },
   { etiqueta: 'Accesos', href: '/app/solicitudes/', icono: 'user-plus' as const, solo: 'administrador' },
   { etiqueta: 'Usuarios', href: '/app/usuarios/', icono: 'users' as const, solo: 'administrador' },
   { etiqueta: 'Franjas', href: '/app/franjas/', icono: 'calendar-cog' as const, solo: 'administrador' },
+  { etiqueta: 'Asesorías', href: '/app/asesorias/', icono: 'messages-square' as const, solo: 'administrador' },
   { etiqueta: 'Tarifas', href: '/app/tarifas/', icono: 'tag' as const, solo: 'administrador' },
   { etiqueta: 'Cambios', href: '/app/cambios/', icono: 'history' as const, solo: 'administrador' },
   { etiqueta: 'Textos', href: '/app/textos/', icono: 'file-text' as const, solo: 'administrador' },
@@ -37,7 +40,7 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
       <!-- RF-16: Mis reclamos solo para el cliente; el Administrador entra por RECLAMOS en la navegación. Nace oculto hasta conocer el rol. -->
       <a slot="menu" href="/app/reclamos/" data-solo="cliente" aria-current={Astro.url.pathname.startsWith('/app/reclamos') ? 'page' : undefined} hidden>Mis reclamos</a>
       <!-- El destino que no cabe en la barra táctil; solo < punto-quiebre-escritorio. Nace oculto hasta conocer el rol. -->
-      {destinos.slice(-5).map((d) => (
+      {destinos.slice(-6).map((d) => (
         <a slot="menu" class="menu-solo-movil" href={d.href} data-solo={d.solo} aria-current={d.href === actual ? 'page' : undefined} hidden>{d.etiqueta}</a>
       ))}
       <!-- Sin JS no sirve: nace oculto y lo muestra el script. -->
@@ -45,7 +48,7 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
     </CabeceraApp>
 
     <!-- < punto-quiebre-escritorio: fija bajo la fila 1 de la cabecera (estructura-app, "Lo fijo") -->
-    <div class="app-nav-tactil"><NavegacionTactil destinos={destinos.slice(0, -5)} {actual} /></div>
+    <div class="app-nav-tactil"><NavegacionTactil destinos={destinos.slice(0, -6)} {actual} /></div>
 
     <!-- >= punto-quiebre-escritorio -->
     <div class="app-nav-lateral"><NavegacionLateral {destinos} {actual} neutro /></div>

@@ -25,6 +25,8 @@ import Archivo from '../componentes/Archivo.astro';
 import BarraAcciones from '../componentes/BarraAcciones.astro';
 import CargaArchivos from '../islas/CargaArchivos.astro';
 import HojaReclamacion from '../componentes/HojaReclamacion.astro';
+import Avatar from '../componentes/Avatar.astro';
+import TarjetaProfesional from '../componentes/TarjetaProfesional.astro';
 
 const destinos = [
   { etiqueta: 'Inicio', href: '/app/', icono: 'house' as const },
@@ -331,6 +333,31 @@ const destinos = [
     <h3>Hasta 3 archivos, sin vista previa</h3>
     <form enctype="multipart/form-data">
       <CargaArchivos variante="reclamo" id="catalogo-adjuntos" nombre="adjuntos" etiqueta="Adjuntos (opcional)" ayuda="Comprobantes, capturas o fotos. Hasta 3 archivos PDF, JPG o PNG de 5 MB cada uno." />
+    </form>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-avatar">
+    <h2 id="g-avatar">Avatar</h2>
+    <div class="fila">
+      <Avatar nombre="Ana Pérez" tamano="sm" />
+      <Avatar nombre="Ana Pérez" tamano="md" />
+      <Avatar nombre="Luis Mora" tamano="md" rol="personal" />
+      <Avatar nombre="Ana Pérez" tamano="miniatura" rol="profesional" />
+    </div>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-tarjeta-profesional">
+    <h2 id="g-tarjeta-profesional">Tarjeta de profesional</h2>
+    <div class="rejilla">
+      <TarjetaProfesional nombre="Ana Pérez" nombre_artistico="Ana Beat" especialidades={[{ id: 'e1', nombre: 'Producción' }, { id: 'e2', nombre: 'Mezcla' }]} duraciones={[{ minutos: 30, precio: '80.00' }, { minutos: 60, precio: '140.00' }]} href="#perfil" nivel={3} />
+      <TarjetaProfesional nombre="Luis Mora" especialidades={[{ id: 'e1', nombre: 'Coros' }]} duraciones={[{ minutos: 60, precio: '120.00' }]} href="#perfil2" nivel={3} />
+    </div>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-carga-foto">
+    <h2 id="g-carga-foto">Carga de archivos: foto de perfil</h2>
+    <form enctype="multipart/form-data">
+      <CargaArchivos variante="foto" id="catalogo-foto" nombre="foto" etiqueta="Foto de perfil" ayuda="JPG, PNG o WebP, hasta 2 MB. Sin foto, se muestran tus iniciales." />
     </form>
   </section>
 

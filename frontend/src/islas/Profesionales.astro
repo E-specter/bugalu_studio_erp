@@ -1,0 +1,351 @@
+---
+// <bugalu-profesionales vista="lista|especialidades">: el Administrador ve a los profesionales y gestiona el catalogo de especialidades
+// (spec RF-15-administracion). La ficha y los horarios de cada uno son de <bugalu-profesional admin>.
+import Panel from '../componentes/Panel.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Tabla from '../componentes/Tabla.astro';
+import Avatar from '../componentes/Avatar.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+
+interface Props {
+  vista: 'lista' | 'especialidades';
+}
+const { vista } = Astro.props;
+const lista = vista === 'lista';
+const principal = lista ? { codigo: 'A13', titulo: 'Profesionales' } : { codigo: 'E1', titulo: 'Especialidades' };
+---
+
+<EstilosGestion />
+
+<bugalu-profesionales class="profesionales" data-gestion vista={vista}>
+  <div data-avisos></div>
+  <!-- Region viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  <div data-salida><Panel {...principal} cargando /></div>
+  {lista && (
+    <div class="prof-crear" data-crear hidden>
+      <Boton variante="secundario" data-envio data-crear-ficha>Crear mi ficha de profesional</Boton>
+      <p class="gestion-ayuda">Para dar asesorías tú mismo, crea tu ficha: nace inactiva y la activas desde aquí.</p>
+    </div>
+  )}
+
+  <EstadosIsla {principal} />
+
+  <template data-sello="exito"><EtiquetaTecnica variante="exito" texto=" " /></template>
+  <template data-sello="aviso"><EtiquetaTecnica variante="aviso" texto=" " /></template>
+  <template data-sello="neutra"><EtiquetaTecnica texto=" " /></template>
+
+  {lista && (
+    <>
+      <template data-estado="vacio">
+        <Panel codigo="A13" titulo="Profesionales">
+          <p class="gestion-vacio-titulo">Aún no hay profesionales</p>
+          <p>Para sumar uno, dale el rol Profesional artístico a su cuenta en Usuarios.</p>
+          <div class="prof-crear"><Boton href="/app/usuarios">Asignar rol de profesional</Boton></div>
+        </Panel>
+      </template>
+      <template data-estado="datos">
+        <Panel codigo="A13" titulo="Profesionales">
+          <Tabla titulo="Profesionales" columnas={['Profesional', 'Especialidades', '30 min', '1 h', 'Estado', '']} numericas={[2, 3]} />
+        </Panel>
+      </template>
+      <template data-fila-profesional>
+        <tr>
+          <th scope="row">
+            <span class="prof-persona">
+              <Avatar nombre=" " tamano="md" rol="profesional" />
+              <span><span class="prof-nombre" data-nombre></span><span class="prof-artistico" data-artistico hidden></span></span>
+            </span>
+          </th>
+          <td data-etiqueta="Especialidades" data-especialidades></td>
+          <td class="tabla-num" data-etiqueta="30 min" data-p30></td>
+          <td class="tabla-num" data-etiqueta="1 h" data-p60></td>
+          <td data-etiqueta="Estado" data-estado-prof></td>
+          <td>
+            <div class="prof-acciones">
+              <Boton variante="secundario" href="#" data-editar>Editar ficha<span class="visualmente-oculto" data-objeto></span></Boton>
+              <Boton variante="secundario" href="#" data-horarios>Horarios<span class="visualmente-oculto" data-objeto></span></Boton>
+            </div>
+          </td>
+        </tr>
+      </template>
+    </>
+  )}
+
+  {!lista && (
+    <>
+      <template data-estado="datos">
+        <div class="gestion-rejilla">
+          <Panel codigo="E1" titulo="Especialidades">
+            <div data-vacio hidden>
+              <p class="gestion-vacio-titulo">Aún no hay especialidades</p>
+              <p>Crea la primera: por ejemplo, Producción o Composición.</p>
+            </div>
+            <Tabla titulo="Especialidades" columnas={['Especialidad', 'Estado', '']} />
+          </Panel>
+          <div class="gestion-lateral">
+            <div data-modo="crear">
+              <Panel codigo="E2" titulo="Nueva especialidad" variante="lateral">
+                <form novalidate method="post" class="gestion-formulario" data-formulario="crear">
+                  <Campo nombre="nombre" etiqueta="Nombre" ayuda="De 2 a 60 caracteres." minlength="2" maxlength="60" autocomplete="off" />
+                  <div><Boton tipo="submit" data-envio>Crear especialidad</Boton></div>
+                </form>
+              </Panel>
+            </div>
+            <div data-modo="renombrar">
+              <Panel codigo="E2" titulo="Renombrar" variante="lateral">
+                <form novalidate method="post" class="gestion-formulario" data-formulario="renombrar">
+                  <Campo nombre="nombre-nuevo" etiqueta="Nombre" ayuda="De 2 a 60 caracteres." minlength="2" maxlength="60" autocomplete="off" />
+                  <div class="prof-acciones">
+                    <Boton tipo="submit" data-envio>Guardar nombre</Boton>
+                    <Boton variante="secundario" href="/app/asesorias/especialidades" data-cancelar>Cancelar</Boton>
+                  </div>
+                </form>
+              </Panel>
+            </div>
+          </div>
+        </div>
+      </template>
+      <template data-fila-especialidad>
+        <tr>
+          <th scope="row" data-nombre></th>
+          <td data-etiqueta="Estado" data-estado-esp></td>
+          <td>
+            <div class="prof-acciones">
+              <Boton variante="secundario" href="#" data-renombrar>Renombrar<span class="visualmente-oculto" data-objeto></span></Boton>
+              <Boton variante="secundario" data-envio data-alternar>Desactivar<span class="visualmente-oculto" data-objeto></span></Boton>
+            </div>
+          </td>
+        </tr>
+      </template>
+    </>
+  )}
+</bugalu-profesionales>
+
+<script>
+  // @ts-nocheck
+  import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { obtenerPerfil } from '../servicios/api.js';
+  import { listarProfesionales, listarEspecialidades, crearEspecialidad, actualizarEspecialidad, crearProfesional, nombreMostrado } from '../servicios/asesorias.js';
+  import { ponerAvatar } from '../servicios/avatar.js';
+  import { soles } from '../servicios/formatos.js';
+  import { mostrarAviso, enfocarAviso, limpiarAvisos, quitarError } from '../servicios/formulario.js';
+
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+
+  class BugaluProfesionales extends IslaGestion {
+    avisosUrl = { 'profesional-asignado': ['Rol asignado', 'Completa su ficha y fija sus precios para publicarlo.'] };
+
+    iniciar() {
+      this.addEventListener('click', (e) => {
+        const crear = e.target.closest('[data-crear-ficha]');
+        if (crear) return this.crearMiFicha(crear);
+        const alternar = e.target.closest('[data-alternar]');
+        if (alternar) return this.alternar(alternar);
+        const enlace = e.target.closest('[data-renombrar], [data-cancelar]');
+        if (!enlace || e.ctrlKey || e.metaKey || e.shiftKey || e.button) return;
+        e.preventDefault();
+        history.pushState(null, '', enlace.getAttribute('href'));
+        this.cargar().then(() => (enlace.matches('[data-renombrar]') ? this.querySelector('[name="nombre-nuevo"]') : this.querySelector(`[data-renombrar][data-id="${enlace.dataset.id}"]`))?.focus());
+      });
+      addEventListener('popstate', () => this.cargar());
+    }
+
+    alEnviar(formulario) {
+      const accion = formulario.dataset.formulario;
+      if (accion === 'crear') this.crear(formulario);
+      else this.renombrar(formulario);
+    }
+
+    sello(tipo, texto) {
+      const nodo = this.querySelector(`template[data-sello="${tipo}"]`).content.cloneNode(true);
+      nodo.querySelector('.etiqueta > span:last-child').textContent = texto;
+      return nodo;
+    }
+
+    // ----- Profesionales -----
+
+    async lista() {
+      this.querySelector('[data-crear]').hidden = true;
+      const profesionales = await listarProfesionales({ anonimo: false });
+      if (!profesionales.length) {
+        this.mostrar('vacio');
+        this.querySelector('[data-crear]').hidden = false;
+        return 'Aún no hay profesionales';
+      }
+      this.mostrar('datos');
+      const modelo = this.querySelector('template[data-fila-profesional]');
+      this.querySelector('tbody').replaceChildren(...profesionales.map((p) => {
+        const fila = modelo.content.cloneNode(true).firstElementChild;
+        const mostrado = nombreMostrado(p);
+        ponerAvatar(fila.querySelector('.avatar'), mostrado, null);
+        fila.querySelector('[data-nombre]').textContent = mostrado;
+        const artistico = fila.querySelector('[data-artistico]');
+        artistico.hidden = !p.nombre_artistico;
+        artistico.textContent = p.nombre_artistico ? p.nombre : '';
+        fila.querySelector('[data-especialidades]').textContent = p.especialidades.map((e) => e.nombre).join(', ') || 'Ninguna';
+        for (const min of [30, 60]) {
+          const d = p.duraciones.find((x) => x.minutos === min);
+          fila.querySelector(`[data-p${min}]`).textContent = d ? soles(d.precio) : '—';
+        }
+        fila.querySelector('[data-estado-prof]').append(!p.activo ? this.sello('neutra', 'INACTIVO') : p.publicado ? this.sello('exito', 'PUBLICADO') : this.sello('aviso', 'SIN PUBLICAR'));
+        const id = encodeURIComponent(p.id);
+        fila.querySelector('[data-editar]').href = `/app/asesorias/profesional?id=${id}`;
+        fila.querySelector('[data-horarios]').href = `/app/asesorias/horarios?id=${id}`;
+        fila.querySelector('[data-editar] [data-objeto]').textContent = ` de ${mostrado}`;
+        fila.querySelector('[data-horarios] [data-objeto]').textContent = ` de ${mostrado}`;
+        return fila;
+      }));
+      this.querySelector('[data-crear]').hidden = false;
+      return plural(profesionales.length, 'profesional', 'profesionales');
+    }
+
+    // Decision 8: el Administrador tambien puede dar asesorias; su ficha nace con POST /profesionales.
+    crearMiFicha(boton) {
+      this.enviar(boton, 'Creando…', async () => crearProfesional((await obtenerPerfil()).id), (p) => location.assign(`/app/asesorias/profesional?id=${encodeURIComponent(p.id)}`), true);
+    }
+
+    errorEnvio(error) {
+      const aviso = (variante, titulo, texto, extra) => enfocarAviso(mostrarAviso(this, variante, titulo, texto, extra));
+      if (error.estado === 409 && error.codigo === 'perfil_existente') {
+        obtenerPerfil().then((yo) => aviso('informacion', 'Ya tienes una ficha de profesional', '', { enlace: { texto: 'Editar mi ficha', href: `/app/asesorias/profesional?id=${encodeURIComponent(yo.id)}` } }), () => aviso('informacion', 'Ya tienes una ficha de profesional'));
+      } else if (error.estado === 422 && error.codigo === 'rol_no_admitido') aviso('error', 'No puedes crear esa ficha', 'Solo una cuenta de Administrador o de profesional puede tener ficha.');
+      else if (error.estado === 409 && error.codigo === 'especialidad_duplicada') {
+        const entrada = this.querySelector('[data-modo] [name^="nombre"]');
+        this.validar([{ entrada, mensaje: 'Ya existe una especialidad con ese nombre (sin contar mayúsculas ni tildes).', texto: 'Nombre' }]);
+        entrada.focus();
+      } else if (error.estado === 404 && this.vista === 'especialidades') {
+        history.replaceState(null, '', location.pathname);
+        this.cargar().then(() => aviso('informacion', 'Esa especialidad ya no existe', 'Actualizamos la lista.'));
+      } else if (error.estado === 422 && this.vista === 'especialidades') {
+        const entrada = this.querySelector('[data-modo] [name^="nombre"]');
+        this.validar([{ entrada, mensaje: 'Usa de 2 a 60 caracteres.', texto: 'Nombre' }]);
+      } else return false;
+      return true;
+    }
+
+    // ----- Especialidades -----
+
+    async especialidades() {
+      limpiarAvisos(this);
+      const catalogo = [...(await listarEspecialidades({ todas: true }))].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+      let editar = new URLSearchParams(location.search).get('editar');
+      const actual = editar ? catalogo.find((e) => e.id === editar) : null;
+      if (editar && !actual) {
+        history.replaceState(null, '', location.pathname);
+        editar = null;
+        mostrarAviso(this, 'informacion', 'Esa especialidad ya no existe', 'Actualizamos la lista.');
+      }
+      this.mostrar('datos');
+      this.querySelector('[data-vacio]').hidden = catalogo.length > 0;
+      const tabla = this.querySelector('[data-vacio]').nextElementSibling;
+      tabla.hidden = catalogo.length === 0;
+      const modelo = this.querySelector('template[data-fila-especialidad]');
+      tabla.querySelector('tbody').replaceChildren(...catalogo.map((e) => {
+        const fila = modelo.content.cloneNode(true).firstElementChild;
+        fila.querySelector('[data-nombre]').textContent = e.nombre;
+        fila.querySelector('[data-estado-esp]').append(e.activa ? this.sello('exito', 'ACTIVA') : this.sello('neutra', 'INACTIVA'));
+        const renombrar = fila.querySelector('[data-renombrar]');
+        renombrar.href = `/app/asesorias/especialidades?editar=${encodeURIComponent(e.id)}`;
+        renombrar.dataset.id = e.id;
+        renombrar.querySelector('[data-objeto]').textContent = ` ${e.nombre}`;
+        const alternar = fila.querySelector('[data-alternar]');
+        alternar.dataset.id = e.id;
+        alternar.dataset.nombre = e.nombre;
+        alternar.dataset.activa = e.activa;
+        alternar.firstChild.textContent = e.activa ? 'Desactivar' : 'Activar';
+        alternar.querySelector('[data-objeto]').textContent = ` ${e.nombre}`;
+        return fila;
+      }));
+      if (!actual) this.querySelector('[data-modo="renombrar"]').remove();
+      else {
+        this.querySelector('[data-modo="crear"]').remove();
+        this.querySelector('[data-modo="renombrar"] .panel-titulo').append(` ${actual.nombre}`);
+        this.querySelector('[name="nombre-nuevo"]').value = actual.nombre;
+        this.querySelector('[data-cancelar]').dataset.id = actual.id;
+        this.editando = actual;
+        if (this.primeraCarga !== false) this.querySelector('[name="nombre-nuevo"]').focus();
+      }
+      this.primeraCarga = false;
+      return plural(catalogo.length, 'especialidad', 'especialidades');
+    }
+
+    validarNombre(entrada) {
+      quitarError(entrada);
+      const nombre = entrada.value.trim();
+      const mensaje = !nombre ? 'Escribe el nombre.' : nombre.length < 2 || nombre.length > 60 ? 'Usa de 2 a 60 caracteres.' : null;
+      return this.validar(mensaje ? [{ entrada, mensaje, texto: 'Nombre' }] : []) ? nombre : null;
+    }
+
+    crear(formulario) {
+      if (this.ocupado) return;
+      const entrada = formulario.querySelector('[name="nombre"]');
+      const nombre = this.validarNombre(entrada);
+      if (nombre === null) return;
+      this.enviar(formulario.querySelector('[data-envio]'), 'Creando…', () => crearEspecialidad(nombre), async () => {
+        await this.cargar();
+        mostrarAviso(this, 'exito', 'Especialidad creada.');
+        this.querySelector('[name="nombre"]')?.focus();
+      });
+    }
+
+    renombrar(formulario) {
+      if (this.ocupado) return;
+      const entrada = formulario.querySelector('[name="nombre-nuevo"]');
+      const nombre = this.validarNombre(entrada);
+      if (nombre === null) return;
+      const { id } = this.editando;
+      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => actualizarEspecialidad(id, { nombre }), async () => {
+        history.replaceState(null, '', location.pathname);
+        await this.cargar();
+        mostrarAviso(this, 'exito', 'Nombre guardado.');
+        this.querySelector(`[data-renombrar][data-id="${id}"]`)?.focus();
+      });
+    }
+
+    alternar(boton) {
+      const { id, nombre } = boton.dataset;
+      const activa = boton.dataset.activa === 'true';
+      this.enviar(boton, activa ? 'Desactivando…' : 'Activando…', () => actualizarEspecialidad(id, { activa: !activa }), async () => {
+        await this.cargar();
+        mostrarAviso(this, 'exito', activa ? `${nombre} desactivada: ya no se muestra en perfiles ni filtros.` : `${nombre} activada.`);
+        this.querySelector(`[data-alternar][data-id="${id}"]`)?.focus();
+      });
+    }
+  }
+
+  if (!customElements.get('bugalu-profesionales')) customElements.define('bugalu-profesionales', BugaluProfesionales);
+</script>
+
+<style>
+  .profesionales {
+    display: block;
+  }
+  .profesionales :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  .profesionales :global(.prof-crear) {
+    margin-block-start: var(--espacio-4);
+  }
+  .profesionales :global(.prof-persona) {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-3);
+  }
+  .profesionales :global(.prof-nombre),
+  .profesionales :global(.prof-artistico) {
+    display: block;
+  }
+  .profesionales :global(.prof-artistico) {
+    color: var(--color-texto-secundario);
+    font-weight: var(--fuente-peso-regular);
+  }
+  .profesionales :global(.prof-acciones) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+  }
+</style>

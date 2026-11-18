@@ -1,0 +1,448 @@
+---
+// <bugalu-directorio vista="lista|perfil">: directorio y perfil publico de los profesionales (specs RF-15-directorio y RF-15-perfil-publico).
+// Vista publica: nunca envia el token (es la vista del cliente). Un bloque por estado; sin JS, el noscript avisa.
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import Tabla from '../componentes/Tabla.astro';
+import Avatar from '../componentes/Avatar.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import TarjetaProfesional from '../componentes/TarjetaProfesional.astro';
+import Icono from '../componentes/internos/Icono.astro';
+import PlantillasFormulario from '../componentes/internos/PlantillasFormulario.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+import Calendario from './Calendario.astro';
+
+interface Props {
+  vista: 'lista' | 'perfil';
+}
+const { vista } = Astro.props;
+const lista = vista === 'lista';
+---
+
+<EstilosGestion />
+
+<bugalu-directorio class="directorio" data-gestion vista={vista}>
+  {lista && <nav class="dir-filtros" aria-label="Filtrar por especialidad" data-filtros hidden></nav>}
+  {lista && <p class="dir-linea" data-linea hidden></p>}
+  <div data-avisos></div>
+  <!-- Region viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  <div data-salida>
+    <div class="dir-cargando" aria-busy="true"><p class="panel-cargando">{lista ? 'Cargando profesionales…' : 'Cargando perfil…'}</p></div>
+  </div>
+
+  <template data-estado="cargando"><div class="dir-cargando" aria-busy="true">{!lista && <h1 class="visualmente-oculto">Perfil del profesional</h1>}<p class="panel-cargando">{lista ? 'Cargando profesionales…' : 'Cargando perfil…'}</p></div></template>
+  <template data-estado="error">
+    {!lista && <h1 class="visualmente-oculto">Perfil del profesional</h1>}
+    <Aviso variante="error" titulo=" " texto=" ">
+      <div class="dir-reintentar"><Boton variante="secundario" data-reintentar>Reintentar</Boton></div>
+    </Aviso>
+  </template>
+
+  {lista && (
+    <>
+      <template data-estado="vacio">
+        <Panel titulo="Aún no hay profesionales publicados">
+          <p>Estamos preparando el equipo de asesorías. Vuelve pronto.</p>
+        </Panel>
+      </template>
+      <template data-estado="sin-resultados">
+        <Panel titulo=" ">
+          <div class="dir-reintentar"><Boton variante="secundario" href="/asesorias/">Ver todas las especialidades</Boton></div>
+        </Panel>
+      </template>
+      <template data-estado="datos"><ul class="dir-lista" aria-label="Profesionales" data-lista></ul></template>
+      <template data-tarjeta><li class="dir-item"><TarjetaProfesional /></li></template>
+      <template data-pieza="especialidad"><li><EtiquetaTecnica texto=" " /></li></template>
+      <template data-pieza="filtro-no"><li><EtiquetaTecnica variante="filtro" texto=" " href="#" /></li></template>
+      <template data-pieza="filtro-si"><li><EtiquetaTecnica variante="filtro" texto=" " href="#" aplicado /></li></template>
+    </>
+  )}
+
+  {!lista && (
+    <>
+      <template data-estado="no-encontrada">
+        <h1 class="visualmente-oculto">Perfil del profesional</h1>
+        <Panel codigo="[404]" titulo="Perfil no disponible">
+          <Aviso variante="informacion" titulo="Este perfil no existe o ya no está publicado." accion={{ etiqueta: 'Ver el directorio', href: '/asesorias/' }} />
+        </Panel>
+      </template>
+      <template data-estado="datos">
+        <div class="dir-identidad">
+          <div class="dir-retrato"><Avatar nombre=" " tamano="retrato" rol="profesional" /></div>
+          <div class="dir-datos">
+            <p class="dir-indice">PROFESIONAL</p>
+            <h1 class="dir-nombre" data-nombre></h1>
+            <p class="dir-completo" data-completo hidden></p>
+            <ul class="dir-etiquetas" aria-label="Especialidades" data-especialidades></ul>
+            <p class="dir-presentacion" data-presentacion hidden></p>
+            <ul class="dir-redes" aria-label="Redes" data-redes hidden></ul>
+            <div class="dir-agendar">
+              <Boton tamano="grande" aria-disabled="true" aria-describedby="agendar-ayuda" data-agendar>Agendar asesoría</Boton>
+              <p class="gestion-ayuda" id="agendar-ayuda">Disponible pronto: muy pronto podrás agendar en línea desde aquí.</p>
+            </div>
+          </div>
+        </div>
+        <section class="dir-seccion" aria-labelledby="dir-precios">
+          <h2 class="dir-titulo-seccion" id="dir-precios"><span class="dir-indice">[ 01 ]</span> DURACIONES Y PRECIOS</h2>
+          <Tabla titulo=" " columnas={['Duración', 'Precio', 'IGV', 'Total']} variante="partidas" numericas={[1, 2, 3]} />
+          <p class="gestion-ayuda">Precio fijo por asesoría, presencial o por videollamada.</p>
+        </section>
+        <section class="dir-seccion" aria-labelledby="dir-horarios" data-horarios>
+          <h2 class="dir-titulo-seccion" id="dir-horarios"><span class="dir-indice">[ 02 ]</span> HORARIOS</h2>
+          <Calendario modo="asesoria" />
+        </section>
+      </template>
+      <template data-pieza="especialidad"><li><EtiquetaTecnica texto=" " /></li></template>
+      <template data-pieza="red"><li><span data-red></span> · <span data-valor></span></li></template>
+      <template data-pieza="red-enlace"><li><a target="_blank" rel="noopener noreferrer" data-enlace><span data-red></span> · <span data-valor></span><span class="visualmente-oculto"> (se abre en otra pestaña)</span> <Icono nombre="external-link" /></a></li></template>
+    </>
+  )}
+
+  <PlantillasFormulario />
+
+  <noscript>
+    <style is:inline>bugalu-directorio [data-salida] { display: none; }</style>
+    <Aviso variante="informacion" titulo={`${lista ? 'El directorio' : 'Este perfil'} necesita JavaScript`} texto="Actívalo en tu navegador y recarga la página." />
+  </noscript>
+</bugalu-directorio>
+
+<script>
+  // @ts-nocheck
+  import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { listarEspecialidades, listarProfesionales, obtenerProfesional, nombreMostrado, notaIgv, REDES } from '../servicios/asesorias.js';
+  import { ponerAvatar } from '../servicios/avatar.js';
+  import { soles, porcentaje, duracionReserva } from '../servicios/formatos.js';
+  import { limpiarAvisos, mostrarAviso } from '../servicios/formulario.js';
+
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+
+  class BugaluDirectorio extends IslaGestion {
+    // El Administrador con sesion tampoco manda su token aqui: el directorio es la vista del cliente.
+    iniciar() {
+      if (this.vista === 'perfil') this.noEncontrada = []; // el texto del 404 es el de la plantilla
+      this.mensajeError = (e) => {
+        const que = this.vista === 'lista' ? 'el directorio' : 'el perfil';
+        return e.estado === 0 ? ['Sin conexión', 'Revisa tu red y vuelve a intentarlo.']
+          : e.estado === 503 ? [`${this.vista === 'lista' ? 'El directorio' : 'El perfil'} no responde`, 'Inténtalo de nuevo en unos minutos.']
+          : [`Algo salió mal al cargar ${que}.`];
+      };
+      if (this.vista !== 'lista') return;
+      addEventListener('popstate', () => this.cargar());
+      this.addEventListener('click', (e) => {
+        const enlace = e.target.closest('[data-filtros] a');
+        if (!enlace || e.ctrlKey || e.metaKey || e.shiftKey || e.button) return;
+        e.preventDefault();
+        history.pushState(null, '', enlace.getAttribute('href'));
+        this.foco = enlace.dataset.clave;
+        this.cargar();
+      });
+    }
+
+    // Sin sesion en esta vista: 401 y 403 se tratan como un error cualquiera.
+    fallo(error) {
+      super.fallo(error.estado === 401 || error.estado === 403 ? { estado: 500 } : error);
+    }
+
+    // Tras Reintentar el foco va al <h1>.
+    enfocar() {
+      const titulo = document.querySelector('h1');
+      titulo.tabIndex = -1;
+      titulo.focus();
+    }
+
+    // --- Lista ---
+
+    async lista() {
+      limpiarAvisos(this);
+      let pedida = new URLSearchParams(location.search).get('especialidad') ?? '';
+      const catalogoPedido = listarEspecialidades().catch(() => null);
+      const listaPedida = listarProfesionales({ especialidad: pedida }).then((v) => ({ v }), (e) => ({ e }));
+      const catalogo = await catalogoPedido;
+      let r = await listaPedida;
+      // Especialidad desconocida, inactiva o con 422: se muestra todo, con aviso y la URL limpia.
+      if (pedida && ((catalogo && !catalogo.some((x) => x.id === pedida)) || r.e?.estado === 422)) {
+        pedida = '';
+        r = { v: await listarProfesionales() };
+        history.replaceState(null, '', '/asesorias/');
+        mostrarAviso(this, 'informacion', 'Esa especialidad ya no está disponible', 'Te mostramos todos los profesionales.');
+      } else if (r.e) throw r.e;
+      const profesionales = r.v;
+      const filtros = catalogo ?? [];
+      this.pintarFiltros(filtros, pedida, profesionales.length === 0 && !pedida);
+      const nota = notaIgv(profesionales[0]?.duraciones ?? [], porcentaje);
+      const linea = this.querySelector('[data-linea]');
+      const filtro = filtros.find((x) => x.id === pedida);
+      const total = `${plural(profesionales.length, 'profesional', 'profesionales')}${filtro ? ` en ${filtro.nombre}` : ''}`;
+      linea.textContent = profesionales.length ? `${total}. ${nota ?? ''}`.trim() : '';
+      linea.hidden = !profesionales.length;
+      if (!profesionales.length) {
+        if (!pedida) {
+          this.mostrar('vacio');
+          return 'Aún no hay profesionales publicados';
+        }
+        this.mostrar('sin-resultados');
+        const texto = `Nadie ofrece ${filtro?.nombre ?? 'esa especialidad'} por ahora.`;
+        this.querySelector('[data-salida] .panel-titulo').textContent = texto;
+        return texto;
+      }
+      this.mostrar('datos');
+      const modelo = this.querySelector('template[data-tarjeta]');
+      this.querySelector('[data-lista]').replaceChildren(...profesionales.map((p) => this.tarjeta(modelo, p)));
+      return `${total}.`;
+    }
+
+    pintarFiltros(catalogo, activo, ocultos) {
+      const nav = this.querySelector('[data-filtros]');
+      nav.hidden = !catalogo.length || ocultos;
+      if (nav.hidden) return;
+      const filtro = (clave, texto, href) => {
+        const li = this.querySelector(`template[data-pieza="filtro-${clave === activo ? 'si' : 'no'}"]`).content.firstElementChild.cloneNode(true);
+        const a = li.querySelector('a');
+        a.querySelector('span:last-child').textContent = texto;
+        a.href = href;
+        a.dataset.clave = clave || 'todas';
+        return li;
+      };
+      nav.replaceChildren(Object.assign(document.createElement('ul'), { className: 'dir-etiquetas' }));
+      nav.firstElementChild.append(filtro('', 'Todas', '/asesorias/'), ...catalogo.map((x) => filtro(x.id, x.nombre, `/asesorias/?especialidad=${encodeURIComponent(x.id)}`)));
+      if (this.foco) nav.querySelector(`[data-clave="${this.foco}"]`)?.focus();
+      this.foco = '';
+    }
+
+    tarjeta(modelo, p) {
+      const li = modelo.content.firstElementChild.cloneNode(true);
+      const mostrado = nombreMostrado(p);
+      ponerAvatar(li.querySelector('.avatar'), mostrado, p.foto_url);
+      li.querySelector('[data-mostrado]').textContent = mostrado;
+      li.querySelector('.tarjeta-enlace').href = `/asesorias/profesional/?id=${encodeURIComponent(p.id)}`;
+      const completo = li.querySelector('[data-completo]');
+      completo.hidden = !p.nombre_artistico;
+      completo.textContent = p.nombre_artistico ? p.nombre : '';
+      li.querySelector('.tarjeta-especialidades').replaceChildren(...p.especialidades.map((e) => this.etiqueta(e.nombre)));
+      li.querySelector('.tarjeta-precios').replaceChildren(...p.duraciones.map((d) => {
+        const par = document.createElement('div');
+        par.append(Object.assign(document.createElement('dt'), { textContent: duracionReserva(d.minutos).toUpperCase() }), Object.assign(document.createElement('dd'), { textContent: soles(d.precio) }));
+        return par;
+      }));
+      return li;
+    }
+
+    etiqueta(texto) {
+      const li = this.querySelector('template[data-pieza="especialidad"]').content.firstElementChild.cloneNode(true);
+      li.querySelector('span:last-child').textContent = texto;
+      return li;
+    }
+
+    // --- Perfil ---
+
+    async perfil() {
+      const id = new URLSearchParams(location.search).get('id') ?? '';
+      const noEncontrado = () => { this.mostrar('no-encontrada'); document.title = 'Perfil no disponible · Asesorías · Bugalú Studio'; return 'Este perfil no existe o ya no está publicado.'; };
+      if (!id) return noEncontrado();
+      let p;
+      try {
+        p = await obtenerProfesional(id, { anonimo: true });
+      } catch (error) {
+        if (error.estado === 404 || error.estado === 422) return noEncontrado();
+        throw error;
+      }
+      const mostrado = nombreMostrado(p);
+      document.title = `${mostrado} · Asesorías · Bugalú Studio`;
+      this.mostrar('datos');
+      ponerAvatar(this.querySelector('.avatar'), mostrado, p.foto_url);
+      this.querySelector('[data-nombre]').textContent = mostrado;
+      const completo = this.querySelector('[data-completo]');
+      completo.hidden = !p.nombre_artistico;
+      completo.textContent = p.nombre_artistico ? p.nombre : '';
+      this.querySelector('[data-especialidades]').replaceChildren(...p.especialidades.map((e) => this.etiqueta(e.nombre)));
+      const presentacion = this.querySelector('[data-presentacion]');
+      presentacion.hidden = !p.presentacion;
+      presentacion.textContent = p.presentacion ?? '';
+      this.pintarRedes(p.redes ?? []);
+      this.pintarPrecios(p, mostrado);
+      const calendario = this.querySelector('bugalu-calendario');
+      calendario.setAttribute('nombre', mostrado);
+      calendario.setAttribute('conservar', 'id');
+      calendario.setAttribute('profesional', p.id);
+      return `Perfil de ${mostrado}`;
+    }
+
+    pintarRedes(redes) {
+      const lista = this.querySelector('[data-redes]');
+      lista.hidden = !redes.length;
+      lista.replaceChildren(...redes.map((r) => {
+        const enlace = typeof r.valor === 'string' && r.valor.startsWith('https://');
+        const li = this.querySelector(`template[data-pieza="${enlace ? 'red-enlace' : 'red'}"]`).content.firstElementChild.cloneNode(true);
+        li.querySelector('[data-red]').textContent = REDES[r.red] ?? r.red;
+        li.querySelector('[data-valor]').textContent = r.valor;
+        if (enlace) li.querySelector('[data-enlace]').href = r.valor;
+        return li;
+      }));
+    }
+
+    // Las cifras del desglose las dicta la API (nunca se calculan aqui).
+    pintarPrecios(p, mostrado) {
+      const tabla = this.querySelector('[data-salida] .tabla');
+      tabla.querySelector('caption').textContent = `Precio de una asesoría con ${mostrado}`;
+      const igv = p.duraciones[0]?.igv;
+      const incluido = !igv || igv.incluido;
+      const cabeceras = [...tabla.querySelectorAll('thead th')];
+      const titulos = incluido ? ['DURACIÓN', 'PRECIO', `INCLUYE IGV (${igv ? porcentaje(igv.porcentaje) : ''})`.replace(' ()', '')] : ['DURACIÓN', 'PRECIO SIN IGV', `IGV (${porcentaje(igv.porcentaje)})`, 'TOTAL'];
+      cabeceras.forEach((th, i) => (i < titulos.length ? (th.textContent = titulos[i]) : th.remove()));
+      tabla.querySelector('tbody').replaceChildren(...p.duraciones.map((d) => {
+        const fila = document.createElement('tr');
+        const th = Object.assign(document.createElement('th'), { scope: 'row', textContent: duracionReserva(d.minutos) });
+        const celda = (etiqueta, texto) => {
+          const td = Object.assign(document.createElement('td'), { textContent: texto, className: 'tabla-num' });
+          td.dataset.etiqueta = etiqueta;
+          return td;
+        };
+        const i = d.igv;
+        const celdas = incluido ? [soles(d.precio), i ? soles(i.monto) : ''].filter((x, k) => k === 0 || x) : [soles(i.base), soles(i.monto), soles(d.precio)];
+        fila.append(th, ...celdas.map((t, k) => celda(titulos[k + 1], t)));
+        return fila;
+      }));
+    }
+  }
+
+  if (!customElements.get('bugalu-directorio')) customElements.define('bugalu-directorio', BugaluDirectorio);
+</script>
+
+<style>
+  .directorio {
+    display: block;
+  }
+  .directorio :global([data-avisos]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  .directorio :global(.dir-filtros) {
+    margin-block-end: var(--espacio-4);
+  }
+  .directorio :global(.dir-etiquetas) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .directorio :global(.dir-filtros .etiqueta) {
+    min-block-size: var(--medida-control-tactil);
+  }
+  .directorio :global(.dir-linea) {
+    margin: 0 0 var(--espacio-6);
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-pequeno);
+  }
+  .directorio :global(.dir-lista) {
+    display: grid;
+    gap: var(--espacio-6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .directorio :global(.dir-cargando) {
+    min-block-size: var(--medida-miniatura);
+  }
+  .directorio :global(.dir-reintentar) {
+    margin-block-start: var(--espacio-2);
+  }
+  .directorio :global(.dir-identidad) {
+    display: grid;
+    gap: var(--espacio-8);
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .directorio :global(.dir-datos) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--espacio-4);
+    min-inline-size: 0;
+  }
+  .directorio :global(.dir-indice) {
+    margin: 0;
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+  }
+  .directorio :global(.dir-nombre) {
+    margin: 0;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-titulo);
+    font-size: var(--fuente-tamano-titulo-lg);
+    line-height: var(--fuente-interlineado-titulo);
+    overflow-wrap: anywhere;
+  }
+  .directorio :global(.dir-completo) {
+    margin: 0;
+    color: var(--color-texto-secundario);
+  }
+  .directorio :global(.dir-presentacion) {
+    margin: 0;
+    max-inline-size: var(--medida-linea-lectura);
+    color: var(--color-texto-cuerpo);
+    font-size: var(--fuente-tamano-lectura);
+    line-height: var(--fuente-interlineado-lectura);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+  .directorio :global(.dir-redes) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2) var(--espacio-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--color-texto-cuerpo);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-base);
+  }
+  .directorio :global(.dir-redes a) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--espacio-1);
+    min-block-size: var(--medida-control-tactil);
+    color: var(--color-texto-principal);
+    overflow-wrap: anywhere;
+  }
+  .directorio :global(.dir-agendar) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--espacio-2);
+  }
+  .directorio :global(.dir-seccion) {
+    display: grid;
+    gap: var(--espacio-4);
+    margin-block-start: var(--espacio-12);
+  }
+  .directorio :global(.dir-titulo-seccion) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-3);
+    margin: 0;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-titulo);
+    font-size: var(--fuente-tamano-titulo-sm);
+  }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    .directorio :global(.dir-lista) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .directorio :global(.dir-seccion) {
+      margin-block-start: var(--espacio-20);
+    }
+  }
+  @media (min-width: 64em) { /* punto-quiebre-escritorio */
+    .directorio :global(.dir-lista) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .directorio :global(.dir-identidad) {
+      grid-template-columns: var(--medida-columna-lateral) minmax(0, 1fr);
+    }
+  }
+</style>

@@ -82,8 +82,13 @@ import BarraAcciones from '../componentes/BarraAcciones.astro';
       this.pintar(previa);
       this.hidden = false;
       this.enfocarRevision();
-      this.anunciar(`Revisión lista: ${plural(previa.cambios.length, 'cambio', 'cambios')}, ${plural(previa.impacto.operaciones_vigentes, 'reserva vigente conserva', 'reservas vigentes conservan')} sus condiciones.`);
+      this.anunciar(`Revisión lista: ${plural(previa.cambios.length, 'cambio', 'cambios')}, ${this.vigentes(previa.impacto.operaciones_vigentes)} sus condiciones.`);
       return new Promise((resolver) => (this.resolver = resolver));
+    }
+
+    // "2 reservas vigentes conservan" (de un profesional: "asesorías vigentes").
+    vigentes(n) {
+      return this.peticion.recurso === 'profesional' ? plural(n, 'asesoría vigente conserva', 'asesorías vigentes conservan') : plural(n, 'reserva vigente conserva', 'reservas vigentes conservan');
     }
 
     cerrar(resultado) {
@@ -125,7 +130,7 @@ import BarraAcciones from '../componentes/BarraAcciones.astro';
         return tr(th(e.concepto), td('Antes', dar(e.antes), 'tabla-num'), td('Después', dar(e.despues), 'tabla-num cs-despues'));
       }));
       const n = previa.impacto.operaciones_vigentes;
-      this.querySelector('.aviso-titulo').textContent = `Se aplica solo a reservas nuevas. ${plural(n, 'reserva vigente conserva', 'reservas vigentes conservan')} sus condiciones.`;
+      this.querySelector('.aviso-titulo').textContent = `Se aplica solo a ${this.peticion.recurso === 'profesional' ? 'asesorías' : 'reservas'} nuevas. ${this.vigentes(n)} sus condiciones.`;
     }
 
     ocupar(si) {

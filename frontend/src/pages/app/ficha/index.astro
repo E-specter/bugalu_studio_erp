@@ -1,0 +1,19 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Boton from '../../../componentes/Boton.astro';
+import Icono from '../../../componentes/internos/Icono.astro';
+import Profesional from '../../../islas/Profesional.astro';
+---
+
+<LayoutApp titulo="Ficha pública">
+  <EncabezadoPantalla
+    titulo="Ficha pública"
+    indice="[E1] ASESORÍAS / FICHA"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Ficha' }]}
+    descripcion="Lo que ven los artistas en el directorio de asesorías. Mantén tu presentación al día."
+  >
+    <Boton slot="acciones" variante="secundario" href="#" target="_blank" rel="noopener noreferrer" data-accion="perfil-publico" hidden>Ver mi perfil público<span class="visualmente-oculto"> (se abre en otra pestaña)</span><Icono nombre="external-link" /></Boton>
+  </EncabezadoPantalla>
+  <Profesional vista="ficha" />
+</LayoutApp>

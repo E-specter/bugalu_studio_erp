@@ -1,0 +1,43 @@
+---
+import LayoutPublico from '../../layouts/LayoutPublico.astro';
+import Directorio from '../../islas/Directorio.astro';
+---
+
+<LayoutPublico titulo="Asesorías">
+  <header class="dir-encabezado">
+    <p class="dir-indice">[ 01 ] ASESORÍAS</p>
+    <h1 class="dir-titulo">PROFESIONALES DEL ESTUDIO</h1>
+    <p class="dir-descripcion">
+      Conversa con un profesional antes de producir: te orienta, escucha tu idea y te ayuda a definir el siguiente paso. Precio fijo, presencial o por videollamada.
+    </p>
+  </header>
+  <Directorio vista="lista" />
+</LayoutPublico>
+
+<style>
+  .dir-encabezado {
+    display: grid;
+    gap: var(--espacio-3);
+    margin-block-end: var(--espacio-8);
+  }
+  .dir-indice {
+    margin: 0;
+    color: var(--color-texto-secundario);
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+  }
+  .dir-titulo {
+    margin: 0;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-titulo);
+    font-size: var(--fuente-tamano-titulo-lg);
+    line-height: var(--fuente-interlineado-titulo);
+  }
+  .dir-descripcion {
+    margin: 0;
+    max-inline-size: var(--medida-linea-lectura);
+    color: var(--color-texto-cuerpo);
+    font-size: var(--fuente-tamano-lectura);
+    line-height: var(--fuente-interlineado-lectura);
+  }
+</style>
