@@ -24,7 +24,7 @@ frontend/
     ├── layouts/          # LayoutBase, LayoutPublico, LayoutApp
     ├── componentes/      # .astro estáticos, sin JS; internos/ (Icono, MensajeError) fuera del catálogo
     ├── islas/            # .astro que registran <bugalu-*>
-    ├── servicios/        # api.js (cliente HTTP), sesion.js (Supabase Auth)
+    ├── servicios/        # api.js (cliente HTTP), sesion.js (Supabase Auth), aforo.js (aforo y certificado ITSE de sala, RF-03)
     ├── estilos/          # tokens.css, base.css
     └── assets/           # logotipo en SVG
 ```

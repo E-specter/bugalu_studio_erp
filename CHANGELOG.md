@@ -2,6 +2,8 @@
 
 ## 2026-11-18
 
+- **RF-03 ampliación: aforo por sala (implementada):** cada sala guarda su aforo (1 a 200 personas), el número de su certificado ITSE (hasta 40 caracteres, sin controles) y la fecha de vencimiento, los tres juntos o ninguno. `GET /salas` los devuelve y `PATCH /salas/{id}` los cambia solo al Administrador (422 `itse_vencido` si el certificado ya venció). Al reservar y en el calendario se muestra "Aforo máximo: N personas" con el certificado; el Administrador ve avisos cuando al certificado le quedan 30 días o menos y cuando ya venció. Anexo de daños en las condiciones de uso ([uso del estudio y daños](docs/08-legal/condiciones-uso-y-danos.md), versión 0.4.0), cargado con `cargar_textos_legales`; en las bases que ya tienen condiciones cargadas, publicar esta versión desde Textos es una operación pendiente. Migraciones `20261226100000` y `20261226110000`. Contrato y tareas en `docs/03-requerimientos/RF-03.md`; auditoría en `docs/superpowers/auditorias/2026-11-18-rf03-aforo.md`.
+
 - **RF-15 Agendar asesoría artística, etapa A (implementada, etapa B pendiente):** rol `profesional` asignado por el Administrador (sin operaciones de cliente vivas, 409 `cliente_con_operaciones`), catálogo de especialidades, perfil público con foto en el bucket `profesionales`, precios de 30 y 60 min con barrera de cambio sensible, horarios publicados por el profesional o el Administrador y disponibilidad pública. El profesional no reserva, paga ni usa créditos (403 `sin_permiso`). Interfaz: directorio, perfil público, ficha, horarios y administración de profesionales. Specs en `docs/07-diseno/pantallas/RF-15-*.md`; contrato y tareas en `docs/03-requerimientos/RF-15.md`.
 
 ## 2026-11-17

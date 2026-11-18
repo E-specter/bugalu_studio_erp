@@ -37,7 +37,7 @@ Orden de implementación (fase 7, revisado por el usuario el 2026-11-16): RF-01 
 |---|---|---|---|
 | [RF-01](03-requerimientos/RF-01.md) | Autenticar usuario y gestionar perfil | `identidad` | implementado |
 | [RF-02](03-requerimientos/RF-02.md) | Simular precio y emitir cotización a medida | `catalogo` | borrador (CA-01…CA-05 implementados; CA-06 con RF-15) |
-| [RF-03](03-requerimientos/RF-03.md) | Publicar y consultar franjas de sala | `reservas` | implementado |
+| [RF-03](03-requerimientos/RF-03.md) | Publicar y consultar franjas de sala | `reservas` | implementado (ampliación de aforo por sala implementada el 2026-11-18) |
 | [RF-04](03-requerimientos/RF-04.md) | Registrar reserva de sala | `reservas` | implementado |
 | [RF-05](03-requerimientos/RF-05.md) | Registrar y validar pagos | `pagos` | implementado |
 | [RF-06](03-requerimientos/RF-06.md) | Gestionar estado de reserva y notificaciones | `reservas` | implementado |
