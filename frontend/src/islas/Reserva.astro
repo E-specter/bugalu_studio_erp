@@ -254,6 +254,7 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
     color: var(--color-texto-secundario);
   }
   bugalu-reserva .res-datos dd { margin: 0; color: var(--color-texto-principal); }
+  bugalu-reserva .res-aforo-regla { margin: var(--espacio-1) 0 0; color: var(--color-texto-secundario); font-size: var(--fuente-tamano-pequeno); }
   bugalu-reserva .res-acciones { display: flex; flex-direction: column; gap: var(--espacio-3); align-items: stretch; }
   bugalu-reserva .res-enlace { color: var(--color-texto-principal); }
   bugalu-reserva .res-siguientes { margin: 0; padding-inline-start: var(--espacio-5); display: grid; gap: var(--espacio-2); }
@@ -273,6 +274,7 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
 <script>
   import { obtenerToken, obtenerCliente } from '../servicios/sesion.js';
   import { listarSalas, crearReserva, obtenerReserva } from '../servicios/reservas.js';
+  import { lineaAforo, personas, certificado } from '../servicios/aforo.js';
   import { listarServicios, listarEspecialistas, obtenerImpuestos, simular } from '../servicios/catalogo.js';
   import { ErrorApi, obtenerPerfil, actualizarPerfil } from '../servicios/api.js';
   import { obtenerContacto } from '../servicios/pagos.js';
@@ -314,6 +316,8 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
     e: any = { esp: [] };
     max: number | null = null;
     salas: any[] = [];
+    salasCargadas = false;
+    salasFallo = false;
     servicios: any[] = [];
     especialistas: any[] = [];
     sim: any = null;
@@ -347,7 +351,8 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
       this.bienvenida();
       this.q('.res-acciones [data-anterior]')?.setAttribute('href', this.url(this.paso === 'confirmar' || this.paso === 'cuenta' ? 'servicio' : 'horario'));
       // Salas para el nombre del resumen (el calendario trae las suyas); un fallo no bloquea el paso.
-      this.salas = await listarSalas().catch(() => []);
+      this.salas = await listarSalas().catch(() => { this.salasFallo = true; return []; });
+      this.salasCargadas = true;
       if (this.paso === 'listo') await this.iniciarListo();
       else if (this.paso === 'cuenta') await this.iniciarCuenta();
       else if (this.paso !== 'horario') await this.cargarCatalogo();
@@ -518,7 +523,30 @@ const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasa
               return fila;
             }),
         );
+        if (destino.hasAttribute('data-revision')) this.filaAforo(destino, sala);
       }
+    }
+    // RF-03 CA-11, paso 04: fila AFORO tras SALA. Cargando "—"; si GET /salas falla, un aviso sin bloquear; sin aforo, sin fila.
+    filaAforo(destino: HTMLElement, sala: any) {
+      const nodos = lineaAforo(sala);
+      if (this.salasCargadas && !this.salasFallo && !nodos) return;
+      const dd = document.createElement('dd');
+      if (!this.salasCargadas) dd.textContent = '—';
+      else if (this.salasFallo) dd.textContent = 'No pudimos cargar el aforo; lo verás en el cartel de la sala.';
+      else {
+        const regla = document.createElement('p');
+        regla.className = 'res-aforo-regla';
+        regla.append('Cuenta a todas las personas dentro de la sala, también al personal del estudio. Al llegar indicas quiénes te acompañan; quien exceda el aforo espera en la recepción.');
+        const cert = document.createElement('p');
+        cert.className = 'res-aforo-regla';
+        if (sala.itse?.certificado) cert.append(...certificado(sala.itse));
+        dd.append(`Máximo ${personas(sala.aforo)}`, regla, ...(cert.childNodes.length ? [cert] : []));
+      }
+      const dt = document.createElement('dt');
+      dt.textContent = 'Aforo';
+      const fila = document.createElement('div');
+      fila.append(dt, dd);
+      destino.firstElementChild?.after(fila);
     }
     especialistasMarcados() {
       const defecto = this.servicios.find((s) => s.id === this.e.servicio)?.especialistas_por_defecto ?? [];

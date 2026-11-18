@@ -35,6 +35,8 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
   {vista === 'semana' && (
     <>
       <template data-estado="datos">
+        <!-- Avisos de vencimiento del certificado ITSE de cada sala (estáticos, no aria-live). -->
+        <div class="franjas-itse" data-itse hidden></div>
         <div class="gestion-periodo">
           <p class="gestion-periodo-titulo" data-titulo-semana></p>
           <nav class="gestion-periodo-enlaces" aria-label="Semana" data-periodo>
@@ -80,9 +82,28 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
                 <div><Boton tipo="submit" variante="secundario" data-envio>Registrar cierre</Boton></div>
               </form>
             </Panel>
+            <div id="aforo" class="franjas-aforo">
+              <Panel codigo="F4" titulo="Aforo de la sala" variante="lateral" ayuda="Lo ven los clientes al reservar y en el calendario. Los tres datos se guardan juntos.">
+                <div slot="acciones" data-itse-estado></div>
+                <form novalidate method="post" class="gestion-formulario" data-formulario="aforo">
+                  <p class="gestion-ayuda" data-aforo-vacio hidden>Mientras no lo guardes, los clientes no ven el aforo de esta sala.</p>
+                  <Campo tipo="number" nombre="aforo" etiqueta="Aforo (personas)" ayuda="Sale del cálculo de aforo del certificado ITSE. Cuenta también al personal del estudio." obligatorio min="1" max="200" step="1" inputmode="numeric" />
+                  <Campo nombre="itse_certificado" etiqueta="Certificado ITSE" ayuda="Tal como figura en el certificado." obligatorio maxlength="40" />
+                  <Campo tipo="date" nombre="itse_vence" etiqueta="Vence el" ayuda="Fecha de vencimiento del certificado." obligatorio />
+                  <div data-aforo-exito></div>
+                  <div><Boton tipo="submit" variante="secundario" data-envio data-guardar-aforo>Guardar aforo</Boton></div>
+                </form>
+              </Panel>
+            </div>
           </div>
         </div>
       </template>
+
+      <template data-itse-aviso="aviso"><Aviso variante="aviso" titulo=" " texto=" " accion={{ etiqueta: 'Actualizar certificado', href: '#' }} /></template>
+      <template data-itse-aviso="error"><Aviso variante="error" titulo=" " texto=" " accion={{ etiqueta: 'Actualizar certificado', href: '#' }} /></template>
+      <template data-itse-etiqueta="neutra"><EtiquetaTecnica texto=" " /></template>
+      <template data-itse-etiqueta="aviso"><EtiquetaTecnica variante="aviso" texto=" " /></template>
+      <template data-itse-etiqueta="alerta"><EtiquetaTecnica variante="alerta" texto=" " /></template>
 
       <template data-icono="chevron-left"><Icono nombre="chevron-left" /></template>
       <template data-icono="chevron-right"><Icono nombre="chevron-right" /></template>
@@ -166,8 +187,9 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
   import { IslaGestion, hacerUnico } from '../servicios/isla-gestion.js';
   import { listarSalas, obtenerDisponibilidad } from '../servicios/reservas.js';
   import { obtenerSugerencia, publicarFranjas, retirarFranja, registrarCierre, quitarCierre, obtenerParametros, guardarParametros } from '../servicios/franjas.js';
+  import { guardarSala, estadoItse, cuando } from '../servicios/aforo.js';
   import { hoyLima, fechaDe, horaDe, instante, sumarDias, lunesDe, semanaDe, rangoSemana, diaCorto, diaLargo, diaMes, nombreDia } from '../servicios/formatos.js';
-  import { mostrarAviso, enfocarAviso, limpiarAvisos, quitarError } from '../servicios/formulario.js';
+  import { mostrarAviso, enfocarAviso, limpiarAvisos, quitarError, ponerError, llenarAviso } from '../servicios/formulario.js';
 
   const minutos = (hora) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5));
   const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
@@ -206,6 +228,15 @@ const errorLimite = (nombre) => {
         else if (boton.matches('[data-quitar-cierre]')) this.eliminarCierre(boton);
       });
       this.addEventListener('input', (e) => e.target.closest('.franja') && this.etiquetarQuitar(e.target.closest('.franja')));
+      this.addEventListener('click', (e) => {
+        const enlace = e.target.closest('a[data-sala-itse]');
+        if (enlace && enlace.dataset.salaItse === this.sala?.id) {
+          e.preventDefault();
+          this.querySelector('[name="itse_certificado"]').focus();
+        }
+      });
+      // Al salir de un campo de F4 se valida ese campo (formularios.md). Si el foco va al botón no se valida: el error movería el botón y se perdería el clic; el envío valida todo.
+      this.addEventListener('focusout', (e) => e.target.matches?.('[data-formulario="aforo"] input') && !e.relatedTarget?.matches?.('[data-envio]') && this.validarCampo(e.target));
       this.addEventListener('change', (e) => {
         if (e.target.name === 'todo-el-dia') this.querySelector('[data-horas]').hidden = e.target.checked;
         if (e.target.name === 'sala') location.assign(this.enlace(this.lunes, e.target.value));
@@ -216,6 +247,7 @@ const errorLimite = (nombre) => {
       const accion = formulario.dataset.formulario;
       if (accion === 'publicar') this.publicar(formulario);
       else if (accion === 'cierre') this.cerrar(formulario);
+      else if (accion === 'aforo') this.guardarAforo(formulario);
       else this.guardar(formulario);
     }
 
@@ -226,6 +258,7 @@ const errorLimite = (nombre) => {
     }
 
     errorEnvio(error) {
+      if (error.aforo) return this.errorAforo(error);
       const aviso = (variante, titulo, texto, extra) => enfocarAviso(mostrarAviso(this, variante, titulo, texto, extra));
       if (error.codigo === 'franja_solapada') aviso('error', 'Una de las franjas se cruza con otra ya publicada', 'Revisa las horas y vuelve a publicar.');
       else if (error.codigo === 'franja_con_reservas') aviso('error', 'Esta franja tiene reservas vigentes', 'Cancélalas o espera a que terminen antes de retirarla.');
@@ -287,6 +320,9 @@ const errorLimite = (nombre) => {
       this.pintarPublicadas(franjas, disponibilidad.ocupados ?? [], sugerencia.length > 0);
       this.pintarEditor(lunes, franjas, sugerencia);
       this.pintarCierres(disponibilidad.cierres ?? []);
+      this.pintarAforo();
+      this.pintarAvisosItse();
+      if (location.hash === '#campo-itse_certificado') this.querySelector('[name="itse_certificado"]').focus(); // viene de "Actualizar certificado" de otra sala
       return `${plural(franjas.length, 'franja publicada', 'franjas publicadas')} esta semana`;
     }
 
@@ -352,6 +388,103 @@ const errorLimite = (nombre) => {
           return fila;
         }),
       );
+    }
+
+    // --- Aforo de la sala (RF-03 CA-10 a CA-13): F4 y avisos de vencimiento del certificado ITSE ---
+
+    pintarAforo() {
+      const sala = this.sala;
+      const f = this.querySelector('[data-formulario="aforo"]');
+      f.querySelector('[name="aforo"]').value = sala.aforo ?? '';
+      f.querySelector('[name="itse_certificado"]').value = sala.itse?.certificado ?? '';
+      const vence = f.querySelector('[name="itse_vence"]');
+      vence.min = hoyLima();
+      vence.value = sala.itse?.vence ?? '';
+      f.querySelector('[data-aforo-vacio]').hidden = sala.aforo != null;
+      if (this.salas.length > 1) f.querySelector('[data-envio]').setAttribute('aria-label', `Guardar aforo de ${sala.nombre}`);
+      const e = estadoItse(sala);
+      const [variante, texto] = { 'sin-registrar': ['neutra', 'SIN REGISTRAR'], vigente: ['neutra', 'VIGENTE'], 'por-vencer': ['aviso', cuando(e.dias).toUpperCase()], vencido: ['alerta', 'VENCIDO'] }[e.clase];
+      const etiqueta = this.querySelector(`template[data-itse-etiqueta="${variante}"]`).content.firstElementChild.cloneNode(true);
+      etiqueta.querySelector('span').textContent = texto;
+      this.querySelector('[data-itse-estado]').replaceChildren(etiqueta);
+    }
+
+    // Un aviso por cada sala afectada (no solo la elegida): quedan 30 días o menos, o ya venció.
+    pintarAvisosItse() {
+      const avisos = this.salas.flatMap((sala) => {
+        const e = estadoItse(sala);
+        if (e.clase !== 'por-vencer' && e.clase !== 'vencido') return [];
+        const vencido = e.clase === 'vencido';
+        const aviso = this.querySelector(`template[data-itse-aviso="${vencido ? 'error' : 'aviso'}"]`).content.firstElementChild.cloneNode(true);
+        aviso.removeAttribute('role'); // estático: no se anuncia
+        llenarAviso(
+          aviso,
+          `El certificado ITSE de la sala ${sala.nombre} ${vencido ? `venció el ${e.vence}` : `${cuando(e.dias)} (${e.vence})`}`,
+          vencido ? 'Los clientes siguen viendo el aforo con ese certificado; registra el renovado cuando lo tengas.' : 'Cuando lo renueves, actualiza el número y el vencimiento.',
+        );
+        const enlace = aviso.querySelector('.aviso-accion');
+        enlace.href = `${this.enlace(this.lunes, sala.id)}#campo-itse_certificado`;
+        enlace.dataset.salaItse = sala.id;
+        enlace.setAttribute('aria-label', `Actualizar certificado de la sala ${sala.nombre}`);
+        return [aviso];
+      });
+      const contenedor = this.querySelector('[data-itse]');
+      contenedor.replaceChildren(...avisos);
+      contenedor.hidden = !avisos.length;
+    }
+
+    // Mensaje de error local de un campo de F4; '' si es válido.
+    mensajeAforo(entrada) {
+      const v = entrada.value.trim();
+      if (entrada.name === 'aforo') return !v ? 'Escribe el aforo.' : !/^\d+$/.test(v) || v < 1 || v > 200 ? 'Escribe un número entero de 1 a 200.' : '';
+      if (entrada.name === 'itse_certificado') return !v ? 'Escribe el número del certificado.' : v.length > 40 || /[\r\n]/.test(entrada.value) ? 'Usa hasta 40 caracteres, en una sola línea.' : '';
+      return !v ? 'Elige la fecha de vencimiento.' : v < hoyLima() ? 'La fecha no puede ser anterior a hoy.' : '';
+    }
+
+    validarCampo(entrada) {
+      quitarError(entrada);
+      const mensaje = this.mensajeAforo(entrada);
+      if (mensaje) ponerError(this, entrada, mensaje);
+    }
+
+    guardarAforo(formulario) {
+      if (this.ocupado) return;
+      const campos = ['aforo', 'itse_certificado', 'itse_vence'].map((n) => formulario.querySelector(`[name="${n}"]`));
+      campos.forEach(quitarError);
+      this.querySelector('[data-aforo-exito]').replaceChildren();
+      const errores = campos.map((entrada) => ({ entrada, mensaje: this.mensajeAforo(entrada), texto: this.etiqueta(entrada) })).filter((e) => e.mensaje);
+      if (!this.validar(errores, ['dato', 'datos'])) return;
+      const [aforo, certificado, vence] = campos;
+      const cuerpo = { aforo: Number(aforo.value), itse_certificado: certificado.value.trim(), itse_vence: vence.value };
+      // `aforo` marca el error para que errorEnvio lo trate como el de F4.
+      this.enviar(formulario.querySelector('[data-envio]'), 'Guardando…', () => guardarSala(this.sala.id, cuerpo).catch((e) => { throw Object.assign(e, { aforo: true }); }), (sala) => this.aforoGuardado(sala));
+    }
+
+    aforoGuardado(sala) {
+      this.salas = this.salas.map((s) => (s.id === sala.id ? sala : s));
+      this.sala = sala;
+      limpiarAvisos(this);
+      this.pintarAforo();
+      this.pintarAvisosItse();
+      const aviso = this.querySelector('template[data-plantilla="aviso-exito"]').content.cloneNode(true);
+      llenarAviso(aviso.firstElementChild, 'Aforo guardado', 'Ya lo ven los clientes al reservar y en el calendario.');
+      this.querySelector('[data-aforo-exito]').replaceChildren(aviso);
+      this.anunciar('Aforo guardado');
+      enfocarAviso(this.querySelector('[data-aforo-exito] .aviso'));
+    }
+
+    errorAforo(error) {
+      const aviso = (variante, titulo, texto) => enfocarAviso(mostrarAviso(this, variante, titulo, texto));
+      const campo = (nombre, mensaje, texto) => this.validar([{ entrada: this.querySelector(`[name="${nombre}"]`), mensaje, texto }], ['dato', 'datos']);
+      if (error.estado === 404) this.cargar().then(() => aviso('informacion', 'Esa sala ya no existe', 'Actualizamos la lista de salas.'));
+      else if (error.estado === 422 && error.codigo === 'itse_vencido') campo('itse_vence', 'La fecha no puede ser anterior a hoy (hora de Lima).', 'Vence el');
+      else if (error.estado === 422 && error.codigo === 'datos_invalidos') {
+        const textos = { aforo: ['Escribe un número entero de 1 a 200.', 'Aforo (personas)'], itse_certificado: ['Usa hasta 40 caracteres, en una sola línea.', 'Certificado ITSE'], itse_vence: ['Elige la fecha de vencimiento.', 'Vence el'] };
+        const c = error.detalles?.campo;
+        if (Object.hasOwn(textos, c ?? '')) campo(c, ...textos[c]);
+        else aviso('error', 'No pudimos guardar el aforo con estos datos. Revisa los tres campos.');
+      } else return false;
+      return true;
     }
 
     // --- Editor de franjas: un fieldset por dia, filas DESDE / HASTA ---
@@ -549,6 +682,16 @@ const errorLimite = (nombre) => {
     gap: var(--espacio-3);
     grid-template-columns: 1fr 1fr auto;
     align-items: end;
+  }
+  .franjas :global(.franjas-itse:not([hidden])) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    margin-block-end: var(--espacio-4);
+  }
+  /* F4 va a espacio-6 de F3; el lateral ya deja espacio-5. */
+  .franjas :global(.franjas-aforo) {
+    margin-block-start: calc(var(--espacio-6) - var(--espacio-5));
   }
   .franjas :global(.franjas-filas) {
     display: flex;

@@ -109,6 +109,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
   import { obtenerPerfil } from '../servicios/api.js';
   import { obtenerToken } from '../servicios/sesion.js';
   import { llenarAviso } from '../servicios/formulario.js';
+  import { lineaAforo } from '../servicios/aforo.js';
   import { hoyLima, fechaDe, horaDe, instante, sumarDias, esFecha, inicioValido, duracionValida, nombreDia, diaMes, rangoSemana, semanaDe } from '../servicios/formatos.js';
 
   const MEDIA = 30 * 60e3;
@@ -416,6 +417,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       this.mostrar('vacio');
       const titulo = this.querySelector('[data-salida] .panel-titulo')!;
       titulo.textContent = this.tituloPeriodo();
+      this.aforo();
       this.querySelector('[data-barra]')!.replaceChildren(...this.barra(this.vistasDisponibles()));
       const mes = this.estado.vista === 'mes';
       const siguiente = this.querySelector<HTMLAnchorElement>('[data-siguiente]')!;
@@ -429,6 +431,12 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
         publicar.href = `/app/franjas/?semana=${semanaDe(lunesDeFecha(this.estado.fecha))}`;
       } else publicar.remove();
       return 'Aún no hay horarios publicados';
+    }
+
+    // RF-03 CA-11: aforo y certificado de la sala mostrada, como ayuda del panel; sin aforo no hay línea.
+    aforo() {
+      const nodos = this.modo === 'asesoria' ? null : lineaAforo(this.sala);
+      if (nodos) this.querySelector('[data-salida] .panel-titulos')!.append(h('p', { class: 'cal-aforo', 'data-aforo': true }, ...nodos));
     }
 
     // --- Barra del periodo, vistas y sala ---
@@ -521,6 +529,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       this.mostrar('datos');
       const titulo = this.tituloPeriodo();
       this.querySelector('[data-salida] .panel-titulo')!.textContent = titulo;
+      this.aforo();
       this.querySelector('[data-barra]')!.replaceChildren(...this.barra(this.vistasDisponibles()));
       const cuerpo = this.querySelector('[data-cuerpo]')!;
       const estados = new Set<string>();
@@ -779,6 +788,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
     pintarLista() {
       this.mostrar('lista');
       this.querySelector('[data-salida] .panel-titulo')!.textContent = this.tituloPeriodo();
+      this.aforo();
       this.querySelector('[data-barra]')!.replaceChildren(...this.barra(this.vistasDisponibles()));
       this.querySelector('[data-salida] caption')!.textContent = `Reservas · ${this.tituloPeriodo()}`;
       const plantilla = this.querySelector<HTMLTemplateElement>('template[data-fila]')!;
@@ -915,6 +925,11 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
   }
   .calendario :global([data-avisos]:not(:empty)) {
     margin-block-end: var(--espacio-4);
+  }
+  .calendario :global(.cal-aforo) {
+    color: var(--color-texto-secundario);
+    font-size: var(--fuente-tamano-pequeno);
+    line-height: var(--fuente-interlineado-interfaz);
   }
   .calendario :global(.cal-barra) {
     display: flex;
