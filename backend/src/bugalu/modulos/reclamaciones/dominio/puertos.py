@@ -23,6 +23,14 @@ class RepositorioHojas(Protocol):
         """Tras subir el objeto a su ruta. Falla con AlmacenamientoNoDisponible."""
         ...
 
+    async def avisar_hoja(self, id_: UUID) -> None:
+        """Tras las subidas: los avisos de la hoja listan solo lo guardado y salen."""
+        ...
+
+    async def rutas_huerfanas(self) -> list[str]:
+        """Rutas con objeto en Storage y sin adjunto, caducadas hace mas de una hora."""
+        ...
+
     async def obtener(self, id_: UUID) -> Hoja | None:
         """Solo las visibles para el usuario (dueno o administrador)."""
         ...
@@ -50,6 +58,10 @@ AbrirRepositorio = Callable[[], AbstractAsyncContextManager[RepositorioHojas]]
 class AlmacenAdjuntos(Protocol):
     async def subir(self, ruta: str, contenido: bytes, mime: str) -> None:
         """Falla con AlmacenamientoNoDisponible."""
+        ...
+
+    async def borrar(self, ruta: str) -> None:
+        """Solo rutas huerfanas (la RLS de Storage lo limita). AlmacenamientoNoDisponible."""
         ...
 
     async def firmar(self, ruta: str, segundos: int) -> str: ...

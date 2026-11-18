@@ -724,3 +724,38 @@ async def test_el_limite_usa_la_ip_reenviada_solo_si_el_proxy_es_de_confianza(
     )
     # quien no es el proxy de confianza no puede elegir su IP con una cabecera
     assert await _ip_vista_por_uvicorn(app, "10.9.9.9", ips_usadas, sql) == "127.0.0.1"
+
+
+async def test_los_avisos_listan_solo_los_adjuntos_guardados_y_el_reintento_informa_los_perdidos(
+    anonimo: AsyncClient, sql: Ejecutar, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = modulo_router.AlmacenStorage.subir
+
+    async def falla_en_la_segunda(self: Any, ruta: str, contenido: bytes, mime: str) -> None:
+        if ruta not in vistas and len(vistas) == 1:
+            raise AlmacenamientoNoDisponible("storage caido")
+        vistas.append(ruta)
+        await original(self, ruta, contenido, mime)
+
+    vistas: list[str] = []
+    monkeypatch.setattr(modulo_router.AlmacenStorage, "subir", falla_en_la_segunda)
+    cuerpo = datos(clave_envio=str(uuid.uuid4()))
+    adjuntos = [("a.png", PNG, "image/png"), ("b.png", PNG, "image/png")]
+    primera = await enviar(anonimo, cuerpo, adjuntos)
+    assert primera.status_code == 201, primera.text
+    id_ = primera.json()["id"]
+    filas = sql(
+        "select tipo, datos -> 'adjuntos', datos -> 'adjuntos_no_guardados', enviar_desde <= now() "
+        "from public.notificacion where datos ->> 'id' = %s and tipo = 'reclamacion_registrada'",
+        id_,
+    )
+    assert filas == [("reclamacion_registrada", ["a.png"], 1, True)]
+    recibida = sql(
+        "select datos -> 'adjuntos', datos -> 'adjuntos_no_guardados' from public.notificacion "
+        "where datos ->> 'id' = %s and tipo = 'reclamacion_recibida'",
+        id_,
+    )
+    assert recibida and all(f == (1, 1) for f in recibida)
+    segunda = await enviar(anonimo, cuerpo, adjuntos)
+    assert segunda.status_code == 200, segunda.text
+    assert segunda.json()["adjuntos_no_guardados"] == [2]

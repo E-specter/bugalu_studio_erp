@@ -95,7 +95,8 @@ async def test_el_correo_sale_con_la_plantilla_y_la_url_publica_configurada() ->
 
 async def test_aviso_confirmado_sale_con_ics_de_la_reserva_de_la_bandeja() -> None:
     datos = {
-        "id_reserva": "r-1", "folio": "BG-1", "hito": "al_reservar", "monto": 10,
+        "id_reserva": "0b6f6f3e-1c2d-4e5f-8a9b-0c1d2e3f4a5b", "folio": "BG-1",
+        "hito": "al_reservar", "monto": 10,
         "reserva_confirmada": True,
     }  # fmt: skip
     p = Pendiente(uuid4(), "pago_aprobado", "a@b.pe", datos, 0, datetime(2027, 3, 1, tzinfo=UTC))
@@ -115,7 +116,8 @@ async def test_aviso_confirmado_sale_con_ics_de_la_reserva_de_la_bandeja() -> No
 
 async def test_aviso_confirmado_sin_datos_de_la_reserva_es_un_fallo_para_reintentar() -> None:
     datos = {
-        "id_reserva": "r-1", "folio": "BG-1", "hito": "al_reservar", "monto": 10,
+        "id_reserva": "0b6f6f3e-1c2d-4e5f-8a9b-0c1d2e3f4a5b", "folio": "BG-1",
+        "hito": "al_reservar", "monto": 10,
         "reserva_confirmada": True,
     }  # fmt: skip
     p = Pendiente(uuid4(), "pago_aprobado", "a@b.pe", datos, 0, datetime(2027, 3, 1, tzinfo=UTC))

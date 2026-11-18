@@ -1,8 +1,7 @@
 """Armado del correo de un aviso: redaccion, plantilla de marca y evento de calendario."""
 
-import re
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 
 from bugalu.modulos.notificaciones.dominio.calendario import (
     DatosEvento,
@@ -24,6 +23,8 @@ _METODO = {
     "reserva_cancelada_con_pagos": "CANCEL",
 }
 TIPOS_CON_EVENTO = frozenset(_METODO)
+# SEQUENCE: segundos desde esta epoca propia (en Unix pasaria de 32 bits en 2038).
+EPOCA_SECUENCIA = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 def _tiene_evento(p: Pendiente, reserva: DatosReserva | None) -> bool:
@@ -53,17 +54,22 @@ def _evento(
     )
     metodo = _METODO[p.tipo]
     ics = generar_ics(
-        e, metodo, int(p.creada_en.timestamp()), ahora, remitente, p.destinatario, url
+        e,
+        metodo,
+        int((p.creada_en - EPOCA_SECUENCIA).total_seconds()),
+        ahora,
+        remitente,
+        p.destinatario,
+        url,
     )
-    folio_seguro = re.sub(r"[^A-Za-z0-9._-]+", "_", e.folio)
     solicitud = metodo == "REQUEST"
     bloque = BloqueEvento(
-        texto_evento(metodo, p.tipo == "reserva_reprogramada", folio_seguro),
+        texto_evento(metodo, p.tipo == "reserva_reprogramada", e.folio),
         con_aviso=solicitud,
         url_google=enlace_google(e, url) if solicitud else None,
         url_outlook=enlace_outlook(e, url) if solicitud else None,
     )
-    return Evento(metodo, f"bugalu-{folio_seguro}.ics", ics), bloque
+    return Evento(metodo, f"bugalu-{e.folio}.ics", ics), bloque
 
 
 def armar_correo(

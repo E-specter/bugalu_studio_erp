@@ -59,3 +59,19 @@ async def test_una_firma_con_respuesta_rara_es_503() -> None:
     almacen = _almacen(httpx.MockTransport(lambda _: httpx.Response(200, json={"otra": 1})), "t")
     with pytest.raises(AlmacenamientoNoDisponible):
         await almacen.firmar("id/1.png", 300)
+
+
+async def test_borrar_usa_solo_la_clave_publicable_y_el_metodo_delete() -> None:
+    vistas: list[httpx.Request] = []
+
+    def responder(peticion: httpx.Request) -> httpx.Response:
+        vistas.append(peticion)
+        return httpx.Response(200, json={})
+
+    await _almacen(httpx.MockTransport(responder)).borrar("id/uuid.pdf")
+    (p,) = vistas
+    assert (p.method, str(p.url)) == (
+        "DELETE",
+        "http://s/storage/v1/object/reclamaciones/id/uuid.pdf",
+    )
+    assert p.headers["apikey"] == "clave-publicable" and "authorization" not in p.headers

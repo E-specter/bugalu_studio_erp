@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(14);
 
 -- ADR-016: la bandeja de correos lee de la reserva lo que el evento de calendario necesita
 -- (horario, servicio, sala) y si la reserva ya tenia evento antes del aviso.
@@ -48,6 +48,7 @@ select public.t_reserva(0, -500, 'cancelada', 'cliente');
 select ok(has_function_privilege('bugalu_api', 'public.datos_reserva_para_correo(uuid[])', 'execute'), 'bugalu_api la ejecuta');
 select ok(not has_function_privilege('anon', 'public.datos_reserva_para_correo(uuid[])', 'execute'), 'anon no');
 select ok(not has_function_privilege('authenticated', 'public.datos_reserva_para_correo(uuid[])', 'execute'), 'authenticated no');
+select ok(not has_function_privilege('service_role', 'public.datos_reserva_para_correo(uuid[])', 'execute'), 'service_role tampoco');
 
 -- 2. Reserva confirmada solo con credito y cancelada por el cliente: el aviso de cancelacion tiene evento.
 select public.t_reserva(30, 300, 'pre_reservada');
@@ -92,5 +93,8 @@ select is((select tiene_evento from public.datos_reserva_para_correo(array[publi
 
 -- 6. Ids sin notificacion o sin reserva no devuelven filas.
 select is((select count(*)::int from public.datos_reserva_para_correo(array[gen_random_uuid()])), 0, 'id desconocido: sin filas');
+-- 7. El id de la reserva se compara como uuid: un valor que no lo es falla en vez de comparar texto.
+insert into public.notificacion (id, tipo, destinatario, datos) values ('99999999-0000-0000-0000-000000000001', 'reserva_cancelada_estudio', 'x@t.pe', '{"id_reserva": "no-es-uuid"}');
+select throws_ok($$select * from public.datos_reserva_para_correo(array['99999999-0000-0000-0000-000000000001'::uuid])$$, '22P02', null, 'un id_reserva que no es uuid falla (la bandeja lo degrada)');
 select * from finish();
 rollback;

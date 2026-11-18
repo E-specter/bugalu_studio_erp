@@ -109,3 +109,13 @@ def test_logo_por_cid_y_texto_equivalente_en_todos_los_avisos(tipo: str) -> None
 def test_sin_html_sale_solo_texto_como_antes() -> None:
     msg = construir_mensaje(Correo("c@x.pe", "Asunto", "Cuerpo"), "r@x.pe")
     assert tipos_mime(msg) == "text/plain" and msg["From"] == "r@x.pe"
+
+
+@pytest.mark.parametrize("tipo", sorted(TIPOS_CON_EVENTO))
+def test_la_parte_calendario_viaja_en_quoted_printable_o_base64(tipo: str) -> None:
+    m, _ = mensaje(tipo)
+    partes = [p for p in m.walk() if p.get_content_type() == "text/calendar"]
+    assert partes and all(
+        p["Content-Transfer-Encoding"] in ("quoted-printable", "base64") for p in partes
+    )
+    assert partes[0].get_content().replace("\r\n", "\n").startswith("BEGIN:VCALENDAR")

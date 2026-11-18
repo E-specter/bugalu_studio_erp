@@ -123,6 +123,9 @@ class Alta:
     subidas: dict[int, str] = field(
         default_factory=dict
     )  # n del adjunto -> ruta que genero la base
+    no_guardados: list[int] = field(
+        default_factory=list
+    )  # en un reintento: los que el primer envio perdio
 
 
 @dataclass(frozen=True)

@@ -1,10 +1,14 @@
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlparse
 
 from pydantic import SecretStr, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _ENV = Path(__file__).parents[3] / ".env"  # backend/.env, desde cualquier directorio
+
+
+_HOSTS_LOCALES = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}  # noqa: S104 - lista de rechazo
 
 
 class Configuracion(BaseSettings):
@@ -34,6 +38,8 @@ class Configuracion(BaseSettings):
     smtp_starttls: bool = False
     # Segundos entre envios de la bandeja de correos; 0 desactiva la tarea periodica.
     intervalo_envio_correos: int = 30
+    # Segundos entre limpiezas de adjuntos huerfanos del Libro de Reclamaciones; 0 la desactiva.
+    intervalo_limpieza_adjuntos: int = 3600
 
     @model_validator(mode="after")
     def _smtp_con_usuario_exige_clave_y_starttls(self) -> Configuracion:
@@ -43,6 +49,14 @@ class Configuracion(BaseSettings):
             raise ValueError(
                 "SMTP_USUARIO exige SMTP_STARTTLS=true (no se envia la clave en claro)"
             )
+        return self
+
+    @model_validator(mode="after")
+    def _envio_real_exige_url_publica_no_local(self) -> Configuracion:
+        # No hay variable de "produccion": el envio con la cuenta de Google (SMTP_USUARIO) es
+        # la senal. Con ella, enlaces a localhost saldrian en correos reales a los clientes.
+        if self.smtp_usuario and urlparse(self.url_publica).hostname in _HOSTS_LOCALES:
+            raise ValueError("SMTP_USUARIO exige URL_PUBLICA con el dominio real, no una URL local")
         return self
 
     @property

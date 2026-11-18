@@ -21,6 +21,7 @@ from bugalu.modulos.reclamaciones.aplicacion.consultar.caso_de_uso import (
     ObtenerHoja,
     UrlAdjunto,
 )
+from bugalu.modulos.reclamaciones.aplicacion.limpiar.caso_de_uso import LimpiarAdjuntosHuerfanos
 from bugalu.modulos.reclamaciones.aplicacion.registrar.caso_de_uso import (
     RegistrarHoja,
     TranscribirHoja,
@@ -83,6 +84,7 @@ async def test_registrar_confirma_la_hoja_antes_de_subir_y_confirma_cada_adjunto
         "abre", "registrar", "cierra",  # la hoja se confirma antes de que Storage vea las subidas
         f"subir:{rutas[0]}", "abre", f"confirmar:{rutas[0]}", "cierra",
         f"subir:{rutas[1]}", "abre", f"confirmar:{rutas[1]}", "cierra",
+        "abre", f"avisar:{id_}", "cierra",  # los avisos salen cuando termina la subida
     ]  # fmt: skip
     hoja_creada = registro.hoja
     assert (hoja_creada.id, hoja_creada.numero, hoja_creada.estado) == (
@@ -112,9 +114,26 @@ async def test_si_falla_la_subida_la_hoja_se_conserva_se_registra_y_se_indica(
     assert str(registro.hoja.id) in caplog.text and "2" in caplog.text
 
 
+async def test_una_confirmacion_fallida_se_reintenta_una_vez() -> None:
+    repo = HojasFalso()
+    repo.falla_confirmar_en = 1  # solo la primera llamada falla
+    registro = await registrar(repo, AlmacenFalso()).ejecutar(
+        contenido(), True, False, [("a.png", PNG)], None
+    )
+    assert (registro.no_guardados, [a.n for a in registro.hoja.adjuntos]) == ([], [1])
+    assert repo.confirmaciones == 2
+
+
+async def test_sin_adjuntos_no_hay_que_cerrar_la_hoja() -> None:
+    repo = HojasFalso()
+    await registrar(repo, AlmacenFalso()).ejecutar(contenido(), True, False, [], None)
+    assert not any(e.startswith("avisar") for e in repo.eventos)
+
+
 async def test_si_falla_la_confirmacion_el_adjunto_tampoco_cuenta_como_guardado() -> None:
     repo = HojasFalso()
     repo.falla_confirmar_en = 1
+    repo.fallas_confirmar = 2  # el reintento tambien falla
     registro = await registrar(repo, AlmacenFalso()).ejecutar(
         contenido(), True, False, [("a.png", PNG), ("b.png", PNG)], None
     )
@@ -281,10 +300,20 @@ async def test_un_reintento_con_la_misma_clave_devuelve_la_hoja_sin_subir_nada()
     repo, almacen = HojasFalso(), AlmacenFalso()
     previa = hoja()
     repo.existente = previa
+    repo.no_guardados_previos = [2]  # el primer envio perdio el adjunto 2
     clave = uuid4()
     registro = await registrar(repo, almacen).ejecutar(
         contenido(), True, False, [("a.png", PNG)], "1.2.3.4", clave
     )
-    assert (registro.hoja, registro.creada, registro.no_guardados) == (previa, False, [])
+    assert (registro.hoja, registro.creada, registro.no_guardados) == (previa, False, [2])
     assert almacen.subidos == [] and repo.confirmaciones == 0
+    assert not any(e.startswith("avisar") for e in repo.eventos)
     assert repo.ultima_alta is not None and repo.ultima_alta[1].clave_envio == clave
+
+
+async def test_la_limpieza_borra_de_storage_las_rutas_huerfanas_y_sigue_si_una_falla() -> None:
+    repo, almacen = HojasFalso(), AlmacenFalso()
+    repo.huerfanas = ["a/1.pdf", "b/2.pdf", "c/3.pdf"]
+    almacen.falla_borrar = {"b/2.pdf"}
+    assert await LimpiarAdjuntosHuerfanos(abridor(repo), almacen).ejecutar() == 2
+    assert almacen.borrados == ["a/1.pdf", "c/3.pdf"]

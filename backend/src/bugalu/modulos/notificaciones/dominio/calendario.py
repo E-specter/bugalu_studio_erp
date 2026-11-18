@@ -1,8 +1,10 @@
 """Evento de calendario de los correos (ADR-016): `.ics` RFC 5545 y enlaces a Google y Outlook."""
 
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from urllib.parse import quote, urlencode
+from uuid import UUID
 
 from bugalu.modulos.notificaciones.dominio.formato import LIMA
 
@@ -14,6 +16,9 @@ AVISO_ADR_016 = (
 )
 
 
+_FOLIO = re.compile(r"[A-Za-z0-9._-]{1,40}")
+
+
 @dataclass(frozen=True)
 class DatosEvento:
     id_reserva: str
@@ -22,6 +27,16 @@ class DatosEvento:
     fin: datetime
     servicio: str
     sala: str
+
+    def __post_init__(self) -> None:
+        # UID y URL llevan estos dos valores sin escapar: solo UUID y folios de caracteres seguros.
+        try:
+            if str(UUID(self.id_reserva)) != self.id_reserva:
+                raise ValueError
+        except ValueError:
+            raise ValueError("id_reserva invalido para el evento") from None
+        if not _FOLIO.fullmatch(self.folio):
+            raise ValueError("folio invalido para el evento")
 
 
 def titulo(e: DatosEvento) -> str:

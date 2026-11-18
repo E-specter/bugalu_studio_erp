@@ -245,3 +245,33 @@ def test_el_cuerpo_de_la_copia_se_convierte_en_tablas_y_parrafos() -> None:
     _, cuerpo = redactar("reclamacion_registrada", HOJA)
     tipos = [t for t, _ in bloques_del_cuerpo(cuerpo)]
     assert tipos.count("tabla") >= 4
+
+
+def test_registrada_lista_solo_los_adjuntos_guardados_y_dice_cuantos_no() -> None:
+    d = HOJA | {"adjuntos": ["foto.png"], "adjuntos_no_guardados": 1}
+    assert (
+        "Adjuntos: foto.png\nNo pudimos guardar 1 de los adjuntos que enviaste."
+        in redactar("reclamacion_registrada", d)[1]
+    )
+    d = HOJA | {"adjuntos": [], "adjuntos_no_guardados": 2}
+    assert (
+        "Adjuntos: Ninguno\nNo pudimos guardar 2 de los adjuntos que enviaste."
+        in redactar("reclamacion_registrada", d)[1]
+    )
+    assert (
+        "No pudimos guardar"
+        not in redactar("reclamacion_registrada", HOJA | {"adjuntos_no_guardados": 0})[1]
+    )
+
+
+def test_recibida_cuenta_guardados_y_avisa_de_los_que_no() -> None:
+    datos = {"numero": "000000042-2026", "tipo": "reclamo", "nombre": "Ana", "creada_en": HOJA["creada_en"],
+             "vence_respuesta": HOJA["vence_respuesta"], "medio_respuesta": "correo"}  # fmt: skip
+    cuerpo = redactar("reclamacion_recibida", datos | {"adjuntos": 1, "adjuntos_no_guardados": 2})[
+        1
+    ]
+    assert "Adjuntos: 1\nNo se guardaron 2 adjuntos: pide al consumidor que los reenvíe." in cuerpo
+    cuerpo = redactar("reclamacion_recibida", datos | {"adjuntos": 0, "adjuntos_no_guardados": 1})[
+        1
+    ]
+    assert "Adjuntos: Ninguno\nNo se guardó 1 adjunto: pide al consumidor que lo reenvíe." in cuerpo

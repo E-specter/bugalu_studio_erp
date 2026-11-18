@@ -18,6 +18,17 @@ from bugalu.modulos.reclamaciones.dominio.puertos import AbrirRepositorio, Almac
 _registro = logging.getLogger(__name__)
 
 
+async def _confirmar(abrir_publico: AbrirRepositorio, ruta: str) -> None:
+    """Un fallo suelto de la confirmacion no deja el objeto huerfano: se reintenta una vez."""
+    try:
+        async with abrir_publico() as hojas:
+            await hojas.confirmar_adjunto(ruta)
+    except Exception:
+        _registro.warning("Reintento de la confirmacion de %s.", ruta)
+        async with abrir_publico() as hojas:
+            await hojas.confirmar_adjunto(ruta)
+
+
 async def _alta(
     abrir: AbrirRepositorio,
     abrir_publico: AbrirRepositorio,
@@ -36,20 +47,25 @@ async def _alta(
             hojas.transcribir(id_, nueva) if transcribir else hojas.registrar(id_, nueva, ip)
         )
     if alta.existente is not None:  # reintento: nada nuevo que subir ni avisar
-        return Registro(alta.existente, False, [])
+        return Registro(alta.existente, False, alta.no_guardados)
     adjuntos: list[Adjunto] = []
     no_guardados: list[int] = []
     for a in nueva.adjuntos:
         ruta = alta.subidas[a.n]
         try:
             await almacen.subir(ruta, a.contenido, a.tipo)
-            async with abrir_publico() as hojas:
-                await hojas.confirmar_adjunto(ruta)
+            await _confirmar(abrir_publico, ruta)
         except Exception:  # la hoja ya esta registrada y avisada: no se pierde por un adjunto
             _registro.exception("El adjunto %s de la hoja %s no se guardo.", a.n, id_)
             no_guardados.append(a.n)
             continue
         adjuntos.append(Adjunto(a.n, a.nombre, a.tipo, a.tamano, ruta))
+    if nueva.adjuntos:  # los avisos esperaban a esto: salen con los adjuntos guardados
+        try:
+            async with abrir_publico() as hojas:
+                await hojas.avisar_hoja(id_)
+        except Exception:  # sin esto salen solos a los 5 minutos
+            _registro.exception("No se pudo cerrar la hoja %s tras las subidas.", id_)
     hoja = Hoja(
         id=id_,
         numero=alta.numero,

@@ -1,13 +1,16 @@
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from uuid import UUID
 
+import psycopg
 from psycopg import AsyncConnection
 from psycopg_pool import AsyncConnectionPool
 
 from bugalu.modulos.notificaciones.dominio.armado import TIPOS_CON_EVENTO
 from bugalu.modulos.notificaciones.dominio.puertos import DatosReserva, Pendiente
 
+registro = logging.getLogger(__name__)
 _CON_DATOS_PARA_PAGAR = ("reserva_creada", "reserva_finalizada_saldo")
 
 
@@ -48,7 +51,8 @@ class BandejaPostgres:
             cursor = await conexion.execute(
                 "select id, tipo, destinatario, datos, intentos, creada_en "
                 "from public.notificacion "
-                "where enviada_en is null and intentos < %s order by creada_en "
+                "where enviada_en is null and enviar_desde <= now() and intentos < %s "
+                "order by creada_en "
                 "limit %s for update skip locked",
                 (max_intentos, limite),
             )
@@ -64,8 +68,15 @@ class BandejaPostgres:
             reservas: dict[UUID, DatosReserva] = {}
             con_evento = [p.id for p in pendientes if p.tipo in TIPOS_CON_EVENTO]
             if con_evento:
-                cursor = await conexion.execute(
-                    "select * from public.datos_reserva_para_correo(%s)", (con_evento,)
-                )
-                reservas = {f[0]: DatosReserva(*f[1:]) for f in await cursor.fetchall()}
+                try:  # savepoint: un fallo aqui no aborta la transaccion del lote
+                    async with conexion.transaction():
+                        cursor = await conexion.execute(
+                            "select * from public.datos_reserva_para_correo(%s)", (con_evento,)
+                        )
+                        reservas = {f[0]: DatosReserva(*f[1:]) for f in await cursor.fetchall()}
+                except psycopg.Error as error:  # los avisos salen sin evento en vez de no salir
+                    registro.warning(
+                        "datos de reserva no disponibles, avisos sin evento: %s",
+                        type(error).__name__,
+                    )
             yield LotePostgres(conexion, pendientes, instrucciones, reservas)

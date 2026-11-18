@@ -74,4 +74,28 @@ def test_la_clave_smtp_no_aparece_en_repr(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setenv("SMTP_USUARIO", "a@b.c")
     monkeypatch.setenv("SMTP_CLAVE", "secreto-123")
     monkeypatch.setenv("SMTP_STARTTLS", "true")
+    monkeypatch.setenv("URL_PUBLICA", "https://erp.bugalu.pe")
     assert "secreto-123" not in repr(obtener_configuracion())
+
+
+@pytest.mark.parametrize(
+    "url", ["http://127.0.0.1:4321", "http://localhost:4321", "http://[::1]:4321", "http://0.0.0.0"]
+)
+def test_con_envio_real_la_url_publica_no_puede_ser_local(
+    monkeypatch: pytest.MonkeyPatch, url: str
+) -> None:
+    _base(monkeypatch)
+    monkeypatch.setenv("SMTP_USUARIO", "estudio@gmail.com")
+    monkeypatch.setenv("SMTP_CLAVE", "x")
+    monkeypatch.setenv("SMTP_STARTTLS", "true")
+    monkeypatch.setenv("URL_PUBLICA", url)
+    with pytest.raises(RuntimeError, match="URL_PUBLICA"):
+        obtener_configuracion()
+    monkeypatch.setenv("URL_PUBLICA", "https://erp.bugalu.pe")
+    assert obtener_configuracion().url_publica == "https://erp.bugalu.pe"
+
+
+def test_sin_envio_real_la_url_publica_local_sirve(monkeypatch: pytest.MonkeyPatch) -> None:
+    _base(monkeypatch)
+    monkeypatch.setenv("URL_PUBLICA", "http://localhost:4321")
+    assert obtener_configuracion().url_publica == "http://localhost:4321"

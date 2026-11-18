@@ -206,7 +206,8 @@ class RepositorioHojasPostgres:
         assert fila is not None
         existente = _hoja_registrada(fila[5]) if publica and fila[4] else None
         subidas = {s["n"]: s["ruta"] for s in fila[-1]}
-        return Alta(fila[0], fila[1], fila[2], fila[3], existente, subidas)
+        previos = fila[5]["adjuntos_no_guardados"] if existente else []
+        return Alta(fila[0], fila[1], fila[2], fila[3], existente, subidas, previos)
 
     @staticmethod
     def _adjuntos(nueva: NuevaHoja) -> Jsonb:
@@ -244,6 +245,13 @@ class RepositorioHojasPostgres:
             await self._conexion.execute("select public.confirmar_adjunto(%s)", (ruta,))
         except errors.NoDataFound:
             raise AlmacenamientoNoDisponible("No se pudo confirmar el adjunto subido.") from None
+
+    async def avisar_hoja(self, id_: UUID) -> None:
+        await self._conexion.execute("select public.avisar_hoja(%s)", (id_,))
+
+    async def rutas_huerfanas(self) -> list[str]:
+        cursor = await self._conexion.execute("select public.rutas_huerfanas_reclamacion()")
+        return [f[0] for f in await cursor.fetchall()]
 
     async def _cargar(self, filtro: str, parametros: dict[str, Any], orden: str) -> list[Hoja]:
         cursor = await self._conexion.execute(f"{_HOJA}{filtro} {orden}", parametros)  # noqa: S608

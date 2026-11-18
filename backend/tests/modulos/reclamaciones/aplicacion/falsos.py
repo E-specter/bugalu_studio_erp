@@ -56,6 +56,8 @@ def hoja(id_: UUID | None = None, medio: str = "correo", **cambios: object) -> H
 class AlmacenFalso:
     def __init__(self, falla_en: int | None = None, eventos: list[str] | None = None) -> None:
         self.subidos: list[tuple[str, int, str]] = []
+        self.borrados: list[str] = []
+        self.falla_borrar: set[str] = set()
         self.falla_en = falla_en
         self.intentos = 0
         self.eventos = eventos if eventos is not None else []
@@ -66,6 +68,11 @@ class AlmacenFalso:
             raise AlmacenamientoNoDisponible("no")
         self.eventos.append(f"subir:{ruta}")
         self.subidos.append((ruta, len(contenido), mime))
+
+    async def borrar(self, ruta: str) -> None:
+        if ruta in self.falla_borrar:
+            raise AlmacenamientoNoDisponible("no")
+        self.borrados.append(ruta)
 
     async def firmar(self, ruta: str, segundos: int) -> str:
         return f"http://firmada/{ruta}?s={segundos}"
@@ -80,8 +87,11 @@ class HojasFalso:
         self.ultima_alta: tuple[UUID, NuevaHoja, str | None] | None = None
         self.consultas: list[tuple[str | None, date | None, date | None]] = []
         self.existente: Hoja | None = None
-        self.falla_confirmar_en: int | None = None
+        self.falla_confirmar_en: int | None = None  # la n-esima confirmacion falla...
+        self.fallas_confirmar = 1  # ...y tantas seguidas como diga esto
         self.confirmaciones = 0
+        self.no_guardados_previos: list[int] = []  # lo que informa un reintento
+        self.huerfanas: list[str] = []
 
     async def es_administrador(self) -> bool:
         return self.administrador
@@ -96,6 +106,7 @@ class HojasFalso:
             15,
             self.existente,
             self._subidas(id_, nueva),
+            self.no_guardados_previos,
         )
 
     async def transcribir(self, id_: UUID, nueva: NuevaHoja) -> Alta:
@@ -111,9 +122,16 @@ class HojasFalso:
 
     async def confirmar_adjunto(self, ruta: str) -> None:
         self.confirmaciones += 1
-        if self.falla_confirmar_en == self.confirmaciones:
+        en = self.falla_confirmar_en
+        if en is not None and en <= self.confirmaciones < en + self.fallas_confirmar:
             raise AlmacenamientoNoDisponible("no se pudo confirmar")
         self.eventos.append(f"confirmar:{ruta}")
+
+    async def avisar_hoja(self, id_: UUID) -> None:
+        self.eventos.append(f"avisar:{id_}")
+
+    async def rutas_huerfanas(self) -> list[str]:
+        return self.huerfanas
 
     async def obtener(self, id_: UUID) -> Hoja | None:
         return None if id_ in self.ocultas else self.hojas.get(id_)

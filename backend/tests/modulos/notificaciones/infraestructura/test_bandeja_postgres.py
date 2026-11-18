@@ -170,3 +170,53 @@ async def test_la_bandeja_trae_la_reserva_de_los_avisos_con_evento_y_el_correo_s
     metodos = sorted(c.evento.metodo for c in por_tipo.values() if c.evento)
     assert metodos == ["CANCEL", "REQUEST"]
     assert sum(1 for c in por_tipo.values() if c.evento is None) == 1  # reserva_caducada
+
+
+async def test_si_falla_la_consulta_de_reservas_la_bandeja_sigue_y_el_aviso_sale_sin_evento(
+    bandeja: BandejaPostgres, configuracion: Configuracion, caplog: pytest.LogCaptureFixture
+) -> None:
+    datos = {"id_reserva": "no-es-uuid", "folio": "R-T", "inicio": INICIO, "fin": FIN}
+    with psycopg.connect(configuracion.url_base_datos_admin, autocommit=True) as c:
+        for tipo, d in (
+            ("reserva_cancelada_estudio", datos),
+            (
+                "pago_aprobado",
+                {**datos, "hito": "al_reservar", "monto": 50, "reserva_confirmada": True},
+            ),
+        ):
+            c.execute(
+                "insert into public.notificacion (tipo, destinatario, datos) "
+                "values (%s, 'sinevento@prueba.bugalu.pe', %s)",
+                (tipo, json.dumps(d)),
+            )
+        try:
+            enviador = EnviadorLento()
+            with caplog.at_level("WARNING"):
+                assert await enviar_pendientes(bandeja, enviador) == 1
+            assert enviador.correos[0].evento is None
+            assert any("datos de reserva" in r.message for r in caplog.records)
+            # la confirmacion no sale sin su evento: queda para reintentar (decision previa)
+            assert c.execute(
+                "select intentos from public.notificacion where tipo = 'pago_aprobado' "
+                "and destinatario like '%@prueba.bugalu.pe'"
+            ).fetchone() == (1,)
+        finally:
+            c.execute(
+                "delete from public.notificacion where destinatario like '%@prueba.bugalu.pe'"
+            )
+
+
+async def test_un_aviso_con_enviar_desde_futuro_espera(
+    bandeja: BandejaPostgres, poner: Poner, configuracion: Configuracion
+) -> None:
+    id_ = poner("espera@prueba.bugalu.pe")
+    with psycopg.connect(configuracion.url_base_datos_admin, autocommit=True) as c:
+        c.execute(
+            "update public.notificacion set enviar_desde = now() + interval '5 minutes' where id = %s",
+            (id_,),
+        )
+    enviador = EnviadorLento()
+    assert await enviar_pendientes(bandeja, enviador) == 0
+    with psycopg.connect(configuracion.url_base_datos_admin, autocommit=True) as c:
+        c.execute("update public.notificacion set enviar_desde = now() where id = %s", (id_,))
+    assert await enviar_pendientes(bandeja, enviador) == 1

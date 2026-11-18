@@ -59,6 +59,20 @@ def _etiqueta_tipo(datos: dict[str, Any]) -> str:
     return {"reclamo": "Reclamo", "queja": "Queja"}.get(datos.get("tipo") or "", "Sin marcar")
 
 
+def _no_guardados_consumidor(n: int) -> str:
+    return f"No pudimos guardar {n} de los adjuntos que enviaste.\n" if n else ""
+
+
+def _no_guardados_admin(n: int) -> str:
+    if not n:
+        return ""
+    return (
+        "No se guardó 1 adjunto: pide al consumidor que lo reenvíe.\n"
+        if n == 1
+        else f"No se guardaron {n} adjuntos: pide al consumidor que los reenvíe.\n"
+    )
+
+
 def _registrada(d: dict[str, Any]) -> tuple[str, str]:
     medio = "correo electrónico" if d["medio_respuesta"] == "correo" else "carta a tu domicilio"
     monto = d.get("monto")
@@ -95,7 +109,8 @@ def _registrada(d: dict[str, Any]) -> tuple[str, str]:
         "3. Detalle de la reclamación y pedido del consumidor\n\n"
         f"Tipo: {_etiqueta_tipo(d)}\n"
         f"Medio para la respuesta: {_MEDIO[d['medio_respuesta']]}\n"
-        f"Adjuntos: {adjuntos}\n\n"
+        f"Adjuntos: {adjuntos}\n"
+        f"{_no_guardados_consumidor(d.get('adjuntos_no_guardados', 0))}\n"
         f"Detalle:\n{d['detalle']}\n\n"
         f"Pedido:\n{d['pedido']}\n\n"
         f"{_DEFINICIONES}\n\n{_VIAS}\n{_PLAZO}\n"
@@ -113,7 +128,8 @@ def _recibida(d: dict[str, Any]) -> tuple[str, str]:
         f"Consumidor: {_linea(d['nombre'])}\n"
         f"Presentada: {_fecha_hora(d['creada_en'])}\n"
         f"Medio para la respuesta: {_MEDIO[d['medio_respuesta']]}\n"
-        f"Adjuntos: {d['adjuntos'] or 'Ninguno'}\n",
+        f"Adjuntos: {d['adjuntos'] or 'Ninguno'}\n"
+        f"{_no_guardados_admin(d.get('adjuntos_no_guardados', 0))}",
     )
 
 

@@ -2,6 +2,7 @@
 
 # ruff: noqa: E501 - datos de ejemplo y textos literales de la spec
 
+import re
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -20,7 +21,8 @@ RESERVA = DatosReserva(
     sala="Sala A",
     tiene_evento=True,
 )
-BASE = {"id_reserva": "r-1", "folio": "R-1"}
+ID_RESERVA = "0b6f6f3e-1c2d-4e5f-8a9b-0c1d2e3f4a5b"
+BASE = {"id_reserva": ID_RESERVA, "folio": "R-1"}
 CON_HORARIO = {**BASE, "inicio": "2027-03-11T15:00:00+00:00", "fin": "2027-03-11T17:00:00+00:00"}
 DATOS = {
     "pago_aprobado": {**BASE, "hito": "al_reservar", "monto": "50", "reserva_confirmada": True},
@@ -59,8 +61,11 @@ def test_cada_tipo_lleva_el_metodo_que_dice_la_spec(tipo: str, metodo: str) -> N
     assert correo.evento is not None and correo.evento.metodo == metodo
     assert correo.evento.nombre_archivo == "bugalu-R-1.ics"
     assert f"METHOD:{metodo}" in correo.evento.ics
-    assert f"SEQUENCE:{int(CREADA.timestamp())}" in correo.evento.ics
-    assert "UID:reserva-r-1@bugalu" in correo.evento.ics
+    assert (
+        f"SEQUENCE:{int((CREADA - datetime(2026, 1, 1, tzinfo=UTC)).total_seconds())}"
+        in correo.evento.ics
+    )
+    assert f"UID:reserva-{ID_RESERVA}@bugalu" in correo.evento.ics
     assert "EVENTO DE CALENDARIO" in correo.cuerpo and "Evento de calendario" in correo.html
     assert ("Añadir a Google Calendar" in correo.html) == (metodo == "REQUEST")
     assert ("no se sincroniza" in correo.html) == (metodo == "REQUEST")
@@ -109,12 +114,28 @@ def test_tipos_sin_evento_salen_con_plantilla_y_sin_ics() -> None:
     assert correo.cuerpo.startswith("BUGALÚ STUDIO\n// RESERVA")
 
 
-def test_el_nombre_del_archivo_no_admite_caracteres_raros() -> None:
-    datos = {**DATOS["pago_aprobado"], "folio": 'R/../"1"'}
-    assert armar("pago_aprobado", RESERVA, datos).evento.nombre_archivo == "bugalu-R_.._1_.ics"  # type: ignore[union-attr]
-
-
 def test_la_secuencia_exige_la_fecha_de_creacion() -> None:
     p = Pendiente(uuid4(), "pago_aprobado", "c@x.pe", DATOS["pago_aprobado"], 0)
     with pytest.raises(ValueError, match="creada_en"):
         armar_correo(p, (), RESERVA, URL, "r@x", AHORA)
+
+
+def test_la_secuencia_cuenta_desde_una_epoca_propia_y_sigue_creciendo() -> None:
+    def secuencia(creada: datetime) -> int:
+        p = Pendiente(uuid4(), "pago_aprobado", "c@x.pe", DATOS["pago_aprobado"], 0, creada)
+        ics = armar_correo(p, (), RESERVA, URL, "r@x", AHORA).evento.ics  # type: ignore[union-attr]
+        return int(re.search(r"SEQUENCE:(\d+)", ics).group(1))  # type: ignore[union-attr]
+
+    antes, despues = secuencia(CREADA), secuencia(CREADA.replace(minute=1))
+    assert (
+        despues == antes + 60 and antes < 2**26
+    )  # 2027: ~5e7 s, lejos del tope de 32 bits (2038 en Unix)
+    assert secuencia(datetime(2060, 1, 1, tzinfo=UTC)) < 2**31
+
+
+@pytest.mark.parametrize("campo", ["id_reserva", "folio"])
+@pytest.mark.parametrize("malo", ["x\r\nATTENDEE:mailto:a@b.c", "no-es-uuid-ni-folio\n", ""])
+def test_id_y_folio_inseguros_no_llegan_al_ics(campo: str, malo: str) -> None:
+    datos = {**DATOS["pago_aprobado"], campo: malo}
+    with pytest.raises(ValueError, match=campo):
+        armar("pago_aprobado", RESERVA, datos)

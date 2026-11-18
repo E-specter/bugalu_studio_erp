@@ -30,7 +30,9 @@ def construir_mensaje(correo: Correo, remitente: str) -> EmailMessage:
     html.add_related(_logo(), "image", "png", cid="<logo-bugalu>", disposition="inline")
     if correo.evento:
         e = correo.evento
-        mensaje.add_alternative(e.ics, subtype="calendar", params={"method": e.metodo})
+        mensaje.add_alternative(
+            e.ics, subtype="calendar", params={"method": e.metodo}, cte="quoted-printable"
+        )
         mensaje.add_attachment(
             e.ics.encode(), maintype="application", subtype="ics", filename=e.nombre_archivo
         )

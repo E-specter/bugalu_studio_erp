@@ -26,12 +26,13 @@ class AlmacenStorage:
             self._cabeceras["Authorization"] = f"Bearer {token_administrador}"
         self._transporte = transporte
 
-    async def _post(self, ruta: str, **parametros: Any) -> httpx.Response:
+    async def _pedir(self, metodo: str, ruta: str, **parametros: Any) -> httpx.Response:
         try:
             async with httpx.AsyncClient(
                 transport=self._transporte, timeout=TIMEOUT_SEGUNDOS
             ) as cliente:
-                respuesta = await cliente.post(
+                respuesta = await cliente.request(
+                    metodo,
                     f"{self._base}{ruta}",
                     headers={**self._cabeceras, **parametros.pop("headers", {})},
                     **parametros,
@@ -42,14 +43,20 @@ class AlmacenStorage:
         return respuesta
 
     async def subir(self, ruta: str, contenido: bytes, mime: str) -> None:
-        await self._post(
+        await self._pedir(
+            "POST",
             f"/object/{BUCKET}/{ruta}",
             content=contenido,
             headers={"Content-Type": mime, "x-upsert": "false"},
         )
 
+    async def borrar(self, ruta: str) -> None:
+        await self._pedir("DELETE", f"/object/{BUCKET}/{ruta}")
+
     async def firmar(self, ruta: str, segundos: int) -> str:
-        respuesta = await self._post(f"/object/sign/{BUCKET}/{ruta}", json={"expiresIn": segundos})
+        respuesta = await self._pedir(
+            "POST", f"/object/sign/{BUCKET}/{ruta}", json={"expiresIn": segundos}
+        )
         try:
             return f"{self._base}{respuesta.json()['signedURL']}"
         except (ValueError, KeyError, TypeError) as error:

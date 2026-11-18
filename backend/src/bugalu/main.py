@@ -26,6 +26,7 @@ from bugalu.modulos.pagos.infraestructura.entrada.http.router import router as r
 from bugalu.modulos.pagos.infraestructura.entrada.http.router_creditos import (
     router as router_creditos,
 )
+from bugalu.modulos.reclamaciones.infraestructura.entrada.ejecucion import limpiar_una_vez
 from bugalu.modulos.reclamaciones.infraestructura.entrada.http.limite import LimiteReclamaciones
 from bugalu.modulos.reclamaciones.infraestructura.entrada.http.router import (
     router as router_reclamaciones,
@@ -40,20 +41,20 @@ async def _ciclo_de_vida(app: FastAPI) -> AsyncIterator[None]:
         configuracion.url_base_datos, configuracion.timeout_pool_segundos
     ) as pool:
         app.state.pool = pool
-        tarea = None
-        if configuracion.intervalo_envio_correos > 0:
-            tarea = asyncio.create_task(
-                repetir(
-                    lambda: enviar_una_vez(pool, configuracion),
-                    configuracion.intervalo_envio_correos,
-                )
-            )
+        periodicas = [
+            (lambda: enviar_una_vez(pool, configuracion), configuracion.intervalo_envio_correos),
+            (
+                lambda: limpiar_una_vez(pool, configuracion),
+                configuracion.intervalo_limpieza_adjuntos,
+            ),
+        ]
+        tareas = [asyncio.create_task(repetir(accion, s)) for accion, s in periodicas if s > 0]
         try:
             yield
         finally:
-            if tarea:
+            for tarea in tareas:
                 tarea.cancel()
-                await asyncio.gather(tarea, return_exceptions=True)
+            await asyncio.gather(*tareas, return_exceptions=True)
 
 
 def crear_app() -> FastAPI:
