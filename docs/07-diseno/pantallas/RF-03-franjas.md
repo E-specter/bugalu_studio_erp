@@ -9,7 +9,7 @@ depende_de: [RF-03, ADR-009, diseno-brief, patron-estructura-app, patron-formula
 
 | Campo | Valor |
 |---|---|
-| Requerimiento | [RF-03](../../03-requerimientos/RF-03.md): CA-02, CA-03, CA-04, CA-07, CA-09 |
+| Requerimiento | [RF-03](../../03-requerimientos/RF-03.md): CA-02, CA-03, CA-04, CA-07, CA-09, CA-10, CA-12, CA-13 |
 | Actores | Administrador |
 | Estructura | App, panel interno ([estructura de app](../patrones/estructura-app.md#app)) |
 | Ruta | `/app/franjas?semana=AAAA-Www` y `/app/franjas/parametros`. URL: `semana` (por defecto, la actual), `aviso` |
@@ -98,8 +98,47 @@ Etiquetas y ayudas ([RN-17](../../02-dominio/reglas-negocio.md), [RN-18](../../0
 - Orden de foco: encabezado → periodo → F1 → F2 (día a día) → "Publicar franjas" → F3. Al añadir una franja, el foco va a su DESDE; al quitarla, a "Añadir franja" de ese día.
 - Región `role="status"` estable de la isla: anuncia la carga ("6 franjas publicadas esta semana") y cada resultado; al fallar un envío, el foco va al aviso.
 
+## Ampliación aforo (RF-03 CA-10 a CA-13)
+
+Vista Semana. Un bloque por sala: el de la sala elegida en SALA (con una sola, el suyo). No es un [cambio sensible](../patrones/formularios.md#prevención-de-errores) (RN-24 no lo incluye): se guarda sin revisión ni confirmación escrita.
+
+| Dato | Origen | Formato |
+|---|---|---|
+| Aforo y certificado | `GET /salas` → `aforo`, `itse.{certificado, vence}` | Campos rellenos; `null` → vacíos |
+| Guardar | `PATCH /salas/{id} {aforo, itse_certificado, itse_vence}` → 200 `Sala` | Siempre los tres; `itse_vence` `AAAA-MM-DD` |
+| Días que quedan | `itse.vence` − hoy en Lima, en la isla | 0 "vence hoy" · 1 "vence mañana" · N "vence en N días"; fecha `D MMM AAAA` |
+
+**Composición:** panel Lateral `F4 AFORO DE LA SALA` (`id="aforo"`) bajo F3, con hueco `espacio-6`; [etiqueta](../componentes/etiqueta-tecnica.md) a la derecha del título: SIN REGISTRAR (Neutra) · VIGENTE (Neutra) · VENCE EN 12 DÍAS (Aviso) · VENCIDO (Alerta). [Campos](../componentes/campo.md) Texto en una columna (también en 1440: está en el lateral); cierra con Secundario "Guardar aforo" (el Primario de la vista es "Publicar franjas"); con varias salas, nombre accesible "Guardar aforo de {sala}". En 390, F4 va al final, tras F3, a ancho completo.
+
+| Campo | Marcado | Ayuda |
+|---|---|---|
+| AFORO (PERSONAS) | `type="number"`, `min="1"`, `max="200"`, `step="1"`, `inputmode="numeric"`, `required` | "Sale del cálculo de aforo del certificado ITSE. Cuenta también al personal del estudio." |
+| CERTIFICADO ITSE | `type="text"` (una línea), `maxlength="40"`, `required` | "Tal como figura en el certificado." |
+| VENCE EL | `type="date"`, `min` = hoy en Lima, `required` | "Fecha de vencimiento del certificado." |
+
+Ayuda del panel: "Lo ven los clientes al reservar y en el calendario. Los tres datos se guardan juntos."
+
+**Avisos de vencimiento:** bajo el encabezado y antes de la barra del periodo, uno por cada sala de `GET /salas` afectada (no solo la elegida), con el enlace "Actualizar certificado", que elige esa sala en SALA y lleva el foco a CERTIFICADO ITSE de F4.
+
+| Situación | Forma y texto |
+|---|---|
+| Quedan 30 días o menos | [Aviso](../componentes/aviso.md) Aviso: "El certificado ITSE de la sala {sala} vence en 12 días (18 dic 2026). Cuando lo renueves, actualiza el número y el vencimiento." |
+| Vencido (`vence` anterior a hoy) | Aviso Error: "El certificado ITSE de la sala {sala} venció el 10 nov 2026. Los clientes siguen viendo el aforo con ese certificado; registra el renovado cuando lo tengas." |
+| F4 cargando | "Cargando…" con `aria-busy`, como los demás paneles |
+| Sala sin aforo | Campos vacíos, SIN REGISTRAR y la ayuda "Mientras no lo guardes, los clientes no ven el aforo de esta sala." |
+| Validación (al salir y al enviar) | AFORO: "Escribe el aforo." · "Escribe un número entero de 1 a 200." CERTIFICADO ITSE: "Escribe el número del certificado." · "Usa hasta 40 caracteres, en una sola línea." VENCE EL: "Elige la fecha de vencimiento." · "La fecha no puede ser anterior a hoy." Aviso resumen "Revisa {n} datos" con enlaces; foco al aviso |
+| Guardando | Botón en Carga "Guardando…"; los demás envíos de la vista, deshabilitados |
+| Éxito | Aviso Éxito en F4 "Aforo guardado. Ya lo ven los clientes al reservar y en el calendario."; etiqueta y avisos recalculados con la `Sala` de la respuesta |
+| 422 `datos_invalidos` | Error bajo el campo de `detalles.campo` (`aforo`, `itse_certificado`, `itse_vence`) con el texto de validación + aviso resumen; sin campo o con otro, aviso Error "No pudimos guardar el aforo con estos datos. Revisa los tres campos." Datos conservados |
+| 422 `itse_vencido` | Bajo VENCE EL: "La fecha no puede ser anterior a hoy (hora de Lima)." + aviso resumen "Revisa 1 dato" |
+| 404 | Aviso Información "Esa sala ya no existe. Actualizamos la lista de salas." y se recarga `GET /salas` |
+| 401 · 403 · 503 · red · no JSON | Las filas "Todas" de [Estados](#estados): al guardar, sin "Reintentar" y con los datos conservados |
+
+**Accesibilidad:** F4 es `<section>` con `<h2>`; la etiqueta de estado es texto, no solo color. Cada error, unido al campo con `aria-describedby` y `aria-invalid="true"`. Los avisos de vencimiento son estáticos (no `aria-live`); la región `role="status"` de la isla anuncia "Aforo guardado". Orden de foco: … → F3 → F4.
+
 ## Pendientes
 
 - **leader / dev-backend:** `Disponibilidad.cierres` no trae `id`, y sin él no se puede llamar a `DELETE /cierres/{id}`; proponemos añadirlo. Nombre de los campos de las reservas en el cuerpo del 409 `cierre_con_reservas` (propuesta: `detalles.reservas[].{id, folio, inicio, cliente}`).
 - **leader:** destino FRANJAS (`calendar-cog`); registrar `<bugalu-franjas>` en [frontend-islas](../../01-arquitectura/frontend-islas.md).
 - **Ampliada por RF-20:** panel `P3 CANCELACIÓN Y ADELANTO` y revisión con confirmación escrita de los parámetros sensibles ([cambios sensibles](RF-20-cambios-sensibles.md#integración-sin-rehacer-las-pantallas)).
+- **leader / dev-backend (aforo):** CA-10 admite una sala con los tres datos nulos, pero `PATCH /salas/{id}` exige los tres: F4 no ofrece vaciarlos hasta que se decida. Se supone que `detalles.campo` usa los nombres del cuerpo y que el certificado vale todo el día `vence` (vencido si `vence` < hoy, como el 422 `itse_vencido`).

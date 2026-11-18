@@ -9,7 +9,7 @@ depende_de: [RF-03, RF-04, RF-06, ADR-009, ADR-010, diseno-brief, patron-estruct
 
 | Campo | Valor |
 |---|---|
-| Requerimiento | [RF-03](../../03-requerimientos/RF-03.md): CA-05, CA-06, CA-08, CA-09; [RF-04](../../03-requerimientos/RF-04.md): CA-08; [RF-06](../../03-requerimientos/RF-06.md): CA-05 |
+| Requerimiento | [RF-03](../../03-requerimientos/RF-03.md): CA-05, CA-06, CA-08, CA-09, CA-11; [RF-04](../../03-requerimientos/RF-04.md): CA-08; [RF-06](../../03-requerimientos/RF-06.md): CA-05 |
 | Actores | Visitante y Artista/Cliente (`/reservar`); Personal interno y Administrador (`/app/agenda`) |
 | Estructura | Flujo en `/reservar` (paso 01 de [reservar](RF-04-reservar.md)); App en `/app/agenda` ([estructura de app](../patrones/estructura-app.md)) |
 | Ruta | `/reservar` y `/app/agenda`. URL: `vista` (`semana` por defecto, `mes`; `lista` solo en la agenda), `fecha` (`AAAA-MM-DD`), `sala` (solo si hay más de una) |
@@ -86,6 +86,18 @@ Tras "Reintentar", el foco va al título del panel. Permisos: el visitante y el 
 - `/app/agenda`: `<h1>` del encabezado; el panel es `<section>` con `<h2>` = título del periodo. En `/reservar`, el `<h1>` es el del paso ([reservar](RF-04-reservar.md#accesibilidad)).
 - Teclado, nombres y anuncios: los de la [ficha](../componentes/calendario.md#accesibilidad). Orden de foco: sala → periodo (anterior, esta semana, siguiente) → vistas → cuadrícula → leyenda (sin foco).
 - La Lista sigue la [tabla](../componentes/tabla.md#accesibilidad): `<caption>` con el periodo, folio como `<th scope="row">`.
+
+## Ampliación aforo (RF-03 CA-10 a CA-13)
+
+| Dato | Origen | Formato |
+|---|---|---|
+| Aforo de la sala | `GET /salas` (el mismo de SALA) → `aforo`, `itse.certificado` de la sala mostrada | "Aforo máximo: 6 personas · Certificado ITSE 0123-2026" (1 → "1 persona"; certificado tal cual) |
+
+- **Dónde:** `<p>` de ayuda del panel ([anatomía](../componentes/panel.md#anatomía)), junto a la sala, en `fuente-tamano-pequeno` y `color-texto-secundario`; en los dos contextos (`/reservar` y `/app/agenda`). Con varias salas cambia con el selector SALA. En 390 va bajo la sala y se parte en líneas, sin truncar; en 1440, en una línea.
+- **Sin aforo** (`aforo: null`): no se pinta la línea ni su hueco. Con aforo y sin `itse` (CA-10 no lo permite): solo "Aforo máximo: 6 personas".
+- **Decisión del brief (vencimiento):** el público y el personal ven el número del certificado, nunca su fecha de vencimiento ni la palabra "vigente": la línea es la misma con el certificado vigente o vencido, así nunca afirma una vigencia que no hay. Los avisos de vencimiento son del Administrador, en [franjas](RF-03-franjas.md#ampliación-aforo-rf-03-ca-10-a-ca-13).
+- **Estados:** mientras carga `GET /salas`, sin línea; si falla, rigen 503, red y no JSON de [Estados](#estados). La línea no tiene estados propios.
+- **Accesibilidad:** texto estático, leído tras la sala y antes del periodo; no se anuncia con `aria-live`. ITSE en `<abbr title="Inspección Técnica de Seguridad en Edificaciones">`.
 
 ## Pendientes
 

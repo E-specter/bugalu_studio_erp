@@ -9,7 +9,7 @@ depende_de: [RF-04, RF-02, RF-03, RF-01, ADR-009, flujo-registrar-reserva, disen
 
 | Campo | Valor |
 |---|---|
-| Requerimiento | [RF-04](../../03-requerimientos/RF-04.md): CA-01 a CA-04, CA-09, CA-10; simulación de [RF-02](../../03-requerimientos/RF-02.md): CA-05 |
+| Requerimiento | [RF-04](../../03-requerimientos/RF-04.md): CA-01 a CA-04, CA-09, CA-10; simulación de [RF-02](../../03-requerimientos/RF-02.md): CA-05; aforo de [RF-03](../../03-requerimientos/RF-03.md): CA-11 |
 | Actores | Visitante (crea su cuenta o inicia sesión en el paso 03) y Artista/Cliente |
 | Estructura | Flujo ([flujo por pasos](../patrones/flujo-por-pasos.md)), [flujo de dominio](../../02-dominio/flujos/registrar-reserva.md) |
 | Ruta | `/reservar` → `/reservar/servicio` → (sin sesión: `/acceso?volver=`) → `/reservar/confirmar` → `/reservar/listo?id=` |
@@ -106,6 +106,18 @@ Los errores al confirmar van en un aviso arriba del paso, con el foco en él ([f
 - Una región `role="status"` estable de `<bugalu-reserva>` anuncia el total al terminar cada simulación ("Total S/ 450,00, anticipo S/ 225,00"), nunca en cada cambio; el calendario anuncia lo suyo.
 - SERVICIO y ESPECIALISTAS son `<fieldset>` con `<legend>`; el especialista incluido sigue enfocable para leer por qué no se quita.
 - El plazo restante no tiene límite que expire en la página (WCAG 2.2.1): se informa; no se retiene ni se cuenta nada en el flujo.
+
+## Ampliación aforo (RF-03 CA-10 a CA-13)
+
+Dato: `GET /salas` → la `Sala` de `sala` (o la única): `aforo` e `itse.certificado`. Con `aforo: null` no se pinta nada de esta sección. La decisión de qué ve el público es la del [calendario](RF-03-calendario.md#ampliación-aforo-rf-03-ca-10-a-ca-13): número del certificado, nunca su vencimiento ni "vigente".
+
+| Paso | Dónde | Forma y texto |
+|---|---|---|
+| 01 | Línea del calendario | La del [calendario](RF-03-calendario.md#ampliación-aforo-rf-03-ca-10-a-ca-13) |
+| 04 | Fila AFORO de `R1 TU RESERVA`, tras SALA, sin "Cambiar" | Valor "Máximo 6 personas" (1 → "1 persona"); debajo, en `fuente-tamano-pequeno` y `color-texto-secundario`, el texto de la regla de [aforo](../../08-legal/condiciones-uso-y-danos.md#reglas): "Cuenta a todas las personas dentro de la sala, también al personal del estudio. Al llegar indicas quiénes te acompañan; quien exceda el aforo espera en la recepción." y "Certificado ITSE {certificado}" |
+| 04 | Cargando / `GET /salas` falla | "—" / "No pudimos cargar el aforo; lo verás en el cartel de la sala." Confirmar no se bloquea: el aforo informa, no cambia la reserva |
+
+Accesibilidad: es una fila más del `<dl>` (`<dt>` AFORO); ITSE va en `<abbr title="Inspección Técnica de Seguridad en Edificaciones">`. Sin icono ni color como único portador. En 390 la fila se apila como las demás de R1.
 
 ## Pendientes
 
