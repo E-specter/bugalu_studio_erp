@@ -34,7 +34,10 @@ frontend/
 | Isla | Requerimiento |
 |---|---|
 | Calendario de sala: reserva y agenda (`<bugalu-calendario>`) | [RF-02](../03-requerimientos/RF-02.md), [RF-03](../03-requerimientos/RF-03.md), [RF-04](../03-requerimientos/RF-04.md) |
-| Agenda de asesoría | [RF-15](../03-requerimientos/RF-15.md) |
+| Agenda de asesoría: calendario en modo `asesoria` (`<bugalu-calendario modo="asesoria">`, [calendario](../07-diseno/componentes/calendario.md#modos)) | [RF-15](../03-requerimientos/RF-15.md) |
+| Directorio de profesionales y perfil público (`<bugalu-directorio vista="lista\|perfil">`, `islas/Directorio.astro`) | [RF-15](../03-requerimientos/RF-15.md) |
+| Ficha y horarios del profesional (`<bugalu-profesional vista="ficha\|horarios">`, `islas/Profesional.astro`) | [RF-15](../03-requerimientos/RF-15.md) |
+| Profesionales, especialidades y precios del Administrador (`<bugalu-profesionales vista="lista\|especialidades">`, `islas/Profesionales.astro`) | [RF-15](../03-requerimientos/RF-15.md) |
 | Registro de pago con captura (`<bugalu-pago>`, `islas/Pago.astro`, [spec](../07-diseno/pantallas/RF-05-registrar-pago.md); suma el resumen legal de pago) | [RF-05](../03-requerimientos/RF-05.md), [RF-11](../03-requerimientos/RF-11.md), [RF-17](../03-requerimientos/RF-17.md) |
 | Pagos por validar, ficha del pago, datos para pagar y cola de devoluciones del Administrador (`<bugalu-pagos vista="lista\|revisar\|datos\|devoluciones\|devolucion">`, `islas/Pagos.astro`, [spec](../07-diseno/pantallas/RF-05-pagos.md), [devoluciones](../07-diseno/pantallas/RF-18-devoluciones.md)) | [RF-05](../03-requerimientos/RF-05.md), [RF-18](../03-requerimientos/RF-18.md) |
 | Mis créditos y pedir devolución; créditos de un cliente en su ficha (`<bugalu-creditos>`, `islas/Creditos.astro`, vistas `lista` y `ficha`, [spec](../07-diseno/pantallas/RF-18-creditos.md)) | [RF-18](../03-requerimientos/RF-18.md) |

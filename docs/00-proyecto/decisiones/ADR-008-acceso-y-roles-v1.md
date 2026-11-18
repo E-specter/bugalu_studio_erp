@@ -40,3 +40,4 @@ Usuario, 2026-11-15:
 - **Ajuste técnico (leader, 2026-11-15):** el CLI de Supabase local no permite iniciar sesión con el correo sin confirmar (o lo exige, o lo confirma al registrar). Para mantener la decisión igual en local y en producción, Supabase confirma al registrar y la verificación se lleva en `usuario.correo_verificado_en`, que solo escribe una función de la base cuando la sesión viene de un enlace de correo de un solo uso o de Google. Para el usuario es una confirmación por enlace como cualquier otra.
 - Google necesita un cliente OAuth en Google Cloud Console (paso del usuario); mientras no exista, el botón no se muestra y nada más cambia.
 - Ampliar roles más adelante es una migración (la restricción `rol in (…)`) más las reglas de acceso del RF afectado.
+- **Nota (2026-11-18):** la etapa A de [RF-15](../../03-requerimientos/RF-15.md) añade el rol `profesional` por migración (`20261223100000_rf15a_profesionales`); esta decisión no se reescribe.

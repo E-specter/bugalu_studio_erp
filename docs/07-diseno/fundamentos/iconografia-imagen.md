@@ -36,6 +36,8 @@ Figma usa dos sistemas: glifos de texto como marcadores en las pantallas del `er
 | Información / pendiente / error | `info` / `clock` / `alert-triangle` |
 | Condición de contraseña pendiente / cumplida ([medidor](../componentes/campo.md#medidor-de-robustez)) | `circle` / `check-circle` |
 | Solicitudes de acceso / usuarios (destinos del Administrador) | `user-plus` / `users` |
+| Ficha del profesional (destino del profesional, RF-15) | `id-card` |
+| Asesorías (destino del Administrador, RF-15) | `messages-square` |
 | Pagos (destino del Administrador) | `receipt` |
 | Registro de cambios / textos legales (destinos del Administrador) | `history` / `file-text` |
 | Libro de reclamaciones (destino RECLAMOS del Administrador) | `book-open` |

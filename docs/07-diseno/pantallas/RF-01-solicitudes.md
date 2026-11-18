@@ -111,3 +111,5 @@ Etiquetas: ROL · ESPECIALIDAD · MOTIVO DEL RECHAZO. Ayudas: especialidad "Pued
 - **leader:** la especialidad `asesoria` es texto libre hasta que RF-07 cierre la lista.
 - **Ampliada por RF-17:** documento, filtro de documentos repetidos y textos aceptados de la persona ([textos legales](RF-17-textos-legales.md#administrador-documentos-repetidos)).
 - **Ampliada por RF-18:** panel `U4 CRÉDITOS` en la persona con rol Cliente ([créditos](RF-18-creditos.md#ficha-del-cliente-administrador)).
+
+> **Ampliada por RF-15:** el rol Radio suma la opción **Profesional artístico** (rol `profesional`, etapa A), que nace con perfil inactivo ([RF-15](../../03-requerimientos/RF-15.md)).

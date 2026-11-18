@@ -117,7 +117,7 @@ Columna **origen**: nodo de Figma del que sale el valor (verificado en TAREA-201
 | `medida-icono-md` | `1.25rem` (20 px) | Icono de navegación | `161:651` |
 | `medida-avatar-sm` | `1.625rem` (26 px) | Avatar en cabecera | `161:640` |
 | `medida-avatar-md` | `2.375rem` (38 px) | Avatar en tabla y comentario | `161:842` |
-| `medida-miniatura` | `6rem` (96 px) | Lado de la miniatura de una imagen adjunta ([archivo](componentes/archivo.md) Adjunto: captura de pago) | brief: Figma no dibuja la miniatura (RF-05); basta para reconocer la captura correcta antes de enviarla |
+| `medida-miniatura` | `6rem` (96 px) | Lado de la miniatura de una imagen adjunta ([archivo](componentes/archivo.md) Adjunto: captura de pago) y del avatar Miniatura ([avatar](componentes/avatar.md), RF-15) | brief: Figma no dibuja la miniatura (RF-05); basta para reconocer la captura correcta antes de enviarla |
 | `medida-senal` | `0.5rem` (8 px) | Punto de estado | `86:191` |
 | `medida-progreso` | `0.5rem` (8 px) | Alto de barra de progreso | `161:651` |
 | `medida-reproducir` | `3.25rem` (52 px) | Botón de reproducción | `145:3617` |

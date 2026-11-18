@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-18
+
+- **RF-15 Agendar asesoría artística, etapa A (implementada, etapa B pendiente):** rol `profesional` asignado por el Administrador (sin operaciones de cliente vivas, 409 `cliente_con_operaciones`), catálogo de especialidades, perfil público con foto en el bucket `profesionales`, precios de 30 y 60 min con barrera de cambio sensible, horarios publicados por el profesional o el Administrador y disponibilidad pública. El profesional no reserva, paga ni usa créditos (403 `sin_permiso`). Interfaz: directorio, perfil público, ficha, horarios y administración de profesionales. Specs en `docs/07-diseno/pantallas/RF-15-*.md`; contrato y tareas en `docs/03-requerimientos/RF-15.md`.
+
 ## 2026-11-17
 
 - **RF-16 Libro de Reclamaciones virtual (aprobado):** formulario público sin cuenta en `/libro-de-reclamaciones/`, con enlace en todas las páginas y en el pie de la app, y sin JavaScript muestra cómo reclamar por correo y WhatsApp. Hoja del Anexo I con confirmación antes de enviar y constancia imprimible con número correlativo, fecha, hora y plazo de 15 días hábiles. Adjuntos PDF, JPG o PNG (hasta 3 de 5 MB, verificados por contenido, en almacenamiento privado). Quien tiene sesión ve sus datos prellenados y "Mis reclamos". Bandeja del Administrador con respuesta única, avisos diarios de plazo, transcripción de la hoja del libro físico, exportación CSV para Indecopi y límite de 5 hojas por hora por IP con campo trampa. Sigue el proyecto de decreto de la RM 244-2026-PCM; antes de producción el abogado confirma los textos fijos y su vigencia. Spec y precisiones 1 a 13 en `docs/03-requerimientos/RF-16.md`.

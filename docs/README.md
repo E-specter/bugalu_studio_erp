@@ -49,7 +49,7 @@ Orden de implementación (fase 7, revisado por el usuario el 2026-11-16): RF-01 
 | [RF-12](03-requerimientos/RF-12.md) | Descargar máster digital definitivo | `entregables` | borrador |
 | [RF-13](03-requerimientos/RF-13.md) | Evaluar calidad y cierre de servicio | `proyectos` | borrador |
 | [RF-14](03-requerimientos/RF-14.md) | Generar reportes de operatividad y gestión | `reportes` | borrador |
-| [RF-15](03-requerimientos/RF-15.md) | Agendar asesoría artística | `asesorias` | borrador |
+| [RF-15](03-requerimientos/RF-15.md) | Agendar asesoría artística | `asesorias` | borrador (etapa A implementada el 2026-11-18; etapa B pendiente) |
 | [RF-16](03-requerimientos/RF-16.md) | Libro de Reclamaciones virtual | `reclamaciones` | aprobado |
 | [RF-17](03-requerimientos/RF-17.md) | Registro reforzado de artistas y aceptación de textos legales | `identidad` | aprobado (etapa A implementada el 2026-11-17; etapa B pendiente) |
 | [RF-18](03-requerimientos/RF-18.md) | Cancelar y reprogramar con política de niveles y créditos | `reservas` | aprobado |
@@ -92,6 +92,6 @@ Empresa: [requisitos-empresariales](06-operacion/requisitos-empresariales.md) (t
 | 4 | Esqueleto frontend (Astro, layouts, `tokens.css` desde el brief, componentes base, cliente API) | dev_frontend | Hecho |
 | 5 | Skills propias del proyecto ([herramientas-mcp](06-operacion/herramientas-mcp.md#skills-propias-del-proyecto)) | leader | Hecho |
 | 6 | Auditoría del esqueleto contra arquitectura, convenciones y brief | dev_audit (Opus) | Hecho |
-| 7 | Implementación por RF en el orden indicado arriba | todos | En curso: RF-01, RF-03, RF-04, RF-05, RF-06, RF-20, RF-17 (etapa A), RF-18 y RF-16 hechos; RF-02 parcial |
+| 7 | Implementación por RF en el orden indicado arriba | todos | En curso: RF-01, RF-03, RF-04, RF-05, RF-06, RF-20, RF-17 (etapa A), RF-18, RF-16 y RF-15 (etapa A) hechos; RF-02 parcial |
 
 Planes de implementación: `superpowers/plans/`. Spec original congelada: `superpowers/specs/PROYECTO-v0.2.md`.
