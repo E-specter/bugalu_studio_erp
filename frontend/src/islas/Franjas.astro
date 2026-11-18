@@ -436,7 +436,7 @@ const errorLimite = (nombre) => {
     // Mensaje de error local de un campo de F4; '' si es válido.
     mensajeAforo(entrada) {
       const v = entrada.value.trim();
-      if (entrada.name === 'aforo') return !v ? 'Escribe el aforo.' : !/^\d+$/.test(v) || v < 1 || v > 200 ? 'Escribe un número entero de 1 a 200.' : '';
+      if (entrada.name === 'aforo') return entrada.validity.badInput ? 'Escribe un número entero de 1 a 200.' : !v ? 'Escribe el aforo.' : !/^\d+$/.test(v) || v < 1 || v > 200 ? 'Escribe un número entero de 1 a 200.' : '';
       if (entrada.name === 'itse_certificado') return !v ? 'Escribe el número del certificado.' : v.length > 40 || /[\r\n]/.test(entrada.value) ? 'Usa hasta 40 caracteres, en una sola línea.' : '';
       return !v ? 'Elige la fecha de vencimiento.' : v < hoyLima() ? 'La fecha no puede ser anterior a hoy.' : '';
     }

@@ -417,7 +417,6 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       this.mostrar('vacio');
       const titulo = this.querySelector('[data-salida] .panel-titulo')!;
       titulo.textContent = this.tituloPeriodo();
-      this.aforo();
       this.querySelector('[data-barra]')!.replaceChildren(...this.barra(this.vistasDisponibles()));
       const mes = this.estado.vista === 'mes';
       const siguiente = this.querySelector<HTMLAnchorElement>('[data-siguiente]')!;
@@ -431,12 +430,6 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
         publicar.href = `/app/franjas/?semana=${semanaDe(lunesDeFecha(this.estado.fecha))}`;
       } else publicar.remove();
       return 'Aún no hay horarios publicados';
-    }
-
-    // RF-03 CA-11: aforo y certificado de la sala mostrada, como ayuda del panel; sin aforo no hay línea.
-    aforo() {
-      const nodos = this.modo === 'asesoria' ? null : lineaAforo(this.sala);
-      if (nodos) this.querySelector('[data-salida] .panel-titulos')!.append(h('p', { class: 'cal-aforo', 'data-aforo': true }, ...nodos));
     }
 
     // --- Barra del periodo, vistas y sala ---
@@ -478,7 +471,9 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
         sala = this.pieza('etiqueta-neutra');
         sala.querySelector('span')!.textContent = `SALA · ${this.sala.nombre.toUpperCase()}`;
       }
-      return [sala, periodo, vistasNav];
+      // RF-03 CA-11: tras la sala y antes del periodo; sin aforo no hay línea.
+      const nodos = lineaAforo(this.sala);
+      return [sala, ...(nodos ? [h('p', { class: 'cal-aforo', 'data-aforo': true }, ...nodos)] : []), periodo, vistasNav];
     }
 
     vistasDisponibles() {
@@ -529,7 +524,6 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       this.mostrar('datos');
       const titulo = this.tituloPeriodo();
       this.querySelector('[data-salida] .panel-titulo')!.textContent = titulo;
-      this.aforo();
       this.querySelector('[data-barra]')!.replaceChildren(...this.barra(this.vistasDisponibles()));
       const cuerpo = this.querySelector('[data-cuerpo]')!;
       const estados = new Set<string>();
@@ -788,7 +782,6 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
     pintarLista() {
       this.mostrar('lista');
       this.querySelector('[data-salida] .panel-titulo')!.textContent = this.tituloPeriodo();
-      this.aforo();
       this.querySelector('[data-barra]')!.replaceChildren(...this.barra(this.vistasDisponibles()));
       this.querySelector('[data-salida] caption')!.textContent = `Reservas · ${this.tituloPeriodo()}`;
       const plantilla = this.querySelector<HTMLTemplateElement>('template[data-fila]')!;
@@ -927,6 +920,10 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
     margin-block-end: var(--espacio-4);
   }
   .calendario :global(.cal-aforo) {
+    flex-basis: 100%;
+    margin: 0;
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
     color: var(--color-texto-secundario);
     font-size: var(--fuente-tamano-pequeno);
     line-height: var(--fuente-interlineado-interfaz);

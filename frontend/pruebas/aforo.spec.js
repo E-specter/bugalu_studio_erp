@@ -152,6 +152,34 @@ test('reservar 04: si GET /salas falla, avisa y no bloquea confirmar', async ({ 
   await expect(page.getByRole('button', { name: 'Confirmar reserva' })).toBeEnabled();
 });
 
+// --- Reflujo a 320 px con un certificado de 40 caracteres sin espacios ---
+
+const LARGO = 'W'.repeat(40);
+const sinDesborde = (page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
+const itseLargo = { certificado: LARGO, vence: '2027-03-01' };
+
+test('320 px: calendario con certificado largo no desborda y la línea va tras la sala y antes del periodo', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await montarPublico(page, { salas: () => json(200, [sala({ itse: itseLargo }), sala({ id: 'sala-2', nombre: 'Miraflores' })]) });
+  await page.goto('/reservar/?fecha=2026-11-16');
+  await expect(lineaCal(page)).toContainText(LARGO);
+  expect(await sinDesborde(page)).toBe(true);
+  const orden = await page.evaluate(() => {
+    const barra = [...document.querySelector('bugalu-calendario [data-barra]').children];
+    return barra.map((e) => (e.matches('[data-aforo]') ? 'aforo' : e.getAttribute('aria-label') ?? e.tagName));
+  });
+  expect(orden.indexOf('aforo')).toBe(1);
+  expect(orden[2]).toBe('Periodo');
+});
+
+test('320 px: Reservar 04 con certificado largo no desborda', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await montarPaso4(page, () => json(200, [sala({ itse: itseLargo })]));
+  await page.goto(PASO4);
+  await expect(fila(page)).toContainText(LARGO);
+  expect(await sinDesborde(page)).toBe(true);
+});
+
 // --- Sin JavaScript ---
 
 test.describe('sin JavaScript', () => {
@@ -310,6 +338,26 @@ test('F4: validaciones locales con error por campo, aria-describedby y resumen',
   await sinViolaciones(page);
   expect(consola).toEqual([]);
   await page.screenshot({ path: 'pruebas/capturas/aforo-franjas-errores-1440.png', fullPage: true });
+});
+
+test('F4: a 320 px con certificado largo no desborda', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await montarFranjas(page, { salas: [sala({ itse: { certificado: LARGO, vence: '2026-11-20' } })] });
+  await page.goto('/app/franjas?semana=2026-W47');
+  await expect(campoCert(page)).toHaveValue(LARGO);
+  await expect(page.locator('bugalu-franjas [data-itse] .aviso')).toBeVisible();
+  expect(await sinDesborde(page)).toBe(true);
+});
+
+test('F4: un valor que el navegador no acepta como número ("-") muestra el mensaje de entero', async ({ page }) => {
+  await montarFranjas(page);
+  await page.goto('/app/franjas?semana=2026-W47');
+  await campoAforo(page).focus();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type('-');
+  await guardar(page).click();
+  await expect(campoAforo(page)).toHaveAccessibleDescription(/Escribe un número entero de 1 a 200\./);
+  await expect(campoAforo(page)).not.toHaveAccessibleDescription(/Escribe el aforo\./);
 });
 
 test('F4: al salir de un campo se valida y al corregirlo el error desaparece', async ({ page }) => {
