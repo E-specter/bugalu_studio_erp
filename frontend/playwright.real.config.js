@@ -20,7 +20,7 @@ export default defineConfig({
       timeout: 60_000,
     },
     {
-      command: 'npx astro dev --host localhost --port 4321',
+      command: 'npx astro dev --ignore-lock --host localhost --port 4321',
       url: 'http://localhost:4321',
       env: { PUBLIC_URL_API: `http://127.0.0.1:${PUERTO_API}` }, // el resto (Supabase) sale de frontend/.env
       reuseExistingServer: false,

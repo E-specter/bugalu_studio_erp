@@ -21,6 +21,9 @@ with psycopg.connect(Configuracion().url_base_datos_admin) as conexion:
     conexion.execute("delete from public.reserva where id_cliente = any(%s)", (ids,))
     conexion.execute("delete from public.notificacion where lower(destinatario) = any(%s)", (correos,))
     conexion.execute("delete from public.notificacion where tipo = 'texto_legal_nuevo' and creada_en >= %s", (desde,))
+    # RF-16: las hojas de reclamacion y sus adjuntos son inmutables y no se borran (al borrar la cuenta quedan con id_cuenta nulo): no cuentan como restos.
+    # Si, los intentos del limite por IP de esta corrida, para no agotar las 5 hojas por hora.
+    conexion.execute("delete from public.intento_reclamacion where creado_en >= %s", (desde,))
     conexion.execute("delete from public.franja_sala where id_publicador = any(%s)", (ids,))
     conexion.execute("delete from public.cierre_sala where id_autor = any(%s)", (ids,))
     trigger = "alter table public.usuario {} trigger usuario_conserva_administrador"
