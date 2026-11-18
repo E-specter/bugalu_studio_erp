@@ -13,7 +13,7 @@ Pie de las páginas que ve cualquiera: identifica al proveedor y enlaza siempre 
 
 1. `<footer>` a ancho completo, fondo `color-fondo-lienzo`, regla superior `borde-grosor-base` `color-borde-fuerte`, relleno `espacio-6` / `espacio-4`, contenido limitado a `medida-contenedor-max`.
 2. Fila de enlaces (`fuente-tamano-pequeno`, `color-texto-principal`, subrayados): Términos de uso · Política de privacidad · Condiciones de contratación · Textos legales · **Libro de Reclamaciones**. Separación `espacio-4`; en móvil se apilan.
-3. Línea técnica (`fuente-familia-tecnica`, `fuente-tamano-micro`, `color-texto-secundario`): "AURAL PERÚ EIRL · RUC 20615656128 · AV. JAVIER PRADO ESTE 5920, LA MOLINA, LIMA" y "BUGALÚ STUDIO © 2026".
+3. Línea técnica (`fuente-familia-tecnica`, `fuente-tamano-micro`, `color-texto-secundario`): "AURAL PERÚ E.I.R.L. · RUC 20615656128 · AV. JAVIER PRADO ESTE 5920, LA MOLINA, LIMA" y "BUGALÚ STUDIO © 2026".
 
 ## Variantes
 

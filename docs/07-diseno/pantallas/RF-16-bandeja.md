@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-16-bandeja
 titulo: Pantalla — Libro de Reclamaciones del Administrador (bandeja, detalle, respuesta y CSV)
-estado: borrador
+estado: aprobado
 depende_de: [RF-16, pantalla-rf-16-mis-reclamos, pantalla-rf-18-devoluciones, diseno-brief, patron-tablas-y-tableros, patron-formularios, patron-estados-sistema, comp-hoja-reclamacion, comp-tabla, comp-panel, comp-campo, comp-casilla, comp-barra-acciones, comp-indicador-estado, comp-aviso, comp-boton, comp-etiqueta-tecnica]
 ---
 

@@ -104,16 +104,16 @@ El saludo no lleva nombre: los datos de los avisos no lo traen. Si algún día l
 
 ## Pie: copy fijo
 
-Variante **Cuenta** (avisos al cliente o a todas las cuentas) y **Administración** (avisos al Administrador); cuál usa cada aviso, en [avisos](avisos.md#por-tipo). `{url}` es la URL pública de la plataforma (configuración del backend, sin barra final).
+Variante **Cuenta** (avisos al cliente o a todas las cuentas), **Administración** (avisos al Administrador) y **Reclamo** (avisos del Libro de Reclamaciones al consumidor que presentó la hoja, tenga o no cuenta); cuál usa cada aviso, en [avisos](avisos.md#por-tipo). `{url}` es la URL pública de la plataforma (configuración del backend, sin barra final).
 
-| Línea | Cuenta | Administración |
-|---|---|---|
-| Marca (técnica, 11 px) | BUGALÚ STUDIO · CONVERGE Y CREA. | Igual |
-| Ayuda | ¿Dudas? Responde a este correo o escríbenos por WhatsApp al +51 925 530 800. | — |
-| Enlaces útiles | Mis reservas (`{url}/app/reservas`) · WhatsApp (`https://wa.me/51925530800`) · Instagram (`https://www.instagram.com/bugalu.studio`) · TikTok (`https://www.tiktok.com/@bugalu.studio`) · Facebook (`https://www.facebook.com/bugalu.studio`) | Panel de Bugalú (`{url}/app`) |
-| Legales | Términos de uso (`{url}/legal/terminos-de-uso/`) · Política de privacidad (`{url}/legal/privacidad/`) · Condiciones de contratación (`{url}/legal/condiciones-de-contratacion/`) · Libro de Reclamaciones (`{url}/libro-de-reclamaciones/`) | Igual |
-| Empresa (técnica, 11 px) | AURAL PERÚ E.I.R.L. · RUC 20615656128 · AV. JAVIER PRADO ESTE 5920, LA MOLINA, LIMA | Igual |
-| Motivo del envío | Te enviamos este aviso porque tienes una cuenta en la plataforma de Bugalú Studio. Es parte del servicio, no publicidad. | Te enviamos este aviso porque eres Administrador en la plataforma de Bugalú Studio. |
+| Línea | Cuenta | Administración | Reclamo |
+|---|---|---|---|
+| Marca (técnica, 11 px) | BUGALÚ STUDIO · CONVERGE Y CREA. | Igual | Igual |
+| Ayuda | ¿Dudas? Responde a este correo o escríbenos por WhatsApp al +51 925 530 800. | — | Igual |
+| Enlaces útiles | Mis reservas (`{url}/app/reservas`) · WhatsApp (`https://wa.me/51925530800`) · Instagram (`https://www.instagram.com/bugalu.studio`) · TikTok (`https://www.tiktok.com/@bugalu.studio`) · Facebook (`https://www.facebook.com/bugalu.studio`) | Panel de Bugalú (`{url}/app`) | WhatsApp, Instagram, TikTok y Facebook (como Cuenta, sin Mis reservas) |
+| Legales | Términos de uso (`{url}/legal/terminos-de-uso/`) · Política de privacidad (`{url}/legal/privacidad/`) · Condiciones de contratación (`{url}/legal/condiciones-de-contratacion/`) · Libro de Reclamaciones (`{url}/libro-de-reclamaciones/`) | Igual | Igual |
+| Empresa (técnica, 11 px) | AURAL PERÚ E.I.R.L. · RUC 20615656128 · AV. JAVIER PRADO ESTE 5920, LA MOLINA, LIMA | Igual | Igual |
+| Motivo del envío | Te enviamos este aviso porque tienes una cuenta en la plataforma de Bugalú Studio. Es parte del servicio, no publicidad. | Te enviamos este aviso porque eres Administrador en la plataforma de Bugalú Studio. | Te enviamos este correo porque presentaste una hoja en el Libro de Reclamaciones de Bugalú Studio. |
 
 Datos de la empresa y canales: [Términos de uso](../../08-legal/terminos-de-uso.md) ("Quiénes somos"). Enlaces legales: los del [pie público](../componentes/pie-publico.md).
 

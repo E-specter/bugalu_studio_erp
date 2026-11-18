@@ -54,5 +54,7 @@ frontend/
 | Aviso descartable (`<bugalu-aviso>`) | Transversal ([aviso](../07-diseno/componentes/aviso.md)) |
 | Carga de entregables y capturas (`<bugalu-carga-archivos>`, `islas/CargaArchivos.astro`; primero la variante `captura`, dentro de `<bugalu-pago>`) | [RF-05](../03-requerimientos/RF-05.md), [RF-09](../03-requerimientos/RF-09.md) |
 | Reproductor con forma de onda y comentarios por timestamp (`<bugalu-reproductor>`) | [RF-10](../03-requerimientos/RF-10.md) |
+| Libro de Reclamaciones: formulario público con confirmación, constancia imprimible y transcripción del respaldo físico (`<bugalu-reclamacion>`, `islas/Reclamacion.astro`, [spec](../07-diseno/pantallas/RF-16-formulario.md)) | [RF-16](../03-requerimientos/RF-16.md) |
+| Mis reclamos del cliente y bandeja de reclamaciones del Administrador (`<bugalu-reclamos>`, `islas/Reclamos.astro`) | [RF-16](../03-requerimientos/RF-16.md) |
 
 El contador de PAGOS de la navegación no es isla: lo pinta el script de `LayoutApp` que ya carga el perfil ([navegación lateral](../07-diseno/componentes/navegacion-lateral.md#variantes)).

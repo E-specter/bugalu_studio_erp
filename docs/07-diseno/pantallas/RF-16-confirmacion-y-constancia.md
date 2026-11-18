@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-16-confirmacion-y-constancia
 titulo: Pantalla — Libro de Reclamaciones, confirmación, envío y constancia
-estado: borrador
+estado: aprobado
 depende_de: [RF-16, pantalla-rf-16-formulario, diseno-brief, patron-formularios, patron-estados-sistema, comp-hoja-reclamacion, comp-barra-acciones, comp-aviso, comp-boton, comp-carga-archivos]
 ---
 
@@ -32,7 +32,8 @@ depende_de: [RF-16, pantalla-rf-16-formulario, diseno-brief, patron-formularios,
 | Confirmación | Principal | [barra de acciones](../componentes/barra-acciones.md) Formulario, botones **grandes los dos** | "Corregir datos" (Secundario) + "Enviar reclamación" (Primario). Mismo tamaño y alto: corregir es tan fácil como enviar ([formularios](../patrones/formularios.md#prevención-de-errores)). En móvil, Móvil: apilados a ancho completo, el Primario arriba |
 | Constancia | Encabezado | Línea técnica + `<h1>` | "HOJA REGISTRADA" · LIBRO DE RECLAMACIONES |
 | Constancia | Principal | [aviso](../componentes/aviso.md) Éxito | Copy; `role="status"` |
-| Constancia | Principal | Botones en fila (hueco `espacio-3`; apilados en móvil) | Primario "Imprimir o guardar en PDF" (`<button>`, `window.print()`) + Secundario como enlace: "Ver mis reclamos" (`/app/reclamos/`, si la hoja quedó en una cuenta) o "Volver al inicio" (`/`) |
+| Constancia | Principal | [aviso](../componentes/aviso.md) Aviso (solo con `adjuntos_no_guardados`) | Copy de adjuntos no guardados, debajo del Éxito |
+| Constancia | Principal | Botones en fila (hueco `espacio-3`; apilados en móvil) | Primario "Imprimir o guardar en PDF" (`<button>`, `window.print()`) + Secundario como enlace: "Ver mis reclamos" (`/app/reclamos/`, si `en_tu_cuenta` es `true`) o "Volver al inicio" (`/`) |
 | Constancia | Principal | hoja Constancia | `Hoja` devuelta: número, `creada_en`, proveedor, secciones 1 a 3, adjuntos, definiciones y leyendas |
 
 Los botones van **antes** de la hoja para que no queden al final de una página larga. Todo lo que no es la hoja lleva `data-no-imprimir`.
@@ -46,7 +47,7 @@ Se imprime **solo la hoja** con las reglas de la [ficha](../componentes/hoja-rec
 | Respuesta | Dónde queda | Forma y texto |
 |---|---|---|
 | Enviando | Confirmación | Primario en Carga "Enviando…"; "Corregir datos" deshabilitado. A los 10 s, bajo la barra (región `role="status"`): con adjuntos "Subiendo los adjuntos, puede tardar un minuto."; sin ellos "Seguimos registrando tu hoja…" |
-| 201 | Constancia | Foco al aviso Éxito |
+| 201 | Constancia | Foco al aviso Éxito; con `adjuntos_no_guardados`, el aviso de adjuntos debajo |
 | 409 `confirmacion_requerida` | Confirmación | Aviso Error "No pudimos registrar la hoja" · "Vuelve a pulsar «Enviar reclamación»." |
 | 413 `adjunto_muy_grande` | Formulario | El [archivo](../componentes/archivo.md) señalado en estado Error: "{nombre} pesa más de 5 MB. Quítalo o elige uno más liviano." |
 | 422 `adjunto_no_permitido` | Formulario | Ídem: "{nombre} no es un PDF, JPG o PNG válido. Quítalo para enviar la hoja sin él." (CA-06) |
@@ -66,7 +67,8 @@ Se imprime **solo la hoja** con las reglas de la [ficha](../componentes/hoja-rec
 | Elemento | Texto |
 |---|---|
 | Confirmación | "Así quedará registrada. Si algo no está bien, corrígelo ahora: una vez enviada no se puede cambiar." |
-| Aviso de constancia | Título "Registramos tu hoja N.º {numero}" · "Te enviamos una copia a {correo}. Te responderemos por {correo electrónico \| carta a tu domicilio} a más tardar el {vence_respuesta, D MMM AAAA}. Guarda o imprime esta constancia antes de salir." + con cuenta: "También la encuentras en Mis reclamos." |
+| Aviso de constancia | Título "Registramos tu hoja N.º {numero}" · "Te enviamos una copia a {correo}. Te responderemos por {correo electrónico \| carta a tu domicilio} a más tardar el {vence_respuesta, D MMM AAAA}. Guarda o imprime esta constancia antes de salir." + con `en_tu_cuenta: true`: "También la encuentras en Mis reclamos." · con `en_tu_cuenta: false`: "Esta hoja no quedó en tu cuenta: guarda o imprime esta constancia antes de salir." (sustituye a las dos frases anteriores; Secundario "Volver al inicio") |
+| Aviso de adjuntos no guardados | Título "No pudimos guardar 1 adjunto" o "No pudimos guardar N adjuntos" · "<nombres>. Tu hoja sí quedó registrada. Envíalos respondiendo al correo de la copia o por WhatsApp." |
 | `document.title` | "Paso 1 de 2 · Libro de Reclamaciones" · "Paso 2 de 2: confirma · Libro de Reclamaciones" · "Hoja N.º {numero} registrada · Libro de Reclamaciones" |
 
 ## Accesibilidad

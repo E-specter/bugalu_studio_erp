@@ -55,10 +55,10 @@ Todos los componentes interactivos los cumplen; cada ficha solo documenta lo que
 | Marco de registro | [marco-registro](marco-registro.md) | `componentes/MarcoRegistro.astro` | Implementado |
 | Resumen legal | [resumen-legal](resumen-legal.md) | `componentes/ResumenLegal.astro` | Implementado (RF-17): plantillas en `componentes/internos/PlantillasResumenLegal.astro`; las islas lo llenan con `servicios/resumen-legal.js` (Aceptación, Reserva, Pago, Perfil, Privacidad) |
 | Pie público | [pie-publico](pie-publico.md) | `componentes/PiePublico.astro` | Implementado (Completa en `LayoutPublico`; Acceso en `layouts/Acceso.astro`) |
-| Hoja de reclamación | [hoja-reclamacion](hoja-reclamacion.md) | `componentes/HojaReclamacion.astro` + `servicios/hoja-reclamacion.js` | Borrador (RF-16) |
+| Hoja de reclamación | [hoja-reclamacion](hoja-reclamacion.md) | `componentes/HojaReclamacion.astro` + `servicios/hoja-reclamacion.js` | Implementado (RF-16) |
 | Calendario | [calendario](calendario.md) | isla `<bugalu-calendario>` | Implementado |
 | Reproductor | [reproductor](reproductor.md) | isla `<bugalu-reproductor>` | Borrador |
-| Carga de archivos | [carga-archivos](carga-archivos.md) | isla `<bugalu-carga-archivos>` (`islas/CargaArchivos.astro`) | Implementado (Captura de pago; audio y referencias entran con su RF) |
+| Carga de archivos | [carga-archivos](carga-archivos.md) | isla `<bugalu-carga-archivos>` (`islas/CargaArchivos.astro`) | Implementado (Captura de pago y Adjuntos de reclamo; audio y referencias entran con su RF) |
 | Registro de pago | [registrar-pago](../pantallas/RF-05-registrar-pago.md) | isla `<bugalu-pago>` (`islas/Pago.astro`) | Implementado |
 | Pagos del Administrador | [pagos](../pantallas/RF-05-pagos.md) | isla `<bugalu-pagos>` (`islas/Pagos.astro`) | Implementado |
 | Cambio sensible | [cambios sensibles](../pantallas/RF-20-cambios-sensibles.md) | isla `<bugalu-cambio-sensible>` (`islas/CambioSensible.astro`; la montan `<bugalu-tarifas>` y `<bugalu-franjas>`) | Implementado |

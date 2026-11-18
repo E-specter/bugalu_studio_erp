@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-16-correos
 titulo: Pantalla — Correos del Libro de Reclamaciones (contenido)
-estado: borrador
+estado: aprobado
 depende_de: [RF-16, ADR-016, correo-plantilla, correo-avisos, pantalla-rf-16-bandeja]
 ---
 
@@ -132,6 +132,8 @@ Estas hojas vencen en 5 días hábiles o menos, o ya vencieron. Respóndelas en 
 Orden: fuera de plazo primero y luego por `vence_respuesta`. Sin hojas en esa ventana, no se envía.
 
 ## Preguntas para leader
+
+Resueltas (leader, 2026-11-17): la 1 ya está en avisos y en la plantilla; la 2, sí (Precisión 8).
 
 1. **documentador:** sumar las cuatro filas a [avisos](../correos/avisos.md#por-tipo) y el pie Reclamo a la [plantilla](../correos/plantilla.md#pie-copy-fijo); la tarea solo permite escribir en `pantallas/` y `componentes/`.
 2. **Hoja transcrita con correo:** ¿se envía `reclamacion_registrada`? Propuesta: sí; el consumidor recibe el número de la app. No se avisa al Administrador (la registró él).

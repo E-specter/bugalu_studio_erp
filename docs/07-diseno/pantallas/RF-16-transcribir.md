@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-16-transcribir
 titulo: Pantalla — Transcribir hoja del libro físico (Administrador)
-estado: borrador
+estado: aprobado
 depende_de: [RF-16, pantalla-rf-16-formulario, pantalla-rf-16-confirmacion-y-constancia, pantalla-rf-16-bandeja, diseno-brief, patron-formularios, patron-estados-sistema, comp-hoja-reclamacion, comp-panel, comp-campo, comp-casilla, comp-barra-acciones, comp-aviso, comp-boton, comp-encabezado-pantalla]
 ---
 
@@ -23,7 +23,7 @@ depende_de: [RF-16, pantalla-rf-16-formulario, pantalla-rf-16-confirmacion-y-con
 
 ## Datos
 
-`POST /reclamaciones/transcripcion` con `NuevaHoja` (`confirmado: true`, sin `sitio_web`) + `{fecha_original, numero_hoja_fisica}` → 201 `Hoja`. JSON, sin adjuntos.
+`POST /reclamaciones/transcripcion`, `multipart/form-data` como el alta: `datos` = `NuevaHoja` (`confirmado: true`, sin `sitio_web`) + `{fecha_original, numero_hoja_fisica}`, y `adjuntos[]` → 201 `Hoja`. Si la hoja trae correo, el consumidor recibe la copia (Precisión 8).
 
 | Campo | Dato | Control y reglas |
 |---|---|---|
@@ -31,7 +31,7 @@ depende_de: [RF-16, pantalla-rf-16-formulario, pantalla-rf-16-confirmacion-y-con
 | FECHA ORIGINAL · HORA ORIGINAL | `fecha_original` | `date` (`max` = hoy) + `time` (`step="60"`), obligatorias; se envían como ISO con la zona de Lima |
 | Secciones 1, 2 y 3 | `NuevaHoja` | Los campos y reglas del [formulario](RF-16-formulario.md#datos), sin prellenado ni campo trampa |
 | TIPO | `tipo` | Radio con una tercera opción "Sin marcar en la hoja física" (`null`): la hoja se tramita según su contenido (CA-03) |
-| ADJUNTOS | — | No se ofrecen: el contrato no los recibe (ver Preguntas) |
+| ADJUNTOS | `adjuntos[]` | Opcionales, con el mismo control que el [público](RF-16-formulario.md) ([Adjuntos de reclamo](../componentes/carga-archivos.md#adjuntos-de-reclamo)): fotos de la hoja física (Precisión 8) |
 | MEDIO PARA LA RESPUESTA | `medio_respuesta` | Sin valor por defecto: se copia el que marcó el consumidor |
 
 ## Composición
@@ -54,7 +54,9 @@ Irreversible como la del consumidor (las hojas no se editan), así que la revisi
 | Validación local | La del [formulario](RF-16-formulario.md#estados) + "Escribe el número de la hoja física." · "Elige la fecha original." · "Elige la hora original." · "La fecha original no puede ser futura." · "Elige qué marcó el consumidor como medio de respuesta." Aviso de resumen y foco al primer campo con error |
 | Enviando | Primario en Carga "Registrando…"; "Corregir datos" deshabilitado |
 | 422 | Bajo el campo de `detalles.campo`; si no, aviso Error con el `mensaje`. Vuelve al formulario con lo escrito |
-| 401 · 403 · 503 · red · no JSON · sin JS | Como en la [bandeja](RF-16-bandeja.md#estados); al enviar, sin "Reintentar" y con lo escrito conservado |
+| 422 `fecha_original_invalida` | Bajo FECHA ORIGINAL (`detalles.campo`): "La fecha debe estar dentro de los últimos 90 días y no puede ser futura." (Precisión 13) |
+| 401 · 403 · 503 · red · no JSON | Como en la [bandeja](RF-16-bandeja.md#estados); al enviar, sin "Reintentar" y con lo escrito conservado |
+| Sin JS | Sustituye al formulario (`<noscript>`): aviso Información "Esta sección necesita JavaScript" · "Actívalo en tu navegador y recarga la página para transcribir la hoja del libro físico." |
 | Éxito | `/app/reclamos/detalle?id={id}&aviso=hoja-transcrita` "Hoja transcrita con el N.º {numero}. El plazo de respuesta cuenta desde la fecha original: vence el {D MMM AAAA}." |
 
 ## Copy
@@ -72,4 +74,4 @@ Irreversible como la del consumidor (las hojas no se editan), así que la revisi
 
 ## Preguntas para leader
 
-1. **Adjuntos de la hoja física:** ¿se suben fotos de la hoja manuscrita? Sería la prueba de que la transcripción es fiel. El contrato no recibe adjuntos en `/transcripcion`; propuesta: aceptar `multipart` como el público, con la foto de la hoja.
+1. **Resuelta (Precisión 8):** la transcripción admite fotos de la hoja física como adjuntos y es `multipart/form-data` como el alta.

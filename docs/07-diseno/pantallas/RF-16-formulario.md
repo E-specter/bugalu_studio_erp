@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-16-formulario
 titulo: Pantalla — Libro de Reclamaciones, enlace y formulario público
-estado: borrador
+estado: aprobado
 depende_de: [RF-16, RF-17, diseno-brief, patron-estructura-app, patron-formularios, patron-estados-sistema, comp-pie-publico, comp-hoja-reclamacion, comp-panel, comp-campo, comp-casilla, comp-carga-archivos, comp-aviso, comp-boton]
 ---
 

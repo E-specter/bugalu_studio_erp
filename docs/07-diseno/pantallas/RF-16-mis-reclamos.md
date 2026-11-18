@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-16-mis-reclamos
 titulo: Pantalla — Mis reclamos (lista y detalle del cliente)
-estado: borrador
+estado: aprobado
 depende_de: [RF-16, pantalla-rf-16-formulario, diseno-brief, patron-estructura-app, patron-tablas-y-tableros, patron-estados-sistema, comp-hoja-reclamacion, comp-tabla, comp-panel, comp-etiqueta-tecnica, comp-aviso, comp-boton, comp-encabezado-pantalla]
 ---
 

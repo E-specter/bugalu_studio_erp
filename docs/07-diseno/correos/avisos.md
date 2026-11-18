@@ -7,7 +7,7 @@ depende_de: [correo-plantilla, correo-evento-calendario]
 
 # Bloques por tipo de aviso
 
-Cómo usa la [plantilla](plantilla.md) cada tipo de aviso de `notificaciones/dominio/redaccion.py` y `redaccion_rf18.py`. El asunto y el cuerpo **no cambian**: salen de `redactar()` y aquí solo se decide el envoltorio.
+Cómo usa la [plantilla](plantilla.md) cada tipo de aviso de `notificaciones/dominio/redaccion.py`, `redaccion_rf18.py` y `redaccion_rf16.py`. El asunto y el cuerpo **no cambian**: salen de `redactar()` y aquí solo se decide el envoltorio.
 
 ## Por tipo
 
@@ -32,6 +32,10 @@ Todos usan cabecera, etiqueta y título (el asunto), saludo, cuerpo, botón y pi
 | `devolucion_decidida` | Cliente | Cuenta | DEVOLUCIÓN | Párrafos | Ver mis créditos → `{url}/app/reservas/creditos` | No |
 | `devolucion_realizada` | Cliente | Cuenta | DEVOLUCIÓN | Párrafos | Ver mis créditos → `{url}/app/reservas/creditos` | No |
 | `texto_legal_nuevo` | Toda cuenta | Cuenta | TEXTOS LEGALES | Párrafos | Leer el texto → `{url}/legal/{ruta}/` | No |
+| `reclamacion_registrada` | Consumidor | Reclamo | LIBRO DE RECLAMACIONES | Párrafos y tablas | Ver mi hoja → `{url}/app/reclamos/detalle?id={id}`; sin cuenta: Escribirnos por WhatsApp → `https://wa.me/51925530800` | No |
+| `reclamacion_recibida` | Administrador | Administración | LIBRO DE RECLAMACIONES | Párrafo y tabla | Revisar la hoja → `{url}/app/reclamos/detalle?id={id}` | No |
+| `reclamacion_respondida` | Consumidor | Reclamo | LIBRO DE RECLAMACIONES | Párrafos y tabla | Como `reclamacion_registrada` | No |
+| `reclamaciones_por_vencer` | Administrador | Administración | LIBRO DE RECLAMACIONES | Párrafo y lista | Ver hojas pendientes → `{url}/app/reclamos/?estado=pendiente` | No |
 
 - "Detalle" es `{url}/app/reservas/detalle?id={id_reserva}`; el personal y el Administrador también lo abren ([mis reservas](../pantallas/RF-04-mis-reservas.md)).
 - `texto_legal_nuevo`, `{ruta}` según `tipo`: `terminos_uso` → `terminos-de-uso`, `politica_privacidad` → `privacidad`, `condiciones_contratacion` → `condiciones-de-contratacion`, `declaracion_agrupacion` → `declaracion-de-agrupacion` ([textos legales](../pantallas/RF-17-textos-legales.md)).
