@@ -40,7 +40,7 @@ async def test_las_salas_son_publicas_y_traen_la_de_la_molina(cliente: AsyncClie
     r = await cliente.get("/api/v1/salas")
     assert r.status_code == 200
     [sala] = r.json()
-    assert set(sala) == {"id", "nombre", "sede"} and sala["sede"] == "La Molina"
+    assert set(sala) == {"id", "nombre", "sede", "aforo", "itse"} and sala["sede"] == "La Molina"
 
 
 # --- disponibilidad: visibilidad ----------------------------------------------------------------
@@ -695,6 +695,7 @@ CONTRATO = {
     ("delete", "/api/v1/cierres/{id_cierre}"): {401, 403, 404, 422, 503},
     ("get", "/api/v1/parametros"): {401, 403, 503},
     ("patch", "/api/v1/parametros"): {401, 403, 422, 503},
+    ("patch", "/api/v1/salas/{id_sala}"): {401, 403, 404, 422, 503},
 }
 
 

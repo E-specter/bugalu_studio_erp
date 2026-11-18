@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -8,10 +8,18 @@ from bugalu.modulos.reservas.dominio.disponibilidad import LIMA
 
 
 @dataclass(frozen=True)
+class Itse:
+    certificado: str
+    vence: date
+
+
+@dataclass(frozen=True)
 class Sala:
     id: UUID
     nombre: str
     sede: str
+    aforo: int | None = None
+    itse: Itse | None = None
 
 
 @dataclass(frozen=True)

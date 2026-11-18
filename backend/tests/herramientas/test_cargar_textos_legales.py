@@ -66,6 +66,8 @@ def test_el_contenido_sale_del_cuerpo_sin_frontmatter_y_las_condiciones_llevan_e
     assert condiciones.startswith("# Condiciones de contratación")
     assert "# Propiedad intelectual de las grabaciones" in condiciones  # el anexo, concatenado
     assert condiciones.index("# Propiedad intelectual") > condiciones.index("## ")  # al final
+    danos = condiciones.index("\n# Uso del estudio y daños\n")
+    assert danos > condiciones.index("# Propiedad intelectual")  # el anexo de daños, después
     assert filas["declaracion_agrupacion"][3].startswith("# Declaración de representación")
 
 

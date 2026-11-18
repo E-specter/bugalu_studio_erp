@@ -1,10 +1,11 @@
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timedelta, timezone
+from dataclasses import replace
+from datetime import date, datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 from bugalu.compartido.errores import FranjaSolapada
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo
-from bugalu.modulos.reservas.dominio.modelos import Cierre, Franja, ReservaVisible, Sala
+from bugalu.modulos.reservas.dominio.modelos import Cierre, Franja, Itse, ReservaVisible, Sala
 
 LIMA = timezone(timedelta(hours=-5))
 SALA = Sala(uuid4(), "Sala principal", "La Molina")
@@ -18,6 +19,7 @@ class ReservasFalso:
     def __init__(self, administrador: bool = True, personal: bool = True) -> None:
         self.administrador = administrador
         self.personal = personal
+        self.sala = SALA
         self.franjas: dict[UUID, Franja] = {}
         self.cierres: dict[UUID, Cierre] = {}
         self.ocupados: list[Tramo] = []
@@ -46,7 +48,15 @@ class ReservasFalso:
         return self.personal
 
     async def listar_salas(self) -> list[Sala]:
-        return [SALA]
+        return [self.sala]
+
+    async def actualizar_itse_sala(
+        self, id_sala: UUID, aforo: int, certificado: str, vence: date
+    ) -> Sala | None:
+        if id_sala != SALA.id:
+            return None
+        self.sala = replace(self.sala, aforo=aforo, itse=Itse(certificado, vence))
+        return self.sala
 
     async def existe_sala(self, id_sala: UUID) -> bool:
         return id_sala == SALA.id

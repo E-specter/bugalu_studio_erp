@@ -1,7 +1,8 @@
 """Herramienta de mantenimiento (RF-17): publica la primera version de cada texto sin versiones.
 
 Uso (desde backend/): uv run python -m bugalu.herramientas.cargar_textos_legales [carpeta]
-Lee docs/08-legal/ (version del frontmatter; condiciones + anexo de propiedad intelectual;
+Lee docs/08-legal/ (version del frontmatter; condiciones + anexos de propiedad intelectual y de
+uso del estudio y daños;
 resumenes de resumenes-para-pantallas.md) y conecta con URL_BASE_DATOS_ADMIN; no es parte de
 la API. Es idempotente: un texto con alguna version, programada o vigente, no se toca.
 En local se corre tras `db reset`; en produccion una vez, con los textos ya aprobados.
@@ -24,6 +25,7 @@ ARCHIVOS = {
     "condiciones_contratacion": [
         "condiciones-de-contratacion.md",
         "condiciones-propiedad-intelectual.md",
+        "condiciones-uso-y-danos.md",
     ],
     "declaracion_agrupacion": ["declaracion-de-agrupacion.md"],
 }

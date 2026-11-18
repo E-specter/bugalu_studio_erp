@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Literal
@@ -9,6 +10,7 @@ from pydantic import (
     AfterValidator,
     AwareDatetime,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     StringConstraints,
@@ -35,14 +37,38 @@ def _acotado(valor: datetime) -> datetime:
 Instante = Annotated[AwareDatetime, AfterValidator(_acotado)]
 
 
+class Itse(BaseModel):
+    certificado: str
+    vence: date
+
+
 class Sala(BaseModel):
     id: UUID
     nombre: str
     sede: str
+    aforo: int | None
+    itse: Itse | None
 
     @classmethod
     def desde_dominio(cls, s: modelos.Sala) -> Sala:
-        return cls(id=s.id, nombre=s.nombre, sede=s.sede)
+        itse = Itse(certificado=s.itse.certificado, vence=s.itse.vence) if s.itse else None
+        return cls(id=s.id, nombre=s.nombre, sede=s.sede, aforo=s.aforo, itse=itse)
+
+
+def _fecha_iso(valor: object) -> object:
+    # Solo AAAA-MM-DD: ni fechas con hora ni marcas de tiempo numericas.
+    if not isinstance(valor, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", valor):
+        raise ValueError("Se espera AAAA-MM-DD.")
+    return valor
+
+
+class CambiosSala(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    aforo: Annotated[int, Field(strict=True, ge=1, le=200)]
+    itse_certificado: Annotated[
+        str, StringConstraints(strict=True, strip_whitespace=True, pattern=r"^[^\r\n]{1,40}$")
+    ]
+    itse_vence: Annotated[date, BeforeValidator(_fecha_iso)]
 
 
 class Franja(BaseModel):

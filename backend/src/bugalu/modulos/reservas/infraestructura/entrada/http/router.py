@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -15,6 +15,7 @@ from bugalu.modulos.catalogo.infraestructura.entrada.http.esquemas import (
 from bugalu.modulos.reservas.aplicacion.actualizar_parametros.caso_de_uso import (
     ActualizarParametros,
 )
+from bugalu.modulos.reservas.aplicacion.actualizar_sala.caso_de_uso import ActualizarSala
 from bugalu.modulos.reservas.aplicacion.aplicar_excepcion.caso_de_uso import AplicarExcepcion
 from bugalu.modulos.reservas.aplicacion.cancelar_reserva.caso_de_uso import CancelarReserva
 from bugalu.modulos.reservas.aplicacion.consultar_disponibilidad.caso_de_uso import (
@@ -44,6 +45,7 @@ from bugalu.modulos.reservas.aplicacion.vista_cancelacion.caso_de_uso import (
 )
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo as TramoDominio
 from bugalu.modulos.reservas.infraestructura.entrada.http.esquemas import (
+    CambiosSala,
     Cancelacion,
     Cierre,
     Disponibilidad,
@@ -101,6 +103,23 @@ async def listar_salas(request: Request) -> list[Sala]:
     async with transaccion_publica(_pool(request)) as conexion:
         salas = await ListarSalas(RepositorioReservasPostgres(conexion)).ejecutar()
     return [Sala.desde_dominio(s) for s in salas]
+
+
+@router.patch(
+    "/salas/{id_sala}",
+    response_model=Sala,
+    summary="Aforo y certificado ITSE de una sala (administrador)",
+    responses=_respuestas(401, 403, 404, 422),
+)
+async def actualizar_sala(
+    request: Request, claims: Claims, id_sala: UUID, cuerpo: CambiosSala
+) -> Sala:
+    hoy = (datetime.now(UTC) + timedelta(hours=-5)).date()  # Lima no tiene horario de verano
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        sala = await ActualizarSala(RepositorioReservasPostgres(conexion)).ejecutar(
+            id_sala, cuerpo.aforo, cuerpo.itse_certificado, cuerpo.itse_vence, hoy
+        )
+    return Sala.desde_dominio(sala)
 
 
 @router.get(

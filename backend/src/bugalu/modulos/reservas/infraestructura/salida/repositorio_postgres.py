@@ -1,6 +1,6 @@
 import json
 from collections.abc import Mapping, Sequence
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -40,6 +40,7 @@ from bugalu.modulos.reservas.dominio.modelos import (
     EspecialistaAplicado,
     Excepcion,
     Franja,
+    Itse,
     NuevaReserva,
     PagoCuota,
     Politica,
@@ -224,6 +225,14 @@ def _cancelacion(
     )
 
 
+_SALA = "id, nombre, sede, aforo, itse_certificado, itse_vence"
+
+
+def _sala(f: Sequence[Any]) -> Sala:
+    # La base garantiza que los tres datos del ITSE van juntos o ninguno.
+    return Sala(f[0], f[1], f[2], f[3], Itse(f[4], f[5]) if f[3] is not None else None)
+
+
 class RepositorioReservasPostgres:
     """Recibe una transaccion ya abierta (publica o con identidad): la RLS decide el acceso."""
 
@@ -242,9 +251,19 @@ class RepositorioReservasPostgres:
 
     async def listar_salas(self) -> list[Sala]:
         filas = await self._filas(
-            "select id, nombre, sede from public.sala_tecnica where activa order by sede, nombre"
+            f"select {_SALA} from public.sala_tecnica where activa order by sede, nombre"
         )
-        return [Sala(*f) for f in filas]
+        return [_sala(f) for f in filas]
+
+    async def actualizar_itse_sala(
+        self, id_sala: UUID, aforo: int, certificado: str, vence: date
+    ) -> Sala | None:
+        filas = await self._filas(
+            "update public.sala_tecnica set aforo = %s, itse_certificado = %s, itse_vence = %s "
+            f"where id = %s and activa returning {_SALA}",
+            (aforo, certificado, vence, id_sala),
+        )
+        return _sala(filas[0]) if filas else None
 
     async def existe_sala(self, id_sala: UUID) -> bool:
         filas = await self._filas(

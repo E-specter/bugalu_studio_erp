@@ -1,5 +1,5 @@
 from collections.abc import Mapping, Sequence
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Protocol
 from uuid import UUID
@@ -45,6 +45,12 @@ class RepositorioReservas(Protocol):
         ...
 
     async def listar_salas(self) -> list[Sala]: ...
+
+    async def actualizar_itse_sala(
+        self, id_sala: UUID, aforo: int, certificado: str, vence: date
+    ) -> Sala | None:
+        """None si la sala no existe."""
+        ...
 
     async def existe_sala(self, id_sala: UUID) -> bool: ...
 

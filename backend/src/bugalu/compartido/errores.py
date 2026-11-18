@@ -72,6 +72,10 @@ class DatosInvalidos(ErrorDeNegocio):
     estado_http = 422
 
 
+class ItseVencido(DatosInvalidos):
+    codigo = "itse_vencido"
+
+
 class TramoInvalido(DatosInvalidos):
     codigo = "tramo_invalido"
 
