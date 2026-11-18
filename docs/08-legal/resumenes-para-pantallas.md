@@ -2,7 +2,7 @@
 id: legal-resumenes-pantallas
 titulo: Resúmenes de los textos legales para cada aceptación
 estado: borrador
-version: 0.2.0
+version: 0.3.0
 vigente_desde: por definir
 depende_de: [ADR-012, ADR-015, RF-01, RF-04, RF-05, RF-15, RF-17, RF-18]
 ---
@@ -34,15 +34,15 @@ Antes de cada aceptación, la interfaz muestra el resumen de su paso, un enlace 
 
 ## Reserva de sala
 
-**Resumen:** El precio que ves incluye el IGV y queda fijo al reservar. Para confirmar tu reserva pagas el adelanto del 50 % antes del [fecha y hora límite]; si no registras un pago para entonces, se cancela sola y sin costo. Sin pagos puedes cancelar gratis; con pagos, se aplica un crédito o una penalización según avises con más de 48 horas, entre 48 y 24 horas o con menos de 24 horas. El saldo se paga hasta 48 horas después de la sesión. Las grabaciones de tus másteres y entregables pactados son tuyas, y el estudio puede usar fragmentos breves para su promoción, con los límites de las condiciones.
+**Resumen:** El precio que ves incluye el IGV y queda fijo al reservar. Para confirmar tu reserva pagas el adelanto del 50 % antes del [fecha y hora límite]; si no registras un pago para entonces, se cancela sola y sin costo. Sin pagos puedes cancelar gratis; con pagos, se aplica un crédito o una penalización según avises con más de 48 horas, entre 48 y 24 horas o con menos de 24 horas. El saldo se paga hasta 48 horas después de la sesión. Las grabaciones de tus másteres y entregables pactados son tuyas, y el estudio puede usar fragmentos breves para su promoción, con los límites de las condiciones. En el estudio sigues sus reglas de uso; si tú o tus acompañantes dañan algo por descuido o mal uso, pagas el costo real de repararlo o reponerlo, según un acta con fotos.
 
-**Casilla (obligatoria):** "Acepto las [Condiciones de contratación](condiciones-de-contratacion.md) (versión 0.2.0), incluida la [propiedad intelectual de las grabaciones](condiciones-propiedad-intelectual.md)."
+**Casilla (obligatoria):** "Acepto las [Condiciones de contratación](condiciones-de-contratacion.md) (versión 0.3.0), incluida la [propiedad intelectual de las grabaciones](condiciones-propiedad-intelectual.md)."
 
 ## Asesoría
 
 **Resumen:** La asesoría dura 30 o 60 minutos y tiene un precio fijo con IGV incluido, que pagas por adelantado en un solo pago; queda confirmada cuando validamos tu pago. Si es virtual, recibes el enlace de Google Meet en tu correo. Si no asistes dentro de 15 minutos, no hay devolución; si avisas con anticipación, puedes reprogramar según la política por niveles, sin devolución.
 
-**Casilla (obligatoria):** "Acepto las [Condiciones de contratación](condiciones-de-contratacion.md) (versión 0.2.0)."
+**Casilla (obligatoria):** "Acepto las [Condiciones de contratación](condiciones-de-contratacion.md) (versión 0.3.0)."
 
 ## Registro de un pago
 

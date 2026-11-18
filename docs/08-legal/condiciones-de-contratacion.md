@@ -2,7 +2,7 @@
 id: legal-condiciones-de-contratacion
 titulo: Condiciones de contratación
 estado: borrador
-version: 0.2.0
+version: 0.3.0
 vigente_desde: por definir
 depende_de: [ADR-009, ADR-010, ADR-012, ADR-013, ADR-015, RN-13, RN-14, RN-16, RN-18, RN-20, RF-04, RF-05, RF-15, RF-18]
 ---
@@ -11,7 +11,7 @@ depende_de: [ADR-009, ADR-010, ADR-012, ADR-013, ADR-015, RN-13, RN-14, RN-16, R
 
 > **Borrador para revisión legal. No es asesoría legal ni está vigente.** Lo redactó el equipo del proyecto para que lo revise un abogado colegiado en el Perú antes de publicarlo ([ADR-012](../00-proyecto/decisiones/ADR-012-textos-legales-y-consentimientos.md)). "[verificar]" marca datos o normas por confirmar; "[cifra por confirmar]", valores que el estudio aún no decide.
 
-**Versión 0.2.0 · Vigente desde: [fecha por definir]**
+**Versión 0.3.0 · Vigente desde: [fecha por definir]**
 
 Estas condiciones se aplican a los servicios que contratas con **Aural Perú E.I.R.L.** (Bugalú Studio), RUC 20615656128 (datos de contacto en los [Términos de uso](terminos-de-uso.md)). La [propiedad intelectual de las grabaciones](condiciones-propiedad-intelectual.md) forma parte de estas condiciones. Las aceptas en cada reserva o asesoría, y guardamos la versión que aceptaste: esa versión rige ese servicio aunque después publiquemos otra.
 
@@ -105,6 +105,28 @@ Ante una emergencia de salud, un duelo familiar, un desastre o un paro de transp
 - Al terminar, el profesional la marca como realizada o como inasistencia, en cuyo caso no hay devolución. Si la realizaste, te enviamos una constancia de asistencia.
 - La asesoría orienta tu proyecto; no te obliga a contratar nada más.
 
+## Uso del estudio y daños
+
+Estas reglas valen en la sala, en el ambiente de asesorías y en todo el local, para ti y para quienes vengan contigo; también están impresas en el estudio.
+
+- **Equipos:** úsalos solo durante tu sesión y como te indique el ingeniero o el personal; no conectes, muevas ni ajustes micrófonos, consola, monitores, amplificadores, cableado o paneles sin su indicación. Puedes traer tus instrumentos y equipos; el ingeniero revisa que sean compatibles y seguros antes de conectarlos.
+- **Conducta:** no se permiten comidas ni bebidas en la sala ni cerca de los equipos, salvo agua en envase cerrado [verificar con el estudio]; tampoco fumar, vapear, ni ingresar o consumir alcohol u otras sustancias; ni mascotas, salvo animales de asistencia. El aforo de la sala es de [cifra por confirmar] personas, y al llegar indicas quiénes te acompañan.
+- **Incumplimiento grave** (agresiones, consumo de sustancias, daños intencionales o riesgo para las personas o los equipos): el personal puede terminar la sesión y lo pagado se trata como en la inasistencia [verificar proporcionalidad].
+- **Revisión:** al empezar y al terminar, el ingeniero o el personal revisa contigo la sala y los equipos que usas; si notas un daño previo, dilo en ese momento para que conste. Si aparece un daño, levantamos un **acta** con fecha, hora, descripción, fotos y quiénes estuvieron presentes; puedes firmarla o anotar en ella tu desacuerdo, y te enviamos una copia por correo.
+
+**Qué pagas si hay un daño.** No te pedimos garantía por adelantado. Respondes por los daños que causen tú, tus acompañantes o el menor a tu cargo por dolo o culpa (uso indebido, descuido o incumplimiento de estas reglas); no por el desgaste normal del uso correcto, las fallas propias de los equipos ni el caso fortuito o la fuerza mayor.
+
+| Qué se daña | Ejemplos | Qué se cobra |
+|---|---|---|
+| Equipos de audio y música | Micrófonos, audífonos, consola, interfaces, monitores, amplificadores, instrumentos, cables, pedestales y atriles | El costo real de la reparación por un técnico. Si no tiene arreglo o repararlo cuesta más que reponerlo, el valor de un equipo igual o equivalente en el mercado peruano [verificar si se descuenta la depreciación] |
+| Recinto e instalaciones | Paneles y tratamiento acústico, paredes, puertas, vidrios, pisos y alfombras, iluminación, instalación eléctrica, aire acondicionado y baños | El costo real de la reparación o reposición, con materiales y mano de obra |
+| Objetos que no son de audio | Muebles, decoración, vajilla, electrodomésticos, pantallas y artículos de limpieza | El costo de la reparación o, si no tiene arreglo, de un objeto equivalente |
+
+- Solo cobramos el daño material comprobado: no cobramos multas ni las sesiones que tengamos que reprogramar por el daño [verificar con el estudio].
+- Te enviamos el monto con el presupuesto o comprobante del técnico o proveedor dentro de [cifra por confirmar] días hábiles desde el acta. Si no estás de acuerdo, puedes presentar otro presupuesto o pedir una revisión conjunta, y siempre puedes usar el [Libro de Reclamaciones](terminos-de-uso.md#ley-aplicable-y-reclamos).
+- Pagas por los medios habituales dentro de [cifra por confirmar] días desde que te enviamos el monto. Mientras quede un monto pendiente no puedes hacer reservas ni asesorías nuevas; las ya confirmadas se mantienen [verificar].
+- **Tus cosas:** no respondemos por la pérdida o el daño de tus instrumentos, equipos u objetos personales, salvo que se deba a nuestra culpa o a una falla de nuestros equipos. Si olvidas algo, lo guardamos [cifra por confirmar] días y te avisamos.
+
 ## Entregables
 
 - Descargas el máster cuando pagas la última cuota de tu proyecto. El enlace es cifrado, exige sesión y caduca a los 7 días; si vence, pides otro.
@@ -123,4 +145,4 @@ Usar la imagen o la voz de un menor en promociones requiere una autorización ex
 
 ## Trazabilidad (no se publica)
 
-[ADR-009](../00-proyecto/decisiones/ADR-009-reservas-tarifas-y-caducidad.md), [ADR-010](../00-proyecto/decisiones/ADR-010-pagos-estados-y-cancelacion.md), [ADR-012](../00-proyecto/decisiones/ADR-012-textos-legales-y-consentimientos.md), [ADR-013](../00-proyecto/decisiones/ADR-013-impuestos-y-parametros-sensibles.md), [ADR-015](../00-proyecto/decisiones/ADR-015-cancelacion-conservacion-y-correcciones.md), [reglas de negocio](../02-dominio/reglas-negocio.md), [RF-04](../03-requerimientos/RF-04.md), [RF-05](../03-requerimientos/RF-05.md), [RF-15](../03-requerimientos/RF-15.md), [RF-18](../03-requerimientos/RF-18.md). Normas: Ley 29571, arts. 4 (precio total con tributos), 47, 49 a 51, 58.1 b y c, 97; Código Civil (capacidad y penalidades) [verificar artículos].
+[ADR-009](../00-proyecto/decisiones/ADR-009-reservas-tarifas-y-caducidad.md), [ADR-010](../00-proyecto/decisiones/ADR-010-pagos-estados-y-cancelacion.md), [ADR-012](../00-proyecto/decisiones/ADR-012-textos-legales-y-consentimientos.md), [ADR-013](../00-proyecto/decisiones/ADR-013-impuestos-y-parametros-sensibles.md), [ADR-015](../00-proyecto/decisiones/ADR-015-cancelacion-conservacion-y-correcciones.md), [reglas de negocio](../02-dominio/reglas-negocio.md), [RF-04](../03-requerimientos/RF-04.md), [RF-05](../03-requerimientos/RF-05.md), [RF-15](../03-requerimientos/RF-15.md), [RF-18](../03-requerimientos/RF-18.md). Normas: Ley 29571, arts. 4 (precio total con tributos), 47, 49 a 51, 58.1 b y c, 97; Código Civil (capacidad y penalidades; responsabilidad por dolo o culpa e indemnización, arts. 1314, 1315 y 1321) [verificar artículos].

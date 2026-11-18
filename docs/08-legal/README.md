@@ -49,6 +49,7 @@ Cada texto lleva en su frontmatter `version` (versión semántica) y `vigente_de
 15. **Retención de archivos por saldo impago** y tiempo no usado por llegada tarde: si son exigibles.
 16. **Diseño de las pantallas:** casillas sin marcar y rechazo tan fácil como aceptar (art. 56.1 h del Código, incorporado por el D. Leg. 1729, 2026).
 17. **Conservación de aceptaciones y autorizaciones de menores:** el estudio decidió 12 meses en producción y luego un archivo de respaldo fuera de producción (ADR-015). Confirmar si 12 meses bastan frente a los plazos de prescripción de las acciones (Código Civil, Código de Protección y Defensa del Consumidor, Ley 29733) y frente a la carga de probar el consentimiento [verificar plazos], y si el respaldo debe conservarse por un plazo definido.
+18. **Uso del estudio y daños** (condiciones de contratación): responsabilidad del cliente por sus acompañantes y por el menor a su cargo; cobro del costo real con acta y sin garantía previa; si la reposición descuenta la depreciación; bloqueo de reservas nuevas mientras haya un monto pendiente; terminar la sesión por incumplimiento grave y tratar lo pagado como inasistencia (arts. 49 y 50 del Código del Consumidor; arts. 1314, 1315 y 1321 del Código Civil) [verificar].
 
 ## Fuentes consultadas
 
