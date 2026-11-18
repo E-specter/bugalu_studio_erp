@@ -193,7 +193,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
   import { obtenerImpuestos } from '../servicios/catalogo.js';
   import {
     obtenerProfesional, actualizarProfesional, subirFoto, quitarFoto, listarEspecialidades,
-    obtenerDisponibilidadProfesional, obtenerSugerenciaHorarios, publicarHorarios, retirarHorario,
+    obtenerDisponibilidadProfesional, obtenerSugerenciaHorarios, publicarHorarios, retirarHorario, nombreMostrado,
   } from '../servicios/asesorias.js';
   import { ponerAvatar } from '../servicios/avatar.js';
   import { hoyLima, fechaDe, horaDe, instante, sumarDias, lunesDe, semanaDe, rangoSemana, diaCorto, diaLargo, diaMes, nombreDia, leerImporte, mostrarImporte, soles, porcentaje, duracionReserva } from '../servicios/formatos.js';
@@ -304,9 +304,9 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       ]);
       this.cargado = p;
       this.catalogo = catalogo;
-      const mostrado = p.nombre_artistico || p.nombre;
+      const mostrado = nombreMostrado(p);
       this.mostrar('datos');
-      this.querySelector('[data-campo="nombre"]').textContent = p.nombre;
+      this.querySelector('[data-campo="nombre"]').textContent = p.nombre ?? '';
       this.querySelector('[name="nombre_artistico"]').value = p.nombre_artistico ?? '';
       this.querySelector('[name="presentacion"]').value = p.presentacion ?? '';
       this.pintarEspecialidades(catalogo, p.especialidades.map((e) => e.id));
@@ -356,7 +356,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       const falta = this.falta(p);
       const caja = this.querySelector('[data-falta]');
       caja.hidden = p.publicado;
-      if (!p.publicado) llenarAviso(caja.querySelector('.aviso'), this.admin ? `El perfil de ${p.nombre_artistico || p.nombre} aún no es público` : 'Tu perfil aún no es público', `Falta: ${falta.join(', ')}.`);
+      if (!p.publicado) llenarAviso(caja.querySelector('.aviso'), this.admin ? `El perfil de ${nombreMostrado(p)} aún no es público` : 'Tu perfil aún no es público', `Falta: ${falta.join(', ')}.`);
       caja.querySelector('.aviso')?.removeAttribute('role');
       const estado = this.querySelector('[data-publicacion]');
       estado.replaceChildren(p.publicado ? this.sello('exito', 'PUBLICADO') : this.sello('aviso', 'SIN PUBLICAR'));
@@ -412,7 +412,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       if (primera) quitarError(primera);
       if (artistico.value.trim().length > 80) errores.push({ entrada: artistico, mensaje: 'El nombre artístico admite hasta 80 caracteres.', texto: 'Nombre artístico' });
       if (presentacion.value.trim().length > 600) errores.push({ entrada: presentacion, mensaje: 'La presentación admite hasta 600 caracteres.', texto: 'Presentación' });
-      if (primera && !this.admin && !marcadas.length) errores.push({ entrada: primera, mensaje: 'Elige al menos una especialidad.', texto: 'Especialidades' });
+      if (primera && !marcadas.length) errores.push({ entrada: primera, mensaje: 'Elige al menos una especialidad.', texto: 'Especialidades' });
       if (marcadas.length > 5) errores.push({ entrada: primera, mensaje: 'Elige como máximo 5 especialidades.', texto: 'Especialidades' });
       const filas = [...formulario.querySelectorAll('[data-filas="red"] .prof-fila')];
       const redes = filas.map((f) => ({ red: f.querySelector('select').value, valor: f.querySelector('[name="valor_red"]').value.trim() }));
@@ -442,7 +442,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
         ...(this.admin && { activo: campo('activo').checked }),
       };
       const antes = this.cargado;
-      const mostrado = cuerpo.nombre_artistico || antes.nombre;
+      const mostrado = nombreMostrado({ ...antes, nombre_artistico: cuerpo.nombre_artistico });
       const exito = async (r) => {
         const nuevo = r?.publicado && !antes.publicado;
         await this.cargar();
@@ -520,7 +520,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       const form = this.querySelector('[data-formulario="foto"]');
       this.foto = form;
       const avatar = form.querySelector('.avatar');
-      ponerAvatar(avatar, p.nombre_artistico || p.nombre, p.foto_url, this.admin ? 'Foto actual' : 'Tu foto actual');
+      ponerAvatar(avatar, nombreMostrado(p), p.foto_url, this.admin ? 'Foto actual' : 'Tu foto actual');
       form.querySelector('[data-quitar-foto]').hidden = !p.foto_url;
       form.querySelector('bugalu-carga-archivos').setAttribute('texto-boton', p.foto_url ? 'Cambiar foto' : 'Elegir foto');
     }
@@ -532,7 +532,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       const p = this.cargado;
       URL.revokeObjectURL(this.vistaPrevia ?? '');
       this.vistaPrevia = f ? URL.createObjectURL(f) : null;
-      ponerAvatar(form.querySelector('.avatar'), p.nombre_artistico || p.nombre, this.vistaPrevia ?? p.foto_url, f ? 'Vista previa de la foto elegida' : (this.admin ? 'Foto actual' : 'Tu foto actual'));
+      ponerAvatar(form.querySelector('.avatar'), nombreMostrado(p), this.vistaPrevia ?? p.foto_url, f ? 'Vista previa de la foto elegida' : (this.admin ? 'Foto actual' : 'Tu foto actual'));
     }
 
     subirLaFoto(formulario) {
@@ -585,7 +585,7 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
       if (parametro !== null && !lunesDe(parametro)) invalida();
       const p = await obtenerProfesional(this.id);
       this.cargado = p;
-      const mostrado = p.nombre_artistico || p.nombre;
+      const mostrado = nombreMostrado(p);
       const pedir = (l) => obtenerDisponibilidadProfesional({ profesional: this.id, desde: instante(l, '00:00'), hasta: instante(sumarDias(l, 7), '00:00') });
       let disponibilidad;
       try {

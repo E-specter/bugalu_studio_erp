@@ -25,13 +25,6 @@ const principal = lista ? { codigo: 'A13', titulo: 'Profesionales' } : { codigo:
   <!-- Region viva estable, presente antes de cualquier texto: anuncia cada carga y resultado una sola vez. -->
   <p class="visualmente-oculto" role="status" data-anuncio></p>
   <div data-salida><Panel {...principal} cargando /></div>
-  {lista && (
-    <div class="prof-crear" data-crear hidden>
-      <Boton variante="secundario" data-envio data-crear-ficha>Crear mi ficha de profesional</Boton>
-      <p class="gestion-ayuda">Para dar asesorías tú mismo, crea tu ficha: nace inactiva y la activas desde aquí.</p>
-    </div>
-  )}
-
   <EstadosIsla {principal} />
 
   <template data-sello="exito"><EtiquetaTecnica variante="exito" texto=" " /></template>
@@ -141,8 +134,6 @@ const principal = lista ? { codigo: 'A13', titulo: 'Profesionales' } : { codigo:
 
     iniciar() {
       this.addEventListener('click', (e) => {
-        const crear = e.target.closest('[data-crear-ficha]');
-        if (crear) return this.crearMiFicha(crear);
         const alternar = e.target.closest('[data-alternar]');
         if (alternar) return this.alternar(alternar);
         const enlace = e.target.closest('[data-renombrar], [data-cancelar]');
@@ -152,6 +143,8 @@ const principal = lista ? { codigo: 'A13', titulo: 'Profesionales' } : { codigo:
         this.cargar().then(() => (enlace.matches('[data-renombrar]') ? this.querySelector('[name="nombre-nuevo"]') : this.querySelector(`[data-renombrar][data-id="${enlace.dataset.id}"]`))?.focus());
       });
       addEventListener('popstate', () => this.cargar());
+      // El boton vive en las acciones de la cabecera de la pagina (fuera de la isla).
+      document.querySelector('[data-crear-ficha]')?.addEventListener('click', (e) => this.crearMiFicha(e.currentTarget));
     }
 
     alEnviar(formulario) {
@@ -169,11 +162,14 @@ const principal = lista ? { codigo: 'A13', titulo: 'Profesionales' } : { codigo:
     // ----- Profesionales -----
 
     async lista() {
-      this.querySelector('[data-crear]').hidden = true;
+      const crear = document.querySelector('[data-crear-ficha]');
+      crear.hidden = true;
       const profesionales = await listarProfesionales({ anonimo: false });
+      // Visible solo si el Administrador aun no tiene ficha; si el perfil falla, queda oculto (el 409 perfil_existente igual esta manejado).
+      const mostrarCrear = () => obtenerPerfil().then((yo) => { crear.hidden = profesionales.some((p) => p.id === yo.id); }, () => {});
       if (!profesionales.length) {
         this.mostrar('vacio');
-        this.querySelector('[data-crear]').hidden = false;
+        mostrarCrear();
         return 'Aún no hay profesionales';
       }
       this.mostrar('datos');
@@ -199,12 +195,13 @@ const principal = lista ? { codigo: 'A13', titulo: 'Profesionales' } : { codigo:
         fila.querySelector('[data-horarios] [data-objeto]').textContent = ` de ${mostrado}`;
         return fila;
       }));
-      this.querySelector('[data-crear]').hidden = false;
+      mostrarCrear();
       return plural(profesionales.length, 'profesional', 'profesionales');
     }
 
     // Decision 8: el Administrador tambien puede dar asesorias; su ficha nace con POST /profesionales.
     crearMiFicha(boton) {
+      if (boton.hasAttribute('aria-busy')) return; // el boton esta fuera de la isla: `ocupado` no lo ve
       this.enviar(boton, 'Creando…', async () => crearProfesional((await obtenerPerfil()).id), (p) => location.assign(`/app/asesorias/profesional?id=${encodeURIComponent(p.id)}`), true);
     }
 

@@ -1,6 +1,6 @@
 ---
 // <bugalu-directorio vista="lista|perfil">: directorio y perfil publico de los profesionales (specs RF-15-directorio y RF-15-perfil-publico).
-// Vista publica: nunca envia el token (es la vista del cliente). Un bloque por estado; sin JS, el noscript avisa.
+// Vista publica: la lista y el perfil nunca envian el token (es la vista del cliente); el calendario del perfil si lo envia con sesion. Un bloque por estado; sin JS, el noscript avisa.
 import Panel from '../componentes/Panel.astro';
 import Aviso from '../componentes/Aviso.astro';
 import Boton from '../componentes/Boton.astro';
@@ -119,7 +119,7 @@ const lista = vista === 'lista';
   const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 
   class BugaluDirectorio extends IslaGestion {
-    // El Administrador con sesion tampoco manda su token aqui: el directorio es la vista del cliente.
+    // El directorio y el perfil piden sin token (vista del cliente); solo el calendario del perfil lo envia si hay sesion y repite anonimo ante un 401.
     iniciar() {
       if (this.vista === 'perfil') this.noEncontrada = []; // el texto del 404 es el de la plantilla
       this.mensajeError = (e) => {

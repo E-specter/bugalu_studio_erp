@@ -552,7 +552,7 @@ test('admin: lista vacia, crear mi ficha (201, 409 perfil_existente, 422)', asyn
   await expect(dice(page, 'Aún no hay profesionales')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Asignar rol de profesional' }).last()).toBeVisible();
   await sinViolaciones(page);
-  const crear = page.getByRole('button', { name: 'Crear mi ficha de profesional' });
+  const crear = page.getByRole('button', { name: 'Crear mi ficha', exact: true });
   await crear.click();
   await expect(dice(page, 'Ya tienes una ficha de profesional')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Editar mi ficha' })).toHaveAttribute('href', '/app/asesorias/profesional?id=adm1');
@@ -561,6 +561,64 @@ test('admin: lista vacia, crear mi ficha (201, 409 perfil_existente, 422)', asyn
   await crear.click();
   await expect(page).toHaveURL(/profesional\?id=adm1/);
   expect(posts[2].cuerpo).toEqual({ id_usuario: 'adm1' });
+});
+
+test('admin: Crear mi ficha esta en la cabecera y solo se ve si aun no hay ficha propia', async ({ page }) => {
+  await admin(page);
+  await page.route(`${API}/perfil`, (r) => r.fulfill(perfil({ id: 'adm1', rol: 'administrador' })));
+  await simular(page, 'GET', '/profesionales', json(200, [FILA(PROF)]));
+  await page.goto('/app/asesorias/');
+  const crear = page.locator('.encabezado-acciones').getByRole('button', { name: 'Crear mi ficha', exact: true });
+  await expect(crear).toBeVisible();
+  await page.screenshot({ path: 'pruebas/capturas/rf15-admin-crear-ficha-1440.png', fullPage: true });
+  await sinViolaciones(page);
+  const con = await page.context().newPage();
+  await admin(con);
+  await con.route(`${API}/perfil`, (r) => r.fulfill(perfil({ id: 'p1', rol: 'administrador' })));
+  await simular(con, 'GET', '/profesionales', json(200, [FILA(PROF)]));
+  await con.goto('/app/asesorias/');
+  await expect(con.getByRole('table', { name: 'Profesionales' })).toBeVisible();
+  await expect(con.getByRole('button', { name: 'Crear mi ficha', exact: true })).toBeHidden();
+});
+
+test('profesional sin nombre ni nombre artistico se muestra como "Profesional"', async ({ page }) => {
+  await admin(page);
+  const SIN = { ...PROF, id: 'p9', nombre: undefined, nombre_artistico: null };
+  await simular(page, 'GET', '/profesionales', json(200, [FILA(SIN)]));
+  await simular(page, 'GET', '/profesionales/p9', json(200, SIN));
+  await simular(page, 'GET', '/especialidades-asesoria', json(200, ESPS));
+  await simular(page, 'GET', '/impuestos', IMPUESTOS);
+  await page.goto('/app/asesorias/');
+  await expect(page.getByRole('link', { name: 'Editar ficha de Profesional' })).toBeVisible();
+  await page.goto('/app/asesorias/profesional?id=p9');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/ficha de profesional/i);
+  await expect(page.locator('body')).not.toContainText('undefined');
+  await directorio(page, { lista: json(200, [SIN]) });
+  await page.goto('/asesorias/');
+  await expect(page.locator('[data-mostrado]').first()).toHaveText('Profesional');
+  await simular(page, 'GET', '/profesionales/p9', json(200, SIN));
+  await page.goto('/asesorias/profesional/?id=p9');
+  await expect(page).toHaveTitle(/^Profesional ·/);
+  await expect(page.locator('body')).not.toContainText('undefined');
+});
+
+test('admin ficha: sin especialidades marcadas no se envia nada y da el error de 1 a 5', async ({ page }) => {
+  await fichaAdmin(page);
+  const patches = await simular(page, 'PATCH', '/profesionales/p1', json(200, PROF));
+  await page.goto('/app/asesorias/profesional?id=p1');
+  await page.getByLabel('Producción').uncheck();
+  await page.getByRole('button', { name: 'Guardar ficha' }).click();
+  await expect(dice(page, 'Elige al menos una especialidad.')).toBeVisible();
+  expect(patches).toHaveLength(0);
+});
+
+test('inicio: el profesional no ve destinos de cliente ni de personal', async ({ page }) => {
+  await comoProfesional(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/app/');
+  await expect(page.locator('.app-nav-lateral').getByRole('link', { name: 'Ficha' })).toBeVisible();
+  const visibles = await page.locator('main a:visible, .app-nav-lateral a:visible, .app-nav-tactil a:visible').evaluateAll((a) => a.map((x) => x.getAttribute('href')));
+  for (const ruta of ['/app/reservas/', '/app/agenda/', '/app/pagos/', '/app/reclamos/', '/app/usuarios/', '/app/asesorias/']) expect(visibles).not.toContain(ruta);
 });
 
 for (const [n, r, texto] of [['401', fichaFallos[0][1], fichaFallos[0][2]], ['403', fichaFallos[1][1], 'Esta sección es solo para el Administrador.'], ...fichaFallos.slice(3).map(([a, b, c]) => [a, b, c])]) {
@@ -757,6 +815,17 @@ test('usuarios: 409 profesional_con_asesorias conserva los datos', async ({ page
   await page.getByRole('button', { name: 'Guardar rol y especialidad' }).click();
   await expect(dice(page, 'Nico Ruiz tiene asesorías pendientes o confirmadas. Cancélalas o espera a que terminen antes de quitarle el rol.')).toBeVisible();
   await expect(page.getByRole('textbox', { name: 'Especialidad' })).toHaveValue('Mezcla');
+});
+
+test('usuarios: 409 cliente_con_operaciones conserva los datos', async ({ page }) => {
+  await usuarios(page);
+  await simular(page, 'PATCH', `/usuarios/${U9}`, errorApi(409, 'cliente_con_operaciones'));
+  await page.goto(`/app/usuarios/editar?id=${U9}`);
+  await page.getByLabel('Profesional artístico').check();
+  await page.getByRole('button', { name: 'Guardar rol y especialidad' }).click();
+  await expect(dice(page, 'Eva Soto tiene reservas, créditos, pagos o devoluciones vivos')).toBeVisible();
+  await expect(dice(page, 'Espera a que terminen o resuélvelos antes de asignarle el rol de profesional.')).toBeVisible();
+  await expect(page.getByLabel('Profesional artístico')).toBeChecked();
 });
 
 test('navegacion: cada rol ve sus destinos de asesorias', async ({ page }) => {

@@ -31,7 +31,7 @@ export const obtenerDisponibilidadProfesional = ({ profesional, desde, hasta, an
   pedir(`/api/v1/profesionales/${r(profesional)}/disponibilidad?${q({ desde, hasta })}`, { anonimo });
 
 // --- Formatos compartidos ---
-export const nombreMostrado = (p) => p.nombre_artistico || p.nombre;
+export const nombreMostrado = (p) => p.nombre_artistico || p.nombre || 'Profesional';
 export const REDES = { instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook', youtube: 'YouTube', spotify: 'Spotify', otra: 'Otra' };
 // "Precios en soles con IGV incluido (18 %)." segun `duraciones[0].igv`; sin duraciones, null.
 export const notaIgv = (duraciones, porcentaje) => {

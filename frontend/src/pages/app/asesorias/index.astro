@@ -14,6 +14,8 @@ import Profesionales from '../../../islas/Profesionales.astro';
   >
     <Boton slot="acciones" variante="secundario" href="/app/asesorias/especialidades">Especialidades</Boton>
     <Boton slot="acciones" variante="secundario" href="/app/usuarios">Asignar rol de profesional</Boton>
+    <!-- Sin JS no sirve: nace oculto; la isla lo muestra solo al Administrador que aún no tiene ficha. -->
+    <Boton slot="acciones" variante="secundario" data-crear-ficha hidden>Crear mi ficha</Boton>
   </EncabezadoPantalla>
   <Profesionales vista="lista" />
 </LayoutApp>
