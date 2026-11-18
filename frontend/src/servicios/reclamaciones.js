@@ -9,16 +9,15 @@ const consulta = (filtros) => {
 };
 
 // Publico (con sesion opcional). `datos`: FormData con `datos` (JSON de NuevaHoja) y `adjuntos`. Un 401 por un token vencido se repite una vez sin token
-// (precision 3: este endpoint no responde 401). Devuelve {hoja, conCuenta, sesionVencida}: `conCuenta` es si la peticion que respondio llevaba token,
-// es decir, si la hoja quedo vinculada a la cuenta.
+// (precision 3: este endpoint no responde 401). Devuelve {hoja, conSesion}: `conSesion` es si habia sesion al enviar; si la hoja quedo en la cuenta lo dice `hoja.en_tu_cuenta` (precision 12).
 export async function registrarHoja(datos) {
   const ruta = '/api/v1/reclamaciones';
   const token = await obtenerToken();
   try {
-    return { hoja: await pedir(ruta, { method: 'POST', cuerpo: datos }), conCuenta: Boolean(token), sesionVencida: false };
+    return { hoja: await pedir(ruta, { method: 'POST', cuerpo: datos }), conSesion: Boolean(token) };
   } catch (error) {
     if (error.estado !== 401 || !token) throw error;
-    return { hoja: await pedir(ruta, { method: 'POST', cuerpo: datos, anonimo: true }), conCuenta: false, sesionVencida: true };
+    return { hoja: await pedir(ruta, { method: 'POST', cuerpo: datos, anonimo: true }), conSesion: true };
   }
 }
 export const listarMias = () => pedir('/api/v1/reclamaciones/mias');

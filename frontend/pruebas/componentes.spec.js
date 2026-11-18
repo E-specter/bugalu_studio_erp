@@ -109,6 +109,15 @@ for (const raiz of [false, true]) {
   });
 }
 
+test('catalogo: HojaReclamacion en sus tres variantes y CargaArchivos variante reclamo', async ({ page }) => {
+  await page.goto('/catalogo');
+  await expect(page.locator('#g-hoja')).toBeVisible();
+  await expect(page.locator('[data-hoja-catalogo] article.hoja')).toHaveCount(3);
+  await expect(page.locator('[data-ejemplo="constancia"]')).toContainText('000000001-2026');
+  await expect(page.locator('[data-ejemplo="confirmacion"]')).toContainText('Se asigna al enviar');
+  await expect(page.locator('bugalu-carga-archivos[variante="reclamo"]')).toBeVisible();
+});
+
 // Review Focus 3
 test('estados sin color: ARIA más icono, texto, borde o peso', async ({ page }) => {
   await page.goto('/catalogo');

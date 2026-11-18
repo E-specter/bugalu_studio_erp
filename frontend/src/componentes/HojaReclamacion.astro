@@ -88,6 +88,11 @@ import { DEFINICIONES, LEYENDAS } from '../servicios/hoja-reclamacion.js';
     font-family: var(--fuente-familia-titulo);
     font-size: var(--fuente-tamano-titulo-sm);
   }
+  /* El numero baja entero a la linea siguiente en vez de partirse a la mitad. */
+  .hoja-titulo [data-numero-rotulo],
+  .hoja-fecha time {
+    display: inline-block;
+  }
   .hoja-numero {
     font-family: var(--fuente-familia-tecnica);
     font-variant-numeric: tabular-nums;

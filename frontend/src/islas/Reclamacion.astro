@@ -1,7 +1,7 @@
 ---
 // Hoja del Libro de Reclamaciones (RF-16: formulario, confirmacion y constancia, spec RF-16-formulario y RF-16-confirmacion-y-constancia).
 // Con `transcripcion` es el formulario del Administrador para las hojas del libro fisico (RF-16-transcribir). Sin JS: el formulario nace
-// oculto y el <noscript> da los canales para reclamar.
+// oculto y queda visible la alternativa ([data-alternativa], que la isla oculta): canales para reclamar o aviso para el Administrador.
 import Panel from '../componentes/Panel.astro';
 import Aviso from '../componentes/Aviso.astro';
 import Boton from '../componentes/Boton.astro';
@@ -35,7 +35,11 @@ const documentos = Object.entries(TIPOS_DOCUMENTO).map(([valor, nombre]) => [val
   )}
 
   <!-- Alternativa visible por defecto: sin JavaScript, o si el script de la isla no carga, quedan los canales para reclamar. La isla la oculta en iniciar(). -->
-  {transcripcion && <noscript><Aviso variante="informacion" titulo="Esta sección necesita JavaScript" texto="Actívalo en tu navegador y recarga la página." /></noscript>}
+  {transcripcion && (
+    <div class="reclamacion-sin-js" data-alternativa>
+      <Aviso variante="informacion" titulo="Esta sección necesita JavaScript" texto="Actívalo en tu navegador y recarga la página para transcribir la hoja del libro físico." />
+    </div>
+  )}
   {!transcripcion && (
     <div class="reclamacion-sin-js" data-alternativa>
       <Aviso variante="informacion" titulo="Para llenar la hoja aquí necesitas JavaScript. También puedes presentar tu reclamo o queja por estos canales:">
@@ -464,11 +468,10 @@ const documentos = Object.entries(TIPOS_DOCUMENTO).map(([valor, nombre]) => [val
       const salir = (e) => { e.preventDefault(); e.returnValue = ''; };
       addEventListener('beforeunload', salir); // recargar o cerrar mientras se envia pide confirmar
       let hoja;
-      let conCuenta = false;
-      let sesionVencida = false;
+      let conSesion = false;
       try {
         if (this.transcripcion) hoja = await transcribirHoja(cuerpo);
-        else ({ hoja, conCuenta, sesionVencida } = await registrarHoja(cuerpo));
+        else ({ hoja, conSesion } = await registrarHoja(cuerpo));
       } catch (error) {
         removeEventListener('beforeunload', salir);
         clearTimeout(lento);
@@ -484,10 +487,11 @@ const documentos = Object.entries(TIPOS_DOCUMENTO).map(([valor, nombre]) => [val
       removeEventListener('beforeunload', salir);
       clearTimeout(lento);
       if (this.transcripcion) return location.assign(`/app/reclamos/detalle?id=${encodeURIComponent(hoja.id)}&aviso=hoja-transcrita`);
-      this.constancia(hoja, conCuenta, sesionVencida);
+      this.constancia(hoja, conSesion);
     }
 
-    constancia(hoja, conCuenta, sesionVencida) {
+    constancia(hoja, conSesion) {
+      const conCuenta = hoja?.en_tu_cuenta === true; // precision 12: lo dice la hoja, no el token
       this.querySelector('[data-vista="confirmacion"] [data-hoja]').replaceChildren();
       const correo = this.datos.consumidor.correo;
       const registrada = Boolean(hoja?.numero);
@@ -500,8 +504,13 @@ const documentos = Object.entries(TIPOS_DOCUMENTO).map(([valor, nombre]) => [val
       this.vista('constancia');
       if (registrada) document.title = `Hoja N.º ${hoja.numero} registrada · Libro de Reclamaciones · Bugalú Studio`;
       const aviso = registrada
-        ? mostrarAviso(this, 'exito', `Registramos tu hoja N.º ${hoja.numero}`, `Te enviamos una copia a ${correo}. Te responderemos por ${medio}${vence}. ${sesionVencida ? 'Esta hoja no quedó en tu cuenta: guarda o imprime esta constancia antes de salir.' : 'Guarda o imprime esta constancia antes de salir.'}${conCuenta ? ' También la encuentras en Mis reclamos.' : ''}`)
+        ? mostrarAviso(this, 'exito', `Registramos tu hoja N.º ${hoja.numero}`, `Te enviamos una copia a ${correo}. Te responderemos por ${medio}${vence}. ${conSesion && !conCuenta ? 'Esta hoja no quedó en tu cuenta: guarda o imprime esta constancia antes de salir.' : 'Guarda o imprime esta constancia antes de salir.'}${conCuenta ? ' También la encuentras en Mis reclamos.' : ''}`)
         : mostrarAviso(this, 'exito', 'Registramos tu hoja', `Te enviamos la constancia a ${correo}. Guárdala: ahí está tu número de hoja.`);
+      // Precision 13: la hoja quedo registrada pero algun adjunto no se guardo; `adjuntos_no_guardados` son posiciones (1-based) de los enviados.
+      const perdidos = (hoja?.adjuntos_no_guardados ?? []).map((n) => this.archivos[n - 1]?.name ?? `adjunto ${n}`);
+      if (registrada && perdidos.length) {
+        mostrarAviso(this, 'aviso', `No pudimos guardar ${perdidos.length === 1 ? '1 adjunto' : `${perdidos.length} adjuntos`}`, `${perdidos.join(', ')}. Tu hoja sí quedó registrada. Envíalos respondiendo al correo de la copia o por WhatsApp.`);
+      }
       enfocarAviso(aviso);
     }
 
@@ -548,7 +557,8 @@ const documentos = Object.entries(TIPOS_DOCUMENTO).map(([valor, nombre]) => [val
       // El texto del formulario manda; si el cliente no lo reproduce, el del servidor.
       const { errores } = this.leer();
       const propio = errores.find((x) => x.nombre === nombre);
-      this.mostrarErrores([propio ?? { entrada, mensaje: e.mensaje, texto: entrada.closest('.campo')?.querySelector('label')?.textContent.trim() ?? nombre, nombre }]);
+      const mensaje = e.codigo === 'fecha_original_invalida' ? 'La fecha debe estar dentro de los últimos 90 días y no puede ser futura.' : e.mensaje;
+      this.mostrarErrores([propio ?? { entrada, mensaje, texto: entrada.closest('.campo')?.querySelector('label')?.textContent.trim() ?? nombre, nombre }]);
     }
   }
 

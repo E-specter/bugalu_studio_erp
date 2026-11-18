@@ -650,6 +650,18 @@ test('transcribir: 422 con campo, 503 y red conservan lo escrito', async ({ page
   await expect(page.locator('#rc-detalle')).toHaveValue('Anotado a mano en el libro de respaldo.');
 });
 
+test('transcribir: 422 fecha_original_invalida se explica bajo la fecha', async ({ page }) => {
+  await comoRol(page, 'administrador');
+  await simularMultipart(page, '/reclamaciones/transcripcion', { status: 422, contentType: 'application/json', body: JSON.stringify({ error: { codigo: 'fecha_original_invalida', mensaje: 'x', detalles: { campo: 'fecha_original' } } }) });
+  await page.goto('/app/reclamos/transcribir');
+  await llenarTranscripcion(page);
+  await page.getByRole('button', { name: 'Revisar la hoja' }).click();
+  await page.getByRole('button', { name: 'Registrar hoja' }).click();
+  await expect(page.locator('#rc-fecha-original')).toBeFocused();
+  await expect(page.locator('#rc-fecha-original-error')).toContainText('La fecha debe estar dentro de los últimos 90 días y no puede ser futura.');
+  await page.screenshot({ path: 'pruebas/capturas/reclamos-transcribir-fecha-invalida.png', fullPage: true });
+});
+
 test('transcribir: el cliente ve "No tienes permiso" y el formulario no se muestra', async ({ page }) => {
   await comoRol(page, 'cliente');
   await page.goto('/app/reclamos/transcribir');
@@ -669,8 +681,21 @@ test('transcribir: sin sesion lleva al acceso interno', async ({ page }) => {
 test('transcribir: sin JavaScript explica que falta', async ({ browser }) => {
   const pagina = await (await browser.newContext({ javaScriptEnabled: false })).newPage();
   await pagina.goto('/app/reclamos/transcribir');
-  await expect(pagina.locator('noscript .aviso-titulo')).toHaveText('Esta sección necesita JavaScript');
+  await expect(pagina.locator('[data-alternativa] .aviso-titulo')).toHaveText('Esta sección necesita JavaScript');
+  await expect(pagina.locator('[data-alternativa]')).toContainText('Actívalo en tu navegador y recarga la página para transcribir la hoja del libro físico.');
   await expect(pagina.locator('form')).toBeHidden();
+});
+
+test('transcribir: con el script de la isla sin cargar queda la alternativa y con la isla se oculta', async ({ page }) => {
+  await page.route('**/_astro/**.js', (r) => r.abort());
+  await page.goto('/app/reclamos/transcribir');
+  await expect(page.locator('[data-alternativa] .aviso-titulo')).toHaveText('Esta sección necesita JavaScript');
+  await expect(page.locator('form')).toBeHidden();
+  await page.unroute('**/_astro/**.js');
+  await comoRol(page, 'administrador');
+  await page.goto('/app/reclamos/transcribir');
+  await expect(page.locator('form')).toBeVisible();
+  await expect(page.locator('[data-alternativa]')).toBeHidden();
 });
 
 // ==================== Enlaces de la app (CA-01) ====================

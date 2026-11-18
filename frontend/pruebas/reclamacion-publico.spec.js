@@ -517,7 +517,7 @@ test('adjuntos: tipo y peso se rechazan antes de entrar a la lista, nombrando el
 // --- 8. Con sesion (CA-10) y sesion vencida ---
 test('con sesion de cliente: datos del perfil prellenados y editables, aviso y token en el envio', async ({ page }) => {
   const consola = vigilarConsola(page);
-  const vistas = await montar(page, { sesion: true, perfil: perfilCliente({ es_menor: true, menor: { tutor: { nombre: 'Rosa Pérez', telefono: '999111222', correo: 'rosa@correo.com' } } }) });
+  const vistas = await montar(page, { sesion: true, envio: json(201, hoja({ en_tu_cuenta: true })), perfil: perfilCliente({ es_menor: true, menor: { tutor: { nombre: 'Rosa Pérez', telefono: '999111222', correo: 'rosa@correo.com' } } }) });
   await page.goto('/libro-de-reclamaciones/');
   await expect(page.locator('#rc-nombre')).toHaveValue('Ana Pérez');
   await expect(page.locator('#rc-tipo-documento')).toHaveValue('dni');
@@ -562,6 +562,56 @@ test('con otro rol (personal) no se prellena', async ({ page }) => {
   await page.goto('/libro-de-reclamaciones/');
   await expect(page.locator('#rc-nombre')).toHaveValue('');
   await expect(page.getByText('Usamos los datos de tu cuenta')).toBeHidden();
+});
+
+// Precision 12: "Mis reclamos" se promete solo si la hoja trae en_tu_cuenta: true, nunca por el token.
+test('con sesion pero en_tu_cuenta:false (201): la constancia no promete Mis reclamos', async ({ page }) => {
+  await montar(page, { sesion: true, envio: json(201, hoja({ en_tu_cuenta: false })) });
+  await page.goto('/libro-de-reclamaciones/');
+  await expect(page.locator('#rc-nombre')).toHaveValue('Ana Pérez');
+  await page.locator('#rc-tipo-queja').check();
+  await page.locator('#rc-detalle').fill('Me atendieron con mala cara en recepción.');
+  await page.locator('#rc-pedido').fill('Que me pidan disculpas por escrito.');
+  await revisar(page).click();
+  await enviar(page).click();
+  await expect(avisos(page)).toContainText('Registramos tu hoja N.º 000000001-2026');
+  await expect(avisos(page)).not.toContainText('Mis reclamos');
+  await expect(avisos(page)).toContainText('Esta hoja no quedó en tu cuenta: guarda o imprime esta constancia antes de salir.');
+  await expect(page.getByRole('link', { name: 'Ver mis reclamos' })).toBeHidden();
+  await expect(page.getByRole('link', { name: 'Volver al inicio' })).toBeVisible();
+});
+
+test('reintento con sesion que responde 200 y en_tu_cuenta:false: no promete Mis reclamos', async ({ page }) => {
+  await montar(page, { sesion: true, envio: (r, n) => r.fulfill(n === 1 ? errorApi(503, 'servicio_no_disponible') : json(200, hoja({ en_tu_cuenta: false }))) });
+  await page.goto('/libro-de-reclamaciones/');
+  await expect(page.locator('#rc-nombre')).toHaveValue('Ana Pérez');
+  await page.locator('#rc-tipo-queja').check();
+  await page.locator('#rc-detalle').fill('Me atendieron con mala cara en recepción.');
+  await page.locator('#rc-pedido').fill('Que me pidan disculpas por escrito.');
+  await revisar(page).click();
+  await enviar(page).click();
+  await expect(avisos(page)).toContainText('El Libro de Reclamaciones no responde');
+  await enviar(page).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('HOJA REGISTRADA');
+  await expect(avisos(page)).not.toContainText('Mis reclamos');
+  await expect(avisos(page)).toContainText('Esta hoja no quedó en tu cuenta: guarda o imprime esta constancia antes de salir.');
+  await expect(page.getByRole('link', { name: 'Ver mis reclamos' })).toBeHidden();
+  await expect(page.getByRole('link', { name: 'Volver al inicio' })).toBeVisible();
+});
+
+// Precision 13: la hoja quedo registrada pero algun adjunto no se guardo (posiciones 1-based de los enviados).
+test('adjuntos_no_guardados: la constancia dice que archivos faltan, que la hoja si quedo y como enviarlos', async ({ page }) => {
+  await montar(page, { envio: json(201, hoja({ adjuntos: [{ n: 1, nombre: 'voucher.png', tipo: 'image/png', tamano: 70 }], adjuntos_no_guardados: [2, 3] })) });
+  await aConfirmar(page, { adjuntos: [archivo('voucher.png'), archivo('captura.png'), archivo('chat.png')] });
+  await enviar(page).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('HOJA REGISTRADA');
+  const nota = page.locator('[data-avisos] .aviso-aviso');
+  await expect(nota).toContainText('No pudimos guardar 2 adjuntos');
+  await expect(nota).toContainText('captura.png, chat.png');
+  await expect(nota).toContainText('Tu hoja sí quedó registrada');
+  await expect(nota).toContainText('respondiendo al correo de la copia o por WhatsApp');
+  await sinViolaciones(page);
+  await page.screenshot({ path: 'pruebas/capturas/reclamacion-constancia-adjuntos-no-guardados.png', fullPage: true });
 });
 
 test('sesion vencida (el servidor responde 401 al token): se reenvia una vez sin token y la hoja se registra', async ({ page }) => {
@@ -631,13 +681,14 @@ test('imprimir: boton Imprimir llama a window.print y el estilo de impresion dej
 });
 
 // --- 10. Reenvios y doble envio (auditoria B, ronda 1) ---
-test('doble envio: dblclick y dos click() seguidos sobre "Enviar reclamación" mandan una sola peticion', async ({ page }) => {
+test('doble envio: dblclick y dos enviar() sobre el elemento mandan una sola peticion', async ({ page }) => {
   let soltar;
   const espera = new Promise((r) => (soltar = r));
   const vistas = await montar(page, { envio: async (r) => { await espera; await r.fulfill(json(201, hoja())); } });
   await aConfirmar(page);
   await enviar(page).dblclick();
-  await page.evaluate(() => { const b = document.querySelector('[data-enviar]'); b.click(); b.click(); });
+  // Llamar a enviar() directo salta el boton deshabilitado: solo la guarda `enviando` lo frena.
+  await page.evaluate(() => { const el = document.querySelector('bugalu-reclamacion'); el.enviar(); el.enviar(); });
   await page.waitForTimeout(300);
   expect(vistas).toHaveLength(1);
   soltar();
