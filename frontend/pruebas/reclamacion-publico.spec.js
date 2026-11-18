@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 import { API, json, errorApi, conSesion, silenciarApi, simularAuth, sinViolaciones, vigilarConsola, tamanos } from './ayudas-acceso.js';
 import { HOY, archivo, hoja, perfilCliente, simularMultipart } from './ayudas-rf16.js';
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const simularEnvio = (page, resp = json(201, hoja())) => simularMultipart(page, '/reclamaciones', resp);
 
 async function montar(page, { sesion = false, perfil, envio } = {}) {
@@ -82,8 +83,8 @@ for (const t of tamanos) {
     // Definiciones literales del Anexo I y leyendas.
     await expect(page.getByText('RECLAMO: Disconformidad relacionada a los productos o servicios.').first()).toBeVisible();
     await expect(page.getByText('QUEJA: Disconformidad no relacionada a los productos o servicios; o, malestar o descontento respecto a la atención al público.').first()).toBeVisible();
-    await expect(page.getByText('La formulación del reclamo no impide acudir a otras vías de solución de controversias ni es requisito previo para interponer una denuncia ante el INDECOPI.')).toBeVisible();
-    await expect(page.getByText('El proveedor deberá dar respuesta al reclamo o queja en un plazo no mayor a quince (15) días hábiles improrrogables.')).toBeVisible();
+    await expect(page.locator('.reclamacion-leyendas').getByText('La formulación del reclamo no impide acudir a otras vías de solución de controversias ni es requisito previo para interponer una denuncia ante el INDECOPI.')).toBeVisible();
+    await expect(page.locator('.reclamacion-leyendas').getByText('El proveedor deberá dar respuesta al reclamo o queja en un plazo no mayor a quince (15) días hábiles improrrogables.')).toBeVisible();
     await expect(page.getByRole('link', { name: 'Política de privacidad' }).first()).toHaveAttribute('href', '/legal/privacidad/');
     // Valores por defecto: servicio, correo; tipo sin marcar; menor sin marcar y su grupo oculto.
     await expect(page.locator('#rc-bien-servicio')).toBeChecked();
@@ -114,16 +115,34 @@ test('sin JavaScript: canales para reclamar y las leyendas; el formulario no apa
   const page = await contexto.newPage();
   await page.goto('/libro-de-reclamaciones/');
   await expect(page.getByRole('heading', { level: 1, name: 'LIBRO DE RECLAMACIONES' })).toBeVisible();
-  // Playwright no lee el texto de <noscript> con getByText: se usan selectores CSS.
-  await expect(page.locator('noscript .aviso-titulo')).toContainText('Para llenar la hoja aquí necesitas JavaScript.');
-  await expect(page.locator('noscript a[href^="mailto:somos.bugalu.studio@gmail.com"]')).toBeVisible();
-  await expect(page.locator('noscript a[href="https://wa.me/51925530800"]')).toBeVisible();
-  await expect(page.locator('noscript .contacto')).toContainText('En persona, con un profesional autorizado');
-  await expect(page.locator('noscript .reclamacion-sin-js .aviso-cuerpo > p').last()).toContainText('Te respondemos en un máximo de 15 días hábiles.');
-  await expect(page.locator('noscript .reclamacion-leyenda').first()).toContainText('La formulación del reclamo no impide acudir');
+  await canalesVisibles(page);
   await expect(page.locator('form')).toBeHidden();
   await page.screenshot({ path: 'pruebas/capturas/reclamacion-sin-js.png', fullPage: true });
   await contexto.close();
+});
+
+const canalesVisibles = async (page) => {
+  const bloque = page.locator('[data-alternativa]');
+  await expect(bloque).toContainText('Para llenar la hoja aquí necesitas JavaScript.');
+  await expect(bloque.getByRole('link', { name: 'somos.bugalu.studio@gmail.com' })).toBeVisible();
+  await expect(bloque.getByRole('link', { name: '+51 925 530 800' })).toHaveAttribute('href', 'https://wa.me/51925530800');
+  await expect(bloque).toContainText('En persona, con un profesional autorizado');
+  await expect(bloque).toContainText('Te respondemos en un máximo de 15 días hábiles.');
+  await expect(bloque).toContainText('La formulación del reclamo no impide acudir');
+};
+
+test('con JavaScript activo pero el script de la isla sin cargar: se ven los canales y no el formulario', async ({ page }) => {
+  await page.route('**/_astro/**.js', (r) => r.abort());
+  await page.goto('/libro-de-reclamaciones/');
+  await canalesVisibles(page);
+  await expect(page.locator('form')).toBeHidden();
+});
+
+test('con la isla cargada los canales alternativos se ocultan y aparece el formulario', async ({ page }) => {
+  await montar(page);
+  await page.goto('/libro-de-reclamaciones/');
+  await expect(page.locator('form')).toBeVisible();
+  await expect(page.locator('[data-alternativa]')).toBeHidden();
 });
 
 // --- 3. Validacion local (CA-03) ---
@@ -280,6 +299,7 @@ for (const t of tamanos) {
       es_menor: false,
       bien: { tipo: 'servicio', monto: '1250.50', descripcion: 'Mezcla de mi EP, reserva R-2026-00014.' },
       tipo: 'reclamo', detalle: 'Entregaron la mezcla con tres días de retraso.', pedido: 'Que me devuelvan la mitad del importe.', medio_respuesta: 'correo',
+      clave_envio: expect.stringMatching(UUID),
     });
     const exito = avisos(page);
     await expect(exito).toBeFocused();
@@ -555,6 +575,11 @@ test('sesion vencida (el servidor responde 401 al token): se reenvia una vez sin
   await enviar(page).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('HOJA REGISTRADA');
   expect(vistas.map((v) => v.auth)).toEqual(['Bearer token-de-prueba', undefined]);
+  // La hoja no quedo en la cuenta: la constancia no promete Mis reclamos y pide guardarla o imprimirla.
+  await expect(avisos(page)).toContainText('Esta hoja no quedó en tu cuenta: guarda o imprime esta constancia antes de salir.');
+  await expect(avisos(page)).not.toContainText('Mis reclamos');
+  await expect(page.getByRole('link', { name: 'Ver mis reclamos' })).toBeHidden();
+  await expect(page.getByRole('link', { name: 'Volver al inicio' })).toBeVisible();
 });
 
 test('sesion vencida que no se puede renovar: el envio sale sin token', async ({ page }) => {
@@ -603,4 +628,60 @@ test('imprimir: boton Imprimir llama a window.print y el estilo de impresion dej
   await page.screenshot({ path: 'pruebas/capturas/reclamacion-constancia-impresion.png', fullPage: true });
   await page.emulateMedia({ media: 'screen' });
   await expect(page.locator('footer.pie')).toBeVisible();
+});
+
+// --- 10. Reenvios y doble envio (auditoria B, ronda 1) ---
+test('doble envio: dblclick y dos click() seguidos sobre "Enviar reclamación" mandan una sola peticion', async ({ page }) => {
+  let soltar;
+  const espera = new Promise((r) => (soltar = r));
+  const vistas = await montar(page, { envio: async (r) => { await espera; await r.fulfill(json(201, hoja())); } });
+  await aConfirmar(page);
+  await enviar(page).dblclick();
+  await page.evaluate(() => { const b = document.querySelector('[data-enviar]'); b.click(); b.click(); });
+  await page.waitForTimeout(300);
+  expect(vistas).toHaveLength(1);
+  soltar();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('HOJA REGISTRADA');
+  expect(vistas).toHaveLength(1);
+});
+
+test('beforeunload: mientras se envia pide confirmar la salida y despues ya no', async ({ page }) => {
+  let soltar;
+  const espera = new Promise((r) => (soltar = r));
+  await montar(page, { envio: async (r) => { await espera; await r.fulfill(json(201, hoja())); } });
+  const salida = () => page.evaluate(() => { const e = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented; });
+  await aConfirmar(page);
+  expect(await salida()).toBe(false); // en la confirmacion todavia no
+  await enviar(page).click();
+  await expect(page.getByRole('button', { name: 'Enviando…' })).toBeVisible();
+  expect(await salida()).toBe(true);
+  soltar();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('HOJA REGISTRADA');
+  expect(await salida()).toBe(false);
+});
+
+test('clave_envio: UUID generada al abrir la confirmacion y reutilizada en el reintento; un 200 con la hoja ya registrada es exito', async ({ page }) => {
+  const vistas = await montar(page, { envio: (r, n) => r.fulfill(n === 1 ? errorApi(503, 'servicio_no_disponible') : json(200, hoja())) });
+  await aConfirmar(page);
+  await enviar(page).click();
+  await expect(avisos(page)).toContainText('El Libro de Reclamaciones no responde');
+  await enviar(page).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('HOJA REGISTRADA');
+  expect(vistas).toHaveLength(2);
+  expect(vistas[0].datos.clave_envio).toMatch(UUID);
+  expect(vistas[1].datos.clave_envio).toBe(vistas[0].datos.clave_envio);
+  await expect(avisos(page)).toContainText('Registramos tu hoja N.º 000000001-2026');
+});
+
+test('clave_envio: una nueva confirmacion (tras corregir) genera otra clave', async ({ page }) => {
+  const vistas = await montar(page, { envio: (r, n) => r.fulfill(n === 1 ? errorApi(503, 'servicio_no_disponible') : json(201, hoja())) });
+  await aConfirmar(page);
+  await enviar(page).click();
+  await expect(avisos(page)).toBeFocused();
+  await page.getByRole('button', { name: 'Corregir datos' }).click();
+  await page.locator('#rc-pedido').fill('Que me devuelvan todo el importe.');
+  await revisar(page).click();
+  await enviar(page).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('HOJA REGISTRADA');
+  expect(vistas[1].datos.clave_envio).not.toBe(vistas[0].datos.clave_envio);
 });

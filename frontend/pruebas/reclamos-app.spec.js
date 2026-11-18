@@ -629,7 +629,7 @@ test('transcribir: revision con TRANSCRITA y fecha original, registro multipart 
     confirmado: true,
     consumidor: { nombre: 'Carla Soto', tipo_documento: 'pasaporte', documento: 'AB123456', domicilio: 'Jr. Lima 100, Lima', correo: 'carla@correo.com' },
     es_menor: false, bien: { tipo: 'servicio' }, tipo: null, detalle: 'Anotado a mano en el libro de respaldo.', pedido: 'Que me llamen para explicarme el cobro.', medio_respuesta: 'carta',
-    fecha_original: '2026-11-16T18:30:00-05:00', numero_hoja_fisica: 'F-0042',
+    fecha_original: '2026-11-16T18:30:00-05:00', numero_hoja_fisica: 'F-0042', clave_envio: expect.stringMatching(/^[0-9a-f-]{36}$/i),
   });
 });
 

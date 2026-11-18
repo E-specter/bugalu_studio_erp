@@ -15,8 +15,8 @@ export class ErrorApi extends Error {
 }
 
 // `cuerpo` (opcional) se envia como JSON; un FormData va tal cual (multipart: el navegador pone el boundary, no se fuerza Content-Type). `sinToken`: consulta publica; si el token (caducado o ajeno) recibe 401, se repite una vez sin token.
-export async function pedir(ruta, { cuerpo, headers, sinToken = false, ...opciones } = {}) {
-  const token = await obtenerToken();
+export async function pedir(ruta, { cuerpo, headers, sinToken = false, anonimo = false, ...opciones } = {}) {
+  const token = anonimo ? null : await obtenerToken(); // anonimo: sin token aunque haya sesion (reintento de un alta publica)
   let respuesta = await enviar(ruta, { cuerpo, headers, token, opciones });
   if (respuesta.status === 401 && sinToken && token) respuesta = await enviar(ruta, { cuerpo, headers, token: null, opciones });
   return leer(respuesta);
