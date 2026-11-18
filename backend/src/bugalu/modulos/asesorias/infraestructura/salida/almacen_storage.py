@@ -49,7 +49,7 @@ class AlmacenFotosStorage:
         return respuesta
 
     async def subir(self, ruta: str, contenido: bytes, mime: str) -> None:
-        await self._pedir("POST", ruta, {"Content-Type": mime, "x-upsert": "false"}, contenido)
+        await self._pedir("POST", ruta, {"Content-Type": mime, "x-upsert": "true"}, contenido)
 
     async def borrar(self, ruta: str) -> None:
         await self._pedir("DELETE", ruta)

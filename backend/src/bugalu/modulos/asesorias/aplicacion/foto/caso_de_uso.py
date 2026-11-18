@@ -1,5 +1,6 @@
 import logging
-from uuid import UUID, uuid4
+from dataclasses import dataclass
+from uuid import UUID
 
 from bugalu.compartido.errores import (
     AlmacenamientoNoDisponible,
@@ -14,13 +15,25 @@ from bugalu.modulos.asesorias.dominio.puertos import AlmacenFotos, RepositorioAs
 _registro = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
+class FotoReemplazada:
+    nueva: str
+    anterior: str | None
+
+
 class ReemplazarFoto:
     def __init__(self, repo: RepositorioAsesorias, almacen: AlmacenFotos) -> None:
         self._repo = repo
         self._almacen = almacen
 
-    async def ejecutar(self, id_actor: UUID, id_profesional: UUID, contenido: bytes) -> str:
-        """Sube la foto nueva (validada por su contenido), guarda su ruta y borra la anterior."""
+    async def ejecutar(
+        self, id_actor: UUID, id_profesional: UUID, contenido: bytes
+    ) -> FotoReemplazada:
+        """Sube la foto nueva (validada por su contenido) a la ruta libre y guarda su ruta.
+
+        La anterior sigue en el almacenamiento hasta que el llamador confirme la transaccion y
+        llame a `confirmar`; si la base falla, `descartar` borra la nueva y la anterior sigue.
+        """
         perfil = await self._repo.obtener_profesional(id_profesional)
         if perfil is None:
             raise NoEncontrado("No existe el profesional.")
@@ -30,16 +43,25 @@ class ReemplazarFoto:
         tipo = detectar_tipo(contenido[:BYTES_FIRMA])
         if tipo is None:
             raise FormatoNoAdmitido("La foto debe ser JPG, PNG o WebP.", {"campo": "archivo"})
-        ruta = f"{id_profesional}/{uuid4().hex}.{tipo.extension}"
+        # Storage solo admite estas dos rutas por perfil: se alterna para no pisar la vigente.
+        ruta = f"{id_profesional}/foto-{2 if (perfil.foto_ruta or '').endswith('/foto-1') else 1}"
         await self._almacen.subir(ruta, contenido, tipo.mime)
+        reemplazo = FotoReemplazada(ruta, perfil.foto_ruta)
         try:
             await self._repo.fijar_foto(id_profesional, ruta)
         except Exception:
-            await self._borrar_sin_fallar(ruta)  # no deja un objeto huerfano
+            await self.descartar(reemplazo)  # no deja un objeto huerfano
             raise
-        if perfil.foto_ruta:
-            await self._borrar_sin_fallar(perfil.foto_ruta)
-        return ruta
+        return reemplazo
+
+    async def confirmar(self, reemplazo: FotoReemplazada) -> None:
+        """Tras el commit: borra la foto anterior."""
+        if reemplazo.anterior:
+            await self._borrar_sin_fallar(reemplazo.anterior)
+
+    async def descartar(self, reemplazo: FotoReemplazada) -> None:
+        """La base no guardo la ruta nueva: se borra la subida y la anterior sigue."""
+        await self._borrar_sin_fallar(reemplazo.nueva)
 
     async def _borrar_sin_fallar(self, ruta: str) -> None:
         try:

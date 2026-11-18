@@ -45,7 +45,7 @@ def _traduciendo() -> Iterator[None]:
     except errors.RaiseException as error:
         mensaje = {"perfil_existente": PerfilExistente, "rol_no_admitido": RolNoAdmitido}
         if clase := mensaje.get(error.diag.message_primary or ""):
-            raise clase("No se puede crear el perfil de ese usuario.") from error
+            raise clase("El rol de ese usuario no admite un perfil de profesional.") from error
         raise
     except errors.InvalidParameterValue as error:
         raise DatosInvalidos(
@@ -149,9 +149,7 @@ class RepositorioAsesoriasPostgres:
             (*valores, id_profesional),
         )
 
-    async def reemplazar_especialidades(
-        self, id_profesional: UUID, ids: Collection[UUID]
-    ) -> None:
+    async def reemplazar_especialidades(self, id_profesional: UUID, ids: Collection[UUID]) -> None:
         await self._filas(
             "select public.reemplazar_especialidades(%s, %s)", (id_profesional, list(ids))
         )

@@ -17,7 +17,11 @@ from bugalu.modulos.asesorias.aplicacion.especialidades.caso_de_uso import (
     CrearEspecialidad,
     ListarEspecialidades,
 )
-from bugalu.modulos.asesorias.aplicacion.foto.caso_de_uso import QuitarFoto, ReemplazarFoto
+from bugalu.modulos.asesorias.aplicacion.foto.caso_de_uso import (
+    FotoReemplazada,
+    QuitarFoto,
+    ReemplazarFoto,
+)
 from bugalu.modulos.asesorias.aplicacion.horarios.caso_de_uso import (
     PublicarHorarios,
     RetirarHorario,
@@ -76,9 +80,7 @@ def _actor(claims: dict[str, Any] | None) -> UUID | None:
     return UUID(str(claims["sub"])) if claims else None
 
 
-async def _perfil(
-    conexion: Any, p: ProfesionalDominio, ve_estado: bool
-) -> e.Profesional:
+async def _perfil(conexion: Any, p: ProfesionalDominio, ve_estado: bool) -> e.Profesional:
     repo = RepositorioAsesoriasPostgres(conexion)
     return e.profesional_de(
         p,
@@ -134,9 +136,9 @@ async def actualizar_especialidad(
     request: Request, claims: Claims, id_especialidad: UUID, cuerpo: e.CambiosEspecialidad
 ) -> e.Especialidad:
     async with transaccion_con_identidad(_pool(request), claims) as conexion:
-        actualizada = await ActualizarEspecialidad(
-            RepositorioAsesoriasPostgres(conexion)
-        ).ejecutar(id_especialidad, cuerpo.model_dump(exclude_unset=True))
+        actualizada = await ActualizarEspecialidad(RepositorioAsesoriasPostgres(conexion)).ejecutar(
+            id_especialidad, cuerpo.model_dump(exclude_unset=True)
+        )
     return e.Especialidad.desde_dominio(actualizada)
 
 
@@ -248,14 +250,23 @@ async def reemplazar_foto(
     # shortcut: el multipart se vuelca a disco antes del 413 si no trae Content-Length; el
     # servidor o proxy debe limitar el cuerpo en produccion (como POST /pagos).
     contenido = await archivo.read(LIMITE_BYTES + 1)  # nunca el archivo entero
-    async with transaccion_con_identidad(_pool(request), claims) as conexion:
-        repo = RepositorioAsesoriasPostgres(conexion)
-        await ReemplazarFoto(repo, _almacen(token)).ejecutar(
-            UUID(str(claims["sub"])), id_profesional, contenido
-        )
-        perfil = await repo.obtener_profesional(id_profesional)
-        assert perfil is not None  # la acaba de actualizar
-        return await _perfil(conexion, perfil, True)
+    caso: ReemplazarFoto | None = None
+    reemplazo: FotoReemplazada | None = None
+    try:
+        async with transaccion_con_identidad(_pool(request), claims) as conexion:
+            repo = RepositorioAsesoriasPostgres(conexion)
+            caso = ReemplazarFoto(repo, _almacen(token))
+            reemplazo = await caso.ejecutar(UUID(str(claims["sub"])), id_profesional, contenido)
+            perfil = await repo.obtener_profesional(id_profesional)
+            assert perfil is not None  # la acaba de actualizar
+            respuesta = await _perfil(conexion, perfil, True)
+    except Exception:
+        if caso is not None and reemplazo is not None:  # sin commit: la anterior sigue
+            await caso.descartar(reemplazo)
+        raise
+    assert caso is not None and reemplazo is not None
+    await caso.confirmar(reemplazo)  # ya confirmada: recien ahora se borra la anterior
+    return respuesta
 
 
 @router.delete(

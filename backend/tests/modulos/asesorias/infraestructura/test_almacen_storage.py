@@ -12,7 +12,7 @@ def _almacen(responder: httpx.MockTransport) -> AlmacenFotosStorage:
     return AlmacenFotosStorage("http://s", "clave", "tok", responder)
 
 
-async def test_subir_usa_el_token_del_usuario_y_no_reemplaza() -> None:
+async def test_subir_usa_el_token_del_usuario_y_sobrescribe_su_ruta() -> None:
     vistas: list[httpx.Request] = []
 
     def responder(p: httpx.Request) -> httpx.Response:
@@ -24,7 +24,7 @@ async def test_subir_usa_el_token_del_usuario_y_no_reemplaza() -> None:
     assert str(p.url) == "http://s/storage/v1/object/profesionales/id/a.png"
     assert (p.headers["authorization"], p.headers["x-upsert"], p.content) == (
         "Bearer tok",
-        "false",
+        "true",
         b"datos",
     )
 

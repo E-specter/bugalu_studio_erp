@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 from bugalu.compartido.autenticacion import obtener_claims, obtener_claims_opcionales
 from bugalu.compartido.base_datos import transaccion_con_identidad, transaccion_publica
 from bugalu.compartido.esquemas import RespuestaError
+from bugalu.compartido.roles import SOLO_CLIENTES
 from bugalu.modulos.catalogo.infraestructura.entrada.http.esquemas import (
     CambiosParametros,
     Parametros,
@@ -230,6 +231,7 @@ async def actualizar_parametros(
 
 @router.post(
     "/reservas",
+    dependencies=SOLO_CLIENTES,
     response_model=Reserva,
     response_model_exclude_unset=True,
     status_code=201,
@@ -256,6 +258,7 @@ async def registrar_reserva(request: Request, claims: Claims, cuerpo: NuevaReser
 
 @router.get(
     "/reservas/mias",
+    dependencies=SOLO_CLIENTES,
     response_model=list[Reserva],
     response_model_exclude_unset=True,
     summary="Mis reservas con estado, precio, cuotas y fecha limite",
@@ -289,6 +292,7 @@ async def listar_reservas(
 
 @router.get(
     "/reservas/{id_reserva}",
+    dependencies=SOLO_CLIENTES,
     response_model=Reserva,
     response_model_exclude_unset=True,
     summary="Una reserva: su dueno, el personal o un administrador",
@@ -302,6 +306,7 @@ async def obtener_reserva(request: Request, claims: Claims, id_reserva: UUID) ->
 
 @router.get(
     "/reservas/{id_reserva}/cancelacion",
+    dependencies=SOLO_CLIENTES,
     response_model=VistaCancelacion,
     summary="Vista previa de la cancelacion: nivel, retencion y credito; sin cambiar nada",
     responses=_respuestas(401, 403, 404, 409, 422),
@@ -321,6 +326,7 @@ async def vista_cancelacion(
 
 @router.post(
     "/reservas/{id_reserva}/cancelar",
+    dependencies=SOLO_CLIENTES,
     response_model=Reserva,
     response_model_exclude_unset=True,
     summary="Cancela con la politica de niveles (RF-18): el dueno con su nivel esperado; "
@@ -372,6 +378,7 @@ async def aplicar_excepcion(
 
 @router.post(
     "/reservas/{id_reserva}/reprogramar/simular",
+    dependencies=SOLO_CLIENTES,
     response_model=VistaReprogramacion,
     summary="Vista previa de reprogramar: nivel, penalizacion, precio nuevo, saldo y credito; "
     "sin cambiar nada (dueno; administrador tras una cancelacion del estudio)",
@@ -390,6 +397,7 @@ async def simular_reprogramacion(
 
 @router.post(
     "/reservas/{id_reserva}/reprogramar",
+    dependencies=SOLO_CLIENTES,
     response_model=Reserva,
     response_model_exclude_unset=True,
     summary="Reprograma a otro horario de la misma sala con la politica de niveles (RF-18); "
@@ -409,6 +417,7 @@ async def reprogramar_reserva(
 
 @router.post(
     "/reservas/{id_reserva}/eleccion-estudio",
+    dependencies=SOLO_CLIENTES,
     response_model=Reserva,
     response_model_exclude_unset=True,
     summary="Tras una cancelacion del estudio, elige la devolucion integra de lo pagado "

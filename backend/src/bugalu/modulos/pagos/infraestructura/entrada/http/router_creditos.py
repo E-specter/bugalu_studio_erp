@@ -7,6 +7,7 @@ from bugalu.compartido.autenticacion import obtener_claims
 from bugalu.compartido.base_datos import transaccion_con_identidad
 from bugalu.compartido.errores import NoAutenticado
 from bugalu.compartido.esquemas import RespuestaError
+from bugalu.compartido.roles import SOLO_CLIENTES
 from bugalu.modulos.pagos.aplicacion.creditos.caso_de_uso import (
     AplicarCredito,
     DecidirDevolucion,
@@ -62,6 +63,7 @@ def _usuario(claims: dict[str, Any]) -> UUID:
 
 @router.get(
     "/creditos",
+    dependencies=SOLO_CLIENTES,
     response_model=list[Credito],
     response_model_exclude_unset=True,
     summary="Mis creditos; el administrador los de `id_cliente`",
@@ -79,6 +81,7 @@ async def listar_creditos(
 
 @router.post(
     "/cuotas/{id_cuota}/credito",
+    dependencies=SOLO_CLIENTES,
     response_model=Reserva,
     response_model_exclude_unset=True,
     summary="Aplica credito propio a una cuota, al momento y sin validacion (dueno)",
@@ -96,6 +99,7 @@ async def aplicar_credito(
 
 @router.post(
     "/creditos/{id_credito}/devolucion",
+    dependencies=SOLO_CLIENTES,
     response_model=Devolucion,
     response_model_exclude_unset=True,
     status_code=201,
@@ -131,6 +135,7 @@ async def listar_devoluciones(
 
 @router.get(
     "/devoluciones/{id_devolucion}",
+    dependencies=SOLO_CLIENTES,
     response_model=Devolucion,
     response_model_exclude_unset=True,
     summary="Una devolucion: el administrador o su dueno",

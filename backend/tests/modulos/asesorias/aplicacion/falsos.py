@@ -79,9 +79,7 @@ class RepositorioFalso:
     async def actualizar_perfil(self, id_profesional: UUID, campos: Mapping[str, Any]) -> None:
         self.escrituras.append("perfil")
 
-    async def reemplazar_especialidades(
-        self, id_profesional: UUID, ids: Collection[UUID]
-    ) -> None:
+    async def reemplazar_especialidades(self, id_profesional: UUID, ids: Collection[UUID]) -> None:
         self.escrituras.append("especialidades")
 
     async def cambiar_estado(self, id_profesional: UUID, activo: bool) -> None:

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -153,19 +153,44 @@ async def test_ofrecer_una_duracion_nueva_o_quitarla_es_sensible() -> None:
 # --- foto (CA-03) ---
 
 
-async def test_la_foto_se_sube_por_su_contenido_y_se_guarda_la_ruta() -> None:
+async def test_la_foto_se_sube_a_una_ruta_fija_por_perfil_y_se_guarda() -> None:
     repo, almacen = RepositorioFalso(), AlmacenFalso()
-    foto = await ReemplazarFoto(repo, almacen).ejecutar(PABLO, PABLO, JPEG)
-    assert foto.startswith(f"{PABLO}/") and foto.endswith(".jpg")
-    assert almacen.subidos == [(foto, "image/jpeg")]
-    assert repo.escrituras == [f"foto:{foto}"]
+    reemplazo = await ReemplazarFoto(repo, almacen).ejecutar(PABLO, PABLO, JPEG)
+    assert reemplazo.nueva == f"{PABLO}/foto-1" and reemplazo.anterior is None
+    assert almacen.subidos == [(f"{PABLO}/foto-1", "image/jpeg")]
+    assert repo.escrituras == [f"foto:{PABLO}/foto-1"]
 
 
-async def test_reemplazar_la_foto_borra_la_anterior() -> None:
+async def test_reemplazar_alterna_la_ruta_y_no_borra_la_anterior_hasta_confirmar() -> None:
     repo, almacen = RepositorioFalso(), AlmacenFalso()
-    repo.perfiles[PABLO] = perfil(PABLO, foto_ruta=f"{PABLO}/vieja.png")
-    await ReemplazarFoto(repo, almacen).ejecutar(PABLO, PABLO, JPEG)
-    assert almacen.borrados == [f"{PABLO}/vieja.png"]
+    repo.perfiles[PABLO] = perfil(PABLO, foto_ruta=f"{PABLO}/foto-1")
+    caso = ReemplazarFoto(repo, almacen)
+    reemplazo = await caso.ejecutar(PABLO, PABLO, JPEG)
+    assert (reemplazo.nueva, reemplazo.anterior) == (f"{PABLO}/foto-2", f"{PABLO}/foto-1")
+    assert almacen.borrados == []  # el commit aun no ocurrio
+    await caso.confirmar(reemplazo)
+    assert almacen.borrados == [f"{PABLO}/foto-1"]
+
+
+async def test_si_la_base_falla_la_foto_nueva_se_borra_y_la_anterior_sigue() -> None:
+    repo, almacen = RepositorioFalso(), AlmacenFalso()
+    repo.perfiles[PABLO] = perfil(PABLO, foto_ruta=f"{PABLO}/foto-1")
+
+    async def falla(id_profesional: UUID, ruta: str | None) -> None:
+        raise RuntimeError("base caida")
+
+    repo.fijar_foto = falla  # type: ignore[method-assign]
+    with pytest.raises(RuntimeError):
+        await ReemplazarFoto(repo, almacen).ejecutar(PABLO, PABLO, JPEG)
+    assert almacen.borrados == [f"{PABLO}/foto-2"]
+
+
+async def test_descartar_borra_la_nueva_si_el_commit_falla_despues() -> None:
+    almacen = AlmacenFalso()
+    caso = ReemplazarFoto(RepositorioFalso(), almacen)
+    reemplazo = await caso.ejecutar(PABLO, PABLO, JPEG)
+    await caso.descartar(reemplazo)
+    assert almacen.borrados == [reemplazo.nueva]
 
 
 async def test_una_foto_demasiado_grande_o_de_otro_formato_se_rechaza_sin_subir() -> None:

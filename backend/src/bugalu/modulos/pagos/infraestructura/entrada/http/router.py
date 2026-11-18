@@ -11,6 +11,7 @@ from bugalu.compartido.base_datos import transaccion_con_identidad
 from bugalu.compartido.configuracion import obtener_configuracion
 from bugalu.compartido.errores import DatosInvalidos
 from bugalu.compartido.esquemas import RespuestaError
+from bugalu.compartido.roles import SOLO_CLIENTES
 from bugalu.modulos.pagos.aplicacion.datos_para_pagar.caso_de_uso import (
     ActualizarContacto,
     ObtenerContacto,
@@ -74,6 +75,7 @@ def _almacen(token: str) -> AlmacenStorage:
 
 @router.post(
     "/pagos",
+    dependencies=SOLO_CLIENTES,
     response_model=Pago,
     status_code=201,
     summary="Registra el pago de una cuota propia con su captura (cliente)",
@@ -126,6 +128,7 @@ async def listar_pagos(
 
 @router.get(
     "/pagos/{id_pago}",
+    dependencies=SOLO_CLIENTES,
     response_model=Pago,
     summary="Un pago (dueno o administrador)",
     responses=_respuestas(401, 403, 404, 422),
@@ -138,6 +141,7 @@ async def obtener_pago(request: Request, claims: Claims, id_pago: UUID) -> Pago:
 
 @router.get(
     "/pagos/{id_pago}/captura",
+    dependencies=SOLO_CLIENTES,
     response_model=Captura,
     summary="URL firmada de pocos minutos de la captura (dueno o administrador)",
     responses=_respuestas(401, 403, 404, 422),
