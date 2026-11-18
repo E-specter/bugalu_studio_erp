@@ -18,7 +18,7 @@ Los clientes reservan y pagan desde fuera del estudio: el servidor tiene que res
 | Tailscale Funnel, sin dominio | Ninguno | No hace falta | Tailscale | Gratis (función beta) | Solo nombres `<equipo>.<tailnet>.ts.net` y puertos 443, 8443 y 10000. Límite de ancho de banda sin cifra publicada |
 | Túnel rápido de Cloudflare, sin dominio | Ninguno | No hace falta | Cloudflare | Gratis, sin cuenta | URL `*.trycloudflare.com` al azar que cambia en cada arranque, sin garantía de servicio, 200 peticiones simultáneas: solo demostraciones |
 
-**Recomendación: Cloudflare Tunnel con el dominio en Cloudflare.** No abre puertos, funciona aunque el proveedor de Internet no dé IP pública fija y no hay certificados que renovar. El tope de 100 MB no afecta a los pagos (6 MB). Pero RF-09 (WAV de multipistas y másteres) tendrá que subir el audio por partes: decídelo al implementarlo.
+**Recomendación: Cloudflare Tunnel con el dominio en Cloudflare.** No abre puertos, funciona aunque el proveedor de Internet no dé IP pública fija y no hay certificados que renovar. El tope de 100 MB no afecta a los pagos (6 MB) ni al Libro de Reclamaciones (16 MB). Pero RF-09 (WAV de multipistas y másteres) tendrá que subir el audio por partes: decídelo al implementarlo.
 
 ## Sin dominio (pruebas y piloto)
 
@@ -32,6 +32,37 @@ Los clientes reservan y pagan desde fuera del estudio: el servidor tiene que res
 2. Zero Trust → **Networks → Tunnels → Create a tunnel** → Cloudflared. El panel muestra la orden que instala el conector como servicio con su token: en Linux, `sudo cloudflared service install <token>`; en Windows, `cloudflared.exe service install <token>` en una consola de administrador. El token es un secreto.
 3. En las rutas publicadas del túnel (Public hostnames), `<dominio>`, `api.<dominio>` y `supabase.<dominio>` van a `http://127.0.0.1:8081`, Caddy en modo túnel ([produccion-servicios](produccion-servicios.md#proxy-inverso-con-límite-de-cuerpo)). Cloudflare crea los registros DNS.
 4. En el router no se abre nada. En el servidor, el cortafuegos deniega toda entrada salvo SSH desde la red del estudio.
+
+### IP real del visitante con túnel
+
+El conector `cloudflared` conecta con Caddy desde 127.0.0.1: sin más, Caddy y la API ven a todos los visitantes en esa IP y el límite de 5 hojas por hora por IP del Libro de Reclamaciones valdría para todo el estudio. Se arregla en dos sitios, y ambos confían solo en 127.0.0.1:
+
+1. Bloque global del Caddy en modo túnel ([produccion-servicios](produccion-servicios.md#proxy-inverso-con-límite-de-cuerpo)): Caddy toma la IP de `CF-Connecting-IP` (la fija Cloudflare) solo si la petición llega de 127.0.0.1, y `api.<dominio>` la envía como `X-Forwarded-For`.
+
+   ```caddyfile
+   servers {
+   	trusted_proxies static 127.0.0.1/32
+   	client_ip_headers CF-Connecting-IP
+   }
+   ```
+2. Servicio de la API con `--forwarded-allow-ips 127.0.0.1`: uvicorn solo lee `X-Forwarded-For` de Caddy; una cabecera enviada por otro cliente no cambia su IP (lo prueba `test_el_limite_usa_la_ip_reenviada_solo_si_el_proxy_es_de_confianza`).
+
+### Comprobación del Libro de Reclamaciones
+
+Cada alta crea una hoja que no se puede borrar: hazla **antes de abrir al público** y con datos de prueba. Contra Caddy desde el servidor (`http://127.0.0.1:8081`, que acepta `CF-Connecting-IP` por venir de 127.0.0.1):
+
+```bash
+for i in 1 2 3; do { printf '\211PNG\r\n\032\n'; head -c 4000000 /dev/zero; } > a$i.png; done   # 12 MB en total
+alta() {  # $1 = IP del visitante
+  curl -s -w '\n%{http_code}\n' -H 'Host: api.<dominio>' -H "CF-Connecting-IP: $1" \
+    -F 'datos={"confirmado":true,"consumidor":{"nombre":"Prueba","tipo_documento":"dni","documento":"12345678","domicilio":"Av. Prueba 1","correo":"prueba@example.com"},"bien":{"tipo":"servicio"},"tipo":"queja","detalle":"Alta de prueba del despliegue.","pedido":"Ninguno: es una prueba.","medio_respuesta":"correo"}' \
+    -F adjuntos=@a1.png -F adjuntos=@a2.png -F adjuntos=@a3.png http://127.0.0.1:8081/api/v1/reclamaciones
+}
+alta 203.0.113.10; alta 203.0.113.11
+```
+
+- Las dos altas (12 MB cada una, desde dos IP distintas) deben dar `201`. Un `413` significa que el bloque de 16 MB de `/api/v1/reclamaciones*` no está activo.
+- En la base, `select count(distinct ip_hash) from public.intento_reclamacion where creado_en > now() - interval '5 minutes';` debe dar **2**. Con **1**, la API ve a todos desde 127.0.0.1: falta `--forwarded-allow-ips` o `trusted_proxies`.
 
 ## Con dominio y puertos abiertos
 

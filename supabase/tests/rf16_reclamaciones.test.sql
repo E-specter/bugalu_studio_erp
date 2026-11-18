@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(109);
+select plan(153);
 
 -- RF-16: Libro de Reclamaciones virtual. Hojas con correlativo propio, plazo en dias habiles, alta publica (anon),
 -- respuesta unica, inmutabilidad, adjuntos, limite por IP, avisos y storage `reclamaciones`.
@@ -21,7 +21,9 @@ grant execute on function public.zz_datos(jsonb) to anon, authenticated;
 
 select has_table('public', 'hoja_reclamacion', 'existe hoja_reclamacion');
 select has_table('public', 'adjunto_reclamacion', 'existe adjunto_reclamacion');
-select has_sequence('public', 'hoja_reclamacion_correlativo', 'existe la secuencia del correlativo');
+select has_table('public', 'contador_reclamacion', 'existe el contador del correlativo');
+select has_table('public', 'subida_reclamacion', 'existe subida_reclamacion');
+select has_function('public', 'confirmar_adjunto', array['text'], 'existe confirmar_adjunto');
 select has_function('public', 'registrar_hoja', array['uuid', 'jsonb', 'jsonb', 'text', 'boolean', 'uuid'], 'existe registrar_hoja');
 select has_function('public', 'transcribir_hoja', array['uuid', 'jsonb', 'jsonb', 'timestamptz', 'text'], 'existe transcribir_hoja');
 select has_function('public', 'responder_hoja', array['uuid', 'text', 'text', 'timestamptz'], 'existe responder_hoja');
@@ -49,6 +51,9 @@ select lives_ok($$select public.registrar_hoja('11111111-0000-0000-0000-00000000
 select throws_ok($$select * from public.hoja_reclamacion$$, '42501', null, 'anon no lee hojas');
 select throws_ok($$select * from public.adjunto_reclamacion$$, '42501', null, 'anon no lee adjuntos');
 select throws_ok($$select * from public.intento_reclamacion$$, '42501', null, 'anon no lee los intentos');
+select throws_ok($$select * from public.subida_reclamacion$$, '42501', null, 'anon no lee las subidas pendientes');
+select throws_ok($$select * from public.contador_reclamacion$$, '42501', null, 'anon no lee el contador');
+select throws_ok($$select public.limpiar_subidas_reclamacion()$$, '42501', null, 'anon no limpia las subidas');
 select throws_ok($$insert into public.hoja_reclamacion (nombre) values ('x')$$, '42501', null, 'anon no inserta directo');
 select throws_ok($$select public.transcribir_hoja(gen_random_uuid(), public.zz_datos(), '[]', now(), 'F-1')$$, '42501', null, 'anon no transcribe');
 select throws_ok($$select public.responder_hoja(gen_random_uuid(), 'Una respuesta larga', null, null)$$, '42501', null, 'anon no responde');
@@ -61,6 +66,9 @@ select matches((select numero from public.hoja_reclamacion where id = '11111111-
   '^[0-9]{9}-[0-9]{4}$', 'el numero son 9 cifras, guion y anio');
 select is((select right(numero, 4) from public.hoja_reclamacion where id = '11111111-0000-0000-0000-000000000001'),
   to_char(now() at time zone 'America/Lima', 'YYYY'), 'el anio es el de presentacion en Lima');
+select is(public.anio_presentacion('2025-12-31 23:30-05'), 2025::smallint, 'el anio de presentacion es el de la fecha dada');
+select is(public.anio_presentacion('2026-01-01 04:30+00'), 2025::smallint, 'el anio se cuenta con la hora de Lima (fin de ano)');
+select is(public.anio_presentacion('2026-01-01 05:30+00'), 2026::smallint, 'el anio cambia a medianoche en Lima');
 select is((select correlativo from public.hoja_reclamacion where id = '11111111-0000-0000-0000-000000000002')
   - (select correlativo from public.hoja_reclamacion where id = '11111111-0000-0000-0000-000000000001'), 1::bigint,
   'el correlativo avanza de uno en uno');
@@ -84,14 +92,38 @@ select is(public.sumar_dias_habiles(now(), 15) > (select vence_respuesta from pu
 delete from public.feriado;
 
 -- Adjuntos y avisos al registrar
-select is((select ruta from public.adjunto_reclamacion where id_hoja = '11111111-0000-0000-0000-000000000001' and n = 1),
-  '11111111-0000-0000-0000-000000000001/1.pdf', 'la ruta del adjunto sale del id, la posicion y el tipo');
+select matches((select ruta from public.subida_reclamacion where id_hoja = '11111111-0000-0000-0000-000000000001' and n = 1),
+  '^11111111-0000-0000-0000-000000000001/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.pdf$',
+  'la ruta de la subida pendiente la genera la base: id de la hoja, nombre aleatorio y extension del tipo');
+select is((select count(*)::int from public.adjunto_reclamacion where id_hoja = '11111111-0000-0000-0000-000000000001'), 0,
+  'el adjunto no existe hasta confirmar la subida');
+select is((select caduca_en - now() from public.subida_reclamacion where id_hoja = '11111111-0000-0000-0000-000000000001' and n = 1),
+  interval '10 minutes', 'la subida pendiente caduca a los 10 minutos');
 select is((select count(*)::int from public.notificacion where tipo = 'reclamacion_registrada' and destinatario = 'ana@t.pe'), 2,
   'cada hoja envia la copia al consumidor');
 select is((select count(*)::int from public.notificacion where tipo = 'reclamacion_recibida' and destinatario = 'ad@t.pe'), 2,
   'cada hoja avisa al administrador');
 select is((select datos ->> 'numero' from public.notificacion where tipo = 'reclamacion_registrada' order by creada_en, id limit 1) ~ '^[0-9]{9}-', true,
   'el aviso trae el numero de la hoja');
+
+-- Subida del adjunto de la hoja 1: solo a la ruta con subida pendiente vigente, una vez; luego se confirma
+select set_config('zz.ruta', (select ruta from public.subida_reclamacion where id_hoja = '11111111-0000-0000-0000-000000000001' and n = 1), false);
+set local role anon;
+select lives_ok($$insert into storage.objects (bucket_id, name) values ('reclamaciones', current_setting('zz.ruta'))$$,
+  'anon sube a la ruta con subida pendiente vigente');
+select throws_ok($$insert into storage.objects (bucket_id, name) values ('reclamaciones', current_setting('zz.ruta'))$$, '42501', null,
+  'anon no sube dos veces a la misma ruta');
+select lives_ok($$select public.confirmar_adjunto(current_setting('zz.ruta'))$$, 'anon confirma el adjunto subido');
+select throws_ok($$select public.confirmar_adjunto(current_setting('zz.ruta'))$$, 'P0002', null, 'la subida ya confirmada no se confirma otra vez');
+select throws_ok($$select public.confirmar_adjunto('11111111-0000-0000-0000-000000000001/no-existe.pdf')$$, 'P0002', null,
+  'una ruta sin subida pendiente no se confirma');
+reset role;
+select is((select nombre || ':' || tipo || ':' || tamano from public.adjunto_reclamacion where id_hoja = '11111111-0000-0000-0000-000000000001' and n = 1),
+  'foto.pdf:application/pdf:1234', 'el adjunto confirmado conserva nombre, tipo y tamano declarados');
+select is((select ruta from public.adjunto_reclamacion where id_hoja = '11111111-0000-0000-0000-000000000001' and n = 1),
+  current_setting('zz.ruta'), 'el adjunto queda en la ruta subida');
+select is((select count(*)::int from public.subida_reclamacion where id_hoja = '11111111-0000-0000-0000-000000000001'), 0,
+  'confirmar consume la subida pendiente');
 
 -- Con sesion: la hoja queda ligada a la cuenta
 set local role authenticated;
@@ -100,6 +132,10 @@ select lives_ok($$select public.registrar_hoja('11111111-0000-0000-0000-00000000
   'un cliente registra');
 select is((select count(*)::int from public.hoja_reclamacion), 1, 'el cliente solo ve la suya');
 select is((select id_cuenta::text from public.hoja_reclamacion), '00000000-0000-0000-0000-0000000000c1', 'queda ligada a su cuenta');
+select throws_ok($$select revisar_spam from public.hoja_reclamacion$$, '42501', null, 'el cliente no lee revisar_spam');
+select throws_ok($$select respondida_por from public.hoja_reclamacion$$, '42501', null, 'el cliente no lee respondida_por');
+select lives_ok($$select id, numero, detalle, respuesta_texto from public.hoja_reclamacion$$, 'el cliente lee el resto de columnas');
+select is((select count(*)::int from public.marcas_de_hojas()), 0, 'el cliente no recibe marcas de hojas');
 select throws_ok($$update public.hoja_reclamacion set detalle = 'otro detalle largo' where true$$, '42501', null, 'el dueno no edita');
 select throws_ok($$delete from public.hoja_reclamacion$$, '42501', null, 'el dueno no borra');
 select throws_ok($$select public.responder_hoja('11111111-0000-0000-0000-000000000003', 'Una respuesta larga', 'C-1', now())$$, '42501', null,
@@ -117,6 +153,9 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ad","role":"authenticated"}', true);
 select is((select count(*)::int from public.hoja_reclamacion), 3, 'el administrador ve todas');
+select is((select revisar_spam from public.marcas_de_hojas() where id = '11111111-0000-0000-0000-000000000002'), true,
+  'el administrador recibe las marcas por la funcion');
+select throws_ok($$select revisar_spam from public.hoja_reclamacion$$, '42501', null, 'ni el administrador lee revisar_spam por la tabla');
 select is((select count(*)::int from public.adjunto_reclamacion), 1, 'el administrador ve los adjuntos');
 select throws_ok($$update public.hoja_reclamacion set detalle = 'otro detalle largo'$$, '42501', null, 'el administrador no edita por la API');
 select throws_ok($$delete from public.hoja_reclamacion$$, '42501', null, 'el administrador no borra por la API');
@@ -125,10 +164,10 @@ select throws_ok($$insert into public.hoja_reclamacion (nombre) values ('x')$$, 
 
 -- Transcripcion del libro fisico (solo administrador): plazo desde la fecha original
 select lives_ok($$select public.transcribir_hoja('11111111-0000-0000-0000-000000000004', public.zz_datos('{"tipo": null}'),
-  '[]', '2026-03-02 10:00-05', 'FIS-001')$$, 'el administrador transcribe');
+  '[]', now() - interval '30 days', 'FIS-001')$$, 'el administrador transcribe');
 reset role;
 select is((select vence_respuesta from public.hoja_reclamacion where id = '11111111-0000-0000-0000-000000000004'),
-  public.sumar_dias_habiles('2026-03-02 10:00-05', 15), 'la transcrita vence 15 dias habiles despues de la fecha original');
+  public.sumar_dias_habiles(now() - interval '30 days', 15), 'la transcrita vence 15 dias habiles despues de la fecha original');
 select is((select origen || ':' || numero_hoja_fisica from public.hoja_reclamacion where id = '11111111-0000-0000-0000-000000000004'),
   'libro_fisico:FIS-001', 'queda marcada del libro fisico con su numero');
 select is((select tipo from public.hoja_reclamacion where id = '11111111-0000-0000-0000-000000000004'), null, 'una transcrita puede no traer tipo');
@@ -136,6 +175,10 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ad","role":"authenticated"}', true);
 select throws_ok($$select public.transcribir_hoja(gen_random_uuid(), public.zz_datos(), '[]', now() + interval '1 day', 'FIS-002')$$,
   'P0001', 'fecha_original_invalida', 'la fecha original no es futura');
+select throws_ok($$select public.transcribir_hoja(gen_random_uuid(), public.zz_datos(), '[]', now() - interval '91 days', 'FIS-002')$$,
+  'P0001', 'fecha_original_invalida', 'la fecha original no es anterior a 90 dias');
+select throws_ok($$select public.transcribir_hoja(gen_random_uuid(), public.zz_datos(), '[]', '0026-03-01 10:00-05', 'FIS-002')$$,
+  'P0001', 'fecha_original_invalida', 'una fecha del ano 26 no se admite');
 
 -- Respuesta unica
 select throws_ok($$select public.responder_hoja('11111111-0000-0000-0000-000000000003', 'Una respuesta larga', null, null)$$,
@@ -199,17 +242,42 @@ select is((select r_dias from public.registrar_hoja(gen_random_uuid(), public.zz
   'registrar_hoja devuelve los dias habiles que quedan');
 select matches((select r_numero from public.registrar_hoja(gen_random_uuid(), public.zz_datos(), '[]', '6.6.6.6', false)),
   '^[0-9]{9}-[0-9]{4}$', 'registrar_hoja devuelve el numero');
-select is((select r_vence from public.transcribir_hoja(gen_random_uuid(), public.zz_datos(), '[]', '2026-03-02 10:00-05', 'FIS-003')),
-  (select vence_respuesta from public.hoja_reclamacion where id = '11111111-0000-0000-0000-000000000004'), 'transcribir_hoja devuelve el plazo');
+select is((select r_vence from public.transcribir_hoja(gen_random_uuid(), public.zz_datos(), '[]', now() - interval '80 days', 'FIS-003')),
+  public.sumar_dias_habiles(now() - interval '80 days', 15), 'transcribir_hoja devuelve el plazo');
+select is((select right(numero, 4) from public.hoja_reclamacion where numero_hoja_fisica = 'FIS-003'),
+  public.anio_presentacion(now() - interval '80 days')::text, 'el anio del numero de una transcrita es el de su fecha original');
+select is((select jsonb_array_length(r_subidas) from public.registrar_hoja(gen_random_uuid(), public.zz_datos(),
+  '[{"nombre": "a.png", "tipo": "image/png", "tamano": 10}, {"nombre": "b.png", "tipo": "image/png", "tamano": 10}]', '0.0.0.1', false)), 2,
+  'registrar_hoja devuelve una ruta por adjunto');
+
+-- Correlativo sin huecos: una alta que falla (se deshace) no consume numero
+select lives_ok($$select public.registrar_hoja('55555555-0000-0000-0000-000000000001', public.zz_datos(), '[]', '0.0.0.2', false)$$, 'alta antes del fallo');
+create temp table zz_corr as select correlativo from public.hoja_reclamacion where id = '55555555-0000-0000-0000-000000000001';
+select throws_ok($$select public.registrar_hoja('55555555-0000-0000-0000-000000000002', public.zz_datos('{"documento": "123"}'), '[]', '0.0.0.2', false)$$,
+  '23514', null, 'una alta con datos invalidos falla');
+select lives_ok($$select public.registrar_hoja('55555555-0000-0000-0000-000000000003', public.zz_datos(), '[]', '0.0.0.2', false)$$, 'alta despues del fallo');
+select is((select correlativo from public.hoja_reclamacion where id = '55555555-0000-0000-0000-000000000003') - (select correlativo from zz_corr),
+  1::bigint, 'la alta que fallo no consumio un numero del correlativo');
+select is((select ultimo from public.contador_reclamacion), (select max(correlativo) from public.hoja_reclamacion), 'el contador va con el ultimo correlativo');
 
 -- Clave de envio: un reintento con la misma clave (24 h) devuelve la hoja ya registrada sin duplicar nada
-select lives_ok($$select public.registrar_hoja('33333333-0000-0000-0000-000000000001', public.zz_datos(), '[]', '7.7.7.7', false, 'cccccccc-1111-0000-0000-000000000001')$$,
+select lives_ok($$select public.registrar_hoja('33333333-0000-0000-0000-000000000001', public.zz_datos(), '[]', '7.7.6.1', false, 'cccccccc-1111-0000-0000-000000000001')$$,
   'primer envio con clave');
 select is((select r_repetida from public.registrar_hoja('33333333-0000-0000-0000-000000000002', public.zz_datos(), '[]', '7.7.7.7', false, 'cccccccc-1111-0000-0000-000000000001')), true,
   'el reintento con la misma clave se reconoce');
 select is((select r_existente ->> 'id' from public.registrar_hoja('33333333-0000-0000-0000-000000000003', public.zz_datos(), '[]', '7.7.7.7', false, 'cccccccc-1111-0000-0000-000000000001')),
   '33333333-0000-0000-0000-000000000001', 'devuelve la hoja ya registrada');
 select is((select count(*)::int from public.hoja_reclamacion where clave_envio = 'cccccccc-1111-0000-0000-000000000001'), 1, 'no se crea otra hoja');
+select is((select r_repetida from public.registrar_hoja('33333333-0000-0000-0000-000000000005', public.zz_datos('{"documento": "87654321"}'), '[]', '7.7.7.7', false, 'cccccccc-1111-0000-0000-000000000001')), false,
+  'la misma clave con otro documento no es un reintento');
+select is((select r_existente from public.registrar_hoja('33333333-0000-0000-0000-000000000006', public.zz_datos('{"correo": "otra@t.pe"}'), '[]', '7.7.6.2', false, 'cccccccc-1111-0000-0000-000000000001')), null::jsonb,
+  'la misma clave con otro correo no devuelve la hoja ajena');
+select is((select count(*)::int from public.hoja_reclamacion where id in ('33333333-0000-0000-0000-000000000005', '33333333-0000-0000-0000-000000000006')), 2,
+  'esas dos altas si crean su hoja');
+select is((select r_repetida from public.registrar_hoja(gen_random_uuid(), public.zz_datos('{"detalle": "Otro detalle del servicio."}'), '[]', '7.7.6.3', false, 'cccccccc-1111-0000-0000-000000000001')), false,
+  'la misma clave con otro detalle no es un reintento');
+select is((select r_repetida from public.registrar_hoja(gen_random_uuid(), public.zz_datos('{"pedido": "Otro pedido distinto."}'), '[]', '7.7.6.4', false, 'cccccccc-1111-0000-0000-000000000001')), false,
+  'la misma clave con otro pedido no es un reintento');
 select is((select r_existente ? 'id_cuenta' from public.registrar_hoja(gen_random_uuid(), public.zz_datos(), '[]', '7.7.7.7', false, 'cccccccc-1111-0000-0000-000000000001')), true, 'la hoja devuelta trae su cuenta para calcular en_tu_cuenta');
 select is((select count(*)::int from public.notificacion where tipo = 'reclamacion_registrada' and datos ->> 'id' = '33333333-0000-0000-0000-000000000001'), 1, 'no se reenvian correos');
 select is((select count(*)::int from public.hoja_reclamacion where id in ('33333333-0000-0000-0000-000000000002', '33333333-0000-0000-0000-000000000003')), 0, 'el id del reintento no queda');
@@ -239,13 +307,26 @@ select is((select jsonb_array_length(datos -> 'hojas') from public.notificacion 
 -- Storage: bucket privado, alta publica acotada, lectura del administrador
 select is((select public from storage.buckets where id = 'reclamaciones'), false, 'el bucket es privado');
 select is((select file_size_limit from storage.buckets where id = 'reclamaciones'), 5242880::bigint, 'el bucket limita a 5 MB');
+select lives_ok($$select public.registrar_hoja('44444444-0000-0000-0000-000000000001', public.zz_datos(),
+  '[{"nombre": "e.pdf", "tipo": "application/pdf", "tamano": 5}]', '9.9.9.9', false)$$, 'hoja con una subida que va a caducar');
+select lives_ok($$select public.registrar_hoja('44444444-0000-0000-0000-000000000002', public.zz_datos(),
+  '[{"nombre": "v.pdf", "tipo": "application/pdf", "tamano": 5}]', '9.9.9.8', false)$$, 'hoja con una subida vigente');
+select set_config('zz.caducada', (select ruta from public.subida_reclamacion where id_hoja = '44444444-0000-0000-0000-000000000001'), false);
+update public.subida_reclamacion set caduca_en = now() - interval '2 hours' where id_hoja = '44444444-0000-0000-0000-000000000001';
 set local role anon;
-select lives_ok($$insert into storage.objects (bucket_id, name) values ('reclamaciones', '22222222-0000-0000-0000-000000000001/1.pdf')$$,
-  'anon sube un adjunto con la ruta esperada');
+select throws_ok($$insert into storage.objects (bucket_id, name) values ('reclamaciones', '22222222-0000-0000-0000-000000000001/1.pdf')$$, '42501', null,
+  'anon no sube a la ruta antigua <id>/<n>.<ext> sin subida pendiente');
 select throws_ok($$insert into storage.objects (bucket_id, name) values ('reclamaciones', 'cualquier/cosa.exe')$$, '42501', null,
   'anon no sube fuera de la ruta esperada');
+select throws_ok($$insert into storage.objects (bucket_id, name) values ('reclamaciones', gen_random_uuid()::text || '/' || gen_random_uuid()::text || '.pdf')$$, '42501', null,
+  'anon no sube a una ruta inventada con la forma correcta');
+select throws_ok($$insert into storage.objects (bucket_id, name) values ('reclamaciones', current_setting('zz.caducada'))$$, '42501', null,
+  'anon no sube a una subida caducada');
 select is((select count(*)::int from storage.objects where bucket_id = 'reclamaciones'), 0, 'anon no lee el bucket');
 reset role;
+select is(public.limpiar_subidas_reclamacion(), 1, 'la limpieza borra las subidas caducadas');
+select is((select count(*)::int from public.subida_reclamacion where id_hoja in ('44444444-0000-0000-0000-000000000001', '44444444-0000-0000-0000-000000000002')), 1,
+  'la subida vigente se conserva');
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c1","role":"authenticated"}', true);
 select is((select count(*)::int from storage.objects where bucket_id = 'reclamaciones'), 0, 'un cliente no lee el bucket');

@@ -1,5 +1,7 @@
-import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime
+from functools import partial
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
@@ -42,7 +44,6 @@ from bugalu.modulos.reclamaciones.infraestructura.salida.repositorio_postgres im
 )
 
 router = APIRouter(tags=["reclamaciones"])
-_registro = logging.getLogger(__name__)
 
 Claims = Annotated[dict[str, Any], Depends(obtener_claims)]
 ClaimsOVisitante = Annotated[dict[str, Any] | None, Depends(obtener_claims_o_visitante)]
@@ -71,6 +72,16 @@ def _solicitante(claims: dict[str, Any] | None) -> UUID | None:
 
 def _pool(request: Request) -> Any:
     return request.app.state.pool
+
+
+@asynccontextmanager
+async def _repositorio(
+    pool: Any, claims: dict[str, Any] | None
+) -> AsyncIterator[RepositorioHojasPostgres]:
+    """Una transaccion (con la identidad de los claims, o `anon`) que cierra con commit al salir."""
+    contexto = transaccion_con_identidad(pool, claims) if claims else transaccion_publica(pool)
+    async with contexto as conexion:
+        yield RepositorioHojasPostgres(conexion)
 
 
 def _almacen(token_administrador: str | None = None) -> AlmacenStorage:
@@ -113,34 +124,22 @@ async def registrar_hoja(
     entrada = _entrada(NuevaHojaEntrada, datos)
     archivos = await _leer(adjuntos)
     ip = request.client.host if request.client else None
-    hoja = None
-    creada = True
     solicitante = _solicitante(claims)
-    try:
-        contexto = (
-            transaccion_con_identidad(_pool(request), claims)
-            if claims
-            else transaccion_publica(_pool(request))
-        )
-        async with contexto as conexion:
-            hoja, creada = await RegistrarHoja(
-                RepositorioHojasPostgres(conexion), _almacen()
-            ).ejecutar(
-                entrada.a_dominio(entrada.tipo),
-                entrada.confirmado,
-                entrada.campo_trampa,
-                archivos,
-                ip,
-                entrada.clave_envio,
-                solicitante,
-            )
-    except Exception:
-        if hoja is not None and creada:  # los adjuntos ya estan subidos y la confirmacion fallo
-            _registro.error("Adjuntos huerfanos de la hoja %s: no se confirmo.", hoja.id)
-        raise
-    if not creada:
+    pool = _pool(request)
+    registro = await RegistrarHoja(
+        partial(_repositorio, pool, claims), partial(_repositorio, pool, None), _almacen()
+    ).ejecutar(
+        entrada.a_dominio(entrada.tipo),
+        entrada.confirmado,
+        entrada.campo_trampa,
+        archivos,
+        ip,
+        entrada.clave_envio,
+        solicitante,
+    )
+    if not registro.creada:
         response.status_code = 200  # reintento con la misma clave: la hoja ya registrada
-    return HojaSalida.desde_dominio(hoja, _solicitante(claims))
+    return HojaSalida.desde_dominio(registro.hoja, solicitante, registro.no_guardados)
 
 
 @router.post(
@@ -158,15 +157,17 @@ async def transcribir_hoja(
 ) -> HojaSalida:
     entrada = _entrada(NuevaTranscripcionEntrada, datos)
     archivos = await _leer(adjuntos)
-    async with transaccion_con_identidad(_pool(request), claims) as conexion:
-        hoja = await TranscribirHoja(RepositorioHojasPostgres(conexion), _almacen()).ejecutar(
-            entrada.a_dominio(entrada.tipo),
-            entrada.confirmado,
-            archivos,
-            entrada.fecha_original,
-            entrada.numero_hoja_fisica,
-        )
-    return HojaSalida.desde_dominio(hoja, _solicitante(claims))
+    pool = _pool(request)
+    registro = await TranscribirHoja(
+        partial(_repositorio, pool, claims), partial(_repositorio, pool, None), _almacen()
+    ).ejecutar(
+        entrada.a_dominio(entrada.tipo),
+        entrada.confirmado,
+        archivos,
+        entrada.fecha_original,
+        entrada.numero_hoja_fisica,
+    )
+    return HojaSalida.desde_dominio(registro.hoja, _solicitante(claims), registro.no_guardados)
 
 
 @router.get(

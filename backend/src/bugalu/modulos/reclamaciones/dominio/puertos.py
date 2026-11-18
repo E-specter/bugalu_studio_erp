@@ -1,3 +1,5 @@
+from collections.abc import Callable
+from contextlib import AbstractAsyncContextManager
 from datetime import date, datetime
 from typing import Protocol
 from uuid import UUID
@@ -17,6 +19,10 @@ class RepositorioHojas(Protocol):
 
     async def transcribir(self, id_: UUID, nueva: NuevaHoja) -> Alta: ...
 
+    async def confirmar_adjunto(self, ruta: str) -> None:
+        """Tras subir el objeto a su ruta. Falla con AlmacenamientoNoDisponible."""
+        ...
+
     async def obtener(self, id_: UUID) -> Hoja | None:
         """Solo las visibles para el usuario (dueno o administrador)."""
         ...
@@ -35,6 +41,10 @@ class RepositorioHojas(Protocol):
     ) -> None: ...
 
     async def exportar(self, desde: date, hasta: date) -> list[Hoja]: ...
+
+
+# Abre una transaccion (con la identidad de quien llama, o `anon`); al salir hace commit.
+AbrirRepositorio = Callable[[], AbstractAsyncContextManager[RepositorioHojas]]
 
 
 class AlmacenAdjuntos(Protocol):

@@ -252,9 +252,12 @@ class HojaSalida(BaseModel):
     dias_habiles_restantes: int | None
     revisar_spam: bool | None  # solo para el Administrador
     en_tu_cuenta: bool  # vinculada a la cuenta del token de esta peticion
+    adjuntos_no_guardados: list[int] = []  # solo en el alta: posiciones que no se pudieron guardar
 
     @classmethod
-    def desde_dominio(cls, h: Hoja, solicitante: UUID | None = None) -> HojaSalida:
+    def desde_dominio(
+        cls, h: Hoja, solicitante: UUID | None = None, no_guardados: list[int] | None = None
+    ) -> HojaSalida:
         c = h.contenido
         r = h.respuesta
         autor = r.respondida_por if r else None
@@ -296,6 +299,7 @@ class HojaSalida(BaseModel):
             dias_habiles_restantes=h.dias_habiles_restantes,
             revisar_spam=h.revisar_spam,
             en_tu_cuenta=solicitante is not None and h.id_cuenta == solicitante,
+            adjuntos_no_guardados=no_guardados or [],
         )
 
 

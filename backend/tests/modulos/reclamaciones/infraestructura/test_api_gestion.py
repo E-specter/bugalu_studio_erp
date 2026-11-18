@@ -3,7 +3,7 @@
 
 import csv
 import io
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -261,9 +261,8 @@ async def test_solo_el_administrador_responde_y_la_hoja_debe_existir(
 async def test_el_administrador_transcribe_una_hoja_del_libro_fisico(
     anonimo: AsyncClient, administrador: UsuarioDePrueba, sql: Ejecutar
 ) -> None:
-    cuerpo = datos(
-        tipo=None, fecha_original="2026-03-02T10:30:00-05:00", numero_hoja_fisica="FIS-0042"
-    )
+    original = (datetime.now(UTC) - timedelta(days=30)).replace(microsecond=0)
+    cuerpo = datos(tipo=None, fecha_original=original.isoformat(), numero_hoja_fisica="FIS-0042")
     r = await enviar(
         anonimo,
         cuerpo,
@@ -278,14 +277,13 @@ async def test_el_administrador_transcribe_una_hoja_del_libro_fisico(
         "FIS-0042",
         None,
     )
-    assert datetime.fromisoformat(hoja["fecha_original"]) == datetime.fromisoformat(
-        "2026-03-02T10:30:00-05:00"
-    )
+    assert datetime.fromisoformat(hoja["fecha_original"]) == original
     assert hoja["revisar_spam"] is False
     assert len(hoja["adjuntos"]) == 1
-    # el plazo cuenta desde la fecha original (15 dias habiles de marzo de 2026)
+    # el plazo cuenta desde la fecha original (15 dias habiles)
     esperado = sql(
-        "select to_char(public.sumar_dias_habiles('2026-03-02 10:30-05', 15) at time zone 'America/Lima', 'YYYY-MM-DD')"
+        "select to_char(public.sumar_dias_habiles(%s::timestamptz, 15) at time zone 'America/Lima', 'YYYY-MM-DD')",
+        original.isoformat(),
     )[0][0]
     assert sql(
         "select to_char(vence_respuesta at time zone 'America/Lima', 'YYYY-MM-DD') from public.hoja_reclamacion where id = %s",
@@ -303,12 +301,13 @@ async def test_el_administrador_transcribe_una_hoja_del_libro_fisico(
 async def test_solo_el_administrador_transcribe_y_la_fecha_no_es_futura(
     anonimo: AsyncClient, administrador: UsuarioDePrueba, cliente_a: UsuarioDePrueba, sql: Ejecutar
 ) -> None:
-    base = {"fecha_original": "2026-03-02T10:30:00-05:00", "numero_hoja_fisica": "FIS-1"}
+    reciente = (datetime.now(UTC) - timedelta(days=10)).isoformat()
+    base = {"fecha_original": reciente, "numero_hoja_fisica": "FIS-1"}
     r = await enviar(anonimo, datos(**base), None, cliente_a, f"{HOJAS}/transcripcion")
     assert (r.status_code, codigo(r)) == (403, "sin_permiso")
     futura = datos(fecha_original="2999-01-01T10:00:00-05:00", numero_hoja_fisica="FIS-2")
     r = await enviar(anonimo, futura, None, administrador, f"{HOJAS}/transcripcion")
-    assert (r.status_code, codigo(r)) == (422, "datos_invalidos")
+    assert (r.status_code, codigo(r)) == (422, "fecha_original_invalida")
     assert r.json()["error"]["detalles"]["campo"] == "fecha_original"
     sin_fecha = datos(numero_hoja_fisica="FIS-3")
     r = await enviar(anonimo, sin_fecha, None, administrador, f"{HOJAS}/transcripcion")
@@ -318,6 +317,24 @@ async def test_solo_el_administrador_transcribe_y_la_fecha_no_es_futura(
     assert (r.status_code, codigo(r)) == (409, "confirmacion_requerida")
     assert sql(
         "select count(*) from public.hoja_reclamacion where numero_hoja_fisica like 'FIS-%%' and correo like '%%@prueba.bugalu.pe'"
+    ) == [(0,)]
+
+
+@pytest.mark.parametrize(
+    "antigua",
+    [(datetime.now(UTC) - timedelta(days=91)).isoformat(), "0026-03-01T10:00:00-05:00"],
+    ids=["hace_91_dias", "del_anio_26"],
+)
+async def test_la_fecha_original_no_puede_ser_de_hace_mas_de_90_dias(
+    anonimo: AsyncClient, administrador: UsuarioDePrueba, sql: Ejecutar, antigua: str
+) -> None:
+    cuerpo = datos(tipo=None, fecha_original=antigua, numero_hoja_fisica="FIS-OLD")
+    r = await enviar(anonimo, cuerpo, None, administrador, f"{HOJAS}/transcripcion")
+    assert (r.status_code, codigo(r)) == (422, "fecha_original_invalida")
+    assert r.json()["error"]["detalles"] == {"campo": "fecha_original"}
+    assert sql(
+        "select count(*) from public.hoja_reclamacion where correo = %s",
+        cuerpo["consumidor"]["correo"],
     ) == [(0,)]
 
 
@@ -346,16 +363,17 @@ async def test_el_administrador_obtiene_una_url_firmada_y_baja_el_archivo(
 
 
 async def test_el_bucket_no_se_lee_sin_firma(
-    configuracion: Any, anonimo: AsyncClient, administrador: UsuarioDePrueba
+    configuracion: Any, anonimo: AsyncClient, administrador: UsuarioDePrueba, sql: Ejecutar
 ) -> None:
     hoja = (await enviar(anonimo, datos(), [("a.png", PNG, "image/png")])).json()
+    ruta = sql("select ruta from public.adjunto_reclamacion where id_hoja = %s", hoja["id"])[0][0]
     abierta = httpx.get(
-        f"{configuracion.url_supabase}/storage/v1/object/public/reclamaciones/{hoja['id']}/1.png",
+        f"{configuracion.url_supabase}/storage/v1/object/public/reclamaciones/{ruta}",
         headers={"apikey": configuracion.clave_publicable_supabase},
     )
     assert abierta.status_code in (400, 404)
     anon = httpx.get(
-        f"{configuracion.url_supabase}/storage/v1/object/reclamaciones/{hoja['id']}/1.png",
+        f"{configuracion.url_supabase}/storage/v1/object/reclamaciones/{ruta}",
         headers={"apikey": configuracion.clave_publicable_supabase},
     )
     assert anon.status_code in (400, 401, 403, 404)

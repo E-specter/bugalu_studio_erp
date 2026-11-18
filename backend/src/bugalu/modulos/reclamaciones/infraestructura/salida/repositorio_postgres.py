@@ -9,8 +9,10 @@ from psycopg import AsyncConnection, errors
 from psycopg.types.json import Jsonb
 
 from bugalu.compartido.errores import (
+    AlmacenamientoNoDisponible,
     DatosInvalidos,
     DemasiadasSolicitudes,
+    FechaOriginalInvalida,
     NoEncontrado,
     SinPermiso,
     YaRespondida,
@@ -34,19 +36,21 @@ _HOJA = (
     "select h.id, h.numero, h.creada_en, h.vence_respuesta, h.nombre, h.tipo_documento, h.documento, "
     "h.domicilio, h.telefono, h.correo, h.es_menor, h.rep_nombre, h.rep_domicilio, h.rep_telefono, "
     "h.rep_correo, h.bien_tipo, h.monto, h.descripcion, h.tipo, h.detalle, h.pedido, "
-    "h.medio_respuesta, h.origen, h.fecha_original, h.numero_hoja_fisica, h.revisar_spam, "
+    "h.medio_respuesta, h.origen, h.fecha_original, h.numero_hoja_fisica, m.revisar_spam, "
     "h.respuesta_texto, h.respuesta_referencia_carta, h.respuesta_enviada_en, h.respondida_en, "
-    "h.respondida_por, u.nombre, "
+    "m.respondida_por, u.nombre, "
     "case when h.respuesta_texto is null then public.dias_habiles_restantes(h.vence_respuesta) end, "
     "h.id_cuenta "
-    "from public.hoja_reclamacion h left join public.usuario u on u.id = h.respondida_por "
+    "from public.hoja_reclamacion h left join public.marcas_de_hojas() m on m.id = h.id "
+    "left join public.usuario u on u.id = m.respondida_por "
 )
 _RESUMEN = (
     "select h.id, h.numero, h.creada_en, h.tipo, "
     "case when h.respuesta_texto is null then 'pendiente' else 'respondida' end, "
     "h.vence_respuesta, h.nombre, "
     "case when h.respuesta_texto is null then public.dias_habiles_restantes(h.vence_respuesta) end, "
-    "h.revisar_spam, h.origen from public.hoja_reclamacion h "
+    "m.revisar_spam, h.origen from public.hoja_reclamacion h "
+    "left join public.marcas_de_hojas() m on m.id = h.id "
 )
 # Pendientes primero y por plazo; las respondidas, la mas reciente antes.
 _ORDEN_BANDEJA = (
@@ -144,10 +148,21 @@ def _hoja_registrada(d: dict[str, Any]) -> Hoja:
     adjuntos = [
         Adjunto(a["n"], a["nombre"], a["tipo"], a["tamano"], a["ruta"]) for a in d["adjuntos"]
     ]
+    respuesta = (
+        Respuesta(
+            d["respuesta_texto"],
+            d["medio_respuesta"],
+            d["respuesta_referencia_carta"],
+            datetime.fromisoformat(d["respuesta_enviada_en"]),
+            None,  # el autor es del Administrador
+        )
+        if d["respuesta_texto"] is not None
+        else None
+    )
     return Hoja(
         UUID(d["id"]), d["numero"], datetime.fromisoformat(d["creada_en"]),
-        datetime.fromisoformat(d["vence_respuesta"]), contenido, adjuntos, "web", None, None, None,
-        d["dias"], None, UUID(d["id_cuenta"]) if d["id_cuenta"] else None,
+        datetime.fromisoformat(d["vence_respuesta"]), contenido, adjuntos, "web", None, None,
+        respuesta, d["dias"], None, UUID(d["id_cuenta"]) if d["id_cuenta"] else None,
     )  # fmt: skip
 
 
@@ -163,8 +178,9 @@ class RepositorioHojasPostgres:
 
     async def _alta(self, funcion: str, parametros: tuple[Any, ...]) -> Alta:
         marcadores = ", ".join(["%s"] * len(parametros))
+        publica = funcion == "registrar_hoja"
         columnas = "r_numero, r_creada_en, r_vence, r_dias" + (
-            ", r_repetida, r_existente" if funcion == "registrar_hoja" else ""
+            ", r_repetida, r_existente, r_subidas" if publica else ", r_subidas"
         )
         try:
             cursor = await self._conexion.execute(
@@ -177,8 +193,9 @@ class RepositorioHojasPostgres:
                     "Se registraron muchas hojas desde esta conexion. Intenta de nuevo en una hora."
                 ) from None
             if error.diag.message_primary == "fecha_original_invalida":
-                raise DatosInvalidos(
-                    "La fecha original no puede ser futura.", {"campo": "fecha_original"}
+                raise FechaOriginalInvalida(
+                    "La fecha original no puede ser futura ni de hace mas de 90 dias.",
+                    {"campo": "fecha_original"},
                 ) from None
             raise
         except errors.InsufficientPrivilege:
@@ -187,8 +204,9 @@ class RepositorioHojasPostgres:
             raise DatosInvalidos("Datos invalidos.") from None
         fila = await cursor.fetchone()
         assert fila is not None
-        existente = _hoja_registrada(fila[5]) if len(fila) > 4 and fila[4] else None
-        return Alta(fila[0], fila[1], fila[2], fila[3], existente)
+        existente = _hoja_registrada(fila[5]) if publica and fila[4] else None
+        subidas = {s["n"]: s["ruta"] for s in fila[-1]}
+        return Alta(fila[0], fila[1], fila[2], fila[3], existente, subidas)
 
     @staticmethod
     def _adjuntos(nueva: NuevaHoja) -> Jsonb:
@@ -220,6 +238,12 @@ class RepositorioHojasPostgres:
                 nueva.numero_hoja_fisica,
             ),
         )
+
+    async def confirmar_adjunto(self, ruta: str) -> None:
+        try:
+            await self._conexion.execute("select public.confirmar_adjunto(%s)", (ruta,))
+        except errors.NoDataFound:
+            raise AlmacenamientoNoDisponible("No se pudo confirmar el adjunto subido.") from None
 
     async def _cargar(self, filtro: str, parametros: dict[str, Any], orden: str) -> list[Hoja]:
         cursor = await self._conexion.execute(f"{_HOJA}{filtro} {orden}", parametros)  # noqa: S608

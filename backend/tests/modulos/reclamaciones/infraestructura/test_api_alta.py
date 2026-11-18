@@ -3,12 +3,12 @@
 
 import asyncio
 import base64
+import hashlib
 import json
 import re
 import uuid
 from typing import Any
 
-import httpx
 import pytest
 from httpx import AsyncClient
 
@@ -21,7 +21,6 @@ from tests.modulos.reclamaciones.infraestructura.conftest import (
     JPG,
     PDF,
     PNG,
-    _clave_de_servicio,
     datos,
     enviar,
 )
@@ -75,11 +74,14 @@ async def test_un_visitante_registra_una_hoja_sin_cuenta(
         hoja["id"],
     )
     assert fila == [(None, "web", True)]
+    (ruta,) = sql("select ruta from public.adjunto_reclamacion where id_hoja = %s", hoja["id"])[0]
+    assert re.fullmatch(rf"{hoja['id']}/[0-9a-f-]{{36}}\.png", ruta)  # nombre aleatorio de la base
     assert sql(
         "select name from storage.objects where bucket_id = 'reclamaciones' "
         "and (storage.foldername(name))[1] = %s",
         hoja["id"],
-    ) == [(f"{hoja['id']}/1.png",)]
+    ) == [(ruta,)]
+    assert hoja["adjuntos_no_guardados"] == []
 
 
 async def test_el_tipo_de_los_adjuntos_sale_del_contenido_no_del_nombre(
@@ -313,40 +315,77 @@ async def test_el_tope_temprano_rechaza_por_content_length_sin_leer_el_cuerpo(
     assert (r.status_code, codigo(r)) == (413, "adjunto_muy_grande")
 
 
-async def test_si_falla_un_adjunto_al_subirlo_no_queda_la_hoja_a_medias(
-    anonimo: AsyncClient, sql: Ejecutar, monkeypatch: pytest.MonkeyPatch
+async def test_si_falla_un_adjunto_la_hoja_se_conserva_se_registra_en_el_log_y_se_indica(
+    anonimo: AsyncClient,
+    sql: Ejecutar,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
-    subidos = []
+    intentos: list[str] = []
     original = modulo_router.AlmacenStorage.subir
 
     async def falla_en_la_segunda(self: Any, ruta: str, contenido: bytes, mime: str) -> None:
-        if subidos:
+        intentos.append(ruta)
+        if len(intentos) == 2:
             raise AlmacenamientoNoDisponible("storage caido")
-        subidos.append(ruta)
         await original(self, ruta, contenido, mime)
 
     monkeypatch.setattr(modulo_router.AlmacenStorage, "subir", falla_en_la_segunda)
     cuerpo = datos()
-    r = await enviar(anonimo, cuerpo, [("a.png", PNG, "image/png"), ("b.png", PNG, "image/png")])
-    assert (r.status_code, codigo(r)) == (503, "almacenamiento_no_disponible")
-    assert hojas_de(sql, cuerpo["consumidor"]["correo"]) == 0
+    with caplog.at_level("ERROR"):
+        r = await enviar(
+            anonimo, cuerpo, [("a.png", PNG, "image/png"), ("b.png", PNG, "image/png")]
+        )
+    assert r.status_code == 201, r.text
+    hoja = r.json()
+    assert hoja["adjuntos_no_guardados"] == [2]
+    assert [a["n"] for a in hoja["adjuntos"]] == [1]
+    assert hojas_de(sql, cuerpo["consumidor"]["correo"]) == 1
     assert sql(
-        "select count(*) from public.notificacion where destinatario = %s",
-        cuerpo["consumidor"]["correo"],
-    ) == [(0,)]
-    # el objeto que si subio queda huerfano en el bucket privado (sin hoja): la prueba lo limpia
-    assert sql("select name from storage.objects where name = %s", subidos[0]) == [(subidos[0],)]
-    _borrar_objeto(subidos[0])
+        "select n from public.adjunto_reclamacion where id_hoja = %s order by n", hoja["id"]
+    ) == [(1,)]
+    assert sql("select n from public.subida_reclamacion where id_hoja = %s", hoja["id"]) == [(2,)]
+    assert f"El adjunto 2 de la hoja {hoja['id']} no se guardo" in caplog.text
 
 
-def _borrar_objeto(ruta: str) -> None:
-    configuracion = Configuracion()  # type: ignore[call-arg]
-    httpx.request(
-        "DELETE",
-        f"{configuracion.url_supabase}/storage/v1/object/reclamaciones",
-        headers={"Authorization": f"Bearer {_clave_de_servicio()}"},
-        json={"prefixes": [ruta]},
-    ).raise_for_status()
+async def test_storage_no_admite_subidas_libres_ni_repetidas_con_la_clave_publicable(
+    configuracion: Configuracion,
+    anonimo: AsyncClient,
+    sql: Ejecutar,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    almacen = modulo_router.AlmacenStorage(
+        configuracion.url_supabase, configuracion.clave_publicable_supabase
+    )
+    subir = modulo_router.AlmacenStorage.subir  # la real, antes de apagarla para el backend
+    libre = f"{uuid.uuid4()}/{uuid.uuid4()}.png"
+    with pytest.raises(AlmacenamientoNoDisponible):
+        await subir(almacen, libre, PNG, "image/png")
+    assert sql("select count(*) from storage.objects where name = %s", libre) == [(0,)]
+
+    async def no_sube(self: Any, ruta: str, contenido: bytes, mime: str) -> None:
+        raise AlmacenamientoNoDisponible("el backend no sube")
+
+    monkeypatch.setattr(modulo_router.AlmacenStorage, "subir", no_sube)
+    r = await enviar(anonimo, datos(), [("a.png", PNG, "image/png")])  # deja una subida pendiente
+    assert r.json()["adjuntos_no_guardados"] == [1]
+    (ruta,) = sql("select ruta from public.subida_reclamacion where id_hoja = %s", r.json()["id"])[
+        0
+    ]
+    await subir(almacen, ruta, PNG, "image/png")  # la ruta pendiente si admite un objeto
+    with pytest.raises(AlmacenamientoNoDisponible):
+        await subir(almacen, ruta, PNG, "image/png")  # pero solo uno
+    sql("update public.subida_reclamacion set caduca_en = now() - interval '1 minute'")
+    otra = (await enviar(anonimo, datos(), [("b.png", PNG, "image/png")])).json()
+    (caducada,) = sql("select ruta from public.subida_reclamacion where id_hoja = %s", otra["id"])[
+        0
+    ]
+    sql(
+        "update public.subida_reclamacion set caduca_en = now() - interval '1 minute' where ruta = %s",
+        caducada,
+    )
+    with pytest.raises(AlmacenamientoNoDisponible):
+        await subir(almacen, caducada, PNG, "image/png")  # ni tras caducar
 
 
 # --- limite por IP y concurrencia -------------------------------------------------------------
@@ -481,6 +520,7 @@ async def test_un_reintento_con_la_misma_clave_devuelve_200_con_la_misma_hoja(
         k: segunda.json()[k] for k in ("dias_habiles_restantes",)
     }
     assert hojas_de(sql, cuerpo["consumidor"]["correo"]) == 1
+    assert segunda.json()["adjuntos_no_guardados"] == []
     avisos = dict(
         sql(
             "select tipo, count(*) from public.notificacion where datos ->> 'id' = %s group by 1",
@@ -571,3 +611,116 @@ async def test_el_reenvio_con_la_misma_clave_no_vincula_la_hoja_a_posteriori(
     ajeno = await enviar(anonimo, propia, usuario=cliente_b)
     sin = await enviar(anonimo, propia)
     assert [r.json()["en_tu_cuenta"] for r in (mismo, ajeno, sin)] == [True, False, False]
+
+
+# --- la clave de envio solo reintenta con los mismos datos (auditoria A) ----------------------------------
+
+
+def _otro(cuerpo: dict[str, Any], campo: str) -> dict[str, Any]:
+    """Una copia con un solo campo distinto."""
+    nuevo = json.loads(json.dumps(cuerpo))
+    if campo == "documento":
+        nuevo["consumidor"]["documento"] = "87654321"
+    elif campo == "correo":
+        nuevo["consumidor"]["correo"] = f"{uuid.uuid4().hex}@prueba.bugalu.pe"
+    else:
+        nuevo[campo] = "Otro texto distinto del primero."
+    return nuevo
+
+
+@pytest.mark.parametrize("campo", ["documento", "correo", "detalle", "pedido"])
+async def test_la_misma_clave_con_otros_datos_registra_una_hoja_nueva_sin_datos_ajenos(
+    anonimo: AsyncClient, sql: Ejecutar, campo: str
+) -> None:
+    clave = str(uuid.uuid4())
+    primera_peticion = datos(clave_envio=clave)
+    primera = await enviar(anonimo, primera_peticion)
+    assert primera.status_code == 201, primera.text
+    peticion = _otro(primera_peticion, campo)
+    r = await enviar(anonimo, peticion)
+    assert r.status_code == 201, r.text
+    assert r.json()["id"] != primera.json()["id"]
+    assert r.json()["consumidor"]["documento"] == peticion["consumidor"]["documento"]
+    assert r.json()["consumidor"]["correo"] == peticion["consumidor"]["correo"]
+    assert (r.json()["detalle"], r.json()["pedido"]) == (peticion["detalle"], peticion["pedido"])
+    assert sql("select count(*) from public.hoja_reclamacion where id = %s", r.json()["id"]) == [
+        (1,)
+    ]
+
+
+async def test_el_reintento_devuelve_el_estado_y_la_respuesta_reales_de_la_hoja(
+    anonimo: AsyncClient, administrador: UsuarioDePrueba
+) -> None:
+    cuerpo = datos(clave_envio=str(uuid.uuid4()))
+    creada = await enviar(anonimo, cuerpo)
+    assert (creada.status_code, creada.json()["estado"]) == (201, "pendiente")
+    resp = await anonimo.post(
+        f"{HOJAS}/{creada.json()['id']}/respuesta",
+        json={"texto": "Respuesta del estudio."},
+        headers=con(administrador),
+    )
+    assert resp.status_code == 200, resp.text
+    reintento = await enviar(anonimo, cuerpo)
+    assert reintento.status_code == 200, reintento.text
+    hoja = reintento.json()
+    assert (hoja["estado"], hoja["dias_habiles_restantes"]) == ("respondida", None)
+    assert hoja["respuesta"]["texto"] == "Respuesta del estudio."
+    assert hoja["respuesta"]["respondida_por"] is None  # el autor es del Administrador
+    assert hoja["respuesta"]["medio"] == "correo"
+
+
+# --- la IP del limite viene del proxy de confianza y de nadie mas (auditoria A) -----------------------------
+
+
+async def _ip_vista_por_uvicorn(
+    app: Any, confiables: str, ips_usadas: list[str], sql: Ejecutar
+) -> str | None:
+    """Un uvicorn real en 127.0.0.1 con `--forwarded-allow-ips`, y una alta que dice venir de 198.51.100.7."""
+    import uvicorn
+
+    servidor = uvicorn.Server(
+        uvicorn.Config(
+            app,
+            host="127.0.0.1",
+            port=0,
+            forwarded_allow_ips=confiables,
+            lifespan="off",
+            log_level="error",
+        )
+    )
+    tarea = asyncio.create_task(servidor.serve())
+    while not servidor.started:
+        await asyncio.sleep(0.02)
+    puerto = servidor.servers[0].sockets[0].getsockname()[1]
+    reenviada = "198.51.100.7"
+    ips_usadas += [reenviada, "127.0.0.1"]
+    try:
+        async with AsyncClient(base_url=f"http://127.0.0.1:{puerto}") as c:
+            r = await enviar(c, datos(), cabeceras={"X-Forwarded-For": reenviada})
+        assert r.status_code == 201, r.text
+    finally:
+        servidor.should_exit = True
+        await tarea
+    hashes = {
+        f[0]
+        for f in sql(
+            "select ip_hash from public.intento_reclamacion where ip_hash = any(%s)",
+            [hashlib.sha256(i.encode()).hexdigest() for i in (reenviada, "127.0.0.1")],
+        )
+    }
+    return next(
+        (i for i in (reenviada, "127.0.0.1") if hashlib.sha256(i.encode()).hexdigest() in hashes),
+        None,
+    )
+
+
+async def test_el_limite_usa_la_ip_reenviada_solo_si_el_proxy_es_de_confianza(
+    app: Any, ips_usadas: list[str], sql: Ejecutar
+) -> None:
+    assert await _ip_vista_por_uvicorn(app, "127.0.0.1", ips_usadas, sql) == "198.51.100.7"
+    sql(
+        "delete from public.intento_reclamacion where ip_hash = any(%s)",
+        [hashlib.sha256(i.encode()).hexdigest() for i in ("198.51.100.7", "127.0.0.1")],
+    )
+    # quien no es el proxy de confianza no puede elegir su IP con una cabecera
+    assert await _ip_vista_por_uvicorn(app, "10.9.9.9", ips_usadas, sql) == "127.0.0.1"

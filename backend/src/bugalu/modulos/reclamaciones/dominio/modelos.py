@@ -2,7 +2,7 @@
 
 # ruff: noqa: E501 - SQL y textos literales largos
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
@@ -120,6 +120,18 @@ class Alta:
     vence_respuesta: datetime
     dias_habiles_restantes: int
     existente: Hoja | None = None  # reintento con la misma clave de envio: la hoja ya registrada
+    subidas: dict[int, str] = field(
+        default_factory=dict
+    )  # n del adjunto -> ruta que genero la base
+
+
+@dataclass(frozen=True)
+class Registro:
+    """Resultado del alta: la hoja siempre queda; los adjuntos que no se guardaron se informan."""
+
+    hoja: Hoja
+    creada: bool  # False: reintento con la misma clave de envio
+    no_guardados: list[int]  # posiciones (desde 1) de los adjuntos que no se pudieron guardar
 
 
 @dataclass(frozen=True)

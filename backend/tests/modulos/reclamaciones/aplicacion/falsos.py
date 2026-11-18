@@ -1,3 +1,5 @@
+from collections.abc import AsyncIterator, Callable
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
@@ -52,13 +54,17 @@ def hoja(id_: UUID | None = None, medio: str = "correo", **cambios: object) -> H
 
 
 class AlmacenFalso:
-    def __init__(self, falla_en: int | None = None) -> None:
+    def __init__(self, falla_en: int | None = None, eventos: list[str] | None = None) -> None:
         self.subidos: list[tuple[str, int, str]] = []
         self.falla_en = falla_en
+        self.intentos = 0
+        self.eventos = eventos if eventos is not None else []
 
     async def subir(self, ruta: str, contenido: bytes, mime: str) -> None:
-        if self.falla_en == len(self.subidos) + 1:
+        self.intentos += 1
+        if self.falla_en == self.intentos:
             raise AlmacenamientoNoDisponible("no")
+        self.eventos.append(f"subir:{ruta}")
         self.subidos.append((ruta, len(contenido), mime))
 
     async def firmar(self, ruta: str, segundos: int) -> str:
@@ -74,6 +80,8 @@ class HojasFalso:
         self.ultima_alta: tuple[UUID, NuevaHoja, str | None] | None = None
         self.consultas: list[tuple[str | None, date | None, date | None]] = []
         self.existente: Hoja | None = None
+        self.falla_confirmar_en: int | None = None
+        self.confirmaciones = 0
 
     async def es_administrador(self) -> bool:
         return self.administrador
@@ -81,12 +89,31 @@ class HojasFalso:
     async def registrar(self, id_: UUID, nueva: NuevaHoja, ip: str | None) -> Alta:
         self.eventos.append("registrar")
         self.ultima_alta = (id_, nueva, ip)
-        return Alta("000000007-2026", AHORA, AHORA + timedelta(days=21), 15, self.existente)
+        return Alta(
+            "000000007-2026",
+            AHORA,
+            AHORA + timedelta(days=21),
+            15,
+            self.existente,
+            self._subidas(id_, nueva),
+        )
 
     async def transcribir(self, id_: UUID, nueva: NuevaHoja) -> Alta:
         self.eventos.append("transcribir")
         self.ultima_alta = (id_, nueva, None)
-        return Alta("000000008-2026", AHORA, AHORA + timedelta(days=21), 15)
+        return Alta(
+            "000000008-2026", AHORA, AHORA + timedelta(days=21), 15, None, self._subidas(id_, nueva)
+        )
+
+    @staticmethod
+    def _subidas(id_: UUID, nueva: NuevaHoja) -> dict[int, str]:
+        return {a.n: f"{id_}/{uuid4()}.{a.extension}" for a in nueva.adjuntos}
+
+    async def confirmar_adjunto(self, ruta: str) -> None:
+        self.confirmaciones += 1
+        if self.falla_confirmar_en == self.confirmaciones:
+            raise AlmacenamientoNoDisponible("no se pudo confirmar")
+        self.eventos.append(f"confirmar:{ruta}")
 
     async def obtener(self, id_: UUID) -> Hoja | None:
         return None if id_ in self.ocultas else self.hojas.get(id_)
@@ -130,3 +157,15 @@ class HojasFalso:
 
 def adjunto(n: int = 1) -> Adjunto:
     return Adjunto(n, "foto.png", "image/png", 10, f"x/{n}.png")
+
+
+def abridor(repo: HojasFalso) -> Callable[[], AbstractAsyncContextManager[HojasFalso]]:
+    """Una transaccion falsa: deja constancia de cuando se abre y cuando se cierra (commit)."""
+
+    @asynccontextmanager
+    async def abrir() -> AsyncIterator[HojasFalso]:
+        repo.eventos.append("abre")
+        yield repo
+        repo.eventos.append("cierra")
+
+    return abrir

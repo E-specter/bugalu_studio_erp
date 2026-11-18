@@ -329,5 +329,9 @@ class AdjuntoNoPermitido(DatosInvalidos):
     codigo = "adjunto_no_permitido"
 
 
+class FechaOriginalInvalida(DatosInvalidos):
+    codigo = "fecha_original_invalida"
+
+
 class DemasiadosAdjuntos(DatosInvalidos):
     codigo = "demasiados_adjuntos"
