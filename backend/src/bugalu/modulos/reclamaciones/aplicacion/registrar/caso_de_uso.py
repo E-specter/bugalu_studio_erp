@@ -32,6 +32,7 @@ async def _confirmar(abrir_publico: AbrirRepositorio, ruta: str) -> None:
 async def _alta(
     abrir: AbrirRepositorio,
     abrir_publico: AbrirRepositorio,
+    abrir_api: AbrirRepositorio,
     almacen: AlmacenAdjuntos,
     nueva: NuevaHoja,
     transcribir: bool,
@@ -62,7 +63,7 @@ async def _alta(
         adjuntos.append(Adjunto(a.n, a.nombre, a.tipo, a.tamano, ruta))
     if nueva.adjuntos:  # los avisos esperaban a esto: salen con los adjuntos guardados
         try:
-            async with abrir_publico() as hojas:
+            async with abrir_api() as hojas:  # solo `bugalu_api` ejecuta avisar_hoja
                 await hojas.avisar_hoja(id_)
         except Exception:  # sin esto salen solos a los 5 minutos
             _registro.exception("No se pudo cerrar la hoja %s tras las subidas.", id_)
@@ -86,10 +87,15 @@ async def _alta(
 
 class RegistrarHoja:
     def __init__(
-        self, abrir: AbrirRepositorio, abrir_publico: AbrirRepositorio, almacen: AlmacenAdjuntos
+        self,
+        abrir: AbrirRepositorio,
+        abrir_publico: AbrirRepositorio,
+        abrir_api: AbrirRepositorio,
+        almacen: AlmacenAdjuntos,
     ) -> None:
         self._abrir = abrir
         self._abrir_publico = abrir_publico
+        self._abrir_api = abrir_api
         self._almacen = almacen
 
     async def ejecutar(
@@ -111,7 +117,14 @@ class RegistrarHoja:
             clave_envio=clave_envio,
         )
         return await _alta(
-            self._abrir, self._abrir_publico, self._almacen, nueva, False, ip, id_cuenta
+            self._abrir,
+            self._abrir_publico,
+            self._abrir_api,
+            self._almacen,
+            nueva,
+            False,
+            ip,
+            id_cuenta,
         )
 
 
@@ -120,11 +133,13 @@ class TranscribirHoja:
         self,
         abrir: AbrirRepositorio,
         abrir_publico: AbrirRepositorio,
+        abrir_api: AbrirRepositorio,
         almacen: AlmacenAdjuntos,
         reloj: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self._abrir = abrir
         self._abrir_publico = abrir_publico
+        self._abrir_api = abrir_api
         self._almacen = almacen
         self._reloj = reloj
 
@@ -145,4 +160,12 @@ class TranscribirHoja:
         nueva = NuevaHoja(
             contenido, validar_adjuntos(archivos), False, fecha_original, numero_hoja_fisica
         )
-        return await _alta(self._abrir, self._abrir_publico, self._almacen, nueva, True, None)
+        return await _alta(
+            self._abrir,
+            self._abrir_publico,
+            self._abrir_api,
+            self._almacen,
+            nueva,
+            True,
+            None,
+        )

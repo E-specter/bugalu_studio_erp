@@ -42,11 +42,11 @@ PNG = b"\x89PNG\r\n\x1a\n" + b"x" * 10
 
 
 def registrar(repo: HojasFalso, almacen: AlmacenFalso) -> RegistrarHoja:
-    return RegistrarHoja(abridor(repo), abridor(repo), almacen)
+    return RegistrarHoja(abridor(repo), abridor(repo), abridor(repo), almacen)
 
 
 def transcribir(repo: HojasFalso, almacen: AlmacenFalso) -> TranscribirHoja:
-    return TranscribirHoja(abridor(repo), abridor(repo), almacen, lambda: AHORA)
+    return TranscribirHoja(abridor(repo), abridor(repo), abridor(repo), almacen, lambda: AHORA)
 
 
 async def test_registrar_sin_confirmar_no_toca_la_base() -> None:

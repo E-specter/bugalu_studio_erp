@@ -52,6 +52,13 @@ class Configuracion(BaseSettings):
         return self
 
     @model_validator(mode="after")
+    def _url_publica_con_esquema_y_host(self) -> Configuracion:
+        url = urlparse(self.url_publica)
+        if url.scheme not in ("http", "https") or not url.hostname:
+            raise ValueError("URL_PUBLICA debe empezar por http:// o https:// e incluir el host")
+        return self
+
+    @model_validator(mode="after")
     def _envio_real_exige_url_publica_no_local(self) -> Configuracion:
         # No hay variable de "produccion": el envio con la cuenta de Google (SMTP_USUARIO) es
         # la senal. Con ella, enlaces a localhost saldrian en correos reales a los clientes.

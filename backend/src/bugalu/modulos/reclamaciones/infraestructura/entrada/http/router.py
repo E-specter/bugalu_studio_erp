@@ -84,6 +84,13 @@ async def _repositorio(
         yield RepositorioHojasPostgres(conexion)
 
 
+@asynccontextmanager
+async def _repositorio_api(pool: Any) -> AsyncIterator[RepositorioHojasPostgres]:
+    """Rol `bugalu_api` directo, sin `set local role`: el unico que ejecuta `avisar_hoja`."""
+    async with pool.connection() as conexion, conexion.transaction():
+        yield RepositorioHojasPostgres(conexion)
+
+
 def _almacen(token_administrador: str | None = None) -> AlmacenStorage:
     c = obtener_configuracion()
     return AlmacenStorage(c.url_supabase, c.clave_publicable_supabase, token_administrador)
@@ -127,7 +134,10 @@ async def registrar_hoja(
     solicitante = _solicitante(claims)
     pool = _pool(request)
     registro = await RegistrarHoja(
-        partial(_repositorio, pool, claims), partial(_repositorio, pool, None), _almacen()
+        partial(_repositorio, pool, claims),
+        partial(_repositorio, pool, None),
+        partial(_repositorio_api, pool),
+        _almacen(),
     ).ejecutar(
         entrada.a_dominio(entrada.tipo),
         entrada.confirmado,
@@ -159,7 +169,10 @@ async def transcribir_hoja(
     archivos = await _leer(adjuntos)
     pool = _pool(request)
     registro = await TranscribirHoja(
-        partial(_repositorio, pool, claims), partial(_repositorio, pool, None), _almacen()
+        partial(_repositorio, pool, claims),
+        partial(_repositorio, pool, None),
+        partial(_repositorio_api, pool),
+        _almacen(),
     ).ejecutar(
         entrada.a_dominio(entrada.tipo),
         entrada.confirmado,

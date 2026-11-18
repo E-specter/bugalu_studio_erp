@@ -172,38 +172,39 @@ async def test_la_bandeja_trae_la_reserva_de_los_avisos_con_evento_y_el_correo_s
     assert sum(1 for c in por_tipo.values() if c.evento is None) == 1  # reserva_caducada
 
 
-async def test_si_falla_la_consulta_de_reservas_la_bandeja_sigue_y_el_aviso_sale_sin_evento(
-    bandeja: BandejaPostgres, configuracion: Configuracion, caplog: pytest.LogCaptureFixture
+async def test_un_id_de_reserva_invalido_no_quita_el_evento_al_resto_del_lote(
+    bandeja: BandejaPostgres, configuracion: Configuracion, reserva_de_prueba: UUID
 ) -> None:
-    datos = {"id_reserva": "no-es-uuid", "folio": "R-T", "inicio": INICIO, "fin": FIN}
+    malo = {"id_reserva": "no-es-uuid", "folio": "R-T", "inicio": INICIO, "fin": FIN}
+    bueno = {**malo, "id_reserva": str(reserva_de_prueba)}
     with psycopg.connect(configuracion.url_base_datos_admin, autocommit=True) as c:
-        for tipo, d in (
-            ("reserva_cancelada_estudio", datos),
-            (
-                "pago_aprobado",
-                {**datos, "hito": "al_reservar", "monto": 50, "reserva_confirmada": True},
-            ),
-        ):
-            c.execute(
+        ids = {
+            nombre: c.execute(
                 "insert into public.notificacion (tipo, destinatario, datos) "
-                "values (%s, 'sinevento@prueba.bugalu.pe', %s)",
-                (tipo, json.dumps(d)),
+                "values (%s, %s, %s) returning id",
+                (tipo, f"{nombre}@prueba.bugalu.pe", json.dumps(d)),
+            ).fetchone()[0]  # type: ignore[index]
+            for nombre, tipo, d in (
+                ("malo", "reserva_cancelada_estudio", malo),
+                ("bueno", "reserva_cancelada_estudio", bueno),
+                (
+                    "confirmacion",
+                    "pago_aprobado",
+                    {**malo, "hito": "al_reservar", "monto": 50, "reserva_confirmada": True},
+                ),
             )
-        try:
-            enviador = EnviadorLento()
-            with caplog.at_level("WARNING"):
-                assert await enviar_pendientes(bandeja, enviador) == 1
-            assert enviador.correos[0].evento is None
-            assert any("datos de reserva" in r.message for r in caplog.records)
-            # la confirmacion no sale sin su evento: queda para reintentar (decision previa)
-            assert c.execute(
-                "select intentos from public.notificacion where tipo = 'pago_aprobado' "
-                "and destinatario like '%@prueba.bugalu.pe'"
-            ).fetchone() == (1,)
-        finally:
-            c.execute(
-                "delete from public.notificacion where destinatario like '%@prueba.bugalu.pe'"
-            )
+        }
+        async with bandeja.tomar(
+            10, 5
+        ) as lote:  # la consulta de reservas no falla ni pierde al bueno
+            assert set(lote.reservas) == {ids["bueno"]}
+        enviador = EnviadorLento()
+        assert await enviar_pendientes(bandeja, enviador) == 2
+        assert sorted(enviador.enviados) == ["bueno@prueba.bugalu.pe", "malo@prueba.bugalu.pe"]
+        # la confirmacion sin datos de su reserva no sale sin evento: queda para reintentar (decision previa)
+        assert c.execute(
+            "select intentos from public.notificacion where id = %s", (ids["confirmacion"],)
+        ).fetchone() == (1,)
 
 
 async def test_un_aviso_con_enviar_desde_futuro_espera(

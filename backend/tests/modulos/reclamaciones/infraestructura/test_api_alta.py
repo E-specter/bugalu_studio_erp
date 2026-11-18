@@ -759,3 +759,36 @@ async def test_los_avisos_listan_solo_los_adjuntos_guardados_y_el_reintento_info
     segunda = await enviar(anonimo, cuerpo, adjuntos)
     assert segunda.status_code == 200, segunda.text
     assert segunda.json()["adjuntos_no_guardados"] == [2]
+
+
+async def test_con_un_pdf_minimo_se_encolan_los_dos_avisos_y_salen_ya(
+    anonimo: AsyncClient, sql: Ejecutar
+) -> None:
+    r = await enviar(anonimo, datos(), [("a.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")])
+    assert r.status_code == 201 and r.json()["adjuntos_no_guardados"] == [], r.text
+    filas = sql(
+        "select tipo, datos -> 'adjuntos', enviar_desde <= now() from public.notificacion "
+        "where datos ->> 'id' = %s order by tipo",
+        r.json()["id"],
+    )
+    assert [f[0] for f in filas] == ["reclamacion_recibida", "reclamacion_registrada"] or len(
+        filas
+    ) >= 2, filas
+    assert all(f[2] for f in filas), filas
+
+
+async def test_si_avisar_hoja_falla_los_avisos_existen_y_salen_a_los_cinco_minutos(
+    anonimo: AsyncClient, sql: Ejecutar, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def falla(self: Any, id_: Any) -> None:
+        raise RuntimeError("sin avisar")
+
+    monkeypatch.setattr(modulo_router.RepositorioHojasPostgres, "avisar_hoja", falla)
+    r = await enviar(anonimo, datos(), [("a.png", PNG, "image/png")])
+    assert r.status_code == 201, r.text
+    filas = sql(
+        "select tipo, enviar_desde > now() + interval '4 minutes', enviar_desde < now() + interval '6 minutes' "
+        "from public.notificacion where datos ->> 'id' = %s",
+        r.json()["id"],
+    )
+    assert len(filas) >= 2 and all(f[1] and f[2] for f in filas), filas

@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(35);
 
 -- RF-16, retoques de la auditoria A (ronda 2): limite por /64, clave de envio con todo el contenido, avisos con los
 -- adjuntos guardados, adjuntos no guardados en el reintento y huerfanos de Storage.
@@ -70,8 +70,8 @@ select set_config('zz.ruta1', (select ruta from public.subida_reclamacion where 
 set local role anon;
 insert into storage.objects (bucket_id, name) values ('reclamaciones', current_setting('zz.ruta1'));
 select public.confirmar_adjunto(current_setting('zz.ruta1'));
-select lives_ok($$select public.avisar_hoja('44444444-0000-0000-0000-000000000001')$$, 'anon cierra la hoja tras las subidas');
 reset role;
+select lives_ok($$select public.avisar_hoja('44444444-0000-0000-0000-000000000001')$$, 'la API cierra la hoja tras las subidas');
 select is((select datos -> 'adjuntos' from public.notificacion where tipo = 'reclamacion_registrada' and datos ->> 'id' = '44444444-0000-0000-0000-000000000001'),
   '["a.pdf"]'::jsonb, 'la copia lista solo el adjunto guardado');
 select is((select (datos ->> 'adjuntos_no_guardados')::int from public.notificacion where tipo = 'reclamacion_registrada' and datos ->> 'id' = '44444444-0000-0000-0000-000000000001'),
@@ -112,10 +112,13 @@ select is((select array_agg(r) from public.rutas_huerfanas_reclamacion() r), arr
 select is(public.limpiar_subidas_reclamacion(), 0, 'la limpieza no borra la subida mientras el objeto siga en Storage');
 set local role anon;
 select throws_ok($$select public.rutas_huerfanas_reclamacion()$$, '42501', null, 'anon no lista huerfanas');
-select is((select count(*)::int from storage.objects where bucket_id = 'reclamaciones'), 1, 'anon solo lee la huerfana, no los objetos vigentes');
-select is(public.subida_reclamacion_huerfana(current_setting('zz.ruta3')), true, 'la politica de borrado de anon reconoce la huerfana');
-select is(public.subida_reclamacion_huerfana(current_setting('zz.ruta2')), false, 'y no una ya confirmada');
+select is((select count(*)::int from storage.objects where bucket_id = 'reclamaciones'), 0, 'anon no lee la huerfana fuera de un DELETE (listar, descargar, firmar)');
+select set_config('storage.operation', 'storage.object.delete', true);
+select is((select count(*)::int from storage.objects where bucket_id = 'reclamaciones'), 1, 'durante un DELETE solo lee la huerfana, no los objetos vigentes');
 reset role;
+select set_config('storage.operation', '', true);
+select is(public.subida_reclamacion_huerfana(current_setting('zz.ruta3')), true, 'la politica de borrado reconoce la huerfana');
+select is(public.subida_reclamacion_huerfana(current_setting('zz.ruta2')), false, 'y no una ya confirmada');
 select set_config('storage.allow_delete_query', 'true', true);
 delete from storage.objects where bucket_id = 'reclamaciones' and name = current_setting('zz.ruta3');
 select is(public.limpiar_subidas_reclamacion(), 1, 'sin objeto, la limpieza borra la subida caducada');

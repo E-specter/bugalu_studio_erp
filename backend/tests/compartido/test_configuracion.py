@@ -99,3 +99,23 @@ def test_sin_envio_real_la_url_publica_local_sirve(monkeypatch: pytest.MonkeyPat
     _base(monkeypatch)
     monkeypatch.setenv("URL_PUBLICA", "http://localhost:4321")
     assert obtener_configuracion().url_publica == "http://localhost:4321"
+
+
+@pytest.mark.parametrize(
+    "url",
+    ["erp.bugalu.pe", "ftp://erp.bugalu.pe", "https://", "javascript:alert(1)", "//erp.bugalu.pe"],
+)
+def test_la_url_publica_exige_esquema_http_y_host(
+    monkeypatch: pytest.MonkeyPatch, url: str
+) -> None:
+    _base(monkeypatch)
+    monkeypatch.setenv("URL_PUBLICA", url)
+    with pytest.raises(RuntimeError, match="URL_PUBLICA"):
+        obtener_configuracion()
+
+
+@pytest.mark.parametrize("url", ["http://127.0.0.1:4321", "https://erp.bugalu.pe"])
+def test_la_url_publica_con_esquema_y_host_sirve(monkeypatch: pytest.MonkeyPatch, url: str) -> None:
+    _base(monkeypatch)
+    monkeypatch.setenv("URL_PUBLICA", url)
+    assert obtener_configuracion().url_publica == url

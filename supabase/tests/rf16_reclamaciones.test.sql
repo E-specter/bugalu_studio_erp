@@ -331,7 +331,9 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c1","role":"authenticated"}', true);
 select is((select count(*)::int from storage.objects where bucket_id = 'reclamaciones'), 0, 'un cliente no lee el bucket');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ad","role":"authenticated"}', true);
-select is((select count(*)::int from storage.objects where bucket_id = 'reclamaciones'), 1, 'el administrador lee el bucket');
+-- Solo los objetos de esta prueba: la base compartida puede tener otros (pruebas reales, subidas en curso).
+select is((select count(*)::int from storage.objects where bucket_id = 'reclamaciones'
+  and name = current_setting('zz.ruta')), 1, 'el administrador lee el bucket');
 reset role;
 
 -- Baja de la cuenta: la hoja se conserva, sin cuenta ni autor

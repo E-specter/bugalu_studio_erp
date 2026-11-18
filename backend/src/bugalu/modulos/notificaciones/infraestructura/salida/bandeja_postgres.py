@@ -74,7 +74,8 @@ class BandejaPostgres:
                             "select * from public.datos_reserva_para_correo(%s)", (con_evento,)
                         )
                         reservas = {f[0]: DatosReserva(*f[1:]) for f in await cursor.fetchall()}
-                except psycopg.Error as error:  # los avisos salen sin evento en vez de no salir
+                except psycopg.Error as error:
+                    # Salen sin evento; pago_aprobado confirmado falla a proposito y se reintenta.
                     registro.warning(
                         "datos de reserva no disponibles, avisos sin evento: %s",
                         type(error).__name__,
