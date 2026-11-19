@@ -488,6 +488,7 @@ test('horarios: retirar, 409 con asesorias y bloque inexistente', async ({ page 
   await retirar.click();
   await expect(dice(page, 'Este bloque tiene asesorías agendadas. Pide al Administrador que las cancele o reprograme antes de retirarlo.')).toBeVisible();
   await expect(dice(page, 'A-2026-00001 · 17 nov, 11:00')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'A-2026-00001 · 17 nov, 11:00' })).toHaveAttribute('href', '/app/asesorias/detalle?id=a1');
   await retirar.click();
   await expect(dice(page, 'Ese bloque ya no existe. Actualizamos la semana.')).toBeVisible();
   await retirar.click();
@@ -812,6 +813,7 @@ test('usuarios: 409 profesional_con_asesorias conserva los datos', async ({ page
   await page.getByRole('textbox', { name: 'Especialidad' }).fill('Mezcla');
   await page.getByRole('button', { name: 'Guardar rol y especialidad' }).click();
   await expect(dice(page, 'Nico Ruiz tiene asesorías pendientes o confirmadas. Cancélalas o espera a que terminen antes de quitarle el rol.')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Ver sus asesorías' })).toHaveAttribute('href', `/app/asesorias/agenda?profesional=${U8}`);
   await expect(page.getByRole('textbox', { name: 'Especialidad' })).toHaveValue('Mezcla');
 });
 

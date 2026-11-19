@@ -1,0 +1,19 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Boton from '../../../componentes/Boton.astro';
+import Agenda from '../../../islas/Agenda.astro';
+---
+
+<!-- Nace con el texto del profesional; la isla lo cambia para el Administrador y muestra su acción (spec RF-15-agenda). -->
+<LayoutApp titulo="Asesorías agendadas">
+  <EncabezadoPantalla
+    titulo="Mis asesorías"
+    indice="[E3] ASESORÍAS / AGENDA"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Asesorías' }]}
+    descripcion="Tus citas agendadas, el lugar o enlace de cada una y las que te falta cerrar."
+  >
+    <Boton slot="acciones" variante="secundario" href="/app/asesorias/" data-admin hidden>Volver a profesionales</Boton>
+  </EncabezadoPantalla>
+  <Agenda />
+</LayoutApp>

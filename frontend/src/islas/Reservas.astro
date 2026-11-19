@@ -183,6 +183,44 @@ const filtros = [
               <p class="reservas-nota reservas-texto" data-contacto-estudio hidden></p>
             </div>
 
+            {asesoria && (
+              <>
+                <!-- Profesional y Administrador (spec RF-15-gestion): el lugar o enlace de la cita y quién lo registra. -->
+                <div class="reservas-estado" data-boton="lugar" hidden>
+                  <div data-lugar-falta hidden><Aviso variante="aviso" titulo=" " texto=" " /></div>
+                  <dl class="gestion-datos">
+                    <div><dt data-lugar-dt>Lugar o enlace</dt><dd class="reservas-texto"><span data-lugar-valor></span><span data-lugar-pendiente hidden><EtiquetaTecnica texto="Por confirmar" variante="aviso" /></span></dd></div>
+                  </dl>
+                  <Boton variante="secundario" data-abrir="lugar">Registrar lugar</Boton>
+                </div>
+                <p class="reservas-nota" data-pide-admin hidden>¿No puedes darla? Pide al Administrador que la cancele por el estudio. El cliente podrá reprogramar contigo sin costo o pedir la devolución.</p>
+                <div data-panel="lugar" hidden>
+                  <Panel titulo="Lugar o enlace" variante="lateral" id="lugar">
+                    <form novalidate class="gestion-formulario" data-accion="lugar">
+                      <div class="campo">
+                        <fieldset class="gestion-grupo">
+                          <legend>Modalidad</legend>
+                          <Casilla tipo="radio" nombre="modalidad" valor="presencial" id="lugar-presencial" aria-controls="lugar-campos-presencial" etiqueta="Presencial" />
+                          <div class="gestion-grupo" id="lugar-campos-presencial" data-campos="presencial" hidden>
+                            <Campo tipo="area" id="lugar-lugar" nombre="lugar" etiqueta="Lugar" maxlength="300" ayuda="Ambiente del estudio o dirección, con una referencia. Por ejemplo: «Ambiente 2 del estudio, segundo piso»." />
+                          </div>
+                          <Casilla tipo="radio" nombre="modalidad" valor="virtual" id="lugar-virtual" aria-controls="lugar-campos-virtual" etiqueta="Virtual (Google Meet)" />
+                          <div class="gestion-grupo" id="lugar-campos-virtual" data-campos="virtual" hidden>
+                            <Campo tipo="url" id="lugar-enlace" nombre="enlace" etiqueta="Enlace" inputmode="url" spellcheck="false" autocomplete="off" ayuda="Crea la reunión en Google Meet y pega aquí su enlace." />
+                          </div>
+                        </fieldset>
+                      </div>
+                      <p data-consecuencia></p>
+                      <BarraAcciones variante="decision">
+                        <Boton slot="secundaria" variante="secundario" data-envio data-volver>Volver a la asesoría</Boton>
+                        <Boton slot="principal" tipo="submit" data-envio>Guardar y avisar</Boton>
+                      </BarraAcciones>
+                    </form>
+                  </Panel>
+                </div>
+              </>
+            )}
+
             <!-- Reprogramar (solo el dueño de una confirmada): botón con su ayuda, o la explicación de por qué no. -->
             <div class="reservas-estado" data-reprogramar hidden>
               <Boton variante="secundario" href="#" data-enlace-reprogramar aria-describedby="reservas-ayuda-reprogramar">Reprogramar</Boton>
@@ -229,7 +267,7 @@ const filtros = [
                   <p class="reservas-resumen" data-resumen-na></p>
                   <p data-consecuencia></p>
                   <BarraAcciones variante="decision">
-                    <Boton slot="secundaria" variante="secundario" data-envio data-volver>Volver a la reserva</Boton>
+                    <Boton slot="secundaria" variante="secundario" data-envio data-volver>{asesoria ? 'Volver a la asesoría' : 'Volver a la reserva'}</Boton>
                     <Boton slot="principal" variante="peligro" tipo="submit" data-envio>Marcar no asistió</Boton>
                   </BarraAcciones>
                 </form>
@@ -241,10 +279,10 @@ const filtros = [
                 <form novalidate class="gestion-formulario" data-accion="excepcion">
                   <p>Para emergencias de salud, duelos, desastres o paros que impidieron avisar a tiempo, con un sustento razonable.</p>
                   <dl class="gestion-datos"><div><dt>Retenido hoy</dt><dd data-retenido-hoy></dd></div></dl>
-                  <Campo tipo="area" id="excepcion-motivo" nombre="motivo" etiqueta="Motivo" obligatorio minlength="10" maxlength="500" ayuda="Qué pasó y qué sustento recibiste. El cliente lo verá en su reserva." />
+                  <Campo tipo="area" id="excepcion-motivo" nombre="motivo" etiqueta="Motivo" obligatorio minlength="10" maxlength="500" ayuda={`Qué pasó y qué sustento recibiste. El cliente lo verá en su ${asesoria ? 'asesoría' : 'reserva'}.`} />
                   <p data-consecuencia></p>
                   <BarraAcciones variante="decision">
-                    <Boton slot="secundaria" variante="secundario" data-envio data-volver>Volver a la reserva</Boton>
+                    <Boton slot="secundaria" variante="secundario" data-envio data-volver>{asesoria ? 'Volver a la asesoría' : 'Volver a la reserva'}</Boton>
                     <Boton slot="principal" tipo="submit" data-envio>Tratar como nivel 1</Boton>
                   </BarraAcciones>
                 </form>
@@ -260,7 +298,7 @@ const filtros = [
                     <div class="campo">
                       <fieldset class="gestion-grupo">
                         <legend>¿Quién pide cancelar?</legend>
-                        <Casilla tipo="radio" nombre="por" valor="estudio" id="cancelar-por-estudio" aria-controls="cancelar-campos-estudio" etiqueta="El estudio" detalle="Falla técnica, ausencia del especialista o fuerza mayor." />
+                        <Casilla tipo="radio" nombre="por" valor="estudio" id="cancelar-por-estudio" aria-controls="cancelar-campos-estudio" etiqueta="El estudio" detalle={asesoria ? 'El profesional no puede darla, falla técnica o fuerza mayor.' : 'Falla técnica, ausencia del especialista o fuerza mayor.'} />
                         <div class="gestion-grupo" id="cancelar-campos-estudio" data-campos="estudio" hidden>
                           <Campo tipo="area" id="cancelar-nota-estudio" nombre="nota-estudio" etiqueta="Nota para el cliente" maxlength="300" />
                         </div>
@@ -289,7 +327,7 @@ const filtros = [
                   <p class="reservas-nota"><a class="reservas-enlace" href="/legal/condiciones-de-contratacion/" data-condiciones>Leer las condiciones de cancelación</a></p>
                   <p class="reservas-nota" data-en-lugar hidden><a class="reservas-enlace" href="#" data-enlace-en-lugar>Reprogramar en lugar de cancelar</a></p>
                   <BarraAcciones variante="decision">
-                    <Boton slot="secundaria" variante="secundario" data-envio data-volver>Volver a la reserva</Boton>
+                    <Boton slot="secundaria" variante="secundario" data-envio data-volver>{asesoria ? 'Volver a la asesoría' : 'Volver a la reserva'}</Boton>
                     <Boton slot="principal" variante="peligro" tipo="submit" data-envio data-confirmar-cancelar hidden>Confirmar cancelación</Boton>
                   </BarraAcciones>
                 </form>
@@ -297,6 +335,17 @@ const filtros = [
             </div>
           </div>
           <div class="gestion-principal">
+            {asesoria && (
+              <div data-d0 hidden>
+                <Panel codigo="D0" titulo="Cliente">
+                  <dl class="gestion-datos">
+                    <div><dt>Nombre</dt><dd data-d0="nombre"></dd></div>
+                    <div data-fila="d0-telefono"><dt>Teléfono</dt><dd><a class="reservas-enlace" data-d0="telefono" href="#"></a></dd></div>
+                    <div data-fila="d0-correo"><dt>Correo</dt><dd><a class="reservas-enlace" data-d0="correo" href="#"></a></dd></div>
+                  </dl>
+                </Panel>
+              </div>
+            )}
             <Panel codigo="D1" titulo={asesoria ? 'Asesoría' : 'Reserva'}>
               <dl class="gestion-datos">
                 <div><dt>Estado</dt><dd class="reservas-estados"><EtiquetaTecnica texto="Estado" /><span data-pago-validar hidden><EtiquetaTecnica texto="Pago por validar" variante="aviso" /></span></dd></div>
@@ -311,13 +360,17 @@ const filtros = [
                 <div data-fila="condiciones"><dt>Condiciones</dt><dd data-campo="condiciones"></dd></div>
               </dl>
             </Panel>
+            <div data-d2>
             <Panel codigo="D2" titulo="Precio">
               <div data-precio><Tabla titulo="Desglose del precio" columnas={asesoria ? ['Concepto', 'Importe'] : ['Concepto', 'Cantidad', 'Importe']} variante="partidas" numericas={asesoria ? [1] : [1, 2]} /></div>
               <p class="gestion-ayuda reservas-nota-precio">{asesoria ? 'Precio fijo con IGV, calculado al agendar.' : 'Precio calculado al reservar.'}</p>
             </Panel>
+            </div>
+            <div data-d3>
             <Panel codigo="D3" titulo="Cuotas">
               <div data-cuotas><Tabla titulo="Cuotas" columnas={['Cuota', 'Importe', 'Estado']} variante="partidas" numericas={[1]} /></div>
             </Panel>
+            </div>
             <div data-d4 hidden>
               <Panel codigo="D4" titulo="Cancelación">
                 <dl class="gestion-datos">
@@ -367,7 +420,7 @@ const filtros = [
 <script>
   // @ts-nocheck
   import { IslaGestion, mensajeError } from '../servicios/isla-gestion.js';
-  import { listarMisAsesorias, obtenerAsesoria, ESTADOS_ASESORIA, MODALIDADES, textoCuotaAsesoria, duracionTexto, pintarPartidasAsesoria } from '../servicios/asesorias.js';
+  import { listarMisAsesorias, obtenerAsesoria, actualizarEncuentro, ESTADOS_ASESORIA, MODALIDADES, textoCuotaAsesoria, duracionTexto, pintarPartidasAsesoria } from '../servicios/asesorias.js';
   import { enlaceTexto } from '../servicios/aceptaciones.js';
   import { obtenerContacto } from '../servicios/pagos.js';
   import { listarMisReservas, obtenerReserva, cancelarReserva, verCancelacion, marcarInasistencia, aplicarExcepcion, simularReprogramacion, reprogramarReserva, elegirDevolucionEstudio, absoluta, faltan, textoCuota, ultimoRechazo, tienePagos } from '../servicios/reservas.js';
@@ -397,11 +450,14 @@ const filtros = [
   const PROXIMAS = ['pre_reservada', 'confirmada', 'en_curso'];
   const CUOTAS = { pendiente: ['Pendiente', 'aviso'], en_validacion: ['En validación', 'aviso'], pagada: ['Pagada', 'exito'], anulada: ['Anulada', 'neutra'] };
   // Panel de acción -> título (el folio se suma aparte, sin partirse).
-  const TITULOS = { cancelar: 'Cancelar reserva ', inasistencia: 'Marcar inasistencia · ', excepcion: 'Tratar como nivel 1 · ', devolucion: 'Devolución íntegra · ' };
+  const TITULOS = { cancelar: 'Cancelar reserva ', inasistencia: 'Marcar inasistencia · ', excepcion: 'Tratar como nivel 1 · ', devolucion: 'Devolución íntegra · ', lugar: 'Lugar o enlace · ' };
+  const ENLACE_INVALIDO = 'Pega un enlace de Google Meet que empiece por https://meet.google.com/.';
+  const ENLACE_MEET = /^https:\/\/meet\.google\.com\/[A-Za-z0-9/_?=&.%-]{1,200}$/;
   const AVISO_INVALIDO = 'El aviso no puede ser futuro ni anterior a cuando se hizo la reserva.';
   const MOTIVO_EXCEPCION = 'Escribe el motivo, de 10 a 500 caracteres.';
 
   const nombre = (v) => v?.nombre ?? v;
+  const persona = (p) => p?.nombre_artistico || p?.nombre || 'Cliente';
   const horario = (r) => `${horaDe(r.inicio)}–${horaDe(r.fin)}`;
   const fecha = (r) => diaMesAnio(fechaDe(r.inicio));
   const duracion = (r) => {
@@ -492,6 +548,7 @@ const filtros = [
       this.addEventListener('calendario-inicio', (e) => this.alInicio(e.detail));
       this.addEventListener('change', (e) => {
         if (e.target.matches('input[name="por"]')) this.cambiarOpcion();
+        else if (e.target.matches('input[name="modalidad"]')) this.cambiarModalidad();
         else if (e.target.matches('#cancelar-fecha, #cancelar-hora')) this.vistaDelAviso();
       });
       this.addEventListener('keydown', (e) => e.key === 'Escape' && this.abierto && !this.ocupado && this.cerrar());
@@ -507,6 +564,7 @@ const filtros = [
       else if (accion === 'reprogramar') this.confirmarReprogramacion();
       else if (accion === 'devolucion') this.devolucion();
       else if (accion === 'inasistencia') this.inasistencia();
+      else if (accion === 'lugar') this.lugar();
       else this.excepcion();
     }
 
@@ -648,7 +706,11 @@ const filtros = [
         [r, yo] = await Promise.all([leer(id), obtenerPerfil().catch(() => null)]);
       } catch (error) {
         if (error.estado !== 404) throw error;
-        return this.mostrar('no-encontrada');
+        this.mostrar('no-encontrada');
+        // Una asesoría ajena es 404 (CA-16): el profesional y el Administrador vuelven a su agenda.
+        const quien = ASES ? await obtenerPerfil().catch(() => null) : null;
+        if (quien && quien.rol !== 'cliente') Object.assign(this.querySelector('[data-salida] .aviso-accion'), { textContent: 'Volver a asesorías', href: '/app/asesorias/agenda' });
+        return null;
       }
       this.rol = yo?.rol ?? null;
       // La explicación de "Reprogramar" sale de la vista previa; si falla, se ofrece el botón y decide la API.
@@ -661,7 +723,10 @@ const filtros = [
       this.abierto = null;
       this.mostrar('datos');
       this.pintar(validar(r));
-      this.encabezado(ASES ? `Con ${nombreProf(r.profesional)} · ${fecha(r)}, ${horario(r)}` : `${nombre(r.servicio)} · ${fecha(r)}, ${horario(r)}`, r.folio);
+      const cita = `${fecha(r)}, ${horario(r)}`;
+      const gestion = ASES && this.rol !== 'cliente';
+      this.encabezado(gestion ? (this.admin ? `${persona(r.cliente)} con ${nombreProf(r.profesional)} · ${cita}` : `Con ${persona(r.cliente)} · ${cita}`) : ASES ? `Con ${nombreProf(r.profesional)} · ${cita}` : `${nombre(r.servicio)} · ${cita}`, r.folio);
+      if (gestion) this.encabezadoGestion();
       // El folio no se parte en dos lineas.
       document.querySelector('.encabezado-titulo').replaceChildren(T('Reserva '), folioTitulo(r.folio));
       if (this.rol && this.rol !== 'cliente' && !ASES) {
@@ -681,6 +746,19 @@ const filtros = [
       return `Reserva ${r.folio}, ${estadoDe(r)[0].toLowerCase()}`;
     }
 
+    // Profesional y Administrador: su ruta pasa por la agenda y el índice es el de esa pantalla.
+    encabezadoGestion() {
+      document.querySelector('.encabezado-indice').textContent = this.admin ? '[A15] ASESORÍAS / AGENDA' : '[E3] ASESORÍAS / AGENDA';
+      const segundo = document.querySelector('.encabezado-ruta li:nth-child(2)');
+      if (!segundo) return;
+      if (this.admin) {
+        segundo.querySelector('a').href = '/app/asesorias/';
+        const agendadas = document.createElement('li');
+        agendadas.append(Object.assign(document.createElement('a'), { href: '/app/asesorias/agenda', textContent: 'Agendadas' }));
+        segundo.after(agendadas);
+      } else segundo.querySelector('a').href = '/app/asesorias/agenda';
+    }
+
     // ?accion=inasistencia (desde la agenda) abre su panel solo si el botón está habilitado; si no, se ignora y queda la ayuda.
     abrirDeUrl() {
       const url = new URL(location.href);
@@ -690,6 +768,8 @@ const filtros = [
       history.replaceState(null, '', url);
       const boton = this.querySelector('[data-abrir="inasistencia"]');
       if (accion === 'inasistencia' && boton && !boton.closest('[data-boton]').hidden && boton.getAttribute('aria-disabled') !== 'true') this.abrir('inasistencia', boton);
+      const lugar = this.querySelector('[data-abrir="lugar"]');
+      if (accion === 'lugar' && lugar && !lugar.closest('[data-boton]').hidden) this.abrir('lugar', lugar);
     }
 
     llenarCuotas(r) {
@@ -730,24 +810,43 @@ const filtros = [
       campo('servicio', ASES ? nombreProf(r.profesional) : nombre(r.servicio));
       campo('sala', !ASES && nombre(r.sala));
       campo('especialistas', !ASES && (r.especialistas ?? []).map(nombre).join(', '));
-      campo('cliente', r.cliente && nombre(r.cliente));
+      campo('cliente', r.cliente && !ASES && nombre(r.cliente));
       if (ASES) {
+        this.pintarCliente(r);
+        const prof = this.rol === 'profesional'; // CA-08: no ve pagos ni montos ni condiciones
+        this.querySelector('[data-d2]').hidden = prof;
+        this.querySelector('[data-d3]').hidden = prof;
         const virtual = r.modalidad === 'virtual';
         const dato = virtual ? r.enlace : r.lugar;
         campo('modalidad', MODALIDADES[r.modalidad] ?? r.modalidad);
         campo('encuentro', dato || (['pre_reservada', 'confirmada'].includes(r.estado) ? 'Por confirmar' : null));
         const etiquetaEncuentro = this.querySelector('[data-etiqueta-encuentro]');
         if (etiquetaEncuentro) etiquetaEncuentro.textContent = virtual ? 'Enlace' : 'Lugar';
-        campo('condiciones', r.version_condiciones && `versión ${r.version_condiciones}`);
+        campo('condiciones', !prof && r.version_condiciones && `versión ${r.version_condiciones}`);
         const dd = this.querySelector('[data-campo="condiciones"]');
-        if (dd && r.version_condiciones) dd.replaceChildren(Object.assign(document.createElement('a'), { className: 'reservas-enlace', href: enlaceTexto('condiciones_contratacion', r.version_condiciones), textContent: `versión ${r.version_condiciones}` }));
+        if (dd && !prof && r.version_condiciones) dd.replaceChildren(Object.assign(document.createElement('a'), { className: 'reservas-enlace', href: enlaceTexto('condiciones_contratacion', r.version_condiciones), textContent: `versión ${r.version_condiciones}` }));
         pintarPartidasAsesoria(this.querySelector('[data-precio] .tabla'), `Asesoría de ${duracionTexto(r.duracion ?? Math.round((Date.parse(r.fin) - Date.parse(r.inicio)) / MINUTO))} con ${nombreProf(r.profesional)}`, totalDe(r), r.precio?.impuesto);
       } else pintarPartidas(this.querySelector('[data-precio] .tabla'), r.precio, r.parametros_aplicados?.porcentaje_adelanto);
       this.llenarCuotas(r);
       this.pintarCancelacion(r);
       this.pintarReprogramaciones(r);
-      for (const [panel, texto] of Object.entries(TITULOS)) this.querySelector(`[data-panel="${panel}"] .panel-titulo`).replaceChildren(T(texto), folioTitulo(r.folio));
+      for (const [panel, texto] of Object.entries(TITULOS)) this.querySelector(`[data-panel="${panel}"] .panel-titulo`)?.replaceChildren(T(texto), folioTitulo(r.folio));
       this.pintarEstado();
+    }
+
+    // D0: los datos de contacto del cliente, para su profesional y el Administrador (CA-16).
+    pintarCliente(r) {
+      const d0 = this.querySelector('[data-d0]');
+      d0.hidden = !(r.cliente && this.rol !== 'cliente');
+      if (d0.hidden) return;
+      const c = r.cliente;
+      const quien = nombre(c);
+      this.querySelector('[data-d0="nombre"]').replaceChildren(c.nombre_artistico || quien, ...(c.nombre_artistico && quien ? [Object.assign(document.createElement('span'), { className: 'gestion-motivo', textContent: quien })] : []));
+      for (const [clave, valor, esquema] of [['telefono', c.telefono, 'tel:'], ['correo', c.correo, 'mailto:']]) {
+        const enlace = this.querySelector(`[data-d0="${clave}"]`);
+        enlace.closest('[data-fila]').hidden = !valor;
+        if (valor) Object.assign(enlace, { textContent: valor, href: `${esquema}${valor.replace(/\s+/g, '')}` });
+      }
     }
 
     // D4: lo que se aplicó al cancelar.
@@ -760,6 +859,10 @@ const filtros = [
       const d4 = (clave, texto) => (this.querySelector(`[data-d4="${clave}"]`).textContent = texto);
       d4('aviso', absoluta(c.aviso_en));
       d4('por', c.por === 'estudio' ? 'Del estudio' : c.por === 'inasistencia' ? 'Inasistencia' : dueno ? 'Tuyo' : 'Del cliente');
+      // El profesional ve solo el aviso y a pedido de quién: sin montos ni nota (CA-08).
+      const solo = ASES && this.rol === 'profesional';
+      bloque.querySelectorAll('dl > div:nth-child(n+3)').forEach((f) => (f.hidden = solo));
+      if (solo) return;
       oculto(this.querySelector('[data-d4="registrada"]'), c.registrada_por?.nombre);
       this.querySelector('[data-d4="registrada"]').closest('div').hidden = !c.registrada_por?.nombre;
       d4('nivel', nivelTexto(c.nivel, r.politica).replace(/^Sin pagos: cancelas gratis\.$/, 'Sin pagos'));
@@ -789,10 +892,12 @@ const filtros = [
           fila.querySelector('[data-ahora]').textContent = dia(x.nuevo_inicio);
           fila.querySelector('[data-nivel-r]').textContent = x.nivel ? `Nivel ${x.nivel}` : 'Sin costo';
           fila.querySelector('[data-penalizacion]').textContent = soles(x.penalizacion);
-          fila.querySelector('[data-total-r]').textContent = `${soles(x.total_anterior)} → ${soles(x.total_nuevo)}`;
+          fila.querySelector('[data-total-r]')?.replaceChildren(`${soles(x.total_anterior)} → ${soles(x.total_nuevo)}`);
           return fila;
         }),
       );
+      // El profesional ve fecha, antes y ahora; no el nivel ni la penalización.
+      if (ASES && this.rol === 'profesional') this.querySelectorAll('[data-d5] :is(th, td):nth-child(n+4)').forEach((c) => c.remove());
     }
 
     // Lo que dice la barra de estado de una reserva cancelada o con inasistencia.
@@ -867,6 +972,14 @@ const filtros = [
     // Asesoria: lo que el estado dice y lo que toca (spec RF-15-mis-asesorias, Estados); null deja el resto de los estados a RF-18.
     estadoAsesoria(r, ms) {
       const t = tolerancia(r);
+      // Profesional y Administrador: lo mismo, dicho desde el estudio.
+      if (this.rol !== 'cliente') {
+        if (r.estado === 'pre_reservada') return porValidar(r) ? ['pendiente', 'Pago en validación', 'El cliente registró su pago; el estudio lo revisa y la cita no caduca mientras tanto.'] : ms > 0 ? ['pendiente', 'Pendiente de pago', `El cliente paga antes del ${absoluta(r.vence_pago)} · ${faltan(ms)}`] : null;
+        if (r.estado === 'confirmada') return Date.parse(r.fin) < Date.now() ? ['pendiente', 'Por cerrar', 'Marca si se realizó o si el cliente no asistió.'] : ['correcto', 'Confirmada', `Cita el ${diaMes(fechaDe(r.inicio))}, a las ${horaDe(r.inicio)}.`];
+        if (r.estado === 'realizada') return ['correcto', 'Realizada', ''];
+        if (r.estado === 'no_asistio') return ['problema', 'No asistió', 'El cliente no asistió.'];
+        return null;
+      }
       if (r.estado === 'pre_reservada' && porValidar(r)) return ['pendiente', 'Pago en validación', 'Registraste tu pago. No caduca mientras el estudio lo revise; te avisaremos por correo.'];
       if (r.estado === 'pre_reservada' && ms > 0) return ['pendiente', `Paga antes del ${absoluta(r.vence_pago)}`, faltan(ms)];
       if (r.estado === 'confirmada') return Date.parse(r.fin) < Date.now() ? ['neutro', 'Terminó', `${nombreProf(r.profesional)} confirmará tu asistencia y te enviaremos la constancia por correo.`] : ['correcto', 'Confirmada', `Te esperamos el ${diaMes(fechaDe(r.inicio))}, a las ${horaDe(r.inicio)}.`];
@@ -948,8 +1061,10 @@ const filtros = [
       const excepcion = admin && ((r.estado === 'cancelada' && c?.por === 'cliente' && [2, 3].includes(c.nivel) && positivo(c.retenido) && !c.excepcion) || (r.estado === 'no_asistio' && c?.por === 'inasistencia' && positivo(c.retenido) && !c.excepcion));
       this.alternar('excepcion', excepcion);
       // Cancelar: el dueño la solicita; el Administrador la hace por el estudio o a pedido del cliente. Solo antes del inicio.
-      const cancelable = vivo && ['pre_reservada', 'confirmada'].includes(r.estado) && inicio > ahora && (this.rol === 'cliente' || admin);
-      this.querySelector('[data-abrir="cancelar"]').textContent = admin ? 'Cancelar reserva' : 'Solicitar cancelación';
+      // Asesoría: el Administrador también cancela por el estudio tras el inicio, mientras no esté cerrada (CA-11).
+      const cancelable = vivo && ['pre_reservada', 'confirmada'].includes(r.estado) && (inicio > ahora || (ASES && admin)) && (this.rol === 'cliente' || admin);
+      this.querySelector('[data-abrir="cancelar"]').textContent = admin ? T('Cancelar reserva') : 'Solicitar cancelación';
+      if (ASES) this.pintarLugar(r, ahora, vivo);
       this.alternar('cancelar', cancelable);
       // Elección tras la cancelación del estudio.
       const pendiente = this.eleccionPendiente(r);
@@ -1040,6 +1155,7 @@ const filtros = [
       if (nombre === 'cancelar') this.prepararCancelar();
       else if (nombre === 'devolucion') this.prepararDevolucion();
       else if (nombre === 'inasistencia') this.prepararInasistencia();
+      else if (nombre === 'lugar') this.prepararLugar();
       else this.prepararExcepcion();
     }
 
@@ -1083,6 +1199,7 @@ const filtros = [
         return true;
       }
       if (accion === 'cancelar') return this.errorCancelar(error);
+      if (accion === 'lugar') return this.errorLugar(error);
       if (accion === 'devolucion' && error.estado === 409) {
         this.cambio('Ya se eligió qué hacer con esta reserva, quizá desde otra sesión.');
         return true;
@@ -1109,6 +1226,69 @@ const filtros = [
       return false;
     }
 
+    // --- Lugar o enlace (CA-09): su profesional o el Administrador, antes del fin ---
+
+    // El bloque del lateral, su aviso de "falta" (cita en menos de 48 h) y, para el profesional, a quién pedir la cancelación.
+    pintarLugar(r, ahora, vivo) {
+      const gestiona = this.rol === 'profesional' || this.admin;
+      const vigente = vivo && ['pre_reservada', 'confirmada'].includes(r.estado);
+      const abierta = vigente && Date.parse(r.fin) > ahora;
+      this.alternar('lugar', gestiona && abierta);
+      this.querySelector('[data-pide-admin]').hidden = !(this.rol === 'profesional' && vigente);
+      const virtual = r.modalidad === 'virtual';
+      const dato = virtual ? r.enlace : r.lugar;
+      this.querySelector('[data-lugar-dt]').textContent = virtual ? 'Enlace' : 'Lugar';
+      this.querySelector('[data-lugar-valor]').textContent = dato ?? '';
+      this.querySelector('[data-lugar-pendiente]').hidden = Boolean(dato);
+      this.querySelector('[data-abrir="lugar"]').textContent = `${dato ? 'Cambiar' : 'Registrar'} ${virtual ? 'enlace' : 'lugar'}`;
+      const falta = this.querySelector('[data-lugar-falta]');
+      falta.hidden = !(gestiona && abierta && !dato && Date.parse(r.inicio) - ahora < 48 * 36e5);
+      if (!falta.hidden) llenarAviso(falta.querySelector('.aviso'), `Falta confirmar ${virtual ? 'el enlace' : 'el lugar'}`, 'El cliente lo espera antes de la cita.');
+    }
+
+    prepararLugar() {
+      const r = this.reserva;
+      this.querySelectorAll('[data-panel="lugar"] .campo-control').forEach(quitarError);
+      this.querySelector('#lugar-lugar').value = r.lugar ?? '';
+      this.querySelector('#lugar-enlace').value = r.enlace ?? '';
+      this.querySelector(`#lugar-${r.modalidad === 'virtual' ? 'virtual' : 'presencial'}`).checked = true;
+      this.cambiarModalidad();
+      this.querySelector('[data-panel="lugar"] [data-consecuencia]').textContent = `Avisamos a ${persona(r.cliente)} y a ${nombreProf(r.profesional)} por correo, con el evento de calendario actualizado. Escribe solo lo que ya acordaron.`;
+    }
+
+    // El campo de la opción aparece justo después de su casilla; el foco se queda en la casilla.
+    cambiarModalidad() {
+      const modalidad = this.querySelector('input[name="modalidad"]:checked')?.value;
+      this.querySelectorAll('[data-panel="lugar"] [data-campos]').forEach((x) => (x.hidden = x.dataset.campos !== modalidad));
+    }
+
+    lugar() {
+      const r = this.reserva;
+      const modalidad = this.querySelector('input[name="modalidad"]:checked')?.value;
+      this.querySelectorAll('[data-panel="lugar"] [aria-invalid="true"]').forEach(quitarError);
+      const campo = this.querySelector(modalidad === 'virtual' ? '#lugar-enlace' : '#lugar-lugar');
+      const texto = modalidad ? campo.value.trim() : '';
+      const errores = [];
+      if (!modalidad) errores.push({ entrada: this.querySelector('#lugar-presencial'), mensaje: 'Elige si es presencial o virtual.', texto: 'Modalidad' });
+      else if (modalidad === 'presencial' && texto.length > 300) errores.push({ entrada: campo, mensaje: 'Escribe el lugar, hasta 300 caracteres.', texto: 'Lugar' });
+      else if (modalidad === 'virtual' && texto && !ENLACE_MEET.test(texto)) errores.push({ entrada: campo, mensaje: ENLACE_INVALIDO, texto: 'Enlace' });
+      if (!this.validar(errores)) return;
+      const cuerpo = { modalidad, [modalidad === 'virtual' ? 'enlace' : 'lugar']: texto || null };
+      this.enviar(this.querySelector('[data-panel="lugar"] [type="submit"]'), 'Guardando…', () => actualizarEncuentro(r.id, cuerpo), (nueva) => this.despues(nueva, 'Guardado', `Avisamos a ${persona(r.cliente)} y a ${nombreProf(r.profesional)} por correo con el evento actualizado.`));
+    }
+
+    errorLugar(error) {
+      if (error.estado === 409) {
+        this.cambio((estado) => `Esta asesoría ya no admite cambios de lugar o enlace: está ${estado} o ya terminó.`);
+        return true;
+      }
+      if (error.estado !== 422) return false;
+      const virtual = this.querySelector('input[name="modalidad"]:checked')?.value === 'virtual';
+      const entrada = this.querySelector(virtual ? '#lugar-enlace' : '#lugar-lugar') ?? this.querySelector('#lugar-presencial');
+      this.validar([error.codigo === 'enlace_invalido' ? { entrada: this.querySelector('#lugar-enlace'), mensaje: ENLACE_INVALIDO, texto: 'Enlace' } : { entrada, mensaje: virtual ? ENLACE_INVALIDO : 'Escribe el lugar, hasta 300 caracteres.', texto: virtual ? 'Enlace' : 'Lugar' }]);
+      return true;
+    }
+
     // --- Cancelar ---
 
     get admin() {
@@ -1133,6 +1313,8 @@ const filtros = [
         this.querySelectorAll('[data-campos]').forEach((x) => (x.hidden = true));
         aviso.textContent = '';
         this.querySelector('[data-condiciones]').closest('p').hidden = true;
+        // "El cliente, por otro canal" solo antes del inicio: después, solo el estudio.
+        this.querySelector('#cancelar-por-cliente').closest('.casilla').hidden = ASES && Date.parse(r.inicio) <= Date.now();
       } else {
         this.querySelector('[data-condiciones]').closest('p').hidden = false;
         this.pedirVista();
@@ -1216,7 +1398,8 @@ const filtros = [
       this.querySelector('[data-condiciones]').closest('p').hidden = por !== 'cliente';
       this.querySelector('[data-panel="cancelar"] [data-consecuencia]').textContent =
         por === 'estudio'
-          ? pagos ? `El horario se libera al momento. El cliente elegirá en la app entre reprogramar sin costo o la devolución íntegra de ${soles(r.pagado)}, que haces en un máximo de 7 días hábiles. Le avisamos por correo.` : 'El horario se libera al momento y avisamos al cliente por correo.'
+          ? ASES ? (pagos ? `El horario se libera al momento. El cliente elegirá en la app entre reprogramar sin costo con ${nombreProf(r.profesional)} o la devolución íntegra de ${soles(r.pagado)}, que haces en un máximo de 7 días hábiles. Si prefiere a otro profesional, agenda una asesoría nueva. Avisamos al cliente y a ${nombreProf(r.profesional)} por correo.` : `El horario se libera al momento. Avisamos al cliente y a ${nombreProf(r.profesional)} por correo.`)
+          : pagos ? `El horario se libera al momento. El cliente elegirá en la app entre reprogramar sin costo o la devolución íntegra de ${soles(r.pagado)}, que haces en un máximo de 7 días hábiles. Le avisamos por correo.` : 'El horario se libera al momento y avisamos al cliente por correo.'
           : 'Se aplica la misma política que si cancelara desde la app, con el nivel que corresponde a la fecha y hora de su mensaje. El horario se libera al momento y le avisamos por correo con el detalle.';
       this.secuencia++;
       this.querySelector('[data-panel-aviso]').replaceChildren();
@@ -1272,6 +1455,7 @@ const filtros = [
     cancelada(nueva, opcion) {
       const c = nueva.cancelacion;
       if (this.admin) {
+        if (ASES && opcion === 'estudio') return this.despues(nueva, 'Asesoría cancelada', `Avisamos al cliente${this.conPagos() ? ' para que elija' : ''} y a ${nombreProf(this.reserva.profesional)}.`);
         const aviso = opcion === 'cliente' ? [`Reserva cancelada a pedido del cliente (${c?.nivel ? `nivel ${c.nivel}` : 'sin pagos'}). Le avisamos con el detalle.`]
           : this.conPagos() ? ['Reserva cancelada', 'El horario quedó libre y avisamos al cliente para que elija entre reprogramar sin costo o la devolución íntegra.']
           : ['Reserva cancelada', 'El horario quedó libre y avisamos al cliente por correo.'];
@@ -1629,7 +1813,7 @@ const filtros = [
       const retenido = this.retenidoHoy();
       const d = this.reserva.politica?.dias_vigencia_credito;
       this.querySelector('[data-retenido-hoy]').textContent = soles(retenido);
-      this.querySelector('[data-panel="excepcion"] [data-consecuencia]').textContent = `Lo retenido (${soles(retenido)}) pasa a un crédito de caso excepcional que vence ${d ? `${d} días` : 'unos días'} después de hoy y admite devolución. Solo se puede hacer una vez por reserva y queda registrado quién y por qué. No se puede deshacer.`;
+      this.querySelector('[data-panel="excepcion"] [data-consecuencia]').textContent = ASES ? `Lo retenido (${soles(retenido)}) pasa a un crédito de caso excepcional que vence ${d ? `${d} días` : 'unos días'} después de hoy. Nació de una asesoría: no admite devolución en dinero (sí la parte que venía de un crédito de sala). Solo una vez por asesoría.` : `Lo retenido (${soles(retenido)}) pasa a un crédito de caso excepcional que vence ${d ? `${d} días` : 'unos días'} después de hoy y admite devolución. Solo se puede hacer una vez por reserva y queda registrado quién y por qué. No se puede deshacer.`;
     }
 
     excepcion() {

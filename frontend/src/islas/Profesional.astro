@@ -776,9 +776,13 @@ const ayudaImporte = { inputmode: 'decimal', autocomplete: 'off' };
     }
 
     avisoConAsesorias(error) {
-      const aviso = mostrarAviso(this, 'error', 'Este bloque tiene asesorías agendadas', this.admin ? 'Cancélalas o reprográmalas antes de retirarlo.' : 'Pide al Administrador que las cancele o reprograme antes de retirarlo.');
+      const aviso = mostrarAviso(this, 'error', 'Este bloque tiene asesorías agendadas', this.admin ? 'Cancélalas por el estudio antes de retirarlo: cada cliente elegirá reprogramar o la devolución.' : 'Pide al Administrador que las cancele o reprograme antes de retirarlo.');
       const lista = document.createElement('ul');
-      for (const a of error.detalles?.asesorias ?? []) lista.append(Object.assign(document.createElement('li'), { textContent: `${a.folio} · ${diaMes(fechaDe(a.inicio))}, ${horaDe(a.inicio)}` }));
+      for (const a of error.detalles?.asesorias ?? []) {
+        const li = document.createElement('li');
+        li.append(Object.assign(document.createElement('a'), { textContent: `${a.folio} · ${diaMes(fechaDe(a.inicio))}, ${horaDe(a.inicio)}`, href: `/app/asesorias/detalle?id=${encodeURIComponent(a.id)}` }));
+        lista.append(li);
+      }
       if (lista.children.length) aviso.querySelector('.aviso-cuerpo').append(lista);
       enfocarAviso(aviso);
     }

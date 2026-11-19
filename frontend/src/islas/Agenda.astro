@@ -1,0 +1,320 @@
+---
+// <bugalu-agenda vista="agenda">: asesorias agendadas del profesional (las suyas) y del Administrador (todas). Spec RF-15-agenda.
+// PROXIMAS, POR CERRAR e HISTORIAL por mes; el Administrador filtra por profesional. La API filtra por rol (CA-16).
+import Panel from '../componentes/Panel.astro';
+import Boton from '../componentes/Boton.astro';
+import Campo from '../componentes/Campo.astro';
+import Tabla from '../componentes/Tabla.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+
+const principal = { codigo: 'E3', titulo: 'Asesorías' };
+---
+
+<EstilosGestion />
+
+<bugalu-agenda class="agenda" data-gestion vista="agenda">
+  <div data-avisos></div>
+  <div data-aviso-cerrar></div>
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+
+  <!-- Sin JS no sirven: nacen ocultos y la isla los muestra al cargar. -->
+  <div class="agenda-controles" data-controles hidden>
+    <nav class="agenda-filtros" aria-label="Filtrar asesorías" data-filtros></nav>
+    <form method="get" class="agenda-selector" data-selector hidden>
+      <Campo tipo="selector" nombre="profesional" etiqueta="Profesional" id="agenda-profesional" />
+      <Boton variante="secundario" tipo="submit">Filtrar</Boton>
+    </form>
+  </div>
+  <div class="gestion-periodo" data-mes hidden>
+    <p class="gestion-periodo-titulo" data-titulo-mes></p>
+    <nav class="gestion-periodo-enlaces" aria-label="Mes">
+      <EtiquetaTecnica texto="Mes anterior" href="#" />
+      <EtiquetaTecnica texto="Este mes" href="#" />
+      <EtiquetaTecnica texto="Mes siguiente" href="#" />
+    </nav>
+  </div>
+
+  <div data-salida><Panel {...principal} cargando /></div>
+  <EstadosIsla {principal} />
+
+  <template data-filtro="no"><EtiquetaTecnica variante="filtro" texto=" " href="#" /></template>
+  <template data-filtro="si"><EtiquetaTecnica variante="filtro" texto=" " href="#" aplicado /></template>
+  <template data-sello="exito"><EtiquetaTecnica variante="exito" texto=" " /></template>
+  <template data-sello="aviso"><EtiquetaTecnica variante="aviso" texto=" " /></template>
+  <template data-sello="alerta"><EtiquetaTecnica variante="alerta" texto=" " /></template>
+
+  <template data-estado="vacio">
+    <Panel codigo="E3" titulo="Asesorías">
+      <p class="gestion-vacio-titulo" data-vacio-titulo></p>
+      <p data-vacio-texto></p>
+      <div class="agenda-accion" data-vacio-accion hidden><Boton variante="secundario" href="#"> </Boton></div>
+    </Panel>
+  </template>
+  <template data-estado="datos">
+    <Panel codigo="E3" titulo="Asesorías">
+      <Tabla titulo="Asesorías" columnas={['Asesoría', 'Fecha', 'Cliente', 'Profesional', 'Estado', '']} />
+    </Panel>
+  </template>
+  <template data-fila>
+    <tr>
+      <th scope="row"><span class="agenda-folio" data-folio></span><span class="gestion-motivo" data-modalidad></span></th>
+      <td data-etiqueta="Fecha"><span data-fecha></span><span class="gestion-motivo" data-horario></span></td>
+      <td data-etiqueta="Cliente" data-cliente></td>
+      <td data-etiqueta="Profesional" data-profesional></td>
+      <td data-etiqueta="Estado"><span class="agenda-estados" data-estado-fila></span></td>
+      <td><Boton variante="secundario" href="#" data-accion>Ver asesoría<span class="visualmente-oculto" data-objeto></span></Boton></td>
+    </tr>
+  </template>
+</bugalu-agenda>
+
+<script>
+  // @ts-nocheck
+  import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { obtenerPerfil } from '../servicios/api.js';
+  import { listarAsesorias, listarProfesionales, nombreMostrado, ESTADOS_ASESORIA, MODALIDADES } from '../servicios/asesorias.js';
+  import { hoyLima, fechaDe, horaDe, diaMesAnio, sumarDias } from '../servicios/formatos.js';
+  import { mostrarAviso } from '../servicios/formulario.js';
+
+  const RUTA = '/app/asesorias/agenda';
+  const VISTAS = ['proximas', 'por_cerrar', 'historial'];
+  const NOMBRES = { proximas: 'Próximas', por_cerrar: 'Por cerrar', historial: 'Historial' };
+  const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const VIVAS = ['pre_reservada', 'confirmada'];
+  const CERRADAS = ['realizada', 'cancelada', 'no_asistio'];
+
+  const mesValido = (m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m ?? '');
+  const mesMas = (mes, n) => { const [a, m] = mes.split('-').map(Number); const t = a * 12 + (m - 1) + n; return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`; };
+  const mesTexto = (mes) => `${MESES[Number(mes.slice(5)) - 1]} ${mes.slice(0, 4)}`;
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  const persona = (p) => p?.nombre_artistico || p?.nombre || '—';
+
+  class BugaluAgenda extends IslaGestion {
+    textosEstado = { 'sin-permiso': ['Esta sección es para profesionales de asesoría y el Administrador.', ''] };
+    rol = null;
+    estadoUrl = { ver: 'proximas', mes: '', profesional: '' };
+
+    // Enlace de esta pantalla con la selección dada (los vacíos no viajan).
+    url({ ver, mes, profesional } = this.estadoUrl) {
+      const p = new URLSearchParams();
+      if (ver !== 'proximas') p.set('ver', ver);
+      if (ver === 'historial' && mes !== hoyLima().slice(0, 7)) p.set('mes', mes);
+      if (profesional) p.set('profesional', profesional);
+      return `${RUTA}${p.size ? `?${p}` : ''}`;
+    }
+
+    alEnviar() {
+      location.assign(this.url({ ...this.estadoUrl, profesional: this.querySelector('#agenda-profesional').value }));
+    }
+
+    sello(variante, texto) {
+      const nodo = this.querySelector(`template[data-sello="${variante}"]`).content.cloneNode(true);
+      nodo.querySelector('.etiqueta > span:last-child').textContent = texto;
+      return nodo;
+    }
+
+    // El encabezado de la página nace con el texto del profesional; el Administrador cambia ruta, índice, título y acción.
+    encabezadoAdmin() {
+      document.querySelector('.encabezado-indice').textContent = '[A15] ASESORÍAS / AGENDA';
+      document.querySelector('.encabezado-titulo').textContent = 'Asesorías agendadas';
+      document.querySelector('.encabezado-descripcion').textContent = 'Todas las citas de asesoría: lugar, cancelaciones y cierre.';
+      const ultimo = document.querySelector('.encabezado-ruta li:last-child');
+      if (ultimo && !document.querySelector('.encabezado-ruta [data-agendadas]')) {
+        ultimo.replaceChildren(Object.assign(document.createElement('a'), { href: '/app/asesorias/', textContent: 'Asesorías' }));
+        const actual = document.createElement('li');
+        actual.dataset.agendadas = '';
+        actual.append(Object.assign(document.createElement('span'), { textContent: 'Agendadas' }));
+        actual.firstChild.setAttribute('aria-current', 'page');
+        ultimo.after(actual);
+      }
+      const volver = document.querySelector('[data-admin]');
+      if (volver) volver.hidden = false;
+    }
+
+    consultar({ ver, mes, profesional }) {
+      const id = profesional ? { id_profesional: profesional } : {};
+      if (ver === 'por_cerrar') return listarAsesorias({ por_cerrar: true, ...id });
+      if (ver === 'proximas') return listarAsesorias({ desde: new Date().toISOString(), ...id }).then((l) => l.filter((a) => VIVAS.includes(a.estado)));
+      return listarAsesorias({ desde: `${mes}-01T00:00:00-05:00`, hasta: `${sumarDias(`${mesMas(mes, 1)}-01`, -1)}T23:59:59-05:00`, ...id }).then((l) => l.filter((a) => CERRADAS.includes(a.estado)));
+    }
+
+    async agenda() {
+      this.querySelector('[data-aviso-cerrar]').replaceChildren();
+      this.querySelector('[data-controles]').hidden = true;
+      this.querySelector('[data-mes]').hidden = true;
+      const yo = await obtenerPerfil();
+      this.rol = yo.rol;
+      if (!['profesional', 'administrador'].includes(yo.rol)) {
+        this.mostrar('sin-permiso');
+        return 'Sin permiso';
+      }
+      const admin = yo.rol === 'administrador';
+      if (admin) this.encabezadoAdmin();
+      const profesionales = admin ? await listarProfesionales({ anonimo: false }) : [];
+
+      // Parámetros de la URL: uno inválido cae en su valor por defecto y se avisa.
+      const p = new URLSearchParams(location.search);
+      let invalido = false;
+      const ver = p.get('ver') ?? 'proximas';
+      const mes = p.get('mes') ?? hoyLima().slice(0, 7);
+      const prof = admin ? p.get('profesional') ?? '' : '';
+      let sel = {
+        ver: VISTAS.includes(ver) ? ver : 'proximas',
+        mes: mesValido(mes) ? mes : hoyLima().slice(0, 7),
+        profesional: profesionales.some((x) => x.id === prof) ? prof : '',
+      };
+      if ((p.has('ver') && sel.ver !== ver) || (p.has('mes') && sel.ver === 'historial' && sel.mes !== mes) || (admin && p.has('profesional') && sel.profesional !== prof)) invalido = true;
+
+      // Un filtro inválido descarta todos: se muestran las próximas, como dice el aviso.
+      if (invalido) sel = { ver: 'proximas', mes: hoyLima().slice(0, 7), profesional: '' };
+      let lista;
+      try {
+        lista = await this.consultar(sel);
+      } catch (error) {
+        if (error.estado !== 422 || (sel.ver === 'proximas' && !sel.profesional)) throw error;
+        sel = { ver: 'proximas', mes: hoyLima().slice(0, 7), profesional: '' };
+        invalido = true;
+        lista = await this.consultar(sel);
+      }
+      this.estadoUrl = sel;
+      if (invalido) {
+        history.replaceState(null, '', this.url(sel));
+        mostrarAviso(this, 'informacion', 'El filtro del enlace no es válido. Te mostramos las próximas.');
+      }
+      const porCerrar = sel.ver === 'por_cerrar' ? lista : await this.consultar({ ...sel, ver: 'por_cerrar' }).catch(() => null);
+      this.controles(porCerrar?.length ?? null, profesionales, admin);
+      if (sel.ver !== 'por_cerrar' && porCerrar?.length) {
+        const n = porCerrar.length;
+        mostrarAviso(this, 'aviso', `${admin ? 'Hay' : 'Tienes'} ${plural(n, 'asesoría por cerrar', 'asesorías por cerrar')}`, 'Marca si se realizaron o si el cliente no asistió.', { destino: this.querySelector('[data-aviso-cerrar]'), enlace: { texto: 'Ver por cerrar', href: this.url({ ...sel, ver: 'por_cerrar' }) } });
+      }
+      return this.lista(lista, sel, admin, profesionales);
+    }
+
+    controles(n, profesionales, admin) {
+      const sel = this.estadoUrl;
+      const molde = (aplicado) => this.querySelector(`template[data-filtro="${aplicado ? 'si' : 'no'}"]`);
+      this.querySelector('[data-filtros]').replaceChildren(...VISTAS.map((ver) => {
+        const nodo = molde(ver === sel.ver).content.cloneNode(true);
+        nodo.querySelector('a').href = this.url({ ...sel, ver });
+        nodo.querySelector('.etiqueta > span:last-child').textContent = ver === 'por_cerrar' && n !== null ? `${NOMBRES[ver]} (${n})` : NOMBRES[ver];
+        return nodo;
+      }));
+      const formulario = this.querySelector('[data-selector]');
+      formulario.hidden = !admin;
+      if (admin) {
+        const select = this.querySelector('#agenda-profesional');
+        select.replaceChildren(new Option('Todos', ''), ...profesionales.map((x) => new Option(nombreMostrado(x), x.id)));
+        select.value = sel.profesional;
+      }
+      this.querySelector('[data-controles]').hidden = false;
+      const historial = sel.ver === 'historial';
+      this.querySelector('[data-mes]').hidden = !historial;
+      if (historial) {
+        this.querySelector('[data-titulo-mes]').textContent = mesTexto(sel.mes);
+        const [anterior, hoy, siguiente] = this.querySelectorAll('[data-mes] a');
+        anterior.href = this.url({ ...sel, mes: mesMas(sel.mes, -1) });
+        hoy.href = this.url({ ...sel, mes: hoyLima().slice(0, 7) });
+        siguiente.href = this.url({ ...sel, mes: mesMas(sel.mes, 1) });
+      }
+    }
+
+    vacio(sel, admin, profesionales) {
+      const periodo = { proximas: 'próximas', por_cerrar: 'por cerrar', historial: `en ${mesTexto(sel.mes)}` }[sel.ver];
+      const elegido = profesionales.find((x) => x.id === sel.profesional);
+      let titulo, texto = '', accion = null;
+      if (elegido) [titulo, accion] = [`${nombreMostrado(elegido)} no tiene asesorías ${periodo}.`, ['Ver todos', this.url({ ...sel, profesional: '' })]];
+      else if (sel.ver === 'por_cerrar') titulo = admin ? 'No hay asesorías por cerrar.' : 'No tienes asesorías por cerrar.';
+      else if (sel.ver === 'historial') [titulo, accion] = [`No hay asesorías en ${mesTexto(sel.mes)}.`, ['Mes anterior', this.url({ ...sel, mes: mesMas(sel.mes, -1) })]];
+      else if (admin) titulo = 'Aún no hay asesorías agendadas';
+      else [titulo, texto, accion] = ['Aún no tienes asesorías agendadas', 'Cuando un artista agende en tus horarios, la verás aquí.', ['Mis horarios', '/app/horarios/']];
+      this.mostrar('vacio');
+      this.querySelector('[data-vacio-titulo]').textContent = titulo;
+      const parrafo = this.querySelector('[data-vacio-texto]');
+      parrafo.hidden = !texto;
+      parrafo.textContent = texto;
+      const bloque = this.querySelector('[data-vacio-accion]');
+      bloque.hidden = !accion;
+      if (accion) Object.assign(bloque.querySelector('a'), { textContent: accion[0], href: accion[1] });
+      return titulo;
+    }
+
+    lista(filas, sel, admin, profesionales) {
+      if (!filas.length) return this.vacio(sel, admin, profesionales);
+      this.mostrar('datos');
+      const orden = sel.ver === 'historial' ? -1 : 1;
+      filas = [...filas].sort((a, b) => orden * (Date.parse(a.inicio) - Date.parse(b.inicio)));
+      const tabla = this.querySelector('[data-salida] .tabla');
+      const resumen = { proximas: 'próximas', por_cerrar: 'por cerrar', historial: `en ${mesTexto(sel.mes)}` }[sel.ver];
+      tabla.querySelector('caption').textContent = { proximas: 'Asesorías próximas', por_cerrar: 'Asesorías por cerrar', historial: `Asesorías de ${mesTexto(sel.mes)}` }[sel.ver];
+      if (!admin) tabla.querySelector('thead th:nth-child(4)').remove();
+      const molde = this.querySelector('template[data-fila]');
+      tabla.querySelector('tbody').replaceChildren(...filas.map((a) => {
+        const fila = molde.content.cloneNode(true).firstElementChild;
+        fila.querySelector('[data-folio]').textContent = a.folio;
+        fila.querySelector('[data-modalidad]').textContent = MODALIDADES[a.modalidad] ?? a.modalidad ?? '';
+        fila.querySelector('[data-fecha]').textContent = diaMesAnio(fechaDe(a.inicio));
+        fila.querySelector('[data-horario]').textContent = `${horaDe(a.inicio)}–${horaDe(a.fin)}`;
+        fila.querySelector('[data-cliente]').textContent = persona(a.cliente);
+        if (admin) fila.querySelector('[data-profesional]').textContent = persona(a.profesional);
+        else fila.querySelector('[data-profesional]').remove();
+        const [texto, variante] = ESTADOS_ASESORIA[a.estado] ?? [a.estado, 'neutra'];
+        fila.querySelector('[data-estado-fila]').append(this.sello(variante, texto), ...(a.por_cerrar ? [this.sello('aviso', 'Por cerrar')] : []));
+        const enlace = fila.querySelector('[data-accion]');
+        const cerrar = sel.ver === 'por_cerrar';
+        enlace.firstChild.textContent = cerrar ? 'Cerrar asesoría' : 'Ver asesoría';
+        enlace.href = `/app/asesorias/detalle?id=${encodeURIComponent(a.id)}${cerrar ? '&accion=cerrar' : ''}`;
+        fila.querySelector('[data-objeto]').textContent = ` ${a.folio}`;
+        return fila;
+      }));
+      return `${plural(filas.length, 'asesoría', 'asesorías')} ${filas.length === 1 && sel.ver === 'proximas' ? 'próxima' : resumen}`;
+    }
+  }
+
+  if (!customElements.get('bugalu-agenda')) customElements.define('bugalu-agenda', BugaluAgenda);
+</script>
+
+<style>
+  .agenda {
+    display: block;
+  }
+  .agenda :global([data-avisos]:not(:empty)),
+  .agenda :global([data-aviso-cerrar]:not(:empty)) {
+    margin-block-end: var(--espacio-4);
+  }
+  .agenda-controles:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    margin-block-end: var(--espacio-4);
+  }
+  .agenda-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+  }
+  .agenda-selector {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--espacio-3);
+  }
+  .agenda-selector :global(.campo) {
+    flex: 1 1 var(--medida-columna-lateral);
+    max-inline-size: var(--medida-columna-lateral);
+  }
+  .agenda-accion {
+    margin-block-start: var(--espacio-3);
+  }
+  .agenda-folio {
+    display: block;
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-weight: var(--fuente-peso-medio);
+  }
+  .agenda-estados {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+  }
+</style>

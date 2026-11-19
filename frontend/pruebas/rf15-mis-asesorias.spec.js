@@ -53,7 +53,7 @@ for (const t of tamanos) {
     await detalle(page, asesoria());
     await expect(page.getByRole('heading', { level: 1 })).toContainText('A-2026-00001');
     await expect(barra(page)).toContainText('Paga antes del');
-    await expect(page.getByText('Virtual (Google Meet)')).toBeVisible();
+    await expect(page.locator('[data-campo="modalidad"]')).toHaveText('Virtual (Google Meet)');
     await expect(page.getByText(/por confirmar/i).first()).toBeVisible();
     await expect(page.getByText('Ana Beat y el estudio te confirmarán el enlace antes de la cita.')).toBeVisible();
     await expect(page.getByRole('table', { name: 'Desglose del precio' })).toContainText('Asesoría de 1 h con Ana Beat');

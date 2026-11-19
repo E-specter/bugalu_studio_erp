@@ -558,7 +558,8 @@ const opcionesRol = (cliente: boolean) => [
           : error.codigo === 'cliente_con_operaciones' ? [`${this.nombrePersona} tiene reservas, créditos, pagos o devoluciones vivos`, 'Espera a que terminen o resuélvelos antes de asignarle el rol de profesional.']
           : error.estado === 422 ? [error.mensaje, undefined]
           : mensajeError(error);
-        enfocarAviso(mostrarAviso(this, 'error', titulo, texto));
+        const verAsesorias = error.codigo === 'profesional_con_asesorias' ? { enlace: { texto: 'Ver sus asesorías', href: `/app/asesorias/agenda?profesional=${encodeURIComponent(this.registro)}` } } : undefined;
+        enfocarAviso(mostrarAviso(this, 'error', titulo, texto, verAsesorias));
       }
     }
   }
