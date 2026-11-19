@@ -11,13 +11,16 @@ import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
 import CargaArchivos from './CargaArchivos.astro';
 import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLegal.astro';
 
+interface Props {
+  tipo?: 'asesoria'; // RF-15 B: la cuota es de una asesoria (GET /asesorias/{id}); sin el, de sala
+}
 const principal = { titulo: 'Registrar pago' };
 const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
 ---
 
 <EstilosGestion />
 
-<bugalu-pago class="pago" data-gestion vista="pagar">
+<bugalu-pago class="pago" data-gestion vista="pagar" tipo={Astro.props.tipo}>
   <div data-avisos></div>
   <p class="visualmente-oculto" role="status" data-anuncio></p>
   <div data-salida><Panel {...principal} cargando /></div>
@@ -112,6 +115,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
 <script>
   // @ts-nocheck
   import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { obtenerAsesoria, textoCuotaAsesoria } from '../servicios/asesorias.js';
   import { obtenerReserva, absoluta, faltan, textoCuota, ultimoRechazo } from '../servicios/reservas.js';
   import { registrarPago, obtenerInstrucciones, obtenerContacto } from '../servicios/pagos.js';
   import { listarCreditos, usarCredito, disponible } from '../servicios/creditos.js';
@@ -148,6 +152,14 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
     cuota = null;
     lento = 0;
 
+    get asesoria() {
+      return this.getAttribute('tipo') === 'asesoria';
+    }
+    // Asesoria: "reserva" pasa a "asesoría" en lo que dice la pantalla (el resto de la API es el mismo).
+    dicen(texto) {
+      return this.asesoria ? texto.replace('Volver a la reserva', 'Volver a la asesoría').replace('Volver a mis reservas', 'Volver a mis asesorías').replace('reserva', 'asesoría') : texto;
+    }
+
     iniciar() {
       this.addEventListener('change', (e) => {
         if (e.target.matches('input[name="metodo"]')) this.datosMetodo();
@@ -177,8 +189,21 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
     mostrar(estado) {
       super.mostrar(estado);
       const aviso = this.querySelector('[data-salida] .aviso');
+      if (this.asesoria) {
+        this.querySelectorAll('[data-salida] .aviso-accion, [data-salida] [data-volver]').forEach((a) => {
+          if (a.firstChild) a.firstChild.textContent = this.dicen(a.firstChild.textContent);
+          if (a.getAttribute('href') === '/app/reservas/') a.href = '/app/asesorias/mias';
+        });
+        if (estado === 'no-encontrada') aviso.querySelector('.aviso-titulo').textContent = 'No encontramos esta cuota en tu asesoría.';
+        if (estado === 'sin-permiso') {
+          this.querySelector('[data-salida] .panel-titulo').textContent = '[403] Sin permiso';
+          llenarAviso(aviso, 'Las cuentas de profesional no registran pagos.');
+          Object.assign(aviso.querySelector('.aviso-accion'), { textContent: 'Volver al inicio', href: '/app/' });
+          return;
+        }
+      }
       if (estado === 'no-autenticado') {
-        llenarAviso(aviso, 'Tu sesión no es válida', 'Inicia sesión para ver tus reservas.');
+        llenarAviso(aviso, 'Tu sesión no es válida', this.asesoria ? 'Inicia sesión para ver tus asesorías.' : 'Inicia sesión para ver tus reservas.');
         const enlace = aviso.querySelector('.aviso-accion');
         enlace.textContent = 'Ir al acceso';
         enlace.href = `/acceso?${new URLSearchParams({ volver: location.pathname + location.search })}`;
@@ -201,7 +226,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
       let r, instrucciones;
       try {
         // Los creditos son un extra: sin ellos la pantalla sigue igual.
-        [r, instrucciones, this.creditos] = await Promise.all([obtenerReserva(id), obtenerInstrucciones(), listarCreditos().then((l) => (Array.isArray(l) ? l : []), () => [])]);
+        [r, instrucciones, this.creditos] = await Promise.all([(this.asesoria ? obtenerAsesoria : obtenerReserva)(id), obtenerInstrucciones(), listarCreditos().then((l) => (Array.isArray(l) ? l : []), () => [])]);
       } catch (error) {
         if (error.estado !== 404) throw error;
         return this.mostrar('no-encontrada');
@@ -230,8 +255,8 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
     noPagable(r, c, codigo) {
       if (c.estado === 'pagada' || codigo === 'cuota_pagada') return MSG.pagada;
       if (c.estado === 'en_validacion' || codigo === 'pago_en_validacion') return MSG.validacion;
-      if (r.estado === 'cancelada') return MSG.cancelada;
-      if (!c.pagable) return c.hito === 'al_terminar' ? MSG.resto : MSG.generica;
+      if (r.estado === 'cancelada') return this.dicen(MSG.cancelada);
+      if (!c.pagable) return c.hito === 'al_terminar' && !this.asesoria ? MSG.resto : MSG.generica;
       return codigo ? MSG.generica : null;
     }
 
@@ -258,7 +283,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
     }
 
     urlReserva() {
-      return `/app/reservas/detalle?id=${encodeURIComponent(this.reserva.id)}`;
+      return `/app/${this.asesoria ? 'asesorias' : 'reservas'}/detalle?id=${encodeURIComponent(this.reserva.id)}`;
     }
 
     // Ruta: Inicio / Reservas / {folio} / Pagar.
@@ -269,12 +294,18 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
 
     pintar(r, c, activos) {
       const campo = (nombre, valor) => (this.querySelector(`[data-campo="${nombre}"]`).textContent = valor);
+      const total = r.precio?.total ?? r.total;
       campo('folio', r.folio);
-      campo('servicio', typeof r.servicio === 'object' ? r.servicio.nombre : r.servicio);
+      if (this.asesoria) {
+        const prof = r.profesional ?? {};
+        this.querySelector('[data-campo="folio"]').previousElementSibling.textContent = 'Asesoría';
+        this.querySelector('[data-campo="servicio"]').previousElementSibling.textContent = 'Profesional';
+        campo('servicio', prof.nombre_artistico || prof.nombre || '—');
+      } else campo('servicio', typeof r.servicio === 'object' ? r.servicio.nombre : r.servicio);
       campo('fecha', `${diaMesAnio(fechaDe(r.inicio))}, ${horaDe(r.inicio)}–${horaDe(r.fin)}`);
-      campo('cuota', textoCuota(c, r.precio?.total));
+      campo('cuota', this.asesoria ? textoCuotaAsesoria(c, total) : textoCuota(c, total));
       campo('importe', soles(c.monto));
-      const igv = r.precio?.impuesto?.porcentaje ?? r.parametros_aplicados?.porcentaje_igv;
+      const igv = r.precio?.impuesto?.porcentaje ?? r.parametros_aplicados?.porcentaje_igv ?? r.politica?.porcentaje_igv;
       const nota = this.querySelector('[data-igv]');
       nota.hidden = igv === undefined;
       if (igv !== undefined) nota.textContent = `Incluye IGV (${porcentaje(igv)}).`;
@@ -335,7 +366,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
       const c = (r.cuotas ?? []).find((x) => x.id === this.cuota.id);
       if (!c || c.estado === 'pagada' || centimos(c.pagado) >= centimos(c.monto)) {
         const confirma = this.reserva.estado === 'pre_reservada' && r.estado === 'confirmada';
-        return location.assign(`${this.urlReserva()}&aviso=${confirma ? 'pagado-con-credito-confirmada' : 'pagado-con-credito'}`);
+        return location.assign(`${this.urlReserva()}&aviso=${confirma && !this.asesoria ? 'pagado-con-credito-confirmada' : 'pagado-con-credito'}`);
       }
       await this.cargar();
       enfocarAviso(mostrarAviso(this, 'exito', `Aplicaste ${soles(importe)} de crédito`, `Paga los ${soles(decimal(centimos(c.monto) - centimos(c.pagado)))} que faltan con tu comprobante.`));
@@ -525,7 +556,7 @@ const AYUDA_MONTO = 'El que pagaste de verdad, con céntimos (225,00).';
     // 409: se vuelve a leer la reserva para decir por que ya no se puede pagar.
     async yaNoPagable(codigo) {
       try {
-        const r = await obtenerReserva(this.reserva.id);
+        const r = await (this.asesoria ? obtenerAsesoria : obtenerReserva)(this.reserva.id);
         this.reserva = r;
         this.cuota = (r.cuotas ?? []).find((x) => x.id === this.cuota.id) ?? this.cuota;
       } catch {}

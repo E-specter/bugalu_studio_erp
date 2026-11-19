@@ -156,9 +156,9 @@ for (const t of tamanos) {
     const tabla = page.getByRole('table', { name: 'Precio de una asesoría con Ana Beat' });
     await expect(tabla.getByRole('columnheader', { name: 'INCLUYE IGV (18 %)' })).toBeAttached();
     await expect(tabla).toContainText('S/ 140,00');
-    const agendar = page.getByRole('button', { name: 'Agendar asesoría' });
-    await expect(agendar).toHaveAttribute('aria-disabled', 'true');
-    await expect(agendar).toHaveAccessibleDescription('Disponible pronto: muy pronto podrás agendar en línea desde aquí.');
+    const agendar = page.getByRole('link', { name: 'Agendar asesoría' });
+    await expect(agendar).toHaveAttribute('href', '/asesorias/agendar/?profesional=p1'); // RF-15 B: ya agenda
+    await expect(page.getByText('Disponible pronto')).toHaveCount(0);
     await expect(dice(page, 'SEMANA DEL 16 AL 22 NOV 2026').first()).toBeVisible();
     expect(vistasDisp[0].url.searchParams.get('desde')).toBe('2026-11-16T00:00:00-05:00');
     await expect(dice(page, 'Horario de Lima')).toBeVisible();
@@ -231,9 +231,7 @@ test('perfil: el calendario de asesoria teclado: sin paradas en la cuadricula', 
   await page.keyboard.press('Tab'); // redes (enlace externo)
   await expect(page.getByRole('link', { name: /Spotify/ })).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(page.getByRole('button', { name: 'Agendar asesoría' })).toBeFocused();
-  await page.getByRole('button', { name: 'Agendar asesoría' }).click({ force: true }); // no hace nada
-  await expect(page).toHaveURL(/profesional\/\?id=p1/);
+  await expect(page.getByRole('link', { name: 'Agendar asesoría' })).toBeFocused();
 });
 
 // ---------- Ficha del profesional ----------
@@ -259,7 +257,7 @@ for (const t of tamanos) {
     await expect(page.getByRole('link', { name: 'Ver mi perfil público' })).toBeHidden();
     await expect(page.getByRole('link', { name: 'Ficha' }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Horarios' }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Asesorías' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Asesorías' })).toHaveAttribute('href', '/app/asesorias/agenda'); // RF-15 B: destino propio del profesional
     await expect(page.locator('[aria-busy]')).toHaveCount(0);
     await sinViolaciones(page);
     expect(consola).toEqual([]);
@@ -843,7 +841,8 @@ test('navegacion: cada rol ve sus destinos de asesorias', async ({ page }) => {
   const tactil = p.locator('.app-nav-tactil');
   await expect(tactil.getByRole('link', { name: 'Ficha' })).toBeVisible();
   await expect(tactil.getByRole('link', { name: 'Horarios' })).toBeVisible();
-  await expect(tactil.getByRole('link', { name: 'Asesorías' })).toBeHidden();
+  await expect(tactil.getByRole('link', { name: 'Asesorías' })).toBeVisible(); // el suyo: agenda de asesorías del profesional
+  await expect(tactil.getByRole('link', { name: 'Asesorías' })).toHaveAttribute('href', '/app/asesorias/agenda');
 });
 
 test('catalogo: avatar, tarjeta de profesional y foto de perfil', async ({ page }) => {

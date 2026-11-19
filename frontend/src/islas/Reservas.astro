@@ -8,30 +8,34 @@ import Campo from '../componentes/Campo.astro';
 import Casilla from '../componentes/Casilla.astro';
 import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
 import IndicadorEstado from '../componentes/IndicadorEstado.astro';
+import Icono from '../componentes/internos/Icono.astro';
 import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
 import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
 import Calendario from './Calendario.astro';
 
 interface Props {
   vista: 'lista' | 'detalle' | 'reprogramar';
+  tipo?: 'asesoria'; // RF-15 B: la misma pantalla con la asesoria como objeto (GET /asesorias/...; la politica de RF-18 usa las rutas de /reservas/{id})
 }
-const { vista } = Astro.props;
+const { vista, tipo } = Astro.props;
+const asesoria = tipo === 'asesoria';
 // Panel de la vista mientras carga o falla (spec RF-04-mis-reservas).
-const principal = vista === 'lista' ? { titulo: 'Reservas' } : vista === 'reprogramar' ? { codigo: 'R1', titulo: 'Elige el nuevo horario' } : { codigo: 'D1', titulo: 'Reserva' };
+const principal = vista === 'lista' ? { titulo: asesoria ? 'Asesorías' : 'Reservas' } : vista === 'reprogramar' ? { codigo: 'R1', titulo: 'Elige el nuevo horario' } : { codigo: 'D1', titulo: asesoria ? 'Asesoría' : 'Reserva' };
+const base = asesoria ? '/app/asesorias/mias' : '/app/reservas/';
 const filtros = [
-  { clave: 'proximas', texto: 'Próximas', href: '/app/reservas/' },
-  { clave: 'historial', texto: 'Historial', href: '/app/reservas/?ver=historial' },
+  { clave: 'proximas', texto: 'Próximas', href: base },
+  { clave: 'historial', texto: 'Historial', href: `${base}?ver=historial` },
 ];
 ---
 
 <EstilosGestion />
 
 <!-- Un bloque por estado (estados-sistema): la isla clona el que toca. Sin JS, el noscript oculta la carga y avisa. -->
-<bugalu-reservas class="reservas" data-gestion vista={vista}>
+<bugalu-reservas class="reservas" data-gestion vista={vista} tipo={tipo}>
   <div data-avisos></div>
   <!-- Región viva estable: anuncia la carga y los umbrales del plazo, nunca cada minuto. -->
   <p class="visualmente-oculto" role="status" data-anuncio></p>
-  {vista === 'lista' && <nav class="reservas-filtros" aria-label="Filtrar reservas" data-filtros hidden></nav>}
+  {vista === 'lista' && <nav class="reservas-filtros" aria-label={asesoria ? 'Filtrar asesorías' : 'Filtrar reservas'} data-filtros hidden></nav>}
   <EstadosIsla principal={principal} />
 
   {vista === 'lista' && (
@@ -41,36 +45,56 @@ const filtros = [
         <template data-filtro={f.clave} data-aplicado="si"><EtiquetaTecnica variante="filtro" texto={f.texto} href={f.href} aplicado /></template>,
       ])}
       <template data-estado="vacio">
-        <Panel titulo="Reservas">
-          <p class="gestion-vacio-titulo">Aún no tienes reservas</p>
-          <p>Elige un horario libre y reserva la sala en unos pasos.</p>
-          <div class="reservas-accion"><Boton href="/reservar/">Reservar sala</Boton></div>
-        </Panel>
+        {asesoria ? (
+          <Panel titulo="Asesorías">
+            <p class="gestion-vacio-titulo">Aún no tienes asesorías</p>
+            <p>Elige un profesional y agenda una orientación para tu proyecto.</p>
+            <div class="reservas-accion"><Boton href="/asesorias/">Ver profesionales</Boton></div>
+          </Panel>
+        ) : (
+          <Panel titulo="Reservas">
+            <p class="gestion-vacio-titulo">Aún no tienes reservas</p>
+            <p>Elige un horario libre y reserva la sala en unos pasos.</p>
+            <div class="reservas-accion"><Boton href="/reservar/">Reservar sala</Boton></div>
+          </Panel>
+        )}
       </template>
       <template data-estado="vacio-filtro">
-        <Panel titulo="Reservas">
+        <Panel titulo={asesoria ? 'Asesorías' : 'Reservas'}>
           <p class="gestion-vacio-titulo" data-vacio></p>
           <div class="reservas-accion"><Boton variante="secundario" href="#" data-otro></Boton></div>
         </Panel>
       </template>
       <template data-estado="datos">
-        <Panel titulo="Reservas">
+        <Panel titulo={asesoria ? 'Asesorías' : 'Reservas'}>
           <p class="reservas-total" data-total></p>
-          <Tabla titulo="Reservas" columnas={['Reserva', 'Fecha', 'Estado', 'Total', 'Pago', '']} numericas={[3]} />
+          {asesoria
+            ? <Tabla titulo="Asesorías" columnas={['Asesoría', 'Fecha', 'Modalidad', 'Estado', '']} />
+            : <Tabla titulo="Reservas" columnas={['Reserva', 'Fecha', 'Estado', 'Total', 'Pago', '']} numericas={[3]} />}
         </Panel>
       </template>
       <template data-fila>
-        <tr>
-          <th scope="row"><span class="reservas-folio" data-folio></span><span class="gestion-motivo" data-servicio></span></th>
-          <td data-etiqueta="Fecha"><span data-fecha></span><span class="gestion-motivo" data-horario></span></td>
-          <td data-etiqueta="Estado"><EtiquetaTecnica texto="Estado" /><span class="gestion-motivo" data-motivo hidden></span></td>
-          <td data-etiqueta="Total" class="tabla-num" data-total-fila></td>
-          <td data-etiqueta="Pago">
-            <span data-limite>—</span>
-            <span class="gestion-motivo" data-plazo hidden></span>
-          </td>
-          <td><Boton variante="secundario" href="#" data-accion>Ver reserva<span class="visualmente-oculto" data-objeto></span></Boton></td>
-        </tr>
+        {asesoria ? (
+          <tr>
+            <th scope="row"><span class="reservas-folio" data-folio></span><span class="gestion-motivo" data-servicio></span></th>
+            <td data-etiqueta="Fecha"><span data-fecha></span><span class="gestion-motivo" data-horario></span></td>
+            <td data-etiqueta="Modalidad"><span data-modalidad></span><span data-por-confirmar hidden><EtiquetaTecnica texto="Por confirmar" variante="aviso" /></span></td>
+            <td data-etiqueta="Estado"><EtiquetaTecnica texto="Estado" /><span class="gestion-motivo" data-motivo hidden></span><span class="gestion-motivo" data-plazo hidden></span></td>
+            <td><Boton variante="secundario" href="#" data-accion>Ver asesoría<span class="visualmente-oculto" data-objeto></span></Boton></td>
+          </tr>
+        ) : (
+          <tr>
+            <th scope="row"><span class="reservas-folio" data-folio></span><span class="gestion-motivo" data-servicio></span></th>
+            <td data-etiqueta="Fecha"><span data-fecha></span><span class="gestion-motivo" data-horario></span></td>
+            <td data-etiqueta="Estado"><EtiquetaTecnica texto="Estado" /><span class="gestion-motivo" data-motivo hidden></span></td>
+            <td data-etiqueta="Total" class="tabla-num" data-total-fila></td>
+            <td data-etiqueta="Pago">
+              <span data-limite>—</span>
+              <span class="gestion-motivo" data-plazo hidden></span>
+            </td>
+            <td><Boton variante="secundario" href="#" data-accion>Ver reserva<span class="visualmente-oculto" data-objeto></span></Boton></td>
+          </tr>
+        )}
       </template>
     </>
   )}
@@ -78,12 +102,12 @@ const filtros = [
   {vista === 'reprogramar' && (
     <>
       <template data-estado="no-encontrada">
-        <Panel codigo="[404]" titulo="Reserva no encontrada"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a mis reservas', href: '/app/reservas/' }} /></Panel>
+        <Panel codigo="[404]" titulo={asesoria ? 'Asesoría no encontrada' : 'Reserva no encontrada'}><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: asesoria ? 'Volver a mis asesorías' : 'Volver a mis reservas', href: base }} /></Panel>
       </template>
       <template data-estado="no-permitida">
-        <Panel codigo="R1" titulo="No se puede reprogramar"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a la reserva', href: '/app/reservas/' }} /></Panel>
+        <Panel codigo="R1" titulo="No se puede reprogramar"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: asesoria ? 'Volver a la asesoría' : 'Volver a la reserva', href: base }} /></Panel>
       </template>
-      <template data-plantilla="calendario"><Calendario modo="reserva" /></template>
+      <template data-plantilla="calendario"><Calendario modo={asesoria ? 'asesoria' : 'reserva'} /></template>
       <template data-estado="datos">
         <div class="gestion-rejilla">
           <div class="gestion-principal">
@@ -101,6 +125,7 @@ const filtros = [
                   <div class="reservas-r2" data-r2-datos hidden>
                     <p class="reservas-nivel" data-nuevo-horario></p>
                     <p class="reservas-nota" data-nivel-texto></p>
+                    <p class="reservas-nota" data-nota-pago hidden></p>
                     <div data-tabla="precio"><Tabla titulo="Nuevo precio" columnas={['Concepto', 'Cantidad', 'Importe']} variante="partidas" numericas={[1, 2]} /></div>
                     <div data-tabla="saldo"><Tabla titulo="Saldo" columnas={['Concepto', 'Importe']} variante="partidas" numericas={[1]} /></div>
                     <p class="reservas-nota" data-restantes hidden></p>
@@ -111,12 +136,14 @@ const filtros = [
             </div>
           </div>
           <div class="gestion-lateral">
-            <Panel titulo="Reserva actual" variante="lateral" id="actual">
+            <Panel titulo={asesoria ? 'Asesoría actual' : 'Reserva actual'} variante="lateral" id="actual">
               <dl class="gestion-datos">
                 <div><dt>Folio</dt><dd data-actual="folio"></dd></div>
                 <div><dt>Fecha y horario</dt><dd data-actual="horario"></dd></div>
-                <div><dt>Servicio</dt><dd data-actual="servicio"></dd></div>
+                <div><dt>{asesoria ? 'Profesional' : 'Servicio'}</dt><dd data-actual="servicio"></dd></div>
                 <div data-fila="especialistas"><dt>Especialistas</dt><dd data-actual="especialistas"></dd></div>
+                {asesoria && <div><dt>Duración</dt><dd data-actual="duracion"></dd></div>}
+                {asesoria && <div><dt>Modalidad</dt><dd data-actual="modalidad"></dd></div>}
                 <div><dt>Total</dt><dd data-actual="total"></dd></div>
                 <div><dt>Pagado</dt><dd data-actual="pagado"></dd></div>
               </dl>
@@ -126,7 +153,7 @@ const filtros = [
         <form novalidate class="reservas-pie" data-accion="reprogramar">
           <p class="gestion-ayuda" id="reservas-ayuda-confirmar" data-ayuda-confirmar>Elige un horario para ver cómo queda.</p>
           <BarraAcciones variante="formulario">
-            <Boton slot="secundaria" variante="secundario" href="#" data-volver-reprog>Volver a la reserva</Boton>
+            <Boton slot="secundaria" variante="secundario" href="#" data-volver-reprog>{asesoria ? 'Volver a la asesoría' : 'Volver a la reserva'}</Boton>
             <Boton slot="principal" tipo="submit" data-envio data-confirmar-reprog aria-disabled="true" aria-describedby="reservas-ayuda-confirmar">Confirmar reprogramación</Boton>
           </BarraAcciones>
         </form>
@@ -137,7 +164,7 @@ const filtros = [
   {vista === 'detalle' && (
     <>
       <template data-estado="no-encontrada">
-        <Panel codigo="[404]" titulo="Reserva no encontrada"><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a mis reservas', href: '/app/reservas/' }} /></Panel>
+        <Panel codigo="[404]" titulo={asesoria ? 'Asesoría no encontrada' : 'Reserva no encontrada'}><Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: asesoria ? 'Volver a mis asesorías' : 'Volver a mis reservas', href: base }} /></Panel>
       </template>
       <template data-estado="datos">
         <div class="gestion-rejilla">
@@ -149,6 +176,12 @@ const filtros = [
               <div data-menos-hora hidden><Aviso variante="aviso" titulo=" " texto=" " /></div>
             </div>
             <div data-pagar hidden><Boton href="#">Registrar pago</Boton></div>
+            <!-- Asesoría virtual con enlace: entrar a la videollamada (pestaña nueva); si falta el lugar o el enlace, quién lo confirma. -->
+            <div data-videollamada hidden><Boton href="#" target="_blank" rel="noopener noreferrer">Entrar a la videollamada<span class="visualmente-oculto"> (se abre en otra pestaña)</span><Icono nombre="external-link" /></Boton></div>
+            <div class="reservas-estado" data-lugar-nota hidden>
+              <p class="reservas-nota" data-lugar-texto></p>
+              <p class="reservas-nota reservas-texto" data-contacto-estudio hidden></p>
+            </div>
 
             <!-- Reprogramar (solo el dueño de una confirmada): botón con su ayuda, o la explicación de por qué no. -->
             <div class="reservas-estado" data-reprogramar hidden>
@@ -264,20 +297,23 @@ const filtros = [
             </div>
           </div>
           <div class="gestion-principal">
-            <Panel codigo="D1" titulo="Reserva">
+            <Panel codigo="D1" titulo={asesoria ? 'Asesoría' : 'Reserva'}>
               <dl class="gestion-datos">
                 <div><dt>Estado</dt><dd class="reservas-estados"><EtiquetaTecnica texto="Estado" /><span data-pago-validar hidden><EtiquetaTecnica texto="Pago por validar" variante="aviso" /></span></dd></div>
                 <div><dt>Fecha y horario</dt><dd data-campo="horario"></dd></div>
                 <div><dt>Duración</dt><dd data-campo="duracion"></dd></div>
-                <div><dt>Servicio</dt><dd data-campo="servicio"></dd></div>
+                <div data-fila="servicio"><dt>{asesoria ? 'Profesional' : 'Servicio'}</dt><dd data-campo="servicio"></dd></div>
                 <div data-fila="especialistas"><dt>Especialistas</dt><dd data-campo="especialistas"></dd></div>
-                <div><dt>Sala</dt><dd data-campo="sala"></dd></div>
+                <div data-fila="sala"><dt>Sala</dt><dd data-campo="sala"></dd></div>
+                <div data-fila="modalidad"><dt>Modalidad</dt><dd data-campo="modalidad"></dd></div>
+                <div data-fila="encuentro"><dt data-etiqueta-encuentro>Lugar</dt><dd class="reservas-texto" data-campo="encuentro"></dd></div>
                 <div data-fila="cliente"><dt>Cliente</dt><dd data-campo="cliente"></dd></div>
+                <div data-fila="condiciones"><dt>Condiciones</dt><dd data-campo="condiciones"></dd></div>
               </dl>
             </Panel>
             <Panel codigo="D2" titulo="Precio">
-              <div data-precio><Tabla titulo="Desglose del precio" columnas={['Concepto', 'Cantidad', 'Importe']} variante="partidas" numericas={[1, 2]} /></div>
-              <p class="gestion-ayuda reservas-nota-precio">Precio calculado al reservar.</p>
+              <div data-precio><Tabla titulo="Desglose del precio" columnas={asesoria ? ['Concepto', 'Importe'] : ['Concepto', 'Cantidad', 'Importe']} variante="partidas" numericas={asesoria ? [1] : [1, 2]} /></div>
+              <p class="gestion-ayuda reservas-nota-precio">{asesoria ? 'Precio fijo con IGV, calculado al agendar.' : 'Precio calculado al reservar.'}</p>
             </Panel>
             <Panel codigo="D3" titulo="Cuotas">
               <div data-cuotas><Tabla titulo="Cuotas" columnas={['Cuota', 'Importe', 'Estado']} variante="partidas" numericas={[1]} /></div>
@@ -299,7 +335,7 @@ const filtros = [
             </div>
             <div data-d5 hidden>
               <Panel codigo="D5" titulo="Reprogramaciones">
-                <Tabla titulo="Reprogramaciones" columnas={['Fecha del cambio', 'Antes', 'Ahora', 'Nivel', 'Penalización', 'Total']} numericas={[4, 5]} />
+                <Tabla titulo="Reprogramaciones" columnas={asesoria ? ['Fecha del cambio', 'Antes', 'Ahora', 'Nivel', 'Penalización'] : ['Fecha del cambio', 'Antes', 'Ahora', 'Nivel', 'Penalización', 'Total']} numericas={asesoria ? [4] : [4, 5]} />
               </Panel>
             </div>
           </div>
@@ -319,7 +355,7 @@ const filtros = [
           <td data-etiqueta="Ahora" data-ahora></td>
           <td data-etiqueta="Nivel" data-nivel-r></td>
           <td data-etiqueta="Penalización" class="tabla-num" data-penalizacion></td>
-          <td data-etiqueta="Total" class="tabla-num" data-total-r></td>
+          {!asesoria && <td data-etiqueta="Total" class="tabla-num" data-total-r></td>}
         </tr>
       </template>
     </>
@@ -331,11 +367,25 @@ const filtros = [
 <script>
   // @ts-nocheck
   import { IslaGestion, mensajeError } from '../servicios/isla-gestion.js';
+  import { listarMisAsesorias, obtenerAsesoria, ESTADOS_ASESORIA, MODALIDADES, textoCuotaAsesoria, duracionTexto, pintarPartidasAsesoria } from '../servicios/asesorias.js';
+  import { enlaceTexto } from '../servicios/aceptaciones.js';
+  import { obtenerContacto } from '../servicios/pagos.js';
   import { listarMisReservas, obtenerReserva, cancelarReserva, verCancelacion, marcarInasistencia, aplicarExcepcion, simularReprogramacion, reprogramarReserva, elegirDevolucionEstudio, absoluta, faltan, textoCuota, ultimoRechazo, tienePagos } from '../servicios/reservas.js';
-  import { nivelTexto, consecuenciaCancelar, avisoValidacion, filasVista, anticipacionTexto, entradaReprogramar, nivelReprogramacion, sinReprogramar, FRANJA } from '../servicios/cancelacion.js';
+  import { consecuenciaCancelarAsesoria, FRANJA_ASESORIA, nivelTexto, consecuenciaCancelar, avisoValidacion, filasVista, anticipacionTexto, entradaReprogramar, nivelReprogramacion, sinReprogramar, FRANJA } from '../servicios/cancelacion.js';
   import { obtenerPerfil } from '../servicios/api.js';
   import { fechaDe, horaDe, diaMes, diaMesAnio, nombreDia, soles, porcentaje, duracionReserva, instante, pintarPartidas } from '../servicios/formatos.js';
-  import { mostrarAviso, enfocarAviso, llenarAviso, quitarError, limpiarAvisos } from '../servicios/formulario.js';
+  import { mostrarAviso as mostrarAvisoBase, enfocarAviso, llenarAviso as llenarAvisoBase, quitarError, limpiarAvisos } from '../servicios/formulario.js';
+
+  // RF-15: la misma pantalla sirve a la asesoria; "reserva" pasa a "asesoria" en los textos de los avisos.
+  let ASES = false;
+  const T = (t) => (ASES && typeof t === 'string' ? t.replace(/\b([Rr])eservas\b/g, (_, c) => (c === 'R' ? 'Asesorías' : 'asesorías')).replace(/\b([Rr])eserva\b/g, (_, c) => (c === 'R' ? 'Asesoría' : 'asesoría')) : t);
+  const mostrarAviso = (isla, variante, titulo, texto, opciones) => mostrarAvisoBase(isla, variante, T(titulo), T(texto), opciones);
+  const llenarAviso = (aviso, titulo, texto) => llenarAvisoBase(aviso, T(titulo), T(texto));
+  const RUTA = () => (ASES ? { lista: '/app/asesorias/mias', detalle: '/app/asesorias/detalle', pagar: '/app/asesorias/pagar', reprogramar: '/app/asesorias/reprogramar' } : { lista: '/app/reservas/', detalle: '/app/reservas/detalle', pagar: '/app/reservas/pagar', reprogramar: '/app/reservas/reprogramar' });
+  const leer = (id) => (ASES ? obtenerAsesoria : obtenerReserva)(id);
+  const totalDe = (r) => r.precio?.total ?? r.total;
+  const nombreProf = (p) => p?.nombre_artistico || p?.nombre || 'Profesional';
+  const porValidar = (r) => r.pago_por_validar === true || (ASES && (r.cuotas ?? []).some((c) => c.estado === 'en_validacion'));
 
   // Prefijo de cerrarSesion(): la cifra del aviso de reprogramar no sobrevive a la sesión.
   const claveReprogramada = (id) => `bugalu:reserva-detalle-reprogramada:${id}`;
@@ -363,7 +413,7 @@ const filtros = [
   const anuncios = [(f) => `La reserva ${f} venció sin pago.`, (f) => `La reserva ${f} vence en menos de 15 min.`, (f) => `La reserva ${f} vence en menos de 1 h.`];
 
   // Con un pago por validar el plazo no corre (RN-18).
-  const resto = (r) => (r.estado === 'pre_reservada' && r.vence_pago && !r.pago_por_validar ? Date.parse(r.vence_pago) - Date.now() : null);
+  const resto = (r) => (r.estado === 'pre_reservada' && r.vence_pago && !porValidar(r) ? Date.parse(r.vence_pago) - Date.now() : null);
   // Una pre-reservada con el plazo vencido ya cuenta como caducada, aunque la API tarde en cancelarla.
   const caducada = (r) => resto(r) !== null && resto(r) <= 0;
   const estadoDe = (r) => (caducada(r) ? ['Caducada', 'alerta'] : ESTADOS[r.estado]);
@@ -422,6 +472,15 @@ const filtros = [
     vistaR = null; // VistaReprogramacion mostrada (la última que llegó)
     avisoNa = false; // el botón de inasistencia se pulsó antes de tiempo (o la API dijo que aún no)
 
+    connectedCallback() {
+      ASES = this.getAttribute('tipo') === 'asesoria';
+      if (ASES) {
+        Object.assign(ESTADOS, ESTADOS_ASESORIA);
+        this.noEncontrada = ['No encontramos esta asesoría.', ''];
+      }
+      super.connectedCallback();
+    }
+
     iniciar() {
       this.addEventListener('click', (e) => {
         const abrir = e.target.closest('[data-abrir]');
@@ -456,7 +515,7 @@ const filtros = [
       if (this.vista === 'detalle') {
         // Reprogramar vuelve con el crédito que pasó, si lo hubo; el aviso se arma al tener la reserva (lleva su nuevo horario).
         const url = new URL(location.href);
-        if (url.searchParams.get('aviso') === 'reserva-reprogramada') {
+        if (url.searchParams.get('aviso') === (ASES ? 'asesoria-reprogramada' : 'reserva-reprogramada')) {
           // La cifra sale de la vista previa que se confirmó (guardada por reserva), nunca de la URL.
           const id = url.searchParams.get('id') ?? '';
           let credito = null;
@@ -470,7 +529,12 @@ const filtros = [
           history.replaceState(null, '', url);
           return;
         }
-        this.avisosUrl = {
+        this.avisosUrl = ASES ? {
+          'asesoria-cancelada': ['Asesoría cancelada'],
+          'devolucion-elegida': ['Elegiste la devolución íntegra. Avisamos al estudio.'],
+          'pago-registrado': ['Pago registrado. Queda pendiente de validación', 'Te avisaremos por correo cuando el estudio lo revise.'],
+          'pagado-con-credito': ['Pagaste con tu crédito', 'Tu asesoría quedó confirmada.'],
+        } : {
           'devolucion-elegida': ['Elegiste la devolución íntegra. Avisamos al estudio.'],
           'pago-registrado': ['Pago registrado. Queda pendiente de validación', 'Te avisaremos por correo cuando el estudio lo revise.'],
           'pagado-con-credito': ['Pagaste la cuota con tu crédito.'],
@@ -490,11 +554,11 @@ const filtros = [
         enlace.textContent = 'Ir al acceso';
         enlace.href = `/acceso?${new URLSearchParams({ volver: location.pathname + location.search })}`;
       } else if (estado === 'sin-permiso') {
-        aviso.querySelector('.aviso-titulo').textContent = this.vista !== 'lista' ? 'Esta reserva no es tuya.' : 'No tienes permiso para ver estas reservas.';
+        aviso.querySelector('.aviso-titulo').textContent = ASES ? 'Esta sección es para artistas.' : this.vista !== 'lista' ? 'Esta reserva no es tuya.' : 'No tienes permiso para ver estas reservas.';
         aviso.querySelector('.aviso-texto')?.remove();
         const enlace = aviso.querySelector('.aviso-accion');
-        enlace.textContent = 'Volver a mis reservas';
-        enlace.href = '/app/reservas/';
+        enlace.textContent = ASES ? 'Volver al inicio' : 'Volver a mis reservas';
+        enlace.href = ASES ? '/app/' : '/app/reservas/';
       }
     }
 
@@ -502,14 +566,14 @@ const filtros = [
 
     async lista() {
       const ver = new URLSearchParams(location.search).get('ver') === 'historial' ? 'historial' : 'proximas';
-      const todas = (await listarMisReservas()).map(validar);
+      const todas = (await (ASES ? listarMisAsesorias : listarMisReservas)()).map(validar);
       const encabezado = document.querySelector('[data-accion-encabezado]');
       const nav = this.querySelector('[data-filtros]');
       if (!todas.length) {
         encabezado?.remove();
         nav.hidden = true;
         this.mostrar('vacio');
-        return 'Aún no tienes reservas';
+        return T('Aún no tienes reservas');
       }
       nav.replaceChildren(...filtrosOrden.map((clave) => this.querySelector(`template[data-filtro="${clave}"][data-aplicado="${clave === ver ? 'si' : 'no'}"]`).content.cloneNode(true)));
       nav.hidden = false;
@@ -517,10 +581,10 @@ const filtros = [
       if (!mias.length) {
         this.mostrar('vacio-filtro');
         const proximas = ver === 'proximas';
-        this.querySelector('[data-vacio]').textContent = proximas ? 'No tienes reservas próximas.' : 'Aún no hay reservas en tu historial.';
+        this.querySelector('[data-vacio]').textContent = T(proximas ? 'No tienes reservas próximas.' : 'Aún no hay reservas en tu historial.');
         const otro = this.querySelector('[data-otro]');
         otro.textContent = proximas ? 'Ver historial' : 'Ver próximas';
-        otro.href = proximas ? '/app/reservas/?ver=historial' : '/app/reservas/';
+        otro.href = proximas ? `${RUTA().lista}?ver=historial` : RUTA().lista;
         return this.querySelector('[data-vacio]').textContent;
       }
       this.mostrar('datos');
@@ -528,28 +592,35 @@ const filtros = [
       this.filas = mias.map((r) => {
         const raiz = plantilla.content.cloneNode(true).firstElementChild;
         raiz.querySelector('[data-folio]').textContent = r.folio;
-        raiz.querySelector('[data-servicio]').textContent = nombre(r.servicio);
+        raiz.querySelector('[data-servicio]').textContent = ASES ? nombreProf(r.profesional) : nombre(r.servicio);
         raiz.querySelector('[data-fecha]').textContent = fecha(r);
         raiz.querySelector('[data-horario]').textContent = `${horario(r)} · ${duracion(r)}`;
-        raiz.querySelector('[data-total-fila]').textContent = soles(r.precio.total);
+        if (ASES) raiz.querySelector('[data-modalidad]').textContent = MODALIDADES[r.modalidad] ?? r.modalidad ?? '';
+        else raiz.querySelector('[data-total-fila]').textContent = soles(r.precio.total);
         raiz.querySelector('[data-objeto]').textContent = ` ${r.folio}`;
-        raiz.querySelector('[data-accion]').href = `/app/reservas/detalle?id=${encodeURIComponent(r.id)}`;
+        raiz.querySelector('[data-accion]').href = `${RUTA().detalle}?id=${encodeURIComponent(r.id)}`;
         const fila = { raiz, r, umbral: umbral(resto(r) ?? Infinity) };
         this.pintarFila(fila);
         return fila;
       });
       this.querySelector('tbody').replaceChildren(...this.filas.map((f) => f.raiz));
       const n = mias.length;
-      this.querySelector('[data-total]').textContent = `${n} ${n === 1 ? 'reserva' : 'reservas'}`;
+      this.querySelector('[data-total]').textContent = T(`${n} ${n === 1 ? 'reserva' : 'reservas'}`);
       clearInterval(this.temporizador);
       this.temporizador = setInterval(() => this.tic(), MINUTO);
       const tipo = ver === 'proximas' ? ['próxima', 'próximas'] : ['en el historial', 'en el historial'];
-      return `${n} ${n === 1 ? 'reserva' : 'reservas'} ${tipo[n === 1 ? 0 : 1]}`;
+      return T(`${n} ${n === 1 ? 'reserva' : 'reservas'} ${tipo[n === 1 ? 0 : 1]}`);
     }
 
     pintarFila({ raiz, r }) {
-      poner(raiz.querySelector('.etiqueta'), estadoDe(r));
+      poner(raiz.querySelector('td[data-etiqueta="Estado"] .etiqueta'), estadoDe(r));
       oculto(raiz.querySelector('[data-motivo]'), motivo(r));
+      if (ASES) {
+        const ms = resto(r);
+        oculto(raiz.querySelector('[data-plazo]'), ms !== null && ms > 0 ? `Paga antes del ${absoluta(r.vence_pago)} · ${faltan(ms)}` : null);
+        raiz.querySelector('[data-por-confirmar]').hidden = !(r.encuentro_pendiente && ['pre_reservada', 'confirmada'].includes(r.estado));
+        return;
+      }
       const [texto, plazo] = pagoDe(r, resto(r));
       raiz.querySelector('[data-limite]').textContent = texto;
       oculto(raiz.querySelector('[data-plazo]'), plazo);
@@ -561,7 +632,7 @@ const filtros = [
       for (const f of this.filas) {
         this.pintarFila(f);
         const u = umbral(resto(f.r) ?? Infinity);
-        if (u < f.umbral) avisos.push(anuncios[u](f.r.folio));
+        if (u < f.umbral) avisos.push(T(anuncios[u](f.r.folio)));
         f.umbral = u;
       }
       if (avisos.length) this.querySelector('[data-anuncio]').textContent = avisos.join(' ');
@@ -574,7 +645,7 @@ const filtros = [
       const id = new URLSearchParams(location.search).get('id');
       let r, yo;
       try {
-        [r, yo] = await Promise.all([obtenerReserva(id), obtenerPerfil().catch(() => null)]);
+        [r, yo] = await Promise.all([leer(id), obtenerPerfil().catch(() => null)]);
       } catch (error) {
         if (error.estado !== 404) throw error;
         return this.mostrar('no-encontrada');
@@ -583,17 +654,17 @@ const filtros = [
       // La explicación de "Reprogramar" sale de la vista previa; si falla, se ofrece el botón y decide la API.
       // No bloquea el detalle: "Reprogramar" aparece cuando llega (undefined = pendiente) o falla (null).
       this.vistaCancel = null;
-      if (this.rol === 'cliente' && r.estado === 'confirmada' && Date.parse(r.inicio) > Date.now()) {
+      if (this.rol === 'cliente' && (r.estado === 'confirmada' || (ASES && r.estado === 'pre_reservada')) && Date.parse(r.inicio) > Date.now()) {
         this.vistaCancel = undefined;
         this.pedirVistaCancel(id);
       }
       this.abierto = null;
       this.mostrar('datos');
       this.pintar(validar(r));
-      this.encabezado(`${nombre(r.servicio)} · ${fecha(r)}, ${horario(r)}`, r.folio);
+      this.encabezado(ASES ? `Con ${nombreProf(r.profesional)} · ${fecha(r)}, ${horario(r)}` : `${nombre(r.servicio)} · ${fecha(r)}, ${horario(r)}`, r.folio);
       // El folio no se parte en dos lineas.
-      document.querySelector('.encabezado-titulo').replaceChildren('Reserva ', folioTitulo(r.folio));
-      if (this.rol && this.rol !== 'cliente') {
+      document.querySelector('.encabezado-titulo').replaceChildren(T('Reserva '), folioTitulo(r.folio));
+      if (this.rol && this.rol !== 'cliente' && !ASES) {
         const enlace = document.querySelector('.encabezado-ruta a[href="/app/reservas/"]');
         if (enlace) Object.assign(enlace, { textContent: 'Agenda', href: '/app/agenda/' });
       }
@@ -604,8 +675,8 @@ const filtros = [
         const { credito } = this.reprogramada;
         this.reprogramada = null;
         // Sin la vista guardada no hay cifra que respalde: no se afirma crédito; se enlaza a Mis créditos.
-        const texto = `Te enviamos el correo con el nuevo horario para tu calendario.${credito === null ? ' Si quedó saldo a tu favor, lo verás en Mis créditos.' : positivo(credito) ? ` ${soles(credito)} pasaron a crédito.` : ''}`;
-        enfocarAviso(mostrarAviso(this, 'exito', `Reserva reprogramada al ${absoluta(r.inicio)}`, texto, credito === null ? { enlaces: [{ texto: 'Ver mis créditos', href: '/app/reservas/creditos' }] } : undefined));
+        const texto = ASES ? `Te enviamos el correo con el nuevo horario para tu calendario.${positivo(credito) ? ` Tienes un pago de ${soles(credito)} pendiente.` : ''}` : `Te enviamos el correo con el nuevo horario para tu calendario.${credito === null ? ' Si quedó saldo a tu favor, lo verás en Mis créditos.' : positivo(credito) ? ` ${soles(credito)} pasaron a crédito.` : ''}`;
+        enfocarAviso(mostrarAviso(this, 'exito', `Reserva reprogramada al ${absoluta(r.inicio)}`, texto, credito === null && !ASES ? { enlaces: [{ texto: 'Ver mis créditos', href: '/app/reservas/creditos' }] } : undefined));
       }
       return `Reserva ${r.folio}, ${estadoDe(r)[0].toLowerCase()}`;
     }
@@ -626,7 +697,7 @@ const filtros = [
       this.querySelector('[data-cuotas] tbody').replaceChildren(
         ...(r.cuotas ?? []).map((c) => {
           const fila = molde.content.cloneNode(true).firstElementChild;
-          fila.querySelector('[data-concepto]').textContent = textoCuota(c, r.precio.total);
+          fila.querySelector('[data-concepto]').textContent = ASES ? textoCuotaAsesoria(c, totalDe(r)) : textoCuota(c, r.precio.total);
           fila.querySelector('[data-importe]').textContent = soles(c.monto);
           poner(fila.querySelector('.etiqueta'), CUOTAS[c.estado] ?? [String(c.estado).replace(/_/g, ' ').replace(/^./, (x) => x.toUpperCase()), 'neutra']);
           const rechazo = ultimoRechazo(c);
@@ -638,6 +709,7 @@ const filtros = [
             fila.querySelector('[data-sub]'),
             c.estado === 'anulada' ? (r.estado === 'no_asistio' ? 'Se anuló por la inasistencia.' : 'Se anuló al cancelar.')
             : c.estado === 'pendiente' && pagado > 0 && pagado < total ? `Pagado ${soles(c.pagado)} · falta ${soles(((total - pagado) / 100).toFixed(2))}`
+            : ASES && c.hito === 'al_terminar' && c.estado === 'pendiente' ? 'Págala hasta 48 h después de tu asesoría.'
             : null,
           );
           return fila;
@@ -655,16 +727,26 @@ const filtros = [
       };
       campo('horario', `${fecha(r)}, ${horario(r)}`);
       campo('duracion', duracion(r));
-      campo('servicio', nombre(r.servicio));
-      campo('sala', nombre(r.sala));
-      campo('especialistas', (r.especialistas ?? []).map(nombre).join(', '));
+      campo('servicio', ASES ? nombreProf(r.profesional) : nombre(r.servicio));
+      campo('sala', !ASES && nombre(r.sala));
+      campo('especialistas', !ASES && (r.especialistas ?? []).map(nombre).join(', '));
       campo('cliente', r.cliente && nombre(r.cliente));
-      const p = r.precio;
-      pintarPartidas(this.querySelector('[data-precio] .tabla'), p, r.parametros_aplicados?.porcentaje_adelanto);
+      if (ASES) {
+        const virtual = r.modalidad === 'virtual';
+        const dato = virtual ? r.enlace : r.lugar;
+        campo('modalidad', MODALIDADES[r.modalidad] ?? r.modalidad);
+        campo('encuentro', dato || (['pre_reservada', 'confirmada'].includes(r.estado) ? 'Por confirmar' : null));
+        const etiquetaEncuentro = this.querySelector('[data-etiqueta-encuentro]');
+        if (etiquetaEncuentro) etiquetaEncuentro.textContent = virtual ? 'Enlace' : 'Lugar';
+        campo('condiciones', r.version_condiciones && `versión ${r.version_condiciones}`);
+        const dd = this.querySelector('[data-campo="condiciones"]');
+        if (dd && r.version_condiciones) dd.replaceChildren(Object.assign(document.createElement('a'), { className: 'reservas-enlace', href: enlaceTexto('condiciones_contratacion', r.version_condiciones), textContent: `versión ${r.version_condiciones}` }));
+        pintarPartidasAsesoria(this.querySelector('[data-precio] .tabla'), `Asesoría de ${duracionTexto(r.duracion ?? Math.round((Date.parse(r.fin) - Date.parse(r.inicio)) / MINUTO))} con ${nombreProf(r.profesional)}`, totalDe(r), r.precio?.impuesto);
+      } else pintarPartidas(this.querySelector('[data-precio] .tabla'), r.precio, r.parametros_aplicados?.porcentaje_adelanto);
       this.llenarCuotas(r);
       this.pintarCancelacion(r);
       this.pintarReprogramaciones(r);
-      for (const [panel, texto] of Object.entries(TITULOS)) this.querySelector(`[data-panel="${panel}"] .panel-titulo`).replaceChildren(texto, folioTitulo(r.folio));
+      for (const [panel, texto] of Object.entries(TITULOS)) this.querySelector(`[data-panel="${panel}"] .panel-titulo`).replaceChildren(T(texto), folioTitulo(r.folio));
       this.pintarEstado();
     }
 
@@ -722,7 +804,7 @@ const filtros = [
         return `${dueno ? 'No llegaste' : 'No llegó'}${t === null ? ' a la sesión' : ` en los primeros ${t} minutos`}. Se retuvo lo pagado (${soles(r.pagado ?? c?.pagado ?? '0.00')}); no hay crédito ni cobro adicional.`;
       }
       if (!c) return '';
-      if (positivo(c.credito)) return `${soles(c.credito)} pasaron a crédito${dueno ? '. Úsalo en otra reserva.' : ' del cliente.'}`;
+      if (positivo(c.credito)) return `${soles(c.credito)} pasaron a crédito${dueno ? (ASES ? '. Úsalo en otra reserva o asesoría, sin devolución.' : '. Úsalo en otra reserva.') : ' del cliente.'}`;
       if (positivo(c.retenido)) return `Se retuvo lo pagado (${soles(c.retenido)}), como indican las condiciones.`;
       return '';
     }
@@ -735,9 +817,11 @@ const filtros = [
       const resta = cuotas.find((c) => c.hito === 'al_terminar');
       const restoTexto = { en_validacion: 'Pago del resto en validación', pagada: 'Pagada' }[resta?.estado];
       poner(this.querySelector('dl .etiqueta'), estadoDe(r));
-      this.querySelector('[data-pago-validar]').hidden = !r.pago_por_validar;
+      this.querySelector('[data-pago-validar]').hidden = !porValidar(r);
       let tono = 'neutro', texto = estadoDe(r)[0], dato = '';
-      if (r.estado === 'pre_reservada' && r.pago_por_validar) [tono, texto, dato] = ['pendiente', 'Pago en validación', 'Registraste tu pago. No caduca mientras el estudio lo revise; te avisaremos por correo.'];
+      const propio = ASES ? this.estadoAsesoria(r, ms) : null;
+      if (propio) [tono, texto, dato] = propio;
+      else if (r.estado === 'pre_reservada' && r.pago_por_validar) [tono, texto, dato] = ['pendiente', 'Pago en validación', 'Registraste tu pago. No caduca mientras el estudio lo revise; te avisaremos por correo.'];
       else if (ms > 0) [tono, texto, dato] = ['pendiente', `Paga el anticipo antes del ${absoluta(r.vence_pago)}`, faltan(ms)];
       else if (caducada(r)) tono = 'problema';
       else if (r.estado === 'no_asistio') [tono, dato] = ['problema', this.datoTerminal(r)];
@@ -770,13 +854,57 @@ const filtros = [
       const bloquePago = this.querySelector('[data-pagar]');
       bloquePago.hidden = !pagable;
       if (pagable) {
-        const toca = pagable.hito === 'al_reservar' || r.estado === 'finalizada';
+        const toca = ASES || pagable.hito === 'al_reservar' || r.estado === 'finalizada';
         const enlace = bloquePago.querySelector('a');
-        enlace.href = `/app/reservas/pagar?id=${encodeURIComponent(r.id)}&cuota=${encodeURIComponent(pagable.id)}`;
+        enlace.href = `${RUTA().pagar}?id=${encodeURIComponent(r.id)}&cuota=${encodeURIComponent(pagable.id)}`;
         enlace.firstChild.textContent = toca ? 'Registrar pago' : 'Adelantar el pago del resto';
         enlace.className = enlace.className.replace(/boton-(primario|secundario)/, toca ? 'boton-primario' : 'boton-secundario');
       }
+      this.pintarEncuentro(r);
       this.pintarAcciones();
+    }
+
+    // Asesoria: lo que el estado dice y lo que toca (spec RF-15-mis-asesorias, Estados); null deja el resto de los estados a RF-18.
+    estadoAsesoria(r, ms) {
+      const t = tolerancia(r);
+      if (r.estado === 'pre_reservada' && porValidar(r)) return ['pendiente', 'Pago en validación', 'Registraste tu pago. No caduca mientras el estudio lo revise; te avisaremos por correo.'];
+      if (r.estado === 'pre_reservada' && ms > 0) return ['pendiente', `Paga antes del ${absoluta(r.vence_pago)}`, faltan(ms)];
+      if (r.estado === 'confirmada') return Date.parse(r.fin) < Date.now() ? ['neutro', 'Terminó', `${nombreProf(r.profesional)} confirmará tu asistencia y te enviaremos la constancia por correo.`] : ['correcto', 'Confirmada', `Te esperamos el ${diaMes(fechaDe(r.inicio))}, a las ${horaDe(r.inicio)}.`];
+      if (r.estado === 'realizada') return ['correcto', 'Realizada', r.constancia_disponible === false ? '' : 'Tu constancia de asistencia está lista.'];
+      if (r.estado === 'no_asistio') return ['problema', 'No asistió', `No llegaste${t === null ? '' : ` en los primeros ${t} minutos`}. Lo pagado no se devuelve.${positivo(r.cancelacion?.credito) ? ` ${soles(r.cancelacion.credito)} pasaron a crédito, sin devolución.` : ''}`];
+      return null;
+    }
+
+    // Asesoria: videollamada y quién confirma el lugar o el enlace.
+    pintarEncuentro(r) {
+      const videollamada = this.querySelector('[data-videollamada]');
+      const nota = this.querySelector('[data-lugar-nota]');
+      if (!ASES) return;
+      const virtual = r.modalidad === 'virtual';
+      const dato = virtual ? r.enlace : r.lugar;
+      const entra = r.estado === 'confirmada' && virtual && r.enlace && Date.parse(r.fin) > Date.now();
+      videollamada.hidden = !entra;
+      if (entra) {
+        const a = videollamada.querySelector('a');
+        a.href = r.enlace;
+        const conPago = !this.querySelector('[data-pagar]').hidden;
+        a.className = a.className.replace(/boton-(primario|secundario)/, conPago ? 'boton-secundario' : 'boton-primario');
+      }
+      const vivo = ['pre_reservada', 'confirmada'].includes(r.estado) && !caducada(r);
+      nota.hidden = !(vivo && this.rol === 'cliente');
+      if (nota.hidden) return;
+      const quien = nombreProf(r.profesional);
+      const que = virtual ? 'el enlace' : 'el lugar';
+      this.querySelector('[data-lugar-texto]').textContent = dato ? `¿Necesitas cambiarlo? Escríbenos y lo coordinamos con ${quien}:` : `${quien} y el estudio te confirmarán ${que} antes de la cita. Te avisaremos por correo.`;
+      const linea = this.querySelector('[data-contacto-estudio]');
+      linea.hidden = true;
+      if (!dato) return;
+      this.contacto ??= obtenerContacto().then((c) => c?.texto ?? null, () => null);
+      this.contacto.then((texto) => {
+        if (nota.hidden || !texto) return;
+        linea.textContent = texto;
+        linea.hidden = false;
+      });
     }
 
     // Cancelada por el estudio, con la elección del cliente por hacer: la hace el dueño o el Administrador por él.
@@ -805,7 +933,7 @@ const filtros = [
       // Inasistencia: desde el inicio hasta el fin; habilitada pasada la tolerancia.
       const t = tolerancia(r);
       const habil = inicio + (t ?? 0) * MINUTO;
-      const enVentana = staff && vivo && ['pre_reservada', 'confirmada', 'en_curso'].includes(r.estado) && ahora >= inicio && ahora < Date.parse(r.fin);
+      const enVentana = !ASES && staff && vivo && ['pre_reservada', 'confirmada', 'en_curso'].includes(r.estado) && ahora >= inicio && ahora < Date.parse(r.fin);
       const esperar = enVentana && ahora < habil;
       const boton = this.querySelector('[data-abrir="inasistencia"]');
       const ayuda = this.querySelector('[data-ayuda-na]');
@@ -828,8 +956,9 @@ const filtros = [
       this.alternar('devolucion', pendiente);
       if (pendiente) {
         const dueno = this.rol === 'cliente';
-        this.querySelector('[data-sin-costo]').href = `/app/reservas/reprogramar?id=${encodeURIComponent(r.id)}`;
-        this.querySelector('[data-texto-sin-costo]').textContent = `Eliges otro horario libre de la misma sala. ${dueno ? 'Mantienes el precio y lo que pagaste.' : 'El cliente mantiene el precio y lo que pagó.'}`;
+        this.querySelector('[data-sin-costo]').href = `${RUTA().reprogramar}?id=${encodeURIComponent(r.id)}`;
+        this.querySelector('[data-texto-sin-costo]').textContent = `Eliges otro horario libre ${ASES ? `de ${nombreProf(r.profesional)}` : 'de la misma sala'}. ${dueno ? 'Mantienes el precio y lo que pagaste.' : 'El cliente mantiene el precio y lo que pagó.'}`;
+        if (ASES) this.querySelector('[data-boton="devolucion"] .gestion-ayuda').textContent = 'Mientras no elijas, nada vence. ¿Prefieres a otro profesional? Pide la devolución íntegra y agenda una asesoría nueva.';
         this.querySelector('[data-texto-devolucion]').textContent = `${dueno ? 'Te devolvemos' : 'Se devuelven al cliente'} ${soles(r.pagado ?? '0.00')} por el mismo medio, en un máximo de 7 días hábiles.`;
       }
       this.pintarReprogramar(r, ahora, inicio, vivo);
@@ -842,12 +971,12 @@ const filtros = [
       bloque.hidden = true;
       oculto(nota, null);
       if (this.rol !== 'cliente' || !vivo || inicio <= ahora) return;
-      if (r.estado === 'pre_reservada') return oculto(nota, 'Podrás reprogramarla cuando esté confirmada.');
-      if (r.estado !== 'confirmada' || this.vistaCancel === undefined) return;
-      const { puede, ayuda } = entradaReprogramar(this.vistaCancel, r.politica);
+      if (r.estado === 'pre_reservada' && !ASES) return oculto(nota, 'Podrás reprogramarla cuando esté confirmada.');
+      if (!(r.estado === 'confirmada' || (ASES && r.estado === 'pre_reservada')) || this.vistaCancel === undefined) return;
+      const { puede, ayuda } = entradaReprogramar(this.vistaCancel, r.politica, ASES);
       if (puede) {
         bloque.hidden = false;
-        bloque.querySelector('a').href = `/app/reservas/reprogramar?id=${encodeURIComponent(r.id)}`;
+        bloque.querySelector('a').href = `${RUTA().reprogramar}?id=${encodeURIComponent(r.id)}`;
         const texto = this.querySelector('[data-ayuda-reprogramar]');
         oculto(texto, ayuda);
         const boton = bloque.querySelector('a');
@@ -888,7 +1017,7 @@ const filtros = [
       if (this.vistaCancel !== null && this.vistaCancel !== undefined && this.cruzoPlazo(this.reserva)) this.pedirVistaCancel(this.reserva.id);
       const vencia = !caducada(this.reserva);
       this.pintarEstado();
-      if (vencia && caducada(this.reserva)) this.querySelector('[data-anuncio]').textContent = `La reserva ${this.reserva.folio} venció sin pago.`;
+      if (vencia && caducada(this.reserva)) this.querySelector('[data-anuncio]').textContent = T(`La reserva ${this.reserva.folio} venció sin pago.`);
     }
 
     // --- Paneles de acción: confirmacion en la misma pantalla, con foco y Escape ---
@@ -941,7 +1070,7 @@ const filtros = [
     async cambio(texto) {
       this.abierto = null;
       try {
-        this.pintar(validar(await obtenerReserva(this.reserva.id)));
+        this.pintar(validar(await leer(this.reserva.id)));
       } catch {}
       enfocarAviso(mostrarAviso(this, 'informacion', typeof texto === 'function' ? texto(estadoDe(this.reserva)[0].toLowerCase()) : texto));
     }
@@ -988,14 +1117,14 @@ const filtros = [
 
     prepararCancelar() {
       const r = this.reserva;
-      this.querySelector('[data-resumen]').textContent = `${nombre(r.servicio)} · ${fecha(r)}, ${horario(r)}`;
+      this.querySelector('[data-resumen]').textContent = `${ASES ? nombreProf(r.profesional) : nombre(r.servicio)} · ${fecha(r)}, ${horario(r)}`;
       this.querySelector('[data-panel-aviso]').replaceChildren();
       this.previa = null;
       this.secuencia++;
       const parte = this.querySelector('[data-parte="admin"]');
       parte.hidden = !this.admin;
       const aviso = this.querySelector('[data-panel="cancelar"] [data-consecuencia]');
-      this.querySelector('[data-confirmar-cancelar]').textContent = this.admin ? `Cancelar reserva ${r.folio}` : 'Confirmar cancelación';
+      this.querySelector('[data-confirmar-cancelar]').textContent = this.admin ? T(`Cancelar reserva ${r.folio}`) : 'Confirmar cancelación';
       if (this.admin) {
         this.querySelectorAll('[data-panel="cancelar"] input[name="por"]').forEach((x) => (x.checked = false));
         this.querySelectorAll('[data-panel="cancelar"] .campo-control').forEach((x) => { x.value = ''; quitarError(x); });
@@ -1055,9 +1184,9 @@ const filtros = [
       );
       oculto(this.querySelector('[data-validacion]'), avisoValidacion(v.nivel, v.en_validacion));
       const enLugar = this.querySelector('[data-en-lugar]');
-      enLugar.hidden = this.admin || !v.puede_reprogramar || this.reserva.estado !== 'confirmada';
-      enLugar.querySelector('a').href = `/app/reservas/reprogramar?id=${encodeURIComponent(this.reserva.id)}`;
-      if (!this.admin) this.querySelector('[data-panel="cancelar"] [data-consecuencia]').textContent = consecuenciaCancelar(v.nivel, p);
+      enLugar.hidden = this.admin || !v.puede_reprogramar || !(this.reserva.estado === 'confirmada' || (ASES && this.reserva.estado === 'pre_reservada'));
+      enLugar.querySelector('a').href = `${RUTA().reprogramar}?id=${encodeURIComponent(this.reserva.id)}`;
+      if (!this.admin) this.querySelector('[data-panel="cancelar"] [data-consecuencia]').textContent = (ASES ? consecuenciaCancelarAsesoria : consecuenciaCancelar)(v.nivel, p);
       this.querySelector('[data-anuncio]').textContent = v.nivel ? `Vista previa lista: nivel ${v.nivel}, se retienen ${soles(v.retenido)}.` : 'Vista previa lista: sin pagos, cancelas gratis.';
     }
 
@@ -1183,9 +1312,9 @@ const filtros = [
 
     prepararDevolucion() {
       const dueno = this.rol === 'cliente';
-      this.querySelector('[data-panel="devolucion"] [data-consecuencia]').textContent = dueno
+      this.querySelector('[data-panel="devolucion"] [data-consecuencia]').textContent = T(dueno
         ? `Te devolvemos ${soles(this.reserva.pagado ?? '0.00')} por el mismo medio con que pagaste, en un máximo de 7 días hábiles. Después ya no podrás reprogramar esta reserva.`
-        : `Se devuelven ${soles(this.reserva.pagado ?? '0.00')} al cliente por el mismo medio con que pagó, en un máximo de 7 días hábiles. Después el cliente ya no podrá reprogramar esta reserva.`;
+        : `Se devuelven ${soles(this.reserva.pagado ?? '0.00')} al cliente por el mismo medio con que pagó, en un máximo de 7 días hábiles. Después el cliente ya no podrá reprogramar esta reserva.`);
     }
 
     devolucion() {
@@ -1195,14 +1324,14 @@ const filtros = [
     // --- Reprogramar (y "reprogramar sin costo" tras una cancelación del estudio): /app/reservas/reprogramar?id= ---
 
     urlDetalle() {
-      return `/app/reservas/detalle?id=${encodeURIComponent(this.reserva.id)}`;
+      return `${RUTA().detalle}?id=${encodeURIComponent(this.reserva.id)}`;
     }
 
     // Ruta y título con el folio; el título del sin costo es otro.
     rutaReprogramar(r) {
       const enlace = document.querySelector('.encabezado-ruta li:nth-last-child(2) a');
       if (enlace) Object.assign(enlace, { textContent: r.folio, href: this.urlDetalle() });
-      document.querySelector('.encabezado-titulo')?.replaceChildren(...(this.sinCosto ? ['Elige tu nuevo horario'] : ['Reprogramar reserva ', folioTitulo(r.folio)]));
+      document.querySelector('.encabezado-titulo')?.replaceChildren(...(this.sinCosto ? ['Elige tu nuevo horario'] : [T('Reprogramar reserva '), folioTitulo(r.folio)]));
     }
 
     async reprogramar() {
@@ -1210,7 +1339,7 @@ const filtros = [
       if (!UUID.test(id)) return this.mostrar('no-encontrada');
       let r, yo;
       try {
-        [r, yo] = await Promise.all([obtenerReserva(id), obtenerPerfil().catch(() => null)]);
+        [r, yo] = await Promise.all([leer(id), obtenerPerfil().catch(() => null)]);
       } catch (error) {
         if (error.estado !== 404) throw error;
         return this.mostrar('no-encontrada');
@@ -1221,22 +1350,33 @@ const filtros = [
       this.inicioR = null;
       this.vistaR = null;
       this.rutaReprogramar(r);
-      if (r.estado !== 'confirmada' && !this.sinCosto) {
+      if (!(r.estado === 'confirmada' || (ASES && r.estado === 'pre_reservada')) && !this.sinCosto) {
         this.noPermitida('Esta reserva ya no se puede reprogramar.');
         return null;
       }
       this.mostrar('datos');
       this.minutos = Math.round((Date.parse(r.fin) - Date.parse(r.inicio)) / MINUTO);
-      const actual = (clave, texto) => (texto ? (this.querySelector(`[data-actual="${clave}"]`).textContent = texto) : this.querySelector(`[data-actual="${clave}"]`).closest('div').remove());
+      const actual = (clave, texto) => {
+        const nodo = this.querySelector(`[data-actual="${clave}"]`);
+        if (!nodo) return;
+        if (texto) nodo.textContent = texto;
+        else nodo.closest('div').remove();
+      };
       actual('folio', r.folio);
       actual('horario', `${fecha(r)}, ${horario(r)}`);
-      actual('servicio', nombre(r.servicio));
-      actual('especialistas', (r.especialistas ?? []).map(nombre).join(', '));
-      actual('total', soles(r.precio.total));
+      actual('servicio', ASES ? nombreProf(r.profesional) : nombre(r.servicio));
+      actual('especialistas', !ASES && (r.especialistas ?? []).map(nombre).join(', '));
+      actual('duracion', ASES && duracionTexto(this.minutos));
+      actual('modalidad', ASES && (MODALIDADES[r.modalidad] ?? r.modalidad));
+      actual('total', soles(totalDe(r)));
       actual('pagado', soles(r.pagado ?? '0.00'));
       this.querySelector('[data-sin-costo]').hidden = !this.sinCosto;
-      this.querySelector('[data-recalculo]').hidden = this.sinCosto;
-      this.querySelector('[data-ayuda-duracion]').textContent = `Tu sesión dura ${duracionReserva(this.minutos)}: elige dónde empieza.`;
+      this.querySelector('[data-recalculo]').hidden = this.sinCosto || ASES;
+      if (ASES) {
+        this.querySelector('[data-tabla="precio"]').hidden = true;
+        this.querySelector('[data-sin-costo] .aviso-titulo').textContent = 'Sin costo: el estudio canceló tu asesoría. Mantienes el precio y lo que pagaste.';
+      }
+      this.querySelector('[data-ayuda-duracion]').textContent = ASES ? `Tu asesoría dura ${duracionTexto(this.minutos)}: elige dónde empieza.` : `Tu sesión dura ${duracionReserva(this.minutos)}: elige dónde empieza.`;
       this.querySelector('[data-volver-reprog]').href = this.urlDetalle();
       // La semana de la reserva, salvo que la URL traiga otra; la sala va fija y la navegación del calendario conserva el id.
       const url = new URL(location.href);
@@ -1246,10 +1386,16 @@ const filtros = [
       }
       const nodo = this.querySelector('template[data-plantilla="calendario"]').content.cloneNode(true);
       const calendario = nodo.querySelector('bugalu-calendario');
-      if (r.sala?.id) calendario.setAttribute('sala', r.sala.id);
-      calendario.setAttribute('sala-fija', '');
+      if (ASES) {
+        calendario.setAttribute('profesional', r.profesional.id);
+        calendario.setAttribute('nombre', nombreProf(r.profesional));
+        calendario.setAttribute('excluir', r.id);
+      } else {
+        if (r.sala?.id) calendario.setAttribute('sala', r.sala.id);
+        calendario.setAttribute('sala-fija', '');
+        calendario.setAttribute('excluir-reserva', r.id);
+      }
       calendario.setAttribute('conservar', 'id');
-      calendario.setAttribute('excluir-reserva', r.id);
       if (this.minutos) calendario.setAttribute('duracion', String(this.minutos));
       this.querySelector('[data-calendario]').replaceChildren(nodo);
       this.actualizarConfirmar();
@@ -1319,7 +1465,7 @@ const filtros = [
       const url = new URL(location.href);
       url.searchParams.set('inicio', inicio);
       history.replaceState(null, '', url);
-      if (minutosMaximos < this.minutos) return this.errorHorario(`Tu sesión dura ${duracionReserva(this.minutos)} y desde las ${horaDe(inicio)} solo caben ${duracionReserva(minutosMaximos)}. Elige otro inicio.`);
+      if (minutosMaximos < this.minutos) return this.errorHorario(`${ASES ? 'Tu asesoría' : 'Tu sesión'} dura ${duracionReserva(this.minutos)} y desde las ${horaDe(inicio)} solo caben ${duracionReserva(minutosMaximos)}. Elige otro inicio.`);
       if (Date.parse(inicio) === Date.parse(this.reserva.inicio)) return this.errorHorario('Ese es tu horario actual. Elige otro.');
       this.simularR(inicio);
     }
@@ -1347,7 +1493,7 @@ const filtros = [
       this.r2('datos');
       this.querySelector('[data-nuevo-horario]').textContent = `Nuevo horario: ${dia(this.inicioR)}, ${horaDe(this.inicioR)}–${horaDe(fin)}`;
       this.querySelector('[data-nivel-texto]').textContent = nivelReprogramacion(sin ? null : v.nivel);
-      pintarPartidas(this.querySelector('[data-tabla="precio"] .tabla'), v.precio, v.precio.porcentaje_adelanto);
+      if (!ASES) pintarPartidas(this.querySelector('[data-tabla="precio"] .tabla'), v.precio, v.precio.porcentaje_adelanto);
       const fila = (etiqueta, valor) => {
         const tr = document.createElement('tr');
         const td = Object.assign(document.createElement('td'), { className: 'tabla-num', textContent: valor });
@@ -1357,6 +1503,23 @@ const filtros = [
       };
       const pct = r.politica?.porcentaje_penalizacion_nivel_2;
       const tabla = this.querySelector('[data-tabla="saldo"] .tabla');
+      if (ASES) {
+        // La asesoria conserva su precio: la penalizacion de nivel 2 es un pago nuevo (cuota `al_terminar`), no se retiene de lo pagado.
+        const pen = v.penalizacion ?? '0.00';
+        this.querySelector('[data-nivel-texto]').textContent = nivelReprogramacion(sin ? null : v.nivel).replace('tu sesión', 'tu asesoría');
+        tabla.querySelector('tbody').replaceChildren(
+          fila('Precio de la asesoría (se conserva)', soles(totalDe(r))),
+          fila('Ya pagaste', `− ${soles(r.pagado ?? '0.00')}`),
+          ...(positivo(pen) ? [fila(`Penalización (nivel 2${pct ? `, ${porcentaje(pct)}` : ''})`, soles(pen))] : []),
+        );
+        tabla.querySelector('tfoot').replaceChildren(fila(positivo(pen) ? 'Pago nuevo' : 'Nada por pagar', soles(pen)));
+        oculto(this.querySelector('[data-nota-pago]'), positivo(pen) ? `Se crea un pago de ${soles(pen)} que haces hasta 48 h después de tu asesoría.` : null);
+        const restantes = Number(v.reprogramaciones_restantes);
+        oculto(this.querySelector('[data-restantes]'), sin || !Number.isFinite(restantes) ? null : restantes === 0 ? 'Después de este cambio no te quedarán más cambios de horario.' : `Después de este cambio te ${restantes === 1 ? 'quedará 1 cambio' : `quedarán ${restantes} cambios`} de horario.`);
+        this.actualizarConfirmar();
+        this.querySelector('[data-anuncio]').textContent = `Nuevo horario ${dia(this.inicioR)}, ${horaDe(this.inicioR)} a ${horaDe(fin)}: ${sin ? 'sin costo' : `nivel ${v.nivel}`}, ${positivo(pen) ? `pago nuevo ${soles(pen)}` : 'nada por pagar'}.`;
+        return;
+      }
       tabla.querySelector('tbody').replaceChildren(
         fila('Nuevo total', soles(v.precio.total)),
         ...(positivo(v.penalizacion) ? [fila(`Penalización (nivel 2${pct ? `, ${porcentaje(pct)}` : ''})`, soles(v.penalizacion))] : []),
@@ -1378,11 +1541,12 @@ const filtros = [
         this.querySelector('[data-anuncio]').textContent = this.querySelector('[data-ayuda-confirmar]').textContent;
         return;
       }
-      const cuerpo = { inicio: this.inicioR, nivel_esperado: v.nivel ?? null, total_esperado: v.precio.total };
-      const credito = positivo(v.credito) ? v.credito : '0.00';
+      const cuerpo = { inicio: this.inicioR, nivel_esperado: v.nivel ?? null, total_esperado: ASES ? totalDe(this.reserva) : v.precio.total };
+      // Sala: lo que pasa a credito; asesoria: la penalizacion que queda por pagar (para el aviso del detalle).
+      const credito = ASES ? (positivo(v.penalizacion) ? v.penalizacion : '0.00') : positivo(v.credito) ? v.credito : '0.00';
       this.enviar(this.querySelector('[data-confirmar-reprog]'), 'Reprogramando…', () => reprogramarReserva(this.reserva.id, cuerpo), () => {
         try { sessionStorage.setItem(claveReprogramada(this.reserva.id), credito); } catch {}
-        location.href = `/app/reservas/detalle?${new URLSearchParams({ id: this.reserva.id, aviso: 'reserva-reprogramada' })}`;
+        location.href = `${RUTA().detalle}?${new URLSearchParams({ id: this.reserva.id, aviso: ASES ? 'asesoria-reprogramada' : 'reserva-reprogramada' })}`;
       }, true);
     }
 
@@ -1394,7 +1558,8 @@ const filtros = [
       // Un plazo cruzado a nivel 3 ya no deja reprogramar (no es "sin costo": ese caso es nivel null).
       else if (estado === 409 && codigo === 'nivel_cambiado' && error.detalles?.nivel === 3) this.noPermitida(sinReprogramar('reprogramacion_no_permitida', this.reserva.politica));
       else if (estado === 409 && (codigo === 'reprogramacion_no_permitida' || codigo === 'limite_reprogramaciones')) this.noPermitida(sinReprogramar(codigo, this.reserva.politica));
-      else if (estado === 409 && codigo === 'tramo_no_disponible') {
+      else if (ASES && estado === 409 && codigo === 'no_cancelable') this.noPermitida('Tu asesoría ya empezó: ya no se puede reprogramar.');
+      else if (estado === 409 && (codigo === 'tramo_no_disponible' || codigo === 'horario_no_disponible')) {
         this.inicioR = null;
         this.vistaR = null;
         this.secuencia++;
@@ -1404,7 +1569,7 @@ const filtros = [
         url.searchParams.delete('inicio');
         history.replaceState(null, '', url);
         this.querySelector('bugalu-calendario')?.reiniciar();
-        mostrarAviso(this, 'error', 'Alguien reservó ese horario hace un momento. Elige otro.');
+        mostrarAviso(this, 'error', ASES ? 'Alguien agendó ese horario hace un momento. Elige otro.' : 'Alguien reservó ese horario hace un momento. Elige otro.');
         this.enfocar();
       } else if (estado === 409 && (codigo === 'nivel_cambiado' || codigo === 'precio_cambiado') && error.detalles?.precio) {
         // Se cruzó un plazo o cambió una tarifa mientras leía: se repinta con la vista nueva y se pide confirmar otra vez.
@@ -1414,11 +1579,11 @@ const filtros = [
         const aviso = mostrarAviso(this, 'aviso', codigo === 'nivel_cambiado' ? `Mientras revisabas pasó un plazo: ahora es ${n === 1 ? 'nivel 1, sin cargo' : n === 2 ? 'nivel 2, con penalización' : 'sin costo'}` : 'El precio de ese horario cambió mientras revisabas', codigo === 'nivel_cambiado' ? 'Revisa cómo queda y confirma de nuevo.' : 'Revisa el nuevo total y confirma de nuevo.');
         this.querySelector('[data-r2-aviso]').replaceChildren(aviso);
         enfocarAviso(aviso);
-      } else if (estado === 422 && FRANJA[codigo]) {
+      } else if (estado === 422 && (ASES ? FRANJA_ASESORIA : FRANJA)[codigo]) {
         this.vistaR = null;
         this.r2('nada');
         this.actualizarConfirmar();
-        this.errorHorario(FRANJA[codigo]);
+        this.errorHorario((ASES ? FRANJA_ASESORIA : FRANJA)[codigo]);
       } else {
         const que = confirmando ? 'reprogramar' : 'calcular cómo queda';
         const texto = estado === 503 ? [`No pudimos ${que}: el servicio no responde`, 'Tu elección sigue aquí; inténtalo en unos minutos.']

@@ -16,9 +16,11 @@ const { titulo } = Astro.props;
 const destinos = [
   { etiqueta: 'Inicio', href: '/app/', icono: 'house' as const },
   { etiqueta: 'Reservas', href: '/app/reservas/', icono: 'calendar-check' as const, solo: 'cliente' },
+  { etiqueta: 'Asesorías', href: '/app/asesorias/mias', icono: 'messages-square' as const, solo: 'cliente' },
   { etiqueta: 'Agenda', href: '/app/agenda/', icono: 'calendar' as const, solo: 'personal administrador' },
   { etiqueta: 'Ficha', href: '/app/ficha/', icono: 'id-card' as const, solo: 'profesional' },
   { etiqueta: 'Horarios', href: '/app/horarios/', icono: 'calendar-cog' as const, solo: 'profesional' },
+  { etiqueta: 'Asesorías', href: '/app/asesorias/agenda', icono: 'messages-square' as const, solo: 'profesional' },
   { etiqueta: 'Pagos', href: '/app/pagos/', icono: 'receipt' as const, solo: 'administrador', vivo: 'pagos' },
   { etiqueta: 'Accesos', href: '/app/solicitudes/', icono: 'user-plus' as const, solo: 'administrador' },
   { etiqueta: 'Usuarios', href: '/app/usuarios/', icono: 'users' as const, solo: 'administrador' },
@@ -75,9 +77,26 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
   // Rol del perfil cargado: muestra los destinos del Administrador y fija la variante (Estudio o Portal).
   let rol: string | null = null;
   let avisos = 0;
+  // Dos destinos se llaman ASESORÍAS (cliente y profesional; el Administrador entra por /app/asesorias/): el actual se calcula solo entre los visibles para el rol. El detalle, el pago y reprogramar son subrutas del destino del cliente o del profesional.
+  const SUBRUTAS: Record<string, string[]> = { '/app/asesorias/mias': ['/app/asesorias/detalle', '/app/asesorias/pagar', '/app/asesorias/reprogramar'], '/app/asesorias/agenda': ['/app/asesorias/detalle'] };
+  function marcarActual() {
+    const barra = (x: string) => x.replace(/\/?$/, '/');
+    const ruta = barra(location.pathname);
+    const enlaces = [...document.querySelectorAll<HTMLAnchorElement>('.app-nav-lateral a.lateral-destino, .app-nav-tactil a.tactil-destino, a.menu-solo-movil')].filter((a) => !a.closest<HTMLElement>('[data-solo]')?.hidden);
+    const coincide = (href: string) => ruta === barra(href) || (href !== '/app/' && ruta.startsWith(barra(href))) || (SUBRUTAS[href] ?? []).some((p) => ruta.startsWith(barra(p)));
+    const mejor = enlaces.map((a) => a.getAttribute('href')!).filter(coincide).sort((a, b) => b.length - a.length)[0];
+    document.querySelectorAll<HTMLAnchorElement>('.app-nav-lateral a.lateral-destino, .app-nav-tactil a.tactil-destino, a.menu-solo-movil').forEach((a) => {
+      const es = a.getAttribute('href') === mejor && !a.closest<HTMLElement>('[data-solo]')?.hidden;
+      if (es) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+      a.classList.toggle('lateral-actual', es && a.classList.contains('lateral-destino'));
+      a.classList.toggle('tactil-actual', es && a.classList.contains('tactil-destino'));
+    });
+  }
   function aplicar(perfil: { rol: string }) {
     rol = perfil.rol;
     document.querySelectorAll<HTMLElement>('[data-solo]').forEach((e) => (e.hidden = !e.dataset.solo!.split(' ').includes(rol ?? '')));
+    marcarActual();
     const portal = rol === 'cliente';
     // El título de sección y el área nacen neutros (vacíos y ocultos): aparecen solo al conocer el rol.
     document.querySelectorAll<HTMLElement>('[data-seccion]').forEach((e) => { e.textContent = portal ? 'Portal' : 'Estudio'; e.removeAttribute('data-neutro'); });

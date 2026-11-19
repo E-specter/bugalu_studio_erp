@@ -1,0 +1,16 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Reservas from '../../../islas/Reservas.astro';
+---
+
+<!-- El título, la ruta y la descripción reciben el folio y el horario cuando la isla carga la asesoría. -->
+<LayoutApp titulo="Asesoría">
+  <EncabezadoPantalla
+    titulo="Asesoría"
+    indice="[P5] ASESORÍAS / MIS ASESORÍAS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Asesorías', href: '/app/asesorias/mias' }, { etiqueta: 'Asesoría' }]}
+    descripcion="Estado, horario, precio y pago de tu asesoría."
+  />
+  <Reservas vista="detalle" tipo="asesoria" />
+</LayoutApp>

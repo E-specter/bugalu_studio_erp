@@ -463,12 +463,12 @@ for (const vista of ['semana', 'mes']) {
 test.describe('navegacion por rol', () => {
   const visibles = (page) => page.locator('.lateral-destino:visible, .tactil-destino:visible').locator('.lateral-etiqueta, .tactil-etiqueta').allTextContents();
 
-  test('cliente: RESERVAS; sin AGENDA', async ({ page }) => {
+  test('cliente: RESERVAS y ASESORÍAS; sin AGENDA', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await montar(page, { rol: 'cliente' });
     await page.goto('/app/');
     await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Reservas' })).toHaveAttribute('href', '/app/reservas/');
-    expect(await visibles(page)).toEqual(['Inicio', 'Reservas']);
+    expect(await visibles(page)).toEqual(['Inicio', 'Reservas', 'Asesorías']);
   });
 
   test('personal: AGENDA con enlace y actual en /app/agenda/', async ({ page }) => {

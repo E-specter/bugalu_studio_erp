@@ -1,0 +1,15 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Reservas from '../../../islas/Reservas.astro';
+---
+
+<LayoutApp titulo="Reprogramar asesoría">
+  <EncabezadoPantalla
+    titulo="Reprogramar asesoría"
+    indice="[P5] ASESORÍAS / MIS ASESORÍAS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Asesorías', href: '/app/asesorias/mias' }, { etiqueta: 'Asesoría', href: '/app/asesorias/mias' }, { etiqueta: 'Reprogramar' }]}
+    descripcion="Mismo profesional y misma duración. Mantienes el precio; antes de confirmar verás si hay algo que pagar."
+  />
+  <Reservas vista="reprogramar" tipo="asesoria" />
+</LayoutApp>

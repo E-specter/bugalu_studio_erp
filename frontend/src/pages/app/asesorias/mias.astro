@@ -1,0 +1,19 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Boton from '../../../componentes/Boton.astro';
+import Reservas from '../../../islas/Reservas.astro';
+---
+
+<LayoutApp titulo="Mis asesorías">
+  <EncabezadoPantalla
+    titulo="Mis asesorías"
+    indice="[P5] ASESORÍAS / MIS ASESORÍAS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Asesorías' }]}
+    descripcion="Tus citas con profesionales, su estado y lo que falta pagar."
+  >
+    <!-- La isla lo quita si no hay asesorías: el vacío ya trae su propio "Ver profesionales". -->
+    <div slot="acciones" data-accion-encabezado><Boton href="/asesorias/">Agendar asesoría</Boton></div>
+  </EncabezadoPantalla>
+  <Reservas vista="lista" tipo="asesoria" />
+</LayoutApp>

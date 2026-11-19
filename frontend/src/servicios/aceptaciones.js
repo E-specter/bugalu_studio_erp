@@ -71,3 +71,11 @@ export function bloqueReserva(lista) {
     version: t.version,
   };
 }
+
+// Condiciones de contratacion de la asesoria (precision 8 de RF-15: `resumenes.asesoria`; sin el, el de la reserva). null sin texto vigente.
+export function bloqueAsesoria(lista) {
+  const t = vigenteDe(lista, 'condiciones_contratacion');
+  const resumen = t?.resumenes?.asesoria ?? t?.resumenes?.reserva;
+  if (!resumen) return null;
+  return { titulo: 'Condiciones de contratación', resumenes: [resumen], enlaces: enlacesDe([t]), casilla: { nombre: 'condiciones', etiqueta: `Acepto las Condiciones de contratación (versión ${t.version}).` }, version: t.version };
+}

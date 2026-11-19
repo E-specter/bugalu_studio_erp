@@ -1,0 +1,16 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Pago from '../../../islas/Pago.astro';
+---
+
+<!-- La ruta recibe el folio (y su enlace al detalle) cuando la isla carga la asesoría. -->
+<LayoutApp titulo="Registrar pago">
+  <EncabezadoPantalla
+    titulo="Registrar pago"
+    indice="[P5] ASESORÍAS / MIS ASESORÍAS"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Asesorías', href: '/app/asesorias/mias' }, { etiqueta: 'Asesoría', href: '/app/asesorias/mias' }, { etiqueta: 'Pagar' }]}
+    descripcion="Paga la cuota con el método que prefieras y sube la captura del comprobante. El estudio la revisa y te avisa por correo."
+  />
+  <Pago tipo="asesoria" />
+</LayoutApp>

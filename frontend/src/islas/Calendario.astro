@@ -105,7 +105,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
 
 <script>
   import { listarSalas, obtenerDisponibilidad, listarMisReservas, listarReservas } from '../servicios/reservas.js';
-  import { obtenerDisponibilidadProfesional } from '../servicios/asesorias.js';
+  import { obtenerDisponibilidadProfesional, listarMisAsesorias } from '../servicios/asesorias.js';
   import { obtenerPerfil } from '../servicios/api.js';
   import { obtenerToken } from '../servicios/sesion.js';
   import { llenarAviso } from '../servicios/formulario.js';
@@ -386,7 +386,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
     // Disponibilidad del profesional: los `horarios` hacen de franjas, sin cierres ni margen. Con sesion caducada (401) se repite sin ella.
     async resolverAsesoria(): Promise<string | null> {
       const { desde, hasta } = this.rango();
-      const pedido = { profesional: this.getAttribute('profesional')!, desde: instante(desde, '00:00'), hasta: instante(hasta, '00:00') };
+      const pedido = { profesional: this.getAttribute('profesional')!, desde: instante(desde, '00:00'), hasta: instante(hasta, '00:00'), excluirAsesoria: this.getAttribute('excluir') ?? undefined };
       let datos;
       this.sesionCaducada = false;
       try {
@@ -399,16 +399,25 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       this.avisos();
       this.datos = { ...datos, franjas: datos.horarios, cierres: [] };
       this.propias = {};
+      // Con sesion, sus asesorias en el calendario son enlace a su detalle (se casan por inicio); un fallo deja solo el texto.
+      if (datos.ocupados.some((o: any) => o.propia) && (await obtenerToken())) {
+        const mias = await listarMisAsesorias().catch(() => []);
+        datos.ocupados.forEach((o: any, i: number) => {
+          if (o.propia) this.propias[i] = mias.find((a: any) => Date.parse(a.inicio) === Date.parse(o.inicio));
+        });
+      }
       if (!datos.horarios.length) return this.pintarVacio();
-      return this.pintar();
+      const anuncio = this.pintar();
+      this.avisarInicio();
+      return anuncio;
     }
 
     // Un inicio restaurado desde la URL emite el mismo evento que al elegirlo, para que Reserva limite la duración. Reserva lo vuelve a pedir al enlazarse (sin datos aún, no hace nada: lo emitirá al cargar).
     avisarInicio() {
       const { inicio } = this.estado;
       const ms = inicio ? Date.parse(inicio) : NaN;
-      if (this.modo !== 'reserva' || !(this.modelo?.estadoDe(ms)?.e === 'libre')) return;
-      this.dispatchEvent(new CustomEvent('calendario-inicio', { bubbles: true, detail: { inicio, minutosMaximos: this.maximo(ms) } }));
+      if (!this.conBotones || !(this.modelo?.estadoDe(ms)?.e === 'libre')) return;
+      this.dispatchEvent(new CustomEvent('calendario-inicio', { bubbles: true, detail: { inicio, minutosMaximos: this.modo === 'asesoria' ? +this.estado.duracion : this.maximo(ms) } }));
     }
 
     sala: any = null;
@@ -500,7 +509,11 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
         // Sala: la media hora y los 30 min de margen que la siguen caben en la franja; asesoria: no hay margen entre asesorias.
         const margen = this.modo === 'asesoria' ? 0 : MEDIA;
         const cabe = (!margen || enFranja(s + MEDIA)) && choca(cierres, s, s + MEDIA + margen) < 0 && choca(ocupados, s, s + MEDIA + margen) < 0 && s >= desde && s < hasta;
-        return cabe ? { e: 'libre', clave: 'l', s } : { e: 'noreservable', clave: 'n', s };
+        if (!cabe) return { e: 'noreservable', clave: 'n', s };
+        // Asesoria con duracion: el inicio vale si [s, s + duracion) cabe en un bloque, sin tocar otra asesoria ni salir de los limites.
+        const dm = this.modo === 'asesoria' ? (+this.estado.duracion || 0) * 60e3 : 0;
+        if (dm && !(franjas.some(([a, b]: number[]) => a <= s && s + dm <= b) && choca(ocupados, s, s + dm) < 0 && s + dm <= hasta)) return { e: 'nocabe', clave: `x${s}`, s };
+        return { e: 'libre', clave: 'l', s };
       };
       // Minutos que caben desde un inicio: el hueco seguido menos el margen de 30 min, con tope de 8 h.
       const maximo = (s: number) => {
@@ -530,13 +543,20 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       cuerpo.replaceChildren(...(lista ? this.mes() : this.semana(estados)));
       this.querySelector('[data-leyenda]')!.replaceChildren(...[...estados].map((e) => h('li', {}, (() => { const t = this.pieza('etiqueta-neutra'); t.querySelector('span')!.textContent = this.textos[e]; return t; })())));
       this.fijarTabulable();
+      // La isla anfitriona (agendar) dice "sin horarios libres" cuando la semana no deja ningun inicio.
+      this.dispatchEvent(new CustomEvent('calendario-pintado', { bubbles: true, detail: { inicios: new Set([...this.querySelectorAll<HTMLElement>('button[data-inicio]')].map((x) => x.dataset.inicio)).size } }));
       const dias = this.datos.dias.filter((x: any) => !lista || x.fecha.slice(0, 7) === this.estado.fecha.slice(0, 7));
       const total = dias.reduce((s: number, x: any) => s + x.minutos_libres, 0);
       return `${capital(titulo)}: ${totalTexto(total)}.`;
     }
 
     get textos() {
-      return this.modo === 'asesoria' ? TEXTO_ASESORIA : TEXTO;
+      return this.modo === 'asesoria' ? { ...TEXTO_ASESORIA, nocabe: `NO CABE ${dur(+this.estado.duracion || 0)}` } : TEXTO;
+    }
+
+    // Reserva, o Asesoria con `duracion` (agendar y reprogramar): cada inicio valido es un boton.
+    get conBotones() {
+      return this.modo === 'reserva' || (this.modo === 'asesoria' && (+this.estado.duracion || 0) > 0);
     }
 
     texto(el: HTMLElement | null, t: string) {
@@ -580,6 +600,8 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
         const s = inicioDia(f) + (min + r * 30) * 60e3;
         const c: any = estadoDe(s);
         if (c) c.f = f, c.min = min + r * 30;
+        // Asesoria: las medias horas que cubre la asesoria elegida no "caben" solas, pero forman parte de su tramo.
+        if (c?.e === 'nocabe' && s > inicioMs && s < inicioMs + duracion * 60e3) c.e = 'libre';
         if (c?.e === 'libre') {
           c.inicio = s === inicioMs;
           c.tramo = !c.inicio && s > inicioMs && s < inicioMs + duracion * 60e3;
@@ -587,7 +609,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
         return c;
       }));
       celdas.flat().forEach((c: any) => c && estados.add(c.e));
-      const grid = this.modo === 'reserva';
+      const grid = this.conBotones;
       const hoy = hoyLima();
       const tabla = h('table', { class: 'cal-tabla cal-tabla-semana', role: grid ? 'grid' : null },
         h('caption', { class: 'visualmente-oculto' }, this.tituloPeriodo()),
@@ -631,7 +653,14 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
     // Contenido de un bloque unido, el mismo en la tabla y en la lista de días.
     contenidoBloque(c: any): HTMLElement[] {
       // Asesoria: nunca datos de nadie; la propia es solo texto (sin folio ni enlace hasta la etapa B).
-      if (this.modo === 'asesoria') return [c.e === 'ocupado' ? this.etiqueta('neutra', 'OCUPADO') : h('span', { class: 'cal-texto' }, this.textos[c.e])];
+      if (this.modo === 'asesoria') {
+        const mia = c.e === 'propio' ? this.propias[c.oc] : null;
+        if (mia) {
+          const o = this.datos.ocupados[c.oc];
+          return [h('a', { class: 'cal-enlace', href: `/app/asesorias/detalle?id=${encodeURIComponent(mia.id)}`, 'aria-label': `${largo(c.f)}, tu asesoría ${mia.folio}, ${hm(Date.parse(o.inicio))} a ${hm(Date.parse(o.fin))}`, 'data-nav': this.conBotones ? '' : null, 'data-dia': c.dia, 'data-min': c.min }, `TU ASESORÍA ${mia.folio}`)];
+        }
+        return [c.e === 'ocupado' ? this.etiqueta('neutra', 'OCUPADO') : h('span', { class: 'cal-texto' }, this.textos[c.e])];
+      }
       if (c.e === 'cerrado') return [this.pieza('icono-lock'), h('span', { class: 'cal-texto' }, 'CERRADO', h('span', { class: 'cal-motivo' }, this.datos.cierres[c.ci].motivo))];
       if (c.e === 'ocupado' || c.e === 'propio') {
         const r = this.reservaDe(c);
@@ -643,7 +672,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
         if (c.e === 'propio') {
           const etiqueta = `TU RESERVA${r?.folio ? ` ${r.folio}` : ''}`;
           return [r?.href
-            ? h('a', { class: 'cal-enlace', href: r.href, 'aria-label': `${largo(c.f)}, tu reserva ${r.folio}, ${r.horas}`, 'data-nav': this.modo === 'reserva' ? '' : null, 'data-dia': c.dia, 'data-min': c.min }, etiqueta)
+            ? h('a', { class: 'cal-enlace', href: r.href, 'aria-label': `${largo(c.f)}, tu reserva ${r.folio}, ${r.horas}`, 'data-nav': this.conBotones ? '' : null, 'data-dia': c.dia, 'data-min': c.min }, etiqueta)
             : h('span', { class: 'cal-texto' }, etiqueta)];
         }
         return [this.etiqueta('neutra', 'OCUPADO')];
@@ -700,7 +729,7 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
           if (b.e === 'libre') {
             return h('li', { class: 'cal-bloque' },
               h('p', { class: 'cal-texto' }, `${rango} · LIBRE`),
-              this.modo === 'reserva' ? h('div', { class: 'cal-inicios' }, ...b.celdas.map((c: any) => { c.dia = i; const x = this.botonLibre(c); x.removeAttribute('tabindex'); x.removeAttribute('data-nav'); x.textContent = hm(c.s); if (c.inicio) x.prepend(this.pieza('icono-check')); return x; })) : null);
+              this.conBotones ? h('div', { class: 'cal-inicios' }, ...b.celdas.map((c: any) => { c.dia = i; const x = this.botonLibre(c); x.removeAttribute('tabindex'); x.removeAttribute('data-nav'); x.textContent = hm(c.s); if (c.inicio) x.prepend(this.pieza('icono-check')); return x; })) : null);
           }
           primero.dia = i;
           return h('li', { class: 'cal-bloque' }, h('p', { class: 'cal-texto' }, `${rango} · `, ...this.contenidoLista(primero)));
@@ -900,11 +929,11 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
       const ms = Date.parse(inicio);
       const iso = `${fd(ms)}T${hm(ms)}:00-05:00`;
       this.estado.inicio = iso;
-      const minutosMaximos = this.maximo(ms);
+      const minutosMaximos = this.modo === 'asesoria' ? +this.estado.duracion : this.maximo(ms);
       this.pintar();
       const nuevo = [...this.querySelectorAll<HTMLElement>('button[data-inicio]')].find((x) => x.dataset.inicio === inicio && x.offsetParent !== null);
       this.mover(nuevo);
-      this.querySelector('[data-anuncio]')!.textContent = `Inicio: ${nombreDia(fd(ms))} ${diaMes(fd(ms))}, ${hm(ms)}. Hasta ${dur(minutosMaximos)} disponibles.`;
+      this.querySelector('[data-anuncio]')!.textContent = `Inicio: ${nombreDia(fd(ms))} ${diaMes(fd(ms))}, ${hm(ms)}. ${this.modo === 'asesoria' ? `Termina a las ${hm(ms + minutosMaximos * 60e3)}.` : `Hasta ${dur(minutosMaximos)} disponibles.`}`;
       this.dispatchEvent(new CustomEvent('calendario-inicio', { bubbles: true, detail: { inicio: iso, minutosMaximos } }));
     }
   }
@@ -1126,10 +1155,12 @@ const filtros = ['neutra', 'exito', 'aviso', 'activa', 'alerta'] as const;
   }
   .calendario :global(.cal-celda[data-estado='cerrado']),
   .calendario :global(.cal-celda[data-estado='noreservable']),
+  .calendario :global(.cal-celda[data-estado='nocabe']),
   .calendario :global(.cal-celda[data-estado='pasado']) {
     color: var(--color-texto-secundario);
   }
   .calendario :global(.cal-celda[data-estado='noreservable'] .cal-texto),
+  .calendario :global(.cal-celda[data-estado='nocabe'] .cal-texto),
   .calendario :global(.cal-celda[data-estado='pasado'] .cal-texto) {
     color: var(--color-texto-secundario);
   }

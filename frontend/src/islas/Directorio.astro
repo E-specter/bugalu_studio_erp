@@ -79,8 +79,7 @@ const lista = vista === 'lista';
             <p class="dir-presentacion" data-presentacion hidden></p>
             <ul class="dir-redes" aria-label="Redes" data-redes hidden></ul>
             <div class="dir-agendar">
-              <Boton tamano="grande" aria-disabled="true" aria-describedby="agendar-ayuda" data-agendar>Agendar asesoría</Boton>
-              <p class="gestion-ayuda" id="agendar-ayuda">Disponible pronto: muy pronto podrás agendar en línea desde aquí.</p>
+              <Boton tamano="grande" href="/asesorias/agendar/" data-agendar>Agendar asesoría</Boton>
             </div>
           </div>
         </div>
@@ -111,6 +110,8 @@ const lista = vista === 'lista';
 <script>
   // @ts-nocheck
   import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { obtenerToken } from '../servicios/sesion.js';
+  import { obtenerPerfil } from '../servicios/api.js';
   import { listarEspecialidades, listarProfesionales, obtenerProfesional, nombreMostrado, notaIgv, REDES } from '../servicios/asesorias.js';
   import { ponerAvatar } from '../servicios/avatar.js';
   import { soles, porcentaje, duracionReserva } from '../servicios/formatos.js';
@@ -262,6 +263,10 @@ const lista = vista === 'lista';
       presentacion.textContent = p.presentacion ?? '';
       this.pintarRedes(p.redes ?? []);
       this.pintarPrecios(p, mostrado);
+      // RF-15 B: "Agendar asesoría" lleva al flujo (con la duracion si solo ofrece una); el rol profesional no agenda, no se pinta.
+      const agendar = this.querySelector('[data-agendar]');
+      agendar.href = `/asesorias/agendar/?${new URLSearchParams({ profesional: p.id, ...(p.duraciones.length === 1 && { duracion: p.duraciones[0].minutos }) })}`;
+      if ((await obtenerToken()) && (await obtenerPerfil().catch(() => null))?.rol === 'profesional') agendar.closest('.dir-agendar').remove();
       const calendario = this.querySelector('bugalu-calendario');
       calendario.setAttribute('nombre', mostrado);
       calendario.setAttribute('conservar', 'id');

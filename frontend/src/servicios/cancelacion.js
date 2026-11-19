@@ -9,6 +9,13 @@ export const nivelTexto = (nivel, p) => {
 };
 
 const FIN = 'El horario se libera al momento y la cancelación no se puede deshacer.';
+// RF-15: en una asesoria no hay devolucion en dinero (ADR-015): el credito sirve para otra reserva o asesoria.
+export const consecuenciaCancelarAsesoria = (nivel, p) =>
+  nivel === 1 ? `Todo lo que pagaste pasa a crédito para otra reserva o asesoría tuya, sin devolución en dinero. ${FIN}`
+  : nivel === 2 ? `Se retiene una penalización${p?.porcentaje_penalizacion_nivel_2 ? ` del ${porcentaje(p.porcentaje_penalizacion_nivel_2)} del total` : ''}. El resto pasa a crédito para otra reserva o asesoría tuya, sin devolución. ${FIN}`
+  : nivel === 3 ? `Se retiene todo lo que pagaste y no hay crédito. ${FIN}`
+  : 'El horario se libera al momento y no se te cobra nada. No se puede deshacer: tendrás que agendarla de nuevo si sigue libre.';
+
 export const consecuenciaCancelar = (nivel, p) =>
   nivel === 1 ? `Todo lo que pagaste pasa a crédito para otra reserva tuya. Si prefieres el dinero, puedes pedir la devolución desde Mis créditos. ${FIN}`
   : nivel === 2 ? `Se retiene una penalización${p?.porcentaje_penalizacion_nivel_2 ? ` del ${porcentaje(p.porcentaje_penalizacion_nivel_2)} del total` : ''}. El resto pasa a crédito para otra reserva tuya, sin devolución. ${FIN}`
@@ -38,11 +45,12 @@ export function anticipacionTexto(horas, de = 'tu') {
 }
 
 // RF-18, lateral del detalle: lo que se dice de "Reprogramar". `v` (VistaCancelacion) es null si la vista previa fallo: se ofrece y decide la API.
-export function entradaReprogramar(v, p) {
+export function entradaReprogramar(v, p, asesoria = false) {
   if (!v) return { puede: true, ayuda: '' };
   if (v.puede_reprogramar) {
     const n = Number(v.reprogramaciones_restantes);
-    const cambios = n === 1 ? 'Te queda 1 cambio de horario.' : `Te quedan ${n} cambios de horario.`;
+    const cambios = (n === 1 ? 'Te queda 1 cambio de horario.' : `Te quedan ${n} cambios de horario.`) + (asesoria ? ' Mantienes el precio.' : '');
+    if (asesoria) return { puede: true, ayuda: cambios + (v.nivel === 2 ? ` Faltan ${p?.horas_nivel_1 ?? 'pocas'} h o menos: reprogramar suma un pago del ${p?.porcentaje_penalizacion_nivel_2 ? porcentaje(p.porcentaje_penalizacion_nivel_2) : 'porcentaje'} del precio.` : '') };
     const aviso = v.nivel === 2 ? ` Faltan ${p?.horas_nivel_1 ?? 'pocas'} h o menos: reprogramar tiene una penalización${p?.porcentaje_penalizacion_nivel_2 ? ` del ${porcentaje(p.porcentaje_penalizacion_nivel_2)}` : ''}.` : '';
     return { puede: true, ayuda: cambios + aviso };
   }
@@ -62,4 +70,11 @@ export const FRANJA = {
   fuera_de_franja: 'Ese horario ya no está publicado.',
   anticipacion_insuficiente: 'Ese horario empieza demasiado pronto para reservarlo.',
   anticipacion_excesiva: 'Ese horario aún no se puede reservar: está demasiado lejos.',
+};
+
+// Asesoria: los codigos y textos propios de agendar y reprogramar (spec RF-15-agendar, Estados).
+export const FRANJA_ASESORIA = {
+  fuera_de_horario: 'Ese horario ya no está publicado.',
+  anticipacion_insuficiente: 'Ese horario empieza demasiado pronto para agendarlo.',
+  anticipacion_excesiva: 'Ese horario aún no se puede agendar: está demasiado lejos.',
 };

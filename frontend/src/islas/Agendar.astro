@@ -1,0 +1,885 @@
+---
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import BarraAcciones from '../componentes/BarraAcciones.astro';
+import Campo from '../componentes/Campo.astro';
+import Casilla from '../componentes/Casilla.astro';
+import Tabla from '../componentes/Tabla.astro';
+import Pasos from '../componentes/Pasos.astro';
+import Avatar from '../componentes/Avatar.astro';
+import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import IndicadorEstado from '../componentes/IndicadorEstado.astro';
+import EncabezadoPantalla from '../componentes/EncabezadoPantalla.astro';
+import MensajeError from '../componentes/internos/MensajeError.astro';
+import PlantillasResumenLegal from '../componentes/internos/PlantillasResumenLegal.astro';
+import Calendario from './Calendario.astro';
+
+interface Props {
+  paso: 'asesoria' | 'horario' | 'cuenta' | 'confirmar' | 'listo';
+}
+const { paso } = Astro.props;
+// Copy de la spec RF-15-agendar (tabla Copy). `n` es el paso de 5 (el 03 es la cuenta: sin sesion va al acceso).
+const meta = {
+  asesoria: { n: 1, titulo: 'Elige tu asesoría', descripcion: 'Cuánto dura y cómo prefieres hacerla. El precio es fijo.' },
+  horario: { n: 2, titulo: 'Elige tu horario', descripcion: 'Elige el día y la hora de inicio. Horario de Lima.' },
+  cuenta: { n: 3, titulo: 'Completa tus datos', descripcion: 'Antes de tu primera asesoría necesitamos saber quién eres. Solo te lo pedimos una vez.' },
+  confirmar: { n: 4, titulo: 'Confirma tu asesoría', descripcion: 'Revisa todo antes de agendar.' },
+  listo: { n: 5, titulo: 'Asesoría agendada', descripcion: 'Tu horario queda apartado mientras pagas.' },
+}[paso];
+const rutaPaso: Record<string, string> = { Asesoría: '/asesorias/agendar/', Horario: '/asesorias/agendar/horario/', Confirmar: '/asesorias/agendar/confirmar/' };
+const etapas = ['Asesoría', 'Horario', 'Cuenta', 'Confirmar', 'Listo'].map((nombre) => ({ nombre, href: paso === 'listo' ? undefined : rutaPaso[nombre] }));
+const enFlujo = paso !== 'listo';
+const conLateral = enFlujo && paso !== 'confirmar'; // en 04, R1 y R2 ya muestran todo
+const tiposDocumento = [['dni', 'DNI'], ['ce', 'Carné de extranjería'], ['pasaporte', 'Pasaporte']];
+---
+
+<!-- Un bloque por estado: la isla clona el <template> que toca. Sin JS, el noscript explica que hace falta. -->
+<bugalu-agendar class="agendar" paso={paso}>
+  <EncabezadoPantalla variante="flujo" indice={`PASO 0${meta.n} / 05`} titulo={meta.titulo} descripcion={meta.descripcion} />
+  <Pasos pasos={etapas} actual={meta.n} etiqueta="Progreso de la asesoría" />
+  <div data-avisos></div>
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  <noscript>
+    <Aviso variante="informacion" titulo="Para agendar necesitas JavaScript. Actívalo en tu navegador y recarga la página." />
+  </noscript>
+
+  <div class:list={['agd-rejilla', !conLateral && 'agd-rejilla-sola']}>
+    <div class="agd-principal">
+      <div data-estado-perfil></div>
+      <div data-cuerpo hidden>
+        {paso === 'asesoria' && (
+          <>
+            <Panel titulo="Con quién">
+              <div class="agd-profesional">
+                <Avatar nombre=" " tamano="sm" rol="profesional" />
+                <div>
+                  <p class="agd-nombre" data-nombre></p>
+                  <p class="agd-ayuda" data-especialidades></p>
+                  <a class="agd-enlace" href="/asesorias/">Cambiar de profesional</a>
+                </div>
+              </div>
+            </Panel>
+            <form novalidate class="agd-bloques" data-formulario-asesoria>
+              <fieldset class="agd-grupo" data-grupo="duracion">
+                <legend>Duración</legend>
+                <div data-lista-duraciones class="agd-lista"></div>
+                <p class="agd-error" data-error-duracion hidden></p>
+              </fieldset>
+              <fieldset class="agd-grupo" data-grupo="modalidad">
+                <legend>Modalidad</legend>
+                <div class="agd-lista">
+                  <Casilla tipo="radio" nombre="modalidad" valor="presencial" etiqueta="Presencial" detalle="En un ambiente del estudio apartado de la sala o en un lugar que acuerden." />
+                  <Casilla tipo="radio" nombre="modalidad" valor="virtual" etiqueta="Virtual" detalle="Por videollamada de Google Meet." />
+                </div>
+                <p class="agd-error" data-error-modalidad hidden></p>
+              </fieldset>
+              <div class="agd-acciones"><Boton tipo="submit" tamano="grande" icono="arrow-right" data-continuar>Continuar</Boton></div>
+            </form>
+          </>
+        )}
+
+        {paso === 'horario' && (
+          <>
+            <Calendario modo="asesoria" />
+            <p class="agd-ayuda" data-ayuda-duracion></p>
+            <div class="agd-bloques" data-sin-inicios hidden>
+              <p class="agd-ayuda" data-sin-inicios-texto></p>
+              <div class="agd-acciones"><Boton variante="secundario" data-semana-siguiente>Ver semana siguiente</Boton></div>
+              <p class="agd-ayuda" data-otra-duracion hidden></p>
+            </div>
+            <BarraAcciones variante="flujo">
+              <Boton slot="secundaria" variante="secundario" href="#" data-anterior>Anterior</Boton>
+              <Boton slot="principal" icono="arrow-right" data-continuar>Continuar</Boton>
+            </BarraAcciones>
+          </>
+        )}
+
+        {paso === 'confirmar' && (
+          <>
+            <Panel codigo="R1" titulo="Tu asesoría"><dl class="agd-datos" data-revision></dl></Panel>
+            <Panel codigo="R2" titulo="Precio">
+              <Tabla titulo="Precio de la asesoría" columnas={['Concepto', 'Importe']} variante="partidas" numericas={[1]} data-tabla-precio />
+              <p class="agd-ayuda">Pagas el total en un solo pago para confirmar. Si el plazo vence sin pago, la asesoría se cancela y el horario se libera.</p>
+            </Panel>
+            <Panel codigo="R3" titulo="Lugar o enlace"><p data-lugar></p></Panel>
+            <Panel codigo="R4" titulo="Condiciones">
+              <div data-condiciones><p class="agd-ayuda" aria-busy="true">Cargando…</p></div>
+              <p class="agd-ayuda" data-motivo-condiciones hidden>Necesitamos mostrarte las condiciones antes de continuar.</p>
+            </Panel>
+            <BarraAcciones variante="flujo">
+              <Boton slot="secundaria" variante="secundario" href="#" data-anterior>Anterior</Boton>
+              <Boton slot="principal" data-confirmar>Agendar asesoría</Boton>
+            </BarraAcciones>
+          </>
+        )}
+
+        {paso === 'cuenta' && (
+          <>
+            <div data-cuenta-estado></div>
+            <form novalidate class="agd-bloques" data-formulario-cuenta hidden>
+              <div data-d1 hidden>
+                <Panel codigo="D1" titulo="Tus datos">
+                  <div class="agd-campos">
+                    <div data-fila-nombre><Campo nombre="nombre" etiqueta="Nombre" obligatorio autocomplete="name" /></div>
+                    <div class="agd-documento" data-fila-documento>
+                      <Campo tipo="selector" nombre="tipo_documento" etiqueta="Tipo de documento" obligatorio>
+                        <option value="">Elige una opción</option>
+                        {tiposDocumento.map(([valor, nombre]) => <option value={valor}>{nombre}</option>)}
+                      </Campo>
+                      <Campo nombre="numero_documento" etiqueta="Número" obligatorio autocomplete="off" spellcheck="false" />
+                    </div>
+                    <div data-fila-telefono><Campo tipo="tel" nombre="telefono" etiqueta="Teléfono" obligatorio ayuda="Solo números; con + y código de país si no es de Perú. Lo necesitas para agendar." autocomplete="tel" /></div>
+                    <Casilla nombre="es_menor" etiqueta="Soy menor de 18 años" detalle="Si lo marcas, por ahora no podrás agendar en línea: te ayudaremos por otro canal." />
+                  </div>
+                </Panel>
+              </div>
+              <div data-d2 hidden>
+                <Panel codigo="D2" titulo="Términos">
+                  <div class="agd-bloques" data-bloques></div>
+                  <p class="agd-ayuda" data-motivo-textos hidden>Necesitamos mostrarte las condiciones antes de continuar.</p>
+                </Panel>
+              </div>
+              <div class="agd-acciones">
+                <Boton variante="secundario" href="#" data-anterior>Anterior</Boton>
+                <Boton tipo="submit" data-guardar-cuenta>Guardar y continuar</Boton>
+              </div>
+            </form>
+          </>
+        )}
+
+        {paso === 'listo' && <div data-listo></div>}
+      </div>
+    </div>
+
+    {conLateral && (
+      <aside class="agd-lateral" data-cuerpo-lateral hidden>
+        <Panel titulo="Tu asesoría" variante="lateral">
+          <EtiquetaTecnica texto="SIN CONFIRMAR" />
+          <dl class="agd-datos" data-resumen></dl>
+        </Panel>
+      </aside>
+    )}
+  </div>
+
+  <template data-plantilla="aviso"><Aviso variante="error" titulo=" " accion={{ etiqueta: ' ', href: '#' }} /></template>
+  <template data-plantilla="aviso-exito"><Aviso variante="exito" titulo=" " /></template>
+  <template data-plantilla="aviso-info"><Aviso variante="informacion" titulo=" " accion={{ etiqueta: ' ', href: '#' }} /></template>
+  <template data-plantilla="error"><MensajeError id="" texto="" /></template>
+  <PlantillasResumenLegal />
+  <template data-plantilla="texto-error">
+    <Aviso variante="error" titulo="No pudimos cargar los textos." texto="Revisa tu conexión e inténtalo de nuevo.">
+      <div class="agd-acciones"><Boton variante="secundario" data-reintentar-textos>Reintentar</Boton></div>
+    </Aviso>
+  </template>
+  <template data-plantilla="menor">
+    <Aviso variante="critico" titulo="Aún no puedes agendar en línea" texto="Como eres menor de 18 años, tu madre, padre o tutor tiene que autorizar la asesoría, y eso todavía no se puede hacer en la app. Escríbenos y la agendamos contigo:">
+      <p class="agd-contacto" data-contacto hidden></p>
+      <div class="agd-acciones"><Boton variante="secundario" href="/">Volver al inicio</Boton></div>
+    </Aviso>
+  </template>
+  <template data-plantilla="cargando"><Panel titulo="Cargando" cargando /></template>
+  <template data-plantilla="perfil-no-disponible">
+    <Panel codigo="[404]" titulo="Perfil no disponible">
+      <Aviso variante="informacion" titulo="Este perfil no existe o ya no está publicado." accion={{ etiqueta: 'Ver el directorio', href: '/asesorias/' }} />
+    </Panel>
+  </template>
+  <template data-plantilla="sin-precios">
+    <Aviso variante="informacion" titulo=" " accion={{ etiqueta: 'Ver el directorio', href: '/asesorias/' }} />
+  </template>
+  <template data-plantilla="perfil-error">
+    <Aviso variante="error" titulo=" " texto="Revisa tu conexión e inténtalo de nuevo.">
+      <div class="agd-acciones"><Boton variante="secundario" data-reintentar-perfil>Reintentar</Boton></div>
+    </Aviso>
+  </template>
+  <template data-plantilla="duracion"><Casilla tipo="radio" nombre="duracion" valor="" etiqueta=" " detalle=" " /></template>
+  <template data-plantilla="listo">
+    <Aviso variante="exito" titulo="Asesoría agendada." />
+    <Panel codigo="L1" titulo="Asesoría " variante="destacado">
+      <dl class="agd-datos" data-datos-listo></dl>
+      <IndicadorEstado variante="barra" tono="pendiente" texto="PENDIENTE DE PAGO" dato=" " activo />
+    </Panel>
+    <Panel titulo="Siguientes pasos">
+      <ol class="agd-siguientes">
+        <li data-paso-1></li>
+        <li>Registra tu comprobante desde tu asesoría.</li>
+        <li>Cuando lo validemos, quedará confirmada y te enviaremos el evento para tu calendario.</li>
+      </ol>
+      <p class="agd-ayuda" data-correo hidden></p>
+    </Panel>
+    <div class="agd-acciones">
+      <Boton tamano="grande" href="#" data-pagar>Registrar pago</Boton>
+      <Boton variante="secundario" href="#" data-ver>Ver mi asesoría</Boton>
+    </div>
+  </template>
+  <template data-plantilla="listo-sin-datos">
+    <Aviso variante="exito" titulo="Asesoría agendada." texto="No pudimos mostrar el detalle ahora. La encuentras en tus asesorías.">
+      <div class="agd-acciones"><Boton href="/app/asesorias/mias">Ver mis asesorías</Boton></div>
+    </Aviso>
+  </template>
+</bugalu-agendar>
+
+<style is:global>
+  bugalu-agendar { display: block; }
+  bugalu-agendar .agd-rejilla { display: grid; gap: var(--espacio-6); grid-template-columns: minmax(0, 1fr); align-items: start; }
+  bugalu-agendar .agd-principal, bugalu-agendar .agd-bloques { display: grid; gap: var(--espacio-5); min-inline-size: 0; }
+  bugalu-agendar [data-cuerpo] { display: grid; gap: var(--espacio-5); }
+  bugalu-agendar [hidden] { display: none; }
+  bugalu-agendar .agd-rejilla-sola .agd-principal { max-inline-size: var(--medida-linea-lectura); }
+  bugalu-agendar .agd-profesional { display: flex; gap: var(--espacio-4); align-items: center; }
+  bugalu-agendar .agd-nombre { margin: 0; color: var(--color-texto-principal); font-weight: var(--fuente-peso-titulo); }
+  bugalu-agendar .agd-enlace { display: inline-flex; align-items: center; min-block-size: var(--medida-control-tactil); color: var(--color-texto-principal); }
+  bugalu-agendar .agd-grupo { margin: 0; padding: var(--espacio-5); border: var(--borde-grosor-base) solid var(--color-borde-fuerte); background: var(--color-fondo-superficie); min-inline-size: 0; }
+  bugalu-agendar .agd-grupo legend { padding-inline: var(--espacio-2); font-family: var(--fuente-familia-tecnica); font-size: var(--fuente-tamano-micro); text-transform: uppercase; color: var(--color-texto-principal); }
+  bugalu-agendar .agd-lista { display: grid; gap: var(--espacio-3); }
+  bugalu-agendar .agd-error { margin: var(--espacio-3) 0 0; color: var(--color-texto-principal); font-weight: var(--fuente-peso-titulo); }
+  bugalu-agendar .agd-campos { display: grid; gap: var(--espacio-4); }
+  bugalu-agendar .agd-documento { display: grid; gap: var(--espacio-4); grid-template-columns: minmax(0, 1fr); }
+  bugalu-agendar .agd-contacto { margin: 0; color: var(--color-texto-sobre-alerta); }
+  bugalu-agendar .agd-bloques .resumen-legal + .resumen-legal { padding-block-start: var(--espacio-5); border-block-start: var(--borde-grosor-fino) solid var(--color-borde-fuerte); }
+  bugalu-agendar .agd-ayuda { margin: 0; color: var(--color-texto-secundario); font-size: var(--fuente-tamano-pequeno); }
+  bugalu-agendar .agd-datos { display: grid; gap: var(--espacio-3); margin: 0; }
+  bugalu-agendar .agd-datos > div { display: grid; gap: var(--espacio-1); }
+  bugalu-agendar .agd-datos dt { font-family: var(--fuente-familia-tecnica); font-size: var(--fuente-tamano-micro); text-transform: uppercase; color: var(--color-texto-secundario); }
+  bugalu-agendar .agd-datos dd { margin: 0; color: var(--color-texto-principal); }
+  bugalu-agendar .agd-acciones { display: flex; flex-direction: column; gap: var(--espacio-3); align-items: stretch; }
+  bugalu-agendar .agd-siguientes { margin: 0; padding-inline-start: var(--espacio-5); display: grid; gap: var(--espacio-2); }
+  bugalu-agendar [data-avisos]:not(:empty) { margin-block-end: var(--espacio-5); }
+  bugalu-agendar [data-listo] { display: grid; gap: var(--espacio-5); }
+  bugalu-agendar .agd-lateral .etiqueta { display: flex; inline-size: fit-content; margin-block-end: var(--espacio-3); }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    bugalu-agendar .agd-documento { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+    bugalu-agendar .agd-acciones { flex-direction: row; align-items: center; flex-wrap: wrap; }
+  }
+  @media (min-width: 64em) { /* punto-quiebre-escritorio */
+    bugalu-agendar .agd-rejilla:not(.agd-rejilla-sola) { grid-template-columns: minmax(0, 1fr) var(--medida-columna-lateral); }
+  }
+</style>
+
+<script>
+  // @ts-nocheck
+  import { obtenerToken, obtenerCliente, normalizarTelefono } from '../servicios/sesion.js';
+  import { obtenerProfesional, crearAsesoria, obtenerAsesoria, nombreMostrado, textoPrecio, duracionTexto, MODALIDADES, pintarPartidasAsesoria } from '../servicios/asesorias.js';
+  import { ErrorApi, obtenerPerfil, actualizarPerfil } from '../servicios/api.js';
+  import { obtenerContacto } from '../servicios/pagos.js';
+  import { listarTextosLegales } from '../servicios/textos-legales.js';
+  import { aceptar, pendientesDe, bloquesRegistro, bloqueAsesoria } from '../servicios/aceptaciones.js';
+  import { resumenLegal, errorResumen, avisoResumen } from '../servicios/resumen-legal.js';
+  import { validarDocumento, faltaParaReservar } from '../servicios/perfil-datos.js';
+  import { ponerError, quitarError } from '../servicios/formulario.js';
+  import { ponerAvatar } from '../servicios/avatar.js';
+  import { soles, fechaDe, horaDe, diaMes, nombreDia, esFecha, inicioValido, duracionValida } from '../servicios/formatos.js';
+
+  const RUTAS = { asesoria: '/asesorias/agendar/', horario: '/asesorias/agendar/horario/', cuenta: '/asesorias/agendar/cuenta/', confirmar: '/asesorias/agendar/confirmar/' };
+  const ERROR_TERMINOS = 'Marca la casilla para aceptar los términos; sin ella no podemos activar tus asesorías.';
+  const ERROR_CONDICIONES = 'Marca la casilla para aceptar las condiciones; sin ella no podemos agendar tu asesoría.';
+  const FRANJA = {
+    fuera_de_horario: 'Ese horario ya no está publicado.',
+    anticipacion_insuficiente: 'Ese horario empieza demasiado pronto para agendarlo.',
+    anticipacion_excesiva: 'Ese horario aún no se puede agendar: está demasiado lejos.',
+  };
+  const fechaHora = (iso) => `${diaMes(fechaDe(iso))}, ${horaDe(iso)}`;
+  const faltan = (iso) => {
+    const min = Math.max(0, Math.floor((Date.parse(iso) - Date.now()) / 6e4));
+    const d = Math.floor(min / 1440);
+    const h = Math.floor((min % 1440) / 60);
+    return `faltan ${d ? `${d} d ${h} h` : h ? `${h} h ${min % 60} min` : `${min} min`}`;
+  };
+  const fin = (inicio, min) => new Date(Date.parse(inicio) + min * 6e4).toISOString();
+  const filaDl = (etiqueta, valor, cambiar) => {
+    const fila = document.createElement('div');
+    const dt = Object.assign(document.createElement('dt'), { textContent: etiqueta });
+    const dd = Object.assign(document.createElement('dd'), { textContent: valor });
+    if (cambiar) {
+      const a = Object.assign(document.createElement('a'), { href: cambiar, textContent: ' Cambiar' });
+      a.append(Object.assign(document.createElement('span'), { className: 'visualmente-oculto', textContent: ` ${etiqueta.toLowerCase()}` }));
+      dd.append(' ', a);
+    }
+    fila.append(dt, dd);
+    return fila;
+  };
+
+  class BugaluAgendar extends HTMLElement {
+    paso = '';
+    e = {};
+    prof = null;
+    enviando = false;
+    condVersion = null;
+    perfil = null;
+    bloques = [];
+    pendientesTipos = [];
+
+    async connectedCallback() {
+      this.paso = this.getAttribute('paso');
+      this.leerUrl();
+      // Antes de cualquier await: el calendario puede avisar el inicio de la URL antes de que esta isla escuche.
+      this.addEventListener('calendario-inicio', (ev) => this.alElegirInicio(ev.detail));
+      this.q('bugalu-calendario')?.avisarInicio?.();
+      this.addEventListener('click', (ev) => this.alPulsar(ev));
+      this.addEventListener('submit', (ev) => {
+        ev.preventDefault();
+        if (ev.target.matches('[data-formulario-asesoria]')) this.continuarAsesoria();
+        else this.guardarCuenta();
+      });
+      this.addEventListener('change', (ev) => this.alCambiar(ev));
+      if (this.paso === 'listo') {
+        this.q('[data-cuerpo]').hidden = false;
+        await this.iniciarListo();
+        return this.titulo().focus();
+      }
+      await this.iniciar();
+    }
+
+    q(selector) {
+      return this.querySelector(selector);
+    }
+    titulo() {
+      const h1 = this.q('h1');
+      h1.tabIndex = -1;
+      return h1;
+    }
+    plantilla(nombre) {
+      return this.q(`template[data-plantilla="${nombre}"]`).content.cloneNode(true);
+    }
+
+    // La URL es entrada no confiable: cada dato se acepta solo con su forma valida.
+    leerUrl() {
+      const p = new URLSearchParams(location.search);
+      const id = (x) => (x && /^[\w-]{1,64}$/.test(x) ? x : null);
+      const fecha = p.get('fecha');
+      const vista = p.get('vista');
+      const duracion = Number(p.get('duracion'));
+      this.e = {
+        profesional: id(p.get('profesional')),
+        duracion: duracion === 30 || duracion === 60 ? duracion : 0,
+        modalidad: ['presencial', 'virtual'].includes(p.get('modalidad')) ? p.get('modalidad') : null,
+        inicio: inicioValido(p.get('inicio')),
+        fecha: fecha && esFecha(fecha) ? fecha : null,
+        vista: ['semana', 'mes'].includes(vista) ? vista : null,
+        id: id(p.get('id')),
+      };
+    }
+    url(paso, extra = {}, aviso) {
+      const e = { ...this.e, ...extra };
+      const p = new URLSearchParams();
+      for (const k of ['profesional', 'duracion', 'modalidad', 'fecha', 'vista', 'inicio']) if (e[k]) p.set(k, String(e[k]));
+      if (aviso) p.set('aviso', aviso);
+      const consulta = p.toString();
+      return `${RUTAS[paso]}${consulta ? `?${consulta}` : ''}`;
+    }
+    rutaAcceso(destino) {
+      return `/acceso?${new URLSearchParams({ volver: this.url(destino) })}`;
+    }
+    guardarUrl() {
+      history.replaceState(null, '', this.url(this.paso));
+    }
+
+    // --- Arranque: profesional, guardas y primer paso incompleto ---
+
+    async iniciar() {
+      const e = this.e;
+      if (!e.profesional) return this.perfilNoDisponible();
+      // Si a un paso le falta un dato anterior, la isla va al primer paso incompleto.
+      const falta = this.paso === 'horario' ? !e.duracion || !e.modalidad : this.paso === 'confirmar' || this.paso === 'cuenta' ? !e.duracion || !e.modalidad || !e.inicio : false;
+      if (falta) return void location.replace(this.url(!e.duracion || !e.modalidad ? 'asesoria' : 'horario'));
+      if ((this.paso === 'confirmar' || this.paso === 'cuenta') && !(await obtenerToken())) return void location.replace(this.rutaAcceso(this.paso));
+      this.q('[data-estado-perfil]').replaceChildren(this.plantilla('cargando'));
+      this.q('[data-cuerpo-lateral]')?.setAttribute('hidden', '');
+      try {
+        this.prof = await obtenerProfesional(e.profesional, { anonimo: true });
+      } catch (error) {
+        if (error.estado === 404) return this.perfilNoDisponible();
+        const nodo = this.plantilla('perfil-error');
+        nodo.querySelector('.aviso-titulo').textContent = error.estado === 503 ? 'El servicio no responde.' : error.estado === 0 ? 'Sin conexión.' : 'No pudimos cargar al profesional.';
+        this.q('[data-estado-perfil]').replaceChildren(nodo);
+        return;
+      }
+      this.q('[data-estado-perfil]').replaceChildren();
+      const ofrecidas = this.prof.duraciones ?? [];
+      if (!ofrecidas.length) {
+        const nodo = this.plantilla('sin-precios');
+        nodo.querySelector('.aviso-titulo').textContent = `${nombreMostrado(this.prof)} aún no tiene precios publicados. Vuelve pronto.`;
+        this.q('[data-estado-perfil]').replaceChildren(nodo);
+        return;
+      }
+      if (this.paso !== 'asesoria' && !this.duracionOfrecida(e.duracion)) return void location.replace(this.url('asesoria', { duracion: null }));
+      if (this.paso === 'confirmar') {
+        // Faltan datos, textos o es menor: se completa en el paso 03 con la misma eleccion. Si el perfil no responde, decide el servidor al confirmar.
+        const perfil = await obtenerPerfil().catch(() => null);
+        if (perfil?.rol === 'profesional') return this.sinPermiso();
+        if (perfil && faltaParaReservar(perfil)) return void location.replace(this.url('cuenta'));
+      }
+      this.q('[data-cuerpo]').hidden = false;
+      const lateral = this.q('[data-cuerpo-lateral]');
+      if (lateral) lateral.hidden = false;
+      this.enlazarPasos();
+      this.q('[data-anterior]')?.setAttribute('href', this.url(this.paso === 'horario' ? 'asesoria' : this.paso === 'cuenta' ? 'horario' : 'horario'));
+      if (this.paso === 'asesoria') this.pintarAsesoria();
+      else if (this.paso === 'horario') this.iniciarHorario();
+      else if (this.paso === 'confirmar') this.iniciarConfirmar();
+      else if (this.paso === 'cuenta') await this.iniciarCuenta();
+      this.resumen();
+      if (this.paso !== 'listo') this.titulo().focus();
+    }
+    duracionOfrecida(min) {
+      return (this.prof?.duraciones ?? []).some((d) => d.minutos === min);
+    }
+    perfilNoDisponible() {
+      this.q('[data-estado-perfil]').replaceChildren(this.plantilla('perfil-no-disponible'));
+    }
+    sinPermiso() {
+      this.aviso('Las cuentas de profesional no agendan asesorías. Para agendar como artista, usa otra cuenta.', { etiqueta: 'Volver al inicio', href: '/app/' }, null, true);
+      this.q('[data-cuerpo]').hidden = true;
+    }
+    enlazarPasos() {
+      for (const paso of ['asesoria', 'horario', 'confirmar']) this.q(`.pasos [data-paso="${paso === 'asesoria' ? 'asesoría' : paso}"] a`)?.setAttribute('href', this.url(paso));
+    }
+
+    // --- Avisos y resumen ---
+
+    aviso(mensaje, enlace, enfocar, informativo = false) {
+      const nodo = this.plantilla(informativo ? 'aviso-info' : 'aviso');
+      const caja = nodo.querySelector('.aviso');
+      caja.querySelector('.aviso-titulo').textContent = mensaje;
+      const accion = caja.querySelector('.aviso-accion');
+      if (enlace && accion) Object.assign(accion, { textContent: enlace.etiqueta, href: enlace.href });
+      else accion?.remove();
+      this.q('[data-avisos]').replaceChildren(nodo);
+      caja.tabIndex = -1;
+      (enfocar ?? caja).focus();
+    }
+    sinAviso() {
+      this.q('[data-avisos]').replaceChildren();
+    }
+    revisar(...pasos) {
+      for (const paso of pasos) {
+        const item = this.q(`.pasos [data-paso="${paso}"]`);
+        const lectura = item?.querySelector('[data-lectura]');
+        if (!item || !lectura) continue;
+        item.dataset.estado = 'revisar';
+        lectura.querySelector('.pasos-icono')?.replaceChildren();
+        lectura.lastChild.textContent = 'REVISAR';
+      }
+    }
+    precioElegido() {
+      return this.prof?.duraciones?.find((d) => d.minutos === this.e.duracion);
+    }
+    resumen() {
+      const e = this.e;
+      const d = this.precioElegido();
+      const filas = [
+        ['Profesional', this.prof ? nombreMostrado(this.prof) : '—'],
+        ['Duración', e.duracion ? duracionTexto(e.duracion) : '—', 'asesoria'],
+        ['Modalidad', e.modalidad ? MODALIDADES[e.modalidad] : '—', 'asesoria'],
+        ['Fecha', e.inicio ? `${nombreDia(fechaDe(e.inicio))} ${diaMes(fechaDe(e.inicio))}` : '—', 'horario'],
+        ['Horario', e.inicio && e.duracion ? `${horaDe(e.inicio)} – ${horaDe(fin(e.inicio, e.duracion))}` : '—', 'horario'],
+      ];
+      const lateral = this.q('[data-resumen]');
+      lateral?.replaceChildren(...filas.map(([a, b]) => filaDl(a, b)), filaDl('Total', d ? soles(d.precio) : '—'));
+      this.q('[data-revision]')?.replaceChildren(...[...filas.slice(0, 3), ['Fecha y horario', e.inicio && e.duracion ? `${diaMes(fechaDe(e.inicio))}, ${horaDe(e.inicio)} – ${horaDe(fin(e.inicio, e.duracion))} (Horario de Lima)` : '—', 'horario']].map(([a, b, c]) => filaDl(a, b, c && this.url(c))));
+    }
+
+    // --- Eventos ---
+
+    alPulsar(ev) {
+      const o = ev.target;
+      if (o.closest('[data-continuar]') && this.paso === 'horario') return void this.continuarHorario();
+      if (o.closest('[data-confirmar]')) return void this.confirmar();
+      if (o.closest('[data-semana-siguiente]')) return void [...this.querySelectorAll('bugalu-calendario a')].find((x) => /siguiente/.test(x.textContent))?.click();
+      if (o.closest('[data-reintentar-perfil]')) return void this.iniciar();
+      if (o.closest('[data-reintentar-condiciones]')) return void this.cargarCondiciones();
+      if (o.closest('[data-reintentar-textos]')) return void this.reintentarCuenta();
+      if (o.closest('[data-anterior]') && this.enviando) ev.preventDefault();
+    }
+    alCambiar(ev) {
+      const o = ev.target;
+      if (o.name === 'duracion' || o.name === 'modalidad') {
+        this.e[o.name] = o.name === 'duracion' ? +o.value : o.value;
+        this.q(`[data-error-${o.name}]`).hidden = true;
+        this.guardarUrl();
+        this.resumen();
+      }
+    }
+
+    // --- 01 Asesoria ---
+
+    pintarAsesoria() {
+      const p = this.prof;
+      ponerAvatar(this.q('.avatar'), nombreMostrado(p), p.foto_url);
+      this.q('[data-nombre]').textContent = nombreMostrado(p);
+      this.q('[data-especialidades]').textContent = (p.especialidades ?? []).map((x) => x.nombre).join(', ');
+      const molde = this.plantilla('duracion');
+      const nodos = p.duraciones.map((d) => {
+        const nodo = molde.cloneNode(true);
+        const entrada = nodo.querySelector('input');
+        entrada.value = String(d.minutos);
+        entrada.checked = d.minutos === this.e.duracion || p.duraciones.length === 1;
+        if (entrada.checked) this.e.duracion = d.minutos;
+        nodo.querySelector('.casilla-etiqueta').textContent = duracionTexto(d.minutos);
+        nodo.querySelector('.casilla-detalle').textContent = textoPrecio(d);
+        return nodo;
+      });
+      this.q('[data-lista-duraciones]').replaceChildren(...nodos);
+      const m = this.q(`input[name="modalidad"][value="${this.e.modalidad}"]`);
+      if (m) m.checked = true;
+    }
+    continuarAsesoria() {
+      const faltas = [];
+      if (!this.e.duracion) faltas.push(['duracion', 'Elige cuánto dura tu asesoría.']);
+      if (!this.e.modalidad) faltas.push(['modalidad', 'Elige si es presencial o por videollamada.']);
+      for (const [campo, texto] of faltas) {
+        const caja = this.q(`[data-error-${campo}]`);
+        caja.textContent = texto;
+        caja.hidden = false;
+      }
+      if (faltas.length) {
+        this.aviso(`Revisa ${faltas.length} ${faltas.length === 1 ? 'campo' : 'campos'}.`, undefined, this.q(`input[name="${faltas[0][0]}"]`));
+        return;
+      }
+      location.href = this.url('horario');
+    }
+
+    // --- 02 Horario ---
+
+    iniciarHorario() {
+      const cal = this.q('bugalu-calendario');
+      this.q('[data-ayuda-duracion]').textContent = `Tu asesoría dura ${duracionTexto(this.e.duracion)}: elige dónde empieza.`;
+      cal.setAttribute('conservar', 'profesional,duracion,modalidad');
+      cal.setAttribute('nombre', nombreMostrado(this.prof));
+      cal.setAttribute('duracion', String(this.e.duracion));
+      cal.setAttribute('profesional', this.prof.id);
+      this.addEventListener('calendario-pintado', (ev) => this.alPintar(ev.detail.inicios));
+    }
+    // Semana sin inicios validos: se dice, se ofrece la siguiente y, si el profesional ofrece otra duracion, se sugiere.
+    alPintar(inicios) {
+      const caja = this.q('[data-sin-inicios]');
+      caja.hidden = inicios > 0;
+      if (inicios > 0) return;
+      this.q('[data-sin-inicios-texto]').textContent = `No hay horarios libres para ${duracionTexto(this.e.duracion)} esta semana.`;
+      const otra = this.prof.duraciones.find((d) => d.minutos !== this.e.duracion);
+      const p = this.q('[data-otra-duracion]');
+      p.hidden = !otra;
+      if (otra) p.replaceChildren('Prueba con ', Object.assign(document.createElement('a'), { href: this.url('asesoria', { duracion: otra.minutos, inicio: null }), textContent: duracionTexto(otra.minutos) }), '.');
+    }
+    alElegirInicio({ inicio }) {
+      this.e.inicio = inicio;
+      this.sinAviso();
+      this.guardarUrl();
+      this.resumen();
+      this.q('[data-anuncio]').textContent = `Inicio: ${nombreDia(fechaDe(inicio))} ${diaMes(fechaDe(inicio))}, ${horaDe(inicio)} a ${horaDe(fin(inicio, this.e.duracion))}. Total ${this.precioElegido() ? soles(this.precioElegido().precio) : ''}.`;
+    }
+    async continuarHorario() {
+      if (!this.e.inicio) {
+        const visible = (x) => x.offsetParent !== null;
+        const botones = [...this.querySelectorAll('bugalu-calendario button[data-inicio]')].filter((b) => visible(b) && !b.closest('details:not([open])'));
+        const resumen = [...this.querySelectorAll('bugalu-calendario summary')].find((x) => visible(x) && /libres/.test(x.textContent) && !/Sin horas libres/.test(x.textContent));
+        return this.aviso('Elige una hora de inicio en el calendario.', undefined, botones.find((b) => b.getAttribute('tabindex') === '0') ?? botones[0] ?? resumen);
+      }
+      location.href = (await obtenerToken()) ? this.url('confirmar') : this.rutaAcceso('confirmar');
+    }
+
+    // --- 04 Confirmar ---
+
+    iniciarConfirmar() {
+      const d = this.precioElegido();
+      const nombre = nombreMostrado(this.prof);
+      pintarPartidasAsesoria(this.q('[data-tabla-precio]') ?? this.q('.tabla'), `Asesoría de ${duracionTexto(this.e.duracion)} con ${nombre}`, d.precio, d.igv);
+      this.q('[data-lugar]').textContent = this.e.modalidad === 'presencial'
+        ? `${nombre} y el estudio te confirmarán el lugar antes de la cita; lo verás en tu asesoría y te llegará por correo.`
+        : 'El enlace de Google Meet te llega por correo y lo verás en tu asesoría antes de la cita.';
+      this.q('[data-confirmar]').setAttribute('disabled', '');
+      this.cargarCondiciones();
+    }
+    actualizarConfirmar() {
+      const c = this.q('[data-confirmar]');
+      if (c) c.disabled = !this.condVersion;
+    }
+    async cargarCondiciones(aviso) {
+      const caja = this.q('[data-condiciones]');
+      const motivo = this.q('[data-motivo-condiciones]');
+      this.condVersion = null;
+      this.actualizarConfirmar();
+      try {
+        const lista = await listarTextosLegales();
+        const bloque = Array.isArray(lista) ? bloqueAsesoria(lista) : null;
+        if (!bloque) throw new Error('sin condiciones');
+        const raiz = resumenLegal(this, { titulo: bloque.titulo, resumenes: bloque.resumenes, enlaces: bloque.enlaces, casillas: [bloque.casilla] });
+        if (aviso) avisoResumen(raiz, aviso);
+        caja.replaceChildren(raiz);
+        this.condVersion = bloque.version;
+        motivo.hidden = true;
+      } catch {
+        caja.replaceChildren(this.plantilla('texto-error'));
+        caja.querySelector('[data-reintentar-textos]')?.setAttribute('data-reintentar-condiciones', '');
+        motivo.hidden = false;
+      }
+      this.actualizarConfirmar();
+    }
+    async confirmar() {
+      if (this.enviando || !this.condVersion) return;
+      const marca = this.q('[data-condiciones] input[type="checkbox"]');
+      errorResumen(this.q('[data-condiciones] .resumen-legal'), marca.checked ? '' : ERROR_CONDICIONES);
+      if (!marca.checked) return marca.focus();
+      this.enviando = true;
+      this.sinAviso();
+      const boton = this.q('[data-confirmar]');
+      const texto = boton.textContent;
+      boton.disabled = true;
+      boton.setAttribute('aria-busy', 'true');
+      boton.textContent = 'Agendando…';
+      const anterior = this.q('[data-anterior]');
+      anterior.setAttribute('aria-disabled', 'true');
+      const { profesional, inicio, duracion, modalidad } = this.e;
+      try {
+        const a = await crearAsesoria({ id_profesional: profesional, inicio, duracion, modalidad, version_condiciones: this.condVersion });
+        location.href = `${RUTAS.confirmar.replace('confirmar', 'listo')}?${new URLSearchParams({ id: a.id })}`;
+        return;
+      } catch (error) {
+        await this.fallaAlConfirmar(error);
+      }
+      this.enviando = false;
+      this.actualizarConfirmar();
+      boton.removeAttribute('aria-busy');
+      boton.textContent = texto;
+      anterior.removeAttribute('aria-disabled');
+    }
+    async fallaAlConfirmar(error) {
+      const codigo = error instanceof ErrorApi ? error.codigo : '';
+      const estado = error instanceof ErrorApi ? error.estado : -1;
+      const horario = { etiqueta: 'Elegir otro horario', href: this.url('horario', { inicio: null, fecha: this.e.inicio ? fechaDe(this.e.inicio) : this.e.fecha }) };
+      // Orden del contrato: reaceptacion_requerida, perfil_incompleto, autorizacion_menor_pendiente, texto_desactualizado.
+      if (estado === 409 && codigo === 'reaceptacion_requerida') return void location.assign(this.url('cuenta', {}, 'textos-pendientes'));
+      if (estado === 409 && codigo === 'perfil_incompleto') return void location.assign(this.url('cuenta', {}, 'faltan-datos'));
+      if (estado === 409 && codigo === 'autorizacion_menor_pendiente') return void location.assign(this.url('cuenta', {}, 'menor'));
+      if (estado === 409 && codigo === 'texto_desactualizado') {
+        await this.cargarCondiciones(`Las condiciones cambiaron. Lee la versión ${error.detalles?.vigente?.version ?? 'nueva'} y vuelve a marcar la casilla.`);
+        const caja = this.q('[data-condiciones] [data-aviso]:not([hidden]) .aviso');
+        if (caja) {
+          caja.tabIndex = -1;
+          caja.focus();
+        }
+        return;
+      }
+      if (estado === 409 && codigo === 'horario_no_disponible') {
+        this.revisar('horario');
+        return this.aviso('Alguien agendó ese horario hace un momento. Elige otro; lo demás se conserva.', horario);
+      }
+      if (estado === 409 && codigo === 'duracion_no_ofrecida') {
+        this.revisar('asesoría');
+        return this.aviso(`${nombreMostrado(this.prof)} ya no ofrece asesorías de ${duracionTexto(this.e.duracion)}. Elige otra.`, { etiqueta: 'Cambiar duración', href: this.url('asesoria', { duracion: null }) });
+      }
+      if (estado === 422 && FRANJA[codigo]) {
+        this.revisar('horario');
+        return this.aviso(FRANJA[codigo], horario);
+      }
+      if (estado === 422) {
+        this.revisar('asesoría', 'horario');
+        return this.aviso('Algo en tu asesoría no es válido. Revisa los pasos.');
+      }
+      if (estado === 403) return this.sinPermiso();
+      if (estado === 401) return this.aviso('Tu sesión caducó. Inicia sesión para agendar; tu elección se conserva.', { etiqueta: 'Iniciar sesión', href: this.rutaAcceso('confirmar') });
+      if (estado === 503) return this.aviso('El servicio no responde. Tu asesoría no se guardó; inténtalo en unos minutos.');
+      if (estado === 0) return this.aviso('Sin conexión. Tu asesoría no se guardó; revisa tu red.');
+      this.aviso('Algo salió mal. Tu asesoría no se guardó. Revisa en Mis asesorías si se guardó antes de repetir.');
+    }
+
+    // --- 03 Completa tus datos (mismo paso que reservar sala) ---
+
+    async mostrarMenor() {
+      this.q('[data-formulario-cuenta]').hidden = true;
+      this.q('[data-cuenta-estado]').replaceChildren(this.plantilla('menor'));
+      const caja = this.q('[data-cuenta-estado] .aviso');
+      const contacto = await obtenerContacto().then((c) => c?.texto ?? null, () => null);
+      const p = this.q('[data-cuenta-estado] [data-contacto]');
+      if (contacto && p) Object.assign(p, { textContent: contacto, hidden: false });
+      return caja;
+    }
+    async iniciarCuenta() {
+      const estado = this.q('[data-cuenta-estado]');
+      const url = new URL(location.href);
+      const clave = url.searchParams.get('aviso');
+      if (clave) {
+        url.searchParams.delete('aviso');
+        history.replaceState(null, '', url);
+      }
+      estado.replaceChildren(this.plantilla('cargando'));
+      let perfil, lista;
+      try {
+        [perfil, lista] = await Promise.all([obtenerPerfil(), listarTextosLegales().catch(() => null)]);
+      } catch (error) {
+        if (error instanceof ErrorApi && error.estado === 401) return void location.replace(this.rutaAcceso('cuenta'));
+        const nodo = this.plantilla('texto-error');
+        nodo.querySelector('.aviso-titulo').textContent = 'No pudimos cargar tus datos.';
+        estado.replaceChildren(nodo);
+        return;
+      }
+      this.perfil = perfil;
+      estado.replaceChildren();
+      if (perfil.rol === 'profesional') return this.sinPermiso();
+      if (perfil.es_menor || clave === 'menor') return void (await this.mostrarMenor());
+      const pendientes = pendientesDe(perfil, 'registro').map((p) => p.tipo);
+      const falta = { nombre: !perfil.nombre, documento: !perfil.documento, telefono: !perfil.telefono };
+      if (!pendientes.length && !Object.values(falta).some(Boolean)) {
+        if (perfil.datos_para_reservar !== false) return void location.replace(this.url('confirmar'));
+        for (const c of Object.keys(falta)) falta[c] = true; // el servidor dice que falta algo que no vemos: se piden los tres
+      }
+      if (clave === 'faltan-datos') this.aviso('Antes de confirmar necesitamos tus datos.', undefined, null, true);
+      else if (clave === 'textos-pendientes') this.aviso('Antes de confirmar necesitamos que aceptes los términos actualizados.', undefined, null, true);
+      for (const [campo, visible] of Object.entries(falta)) if (!visible) this.q(`[data-fila-${campo}]`).remove();
+      const nombre = this.q('[name="nombre"]');
+      if (nombre) nombre.value = perfil.nombre ?? '';
+      const telefono = this.q('[name="telefono"]');
+      if (telefono) telefono.value = perfil.telefono ?? '';
+      this.q('[data-d1]').hidden = false;
+      this.pendientesTipos = pendientes;
+      if (pendientes.length) {
+        this.q('[data-d2]').hidden = false;
+        this.pintarTextos(lista);
+      } else this.q('[data-d2]').remove();
+      this.q('[data-formulario-cuenta]').hidden = false;
+    }
+    async reintentarCuenta() {
+      if (this.q('[data-formulario-cuenta]').hidden) return this.iniciarCuenta();
+      this.pintarTextos(await listarTextosLegales().catch(() => null));
+    }
+    pintarTextos(lista, avisos = {}) {
+      const caja = this.q('[data-d2] [data-bloques]');
+      const guardar = this.q('[data-guardar-cuenta]');
+      const motivo = this.q('[data-motivo-textos]');
+      this.bloques = Array.isArray(lista) ? bloquesRegistro(lista, this.pendientesTipos) : [];
+      if (!this.bloques.length) {
+        caja.replaceChildren(this.plantilla('texto-error'));
+        guardar.disabled = true;
+        motivo.hidden = false;
+        return;
+      }
+      guardar.disabled = false;
+      motivo.hidden = true;
+      caja.replaceChildren(
+        ...this.bloques.map((b) => {
+          const raiz = resumenLegal(this, { titulo: b.titulo, resumenes: b.resumenes, enlaces: b.enlaces, casillas: [b.casilla] });
+          raiz.dataset.clave = b.clave;
+          if (avisos[b.clave]) avisoResumen(raiz, avisos[b.clave]);
+          return raiz;
+        }),
+      );
+    }
+    async guardarCuenta() {
+      if (this.enviando) return;
+      this.sinAviso();
+      const form = this.q('[data-formulario-cuenta]');
+      const campo = (n) => form.querySelector(`[name="${n}"]`);
+      form.querySelectorAll('[aria-invalid="true"]').forEach((x) => (x.closest('.resumen-legal') ? errorResumen(x.closest('.resumen-legal'), '') : quitarError(x)));
+      const boton = this.q('[data-guardar-cuenta]');
+      const cambios = {};
+      if (campo('es_menor').checked) cambios.es_menor = true;
+      else {
+        const fallos = [];
+        const nombre = campo('nombre');
+        if (nombre) {
+          if (!nombre.value.trim()) fallos.push([nombre, 'Escribe tu nombre.']);
+          else cambios.nombre = nombre.value.trim();
+        }
+        const tipo = campo('tipo_documento');
+        if (tipo) {
+          const r = validarDocumento(tipo.value, campo('numero_documento').value);
+          if (r.tipo) fallos.push([tipo, r.tipo]);
+          if (r.numero) fallos.push([campo('numero_documento'), r.numero]);
+          if (r.valor) cambios.documento = r.valor;
+        }
+        const telefono = campo('telefono');
+        if (telefono) {
+          const numero = telefono.value.trim() ? normalizarTelefono(telefono.value) : null;
+          if (!telefono.value.trim()) fallos.push([telefono, 'Escribe tu teléfono; lo necesitas para agendar.']);
+          else if (!numero) fallos.push([telefono, 'Escribe entre 9 y 15 dígitos; puedes empezar con +.']);
+          else cambios.telefono = numero;
+        }
+        for (const [entrada, texto] of fallos) ponerError(this, entrada, texto);
+        const sinMarcar = this.bloques.filter((b) => !form.querySelector(`[data-clave="${b.clave}"] input`).checked);
+        for (const b of sinMarcar) errorResumen(form.querySelector(`[data-clave="${b.clave}"]`), b.clave === 'terminos' ? ERROR_TERMINOS : 'Marca la casilla para registrar la agrupación.');
+        const primero = fallos[0]?.[0] ?? (sinMarcar[0] && form.querySelector(`[data-clave="${sinMarcar[0].clave}"] input`));
+        if (primero) return primero.focus();
+      }
+      this.enviando = true;
+      boton.disabled = true;
+      boton.setAttribute('aria-busy', 'true');
+      const etiqueta = boton.textContent;
+      boton.textContent = 'Guardando…';
+      try {
+        if (Object.keys(cambios).length) this.perfil = await actualizarPerfil(cambios);
+        if (this.perfil?.es_menor && cambios.es_menor) {
+          const caja = await this.mostrarMenor();
+          caja.tabIndex = -1;
+          caja.focus();
+          return;
+        }
+        if (this.bloques.length && this.pendientesTipos.length) await aceptar('registro', this.bloques.flatMap((b) => b.textos));
+        location.assign(this.url('confirmar'));
+        return;
+      } catch (error) {
+        await this.fallaAlGuardarCuenta(error);
+      } finally {
+        this.enviando = false;
+        boton.disabled = this.pendientesTipos.length > 0 && this.bloques.length === 0;
+        boton.removeAttribute('aria-busy');
+        boton.textContent = etiqueta;
+      }
+    }
+    async fallaAlGuardarCuenta(error) {
+      const e = error instanceof ErrorApi ? error : null;
+      if (e?.estado === 409 && e.codigo === 'texto_desactualizado') {
+        const lista = await listarTextosLegales().catch(() => null);
+        const v = e.detalles?.vigente?.version;
+        this.pintarTextos(lista, Object.fromEntries(this.bloques.map((b) => [b.clave, `Las condiciones cambiaron. Lee la versión ${v ?? 'nueva'} y vuelve a marcar la casilla.`])));
+        const caja = this.q('[data-d2] [data-aviso]:not([hidden]) .aviso');
+        if (caja) {
+          caja.tabIndex = -1;
+          caja.focus();
+        }
+        return;
+      }
+      if (e?.estado === 401) return this.aviso('Tu sesión caducó. Inicia sesión para continuar; tus datos se conservan.', { etiqueta: 'Iniciar sesión', href: this.rutaAcceso('cuenta') });
+      if (e?.estado === 422) return this.aviso(e.mensaje || 'Revisa tus datos.');
+      if (e?.estado === 503) return this.aviso('El servicio no responde. No se guardó nada; inténtalo en unos minutos.');
+      if (e?.estado === 0) return this.aviso('Sin conexión. No se guardó nada; revisa tu red.');
+      this.aviso('Algo salió mal. Inténtalo de nuevo.');
+    }
+
+    // --- 05 Listo ---
+
+    async iniciarListo() {
+      const salida = this.q('[data-listo]');
+      if (!this.e.id) return salida.replaceChildren(this.plantilla('listo-sin-datos'));
+      let a;
+      try {
+        a = await obtenerAsesoria(this.e.id);
+      } catch (error) {
+        if (error instanceof ErrorApi && error.estado === 401) return this.aviso('Tu sesión caducó. Inicia sesión para ver tu asesoría.', { etiqueta: 'Iniciar sesión', href: `/acceso?${new URLSearchParams({ volver: location.pathname + location.search })}` });
+        return salida.replaceChildren(this.plantilla('listo-sin-datos'));
+      }
+      const nodo = this.plantilla('listo');
+      const total = a.precio?.total ?? a.total;
+      const cuota = (a.cuotas ?? [])[0];
+      nodo.querySelector('.panel-titulo').lastChild.textContent = ` ${a.folio}`;
+      nodo.querySelector('[data-datos-listo]').replaceChildren(
+        filaDl('Fecha', `${nombreDia(fechaDe(a.inicio))} ${diaMes(fechaDe(a.inicio))}`),
+        filaDl('Horario', `${horaDe(a.inicio)} – ${horaDe(a.fin)}`),
+        filaDl('Profesional', nombreMostrado(a.profesional ?? {})),
+        filaDl('Modalidad', MODALIDADES[a.modalidad] ?? a.modalidad),
+        filaDl('Total', soles(total)),
+      );
+      nodo.querySelector('.indicador-dato').textContent = `${fechaHora(a.vence_pago)} · ${faltan(a.vence_pago)}`;
+      nodo.querySelector('[data-paso-1]').textContent = `Paga ${soles(total)} antes del ${fechaHora(a.vence_pago)}.`;
+      const pagar = nodo.querySelector('[data-pagar]');
+      if (cuota?.id) pagar.href = `/app/asesorias/pagar?${new URLSearchParams({ id: a.id, cuota: cuota.id })}`;
+      else pagar.remove();
+      nodo.querySelector('[data-ver]').href = `/app/asesorias/detalle?${new URLSearchParams({ id: a.id })}`;
+      const correo = (await obtenerCliente().auth.getSession().catch(() => null))?.data?.session?.user?.email;
+      const nota = nodo.querySelector('[data-correo]');
+      if (correo) Object.assign(nota, { textContent: `Te enviamos estos datos a ${correo}.`, hidden: false });
+      salida.replaceChildren(nodo);
+    }
+  }
+
+  if (!customElements.get('bugalu-agendar')) customElements.define('bugalu-agendar', BugaluAgendar);
+</script>
