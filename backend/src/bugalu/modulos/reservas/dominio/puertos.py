@@ -12,6 +12,7 @@ from bugalu.modulos.reservas.dominio.modelos import (
     EspecialistaAplicado,
     Franja,
     NuevaReserva,
+    ParametrosDanos,
     RequisitosReserva,
     Reserva,
     ReservaVisible,
@@ -96,7 +97,11 @@ class RepositorioReservas(Protocol):
 
     async def eliminar_cierre(self, id_cierre: UUID) -> None: ...
 
-    async def obtener_parametros(self) -> dict[str, int]: ...
+    async def obtener_parametros(self) -> dict[str, Any]:
+        """Enteros por clave, mas `tarifa_hora_gestion` (Decimal)."""
+        ...
+
+    async def obtener_parametros_danos(self) -> ParametrosDanos: ...
 
     async def guardar_parametros(self, cambios: Mapping[str, int]) -> None: ...
 

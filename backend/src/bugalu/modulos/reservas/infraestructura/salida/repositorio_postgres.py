@@ -43,6 +43,7 @@ from bugalu.modulos.reservas.dominio.modelos import (
     Itse,
     NuevaReserva,
     PagoCuota,
+    ParametrosDanos,
     Politica,
     Referencia,
     Reprogramacion,
@@ -376,9 +377,16 @@ class RepositorioReservasPostgres:
     async def eliminar_cierre(self, id_cierre: UUID) -> None:
         await self._conexion.execute("delete from public.cierre_sala where id = %s", (id_cierre,))
 
-    async def obtener_parametros(self) -> dict[str, int]:
+    async def obtener_parametros(self) -> dict[str, Any]:
         filas = await self._filas("select clave, valor from public.parametro")
-        return {clave: int(valor) for clave, valor in filas}
+        tarifa = (await self._filas("select tarifa_hora_gestion from public.configuracion_danos"))[
+            0
+        ][0]
+        return {**{clave: int(valor) for clave, valor in filas}, "tarifa_hora_gestion": tarifa}
+
+    async def obtener_parametros_danos(self) -> ParametrosDanos:
+        tarifa, tope = (await self._filas("select * from public.parametros_danos()"))[0]
+        return ParametrosDanos(tarifa, int(tope))
 
     async def guardar_parametros(self, cambios: Mapping[str, int]) -> None:
         for clave, valor in cambios.items():

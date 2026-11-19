@@ -1,11 +1,20 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
+from typing import Any
 from uuid import UUID, uuid4
 
 from bugalu.compartido.errores import FranjaSolapada
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo
-from bugalu.modulos.reservas.dominio.modelos import Cierre, Franja, Itse, ReservaVisible, Sala
+from bugalu.modulos.reservas.dominio.modelos import (
+    Cierre,
+    Franja,
+    Itse,
+    ParametrosDanos,
+    ReservaVisible,
+    Sala,
+)
 
 LIMA = timezone(timedelta(hours=-5))
 SALA = Sala(uuid4(), "Sala principal", "La Molina")
@@ -39,7 +48,10 @@ class ReservasFalso:
             "dias_vigencia_credito": 30,
             "reprogramaciones_nivel_1": 2,
             "reprogramaciones_nivel_2": 1,
+            "tarifa_hora_gestion": Decimal("0.00"),
+            "tope_horas_sesiones_perdidas": 8,
         }
+        self.guardados: list[dict[str, int]] = []
 
     async def es_administrador(self) -> bool:
         return self.administrador
@@ -117,8 +129,14 @@ class ReservasFalso:
     async def eliminar_cierre(self, id_cierre: UUID) -> None:
         del self.cierres[id_cierre]
 
-    async def obtener_parametros(self) -> dict[str, int]:
+    async def obtener_parametros(self) -> dict[str, Any]:
         return dict(self.parametros)
 
     async def guardar_parametros(self, cambios: Mapping[str, int]) -> None:
+        self.guardados.append(dict(cambios))
         self.parametros.update(cambios)
+
+    async def obtener_parametros_danos(self) -> ParametrosDanos:
+        return ParametrosDanos(
+            self.parametros["tarifa_hora_gestion"], self.parametros["tope_horas_sesiones_perdidas"]
+        )

@@ -8,6 +8,7 @@ from pydantic import (
     AfterValidator,
     AwareDatetime,
     BaseModel,
+    ConfigDict,
     Field,
     StringConstraints,
     field_validator,
@@ -53,6 +54,19 @@ class NuevoTexto(BaseModel):
         if not set(valor) <= set(get_args(Contexto)):
             raise ValueError("contexto desconocido")
         return valor
+
+
+class NuevaVistaPrevia(BaseModel):
+    """RF-17 CA-18: hasta 200 000 caracteres (el limite de un archivo .md de 200 KB)."""
+
+    model_config = ConfigDict(extra="forbid")
+    contenido: Annotated[
+        str, StringConstraints(max_length=200_000), AfterValidator(_sin_nul_ni_blanco)
+    ]
+
+
+class VistaPrevia(BaseModel):
+    contenido_html: str
 
 
 class TextoResumen(BaseModel):

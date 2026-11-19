@@ -63,3 +63,15 @@ def test_parametros_plazos_adelanto_y_nivel() -> None:
     assert tipos == {"fecha_hora", "importe", "texto"}
     adelanto = next(e for e in ejemplos.values() if "adelanto" in e.concepto.lower())
     assert (adelanto.antes, adelanto.despues) == ("100.00", "80.00")
+
+
+def test_parametros_de_danos_se_muestran_como_importe_y_texto() -> None:
+    antes = {"tarifa_hora_gestion": D("0.00"), "tope_horas_sesiones_perdidas": 8}
+    despues = {"tarifa_hora_gestion": D("25.50"), "tope_horas_sesiones_perdidas": 12}
+    ejemplos = {
+        e.concepto: e for e in impacto.ejemplos_parametros(antes, despues, set(antes), AHORA)
+    }
+    tarifa = ejemplos["Tarifa por hora de gestión"]
+    assert (tarifa.antes, tarifa.despues, tarifa.tipo) == ("0.00", "25.50", "importe")
+    tope = ejemplos["Tope por sesiones perdidas"]
+    assert (tope.antes, tope.despues, tope.tipo) == ("8", "12", "texto")

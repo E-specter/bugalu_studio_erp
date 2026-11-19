@@ -9,6 +9,7 @@ from collections.abc import Set as Conjunto
 from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+from typing import Any
 
 from bugalu.compartido.plazos import calcular_vence_pago
 from bugalu.modulos.catalogo.dominio.precio import (
@@ -141,7 +142,7 @@ def ejemplos_profesional(diferencias: Mapping[str, tuple[str, str]]) -> list[Eje
     ]
 
 
-def _nivel(horas_de_aviso: int, p: Mapping[str, int]) -> str:
+def _nivel(horas_de_aviso: int, p: Mapping[str, Any]) -> str:
     if horas_de_aviso > p["horas_nivel_1"]:
         return "Nivel 1: sin cargo"
     if horas_de_aviso >= p["horas_nivel_2"]:
@@ -153,9 +154,15 @@ def _importe(porcentaje: int, base: str) -> str:
     return str((Decimal(base) * porcentaje / 100).quantize(Decimal("0.01")))
 
 
+_ETIQUETAS = {
+    "tarifa_hora_gestion": "Tarifa por hora de gestión",
+    "tope_horas_sesiones_perdidas": "Tope por sesiones perdidas",
+}
+
+
 def ejemplos_parametros(
-    antes: Mapping[str, int],
-    despues: Mapping[str, int],
+    antes: Mapping[str, Any],
+    despues: Mapping[str, Any],
     cambiados: Conjunto[str],
     ahora: datetime,
 ) -> list[Ejemplo]:
@@ -205,7 +212,12 @@ def ejemplos_parametros(
             Ejemplo("Cancelar con 30 h de aviso", _nivel(30, antes), _nivel(30, despues), TEXTO)
         )
     ejemplos += [
-        Ejemplo(c.replace("_", " ").capitalize(), str(antes[c]), str(despues[c]), TEXTO)
+        Ejemplo(
+            _ETIQUETAS.get(c) or c.replace("_", " ").capitalize(),
+            str(antes[c]),
+            str(despues[c]),
+            IMPORTE if c == "tarifa_hora_gestion" else TEXTO,
+        )
         for c in sorted(cambiados - cubiertos)
     ]
     return ejemplos

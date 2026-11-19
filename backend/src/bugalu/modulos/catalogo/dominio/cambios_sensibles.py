@@ -5,7 +5,7 @@ texto, la vista previa y el registro de cambios guardan lo mismo, y los recargos
 `noche.porcentaje`, `noche.desde`...
 """
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
 from datetime import datetime, time
 from decimal import ROUND_HALF_UP, Decimal
@@ -35,6 +35,8 @@ PARAMETROS_SENSIBLES = (
     "dias_vigencia_credito",
     "reprogramaciones_nivel_1",
     "reprogramaciones_nivel_2",
+    "tarifa_hora_gestion",  # decimal (soles); el resto son enteros
+    "tope_horas_sesiones_perdidas",
 )
 SENSIBLES: dict[str, tuple[str, ...]] = {
     "impuestos": ("porcentaje_igv", "precios_incluyen_igv"),
@@ -68,6 +70,14 @@ def texto(valor: Any) -> str:
     return str(valor)
 
 
+_DANOS = frozenset({"tarifa_hora_gestion", "tope_horas_sesiones_perdidas"})
+
+
+def afecta_reservas_vigentes(recurso: str, campos: Iterable[str]) -> bool:
+    """Los de danos se aplican al levantar el acta, no se guardan en las reservas (RF-20 CA-11)."""
+    return recurso != "parametros" or not set(campos) <= _DANOS
+
+
 def tipar(campo: str, valor: str) -> Any:
     """Inversa de `texto` segun el campo (para aplicar lo que guardo la vista previa)."""
     if campo in _BOOLEANOS:
@@ -76,7 +86,9 @@ def tipar(campo: str, valor: str) -> Any:
         return time.fromisoformat(valor)
     if campo == "unidad":
         return Unidad(valor)
-    if campo in PARAMETROS_SENSIBLES or campo.startswith("anticipacion_"):
+    if campo in PARAMETROS_SENSIBLES and campo != "tarifa_hora_gestion":
+        return int(valor)
+    if campo.startswith("anticipacion_"):
         return int(valor)
     return Decimal(valor)
 
@@ -107,7 +119,7 @@ def valores_impuestos(c: ConfiguracionImpuestos) -> dict[str, str]:
     return {"porcentaje_igv": texto(c.porcentaje), "precios_incluyen_igv": texto(c.incluido)}
 
 
-def valores_parametros(p: Mapping[str, int]) -> dict[str, str]:
+def valores_parametros(p: Mapping[str, Any]) -> dict[str, str]:
     return {clave: texto(valor) for clave, valor in p.items()}
 
 
@@ -126,7 +138,7 @@ def tipados(cambios: Mapping[str, str]) -> dict[str, Any]:
 
 
 def aplicar(recurso: str, actual: Any, cambios: Mapping[str, str]) -> Any:
-    """El recurso (objeto de dominio, o {clave: entero} en parametros) con los cambios puestos."""
+    """El recurso (objeto de dominio, o {clave: valor} en parametros) con los cambios puestos."""
     if recurso == "profesional":  # los precios ya van en texto canonico
         return {**actual, **cambios}
     nuevos = tipados(cambios)
@@ -152,7 +164,7 @@ def exigir_confirmacion(
         raise ConfirmacionRequerida(campos)
 
 
-def validar_plazos(parametros: Mapping[str, int]) -> None:
+def validar_plazos(parametros: Mapping[str, Any]) -> None:
     """El nivel 1 (mas lejano) debe superar al nivel 2 (ADR-015)."""
     if parametros["horas_nivel_1"] <= parametros["horas_nivel_2"]:
         raise PlazosIncoherentes(

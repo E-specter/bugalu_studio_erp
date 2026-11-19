@@ -86,3 +86,40 @@ def test_el_nivel_1_debe_superar_al_nivel_2() -> None:
     ):
         with pytest.raises(PlazosIncoherentes):
             cs.validar_plazos(malo)
+
+
+# --- RF-20 CA-11: parametros de danos ---
+
+DANOS = {"tarifa_hora_gestion": D("0.00"), "tope_horas_sesiones_perdidas": 8}
+
+
+def test_los_parametros_de_danos_son_sensibles_y_se_comparan_en_texto() -> None:
+    assert {"tarifa_hora_gestion", "tope_horas_sesiones_perdidas"} <= set(
+        cs.SENSIBLES["parametros"]
+    )
+    actual = cs.valores_parametros(DANOS)
+    assert actual == {"tarifa_hora_gestion": "0.00", "tope_horas_sesiones_perdidas": "8"}
+    with pytest.raises(ConfirmacionRequerida) as error:
+        cs.exigir_confirmacion("parametros", actual, {"tarifa_hora_gestion": "25.00"})
+    assert error.value.detalles == {"campos": ["tarifa_hora_gestion"]}
+    with pytest.raises(ConfirmacionRequerida):
+        cs.exigir_confirmacion("parametros", actual, {"tope_horas_sesiones_perdidas": "9"})
+    cs.exigir_confirmacion("parametros", actual, {"tarifa_hora_gestion": "0.00"})  # mismo valor
+
+
+def test_los_danos_no_afectan_a_reservas_vigentes_pero_el_resto_si() -> None:
+    assert not cs.afecta_reservas_vigentes("parametros", ["tarifa_hora_gestion"])
+    assert not cs.afecta_reservas_vigentes(
+        "parametros", ["tarifa_hora_gestion", "tope_horas_sesiones_perdidas"]
+    )
+    assert cs.afecta_reservas_vigentes(
+        "parametros", ["tope_horas_sesiones_perdidas", "horas_nivel_1"]
+    )
+    assert cs.afecta_reservas_vigentes("servicio", ["tarifa_hora"])
+
+
+def test_la_tarifa_de_gestion_se_tipa_decimal_y_el_tope_entero() -> None:
+    tarifa = cs.tipar("tarifa_hora_gestion", "25.50")
+    tope = cs.tipar("tope_horas_sesiones_perdidas", "12")
+    assert tarifa == D("25.50") and isinstance(tarifa, D)
+    assert tope == 12 and type(tope) is int

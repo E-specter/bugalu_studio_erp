@@ -149,7 +149,7 @@ async def test_especialista_recargos_y_parametros_exigen_confirmacion(
     assert r.json()["error"]["detalles"] == {"campos": ["porcentaje_adelanto"]}
     r = await cliente.get("/api/v1/parametros", headers=administrador)
     assert r.json()["porcentaje_adelanto"] == 50 and r.json()["horas_nivel_1"] == 48
-    assert len(r.json()) == 12
+    assert len(r.json()) == 14
 
 
 async def test_parametros_incoherentes_piden_confirmacion_428_antes_que_la_coherencia(

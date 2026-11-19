@@ -374,6 +374,10 @@ class CambioConfirmado(BaseModel):
 
 Entero = Annotated[StrictInt, Field(ge=1, le=100000)]
 EnteroPorcentaje = Annotated[StrictInt, Field(ge=1, le=100)]
+TarifaGestion = Annotated[
+    Decimal, Field(ge=0, le=Decimal("9999.99"), max_digits=6, decimal_places=2, allow_inf_nan=False)
+]
+TopeHoras = Annotated[StrictInt, Field(ge=1, le=200)]
 
 
 class Parametros(BaseModel):
@@ -390,6 +394,16 @@ class Parametros(BaseModel):
     dias_vigencia_credito: int
     reprogramaciones_nivel_1: int
     reprogramaciones_nivel_2: int
+    # RF-20 CA-11 (sensibles): anexo de danos.
+    tarifa_hora_gestion: Decimal
+    tope_horas_sesiones_perdidas: int
+
+
+class ParametrosDanos(BaseModel):
+    """Publico (RF-20 CA-12): lo que muestra el pie de las condiciones de uso."""
+
+    tarifa_hora_gestion: Decimal
+    tope_horas_sesiones_perdidas: int
 
 
 class CambiosParametros(BaseModel):
@@ -406,6 +420,8 @@ class CambiosParametros(BaseModel):
     dias_vigencia_credito: Entero | None = None
     reprogramaciones_nivel_1: Entero | None = None
     reprogramaciones_nivel_2: Entero | None = None
+    tarifa_hora_gestion: TarifaGestion | None = None
+    tope_horas_sesiones_perdidas: TopeHoras | None = None
 
     @field_validator("*", mode="before")
     @classmethod

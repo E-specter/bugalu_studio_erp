@@ -14,6 +14,14 @@ class Itse:
 
 
 @dataclass(frozen=True)
+class ParametrosDanos:
+    """Anexo de danos (RF-20 CA-11): tarifa por hora (0.00 = por fijar) y tope de horas."""
+
+    tarifa_hora_gestion: Decimal
+    tope_horas_sesiones_perdidas: int
+
+
+@dataclass(frozen=True)
 class Sala:
     id: UUID
     nombre: str
@@ -308,4 +316,5 @@ PARAMETROS = (
     "dias_vigencia_credito",
     "reprogramaciones_nivel_1",
     "reprogramaciones_nivel_2",
+    "tope_horas_sesiones_perdidas",
 )

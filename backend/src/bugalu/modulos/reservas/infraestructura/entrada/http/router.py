@@ -11,6 +11,7 @@ from bugalu.compartido.roles import SOLO_CLIENTES
 from bugalu.modulos.catalogo.infraestructura.entrada.http.esquemas import (
     CambiosParametros,
     Parametros,
+    ParametrosDanos,
 )
 from bugalu.modulos.reservas.aplicacion.actualizar_parametros.caso_de_uso import (
     ActualizarParametros,
@@ -29,6 +30,9 @@ from bugalu.modulos.reservas.aplicacion.listar_reservas.caso_de_uso import Lista
 from bugalu.modulos.reservas.aplicacion.listar_salas.caso_de_uso import ListarSalas
 from bugalu.modulos.reservas.aplicacion.marcar_inasistencia.caso_de_uso import MarcarInasistencia
 from bugalu.modulos.reservas.aplicacion.obtener_parametros.caso_de_uso import ObtenerParametros
+from bugalu.modulos.reservas.aplicacion.obtener_parametros_danos.caso_de_uso import (
+    ObtenerParametrosDanos,
+)
 from bugalu.modulos.reservas.aplicacion.obtener_reserva.caso_de_uso import ObtenerReserva
 from bugalu.modulos.reservas.aplicacion.publicar_franjas.caso_de_uso import PublicarFranjas
 from bugalu.modulos.reservas.aplicacion.quitar_cierre.caso_de_uso import QuitarCierre
@@ -231,6 +235,18 @@ async def obtener_parametros(request: Request, claims: Claims) -> Parametros:
     async with transaccion_con_identidad(_pool(request), claims) as conexion:
         valores = await ObtenerParametros(RepositorioReservasPostgres(conexion)).ejecutar()
     return Parametros(**valores)
+
+
+@router.get(
+    "/parametros/danos",
+    response_model=ParametrosDanos,
+    summary="Tarifa por hora de gestion y tope de horas del anexo de danos (publico)",
+    responses=_respuestas(),
+)
+async def obtener_parametros_danos(request: Request) -> ParametrosDanos:
+    async with transaccion_publica(_pool(request)) as conexion:
+        danos = await ObtenerParametrosDanos(RepositorioReservasPostgres(conexion)).ejecutar()
+    return ParametrosDanos(**vars(danos))
 
 
 @router.patch(

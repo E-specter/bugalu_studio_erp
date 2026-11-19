@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Request, Response
 from bugalu.compartido.autenticacion import obtener_claims
 from bugalu.compartido.base_datos import transaccion_con_identidad, transaccion_publica
 from bugalu.compartido.esquemas import RespuestaError
+from bugalu.modulos.identidad.aplicacion.permisos import exigir_administrador
 from bugalu.modulos.identidad.aplicacion.textos_legales import (
     AceptarTextos,
     ListarAceptacionesDeUsuario,
@@ -18,10 +19,13 @@ from bugalu.modulos.identidad.aplicacion.textos_legales import (
 from bugalu.modulos.identidad.infraestructura.entrada.http.esquemas_textos import (
     Aceptacion,
     NuevaAceptacion,
+    NuevaVistaPrevia,
     NuevoTexto,
     TextoLegal,
     TextoResumen,
+    VistaPrevia,
 )
+from bugalu.modulos.identidad.infraestructura.salida.markdown_a_html import markdown_a_html
 from bugalu.modulos.identidad.infraestructura.salida.repositorio_postgres import (
     RepositorioPostgres,
 )
@@ -85,6 +89,20 @@ async def publicar_texto(request: Request, claims: Claims, cuerpo: NuevoTexto) -
             cuerpo.vigente_desde,
         )
     return TextoLegal.desde_dominio(texto)
+
+
+@router.post(
+    "/textos-legales/previsualizar",
+    response_model=VistaPrevia,
+    summary="HTML saneado de un Markdown, sin guardar nada (administrador)",
+    responses=_respuestas(401, 403, 422),
+)
+async def previsualizar_texto(
+    request: Request, claims: Claims, cuerpo: NuevaVistaPrevia
+) -> VistaPrevia:
+    async with transaccion_con_identidad(request.app.state.pool, claims) as conexion:
+        await exigir_administrador(RepositorioPostgres(conexion), _yo(claims))
+    return VistaPrevia(contenido_html=markdown_a_html(cuerpo.contenido))
 
 
 @router.get(

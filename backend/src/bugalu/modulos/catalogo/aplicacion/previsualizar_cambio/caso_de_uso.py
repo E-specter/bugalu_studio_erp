@@ -73,7 +73,9 @@ class PrevisualizarCambio:
             [(c, a, n) for c, (a, n) in diferencias.items()],
             ejemplos,
             # shortcut: las asesorias vivas del profesional llegan en la etapa B (hoy no hay)
-            0 if recurso == "profesional" else await self._catalogo.contar_operaciones_vigentes(),
+            await self._catalogo.contar_operaciones_vigentes()
+            if recurso != "profesional" and sensibles.afecta_reservas_vigentes(recurso, diferencias)
+            else 0,
         )
 
     async def _ejemplos(

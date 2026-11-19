@@ -610,6 +610,8 @@ PARAMETROS = {
     "dias_vigencia_credito",
     "reprogramaciones_nivel_1",
     "reprogramaciones_nivel_2",
+    "tarifa_hora_gestion",
+    "tope_horas_sesiones_perdidas",
 }
 
 
@@ -695,6 +697,7 @@ CONTRATO = {
     ("delete", "/api/v1/cierres/{id_cierre}"): {401, 403, 404, 422, 503},
     ("get", "/api/v1/parametros"): {401, 403, 503},
     ("patch", "/api/v1/parametros"): {401, 403, 422, 503},
+    ("get", "/api/v1/parametros/danos"): {503},
     ("patch", "/api/v1/salas/{id_sala}"): {401, 403, 404, 422, 503},
 }
 

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from uuid import UUID, uuid4
 
 import pytest
@@ -17,6 +18,9 @@ from bugalu.modulos.reservas.aplicacion.actualizar_parametros.caso_de_uso import
 )
 from bugalu.modulos.reservas.aplicacion.consultar_disponibilidad.caso_de_uso import (
     ConsultarDisponibilidad,
+)
+from bugalu.modulos.reservas.aplicacion.obtener_parametros_danos.caso_de_uso import (
+    ObtenerParametrosDanos,
 )
 from bugalu.modulos.reservas.aplicacion.publicar_franjas.caso_de_uso import PublicarFranjas
 from bugalu.modulos.reservas.aplicacion.quitar_cierre.caso_de_uso import QuitarCierre
@@ -132,6 +136,26 @@ async def test_parametros_actualizan_solo_los_enviados_y_exigen_administrador() 
         await ActualizarParametros(falso).ejecutar({"horas_limite_pago": 4})
     assert falso.parametros["horas_limite_pago"] == 1
     await ActualizarParametros(falso).ejecutar({"horas_limite_pago": 1})
+
+
+async def test_los_parametros_de_danos_son_sensibles_y_el_mismo_valor_no_se_guarda() -> None:
+    falso = ReservasFalso()
+    for cambios in ({"tarifa_hora_gestion": Decimal("25.00")}, {"tope_horas_sesiones_perdidas": 9}):
+        with pytest.raises(ConfirmacionRequerida) as error:
+            await ActualizarParametros(falso).ejecutar({**cambios, "anticipacion_minima_horas": 5})
+        assert error.value.detalles == {"campos": list(cambios)}
+    assert falso.guardados == [] and falso.parametros["anticipacion_minima_horas"] == 2
+    r = await ActualizarParametros(falso).ejecutar(
+        {"tarifa_hora_gestion": Decimal("0.0"), "tope_horas_sesiones_perdidas": 8}
+    )
+    assert r["tarifa_hora_gestion"] == Decimal("0.00") and r["tope_horas_sesiones_perdidas"] == 8
+    assert falso.guardados == []  # nada cambio: no se escribe
+
+
+async def test_parametros_de_danos_los_lee_cualquiera_sin_ser_administrador() -> None:
+    falso = ReservasFalso(administrador=False, personal=False)
+    r = await ObtenerParametrosDanos(falso).ejecutar()
+    assert (r.tarifa_hora_gestion, r.tope_horas_sesiones_perdidas) == (Decimal("0.00"), 8)
 
 
 async def test_disponibilidad_fuera_de_1_a_42_dias_es_rango_invalido() -> None:

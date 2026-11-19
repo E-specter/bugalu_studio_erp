@@ -121,9 +121,12 @@ class RepositorioCatalogoPostgres:
             valores.append(id_fila)
         await self._conexion.execute(consulta, valores)
 
-    async def obtener_parametros(self) -> dict[str, int]:
+    async def obtener_parametros(self) -> dict[str, Any]:
         filas = await self._filas("select clave, valor from public.parametro")
-        return {clave: int(valor) for clave, valor in filas}
+        tarifa = (await self._filas("select tarifa_hora_gestion from public.configuracion_danos"))[
+            0
+        ][0]
+        return {**{clave: int(valor) for clave, valor in filas}, "tarifa_hora_gestion": tarifa}
 
     async def bloquear_recurso(self, recurso: str, id_recurso: UUID | None) -> None:
         await self._conexion.execute(
