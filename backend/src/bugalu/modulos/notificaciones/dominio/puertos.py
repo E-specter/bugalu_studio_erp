@@ -28,6 +28,7 @@ class DatosReserva:
     servicio: str
     sala: str
     tiene_evento: bool  # hubo un pago_aprobado con reserva_confirmada antes de este aviso
+    ubicacion: str | None = None  # asesoria: lugar o enlace (o `Por confirmar`)
 
 
 class EnviadorCorreo(Protocol):

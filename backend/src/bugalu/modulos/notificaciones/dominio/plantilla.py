@@ -13,6 +13,7 @@ from urllib.parse import quote
 from bugalu.modulos.notificaciones.dominio.calendario import AVISO_ADR_016
 
 _DETALLE = "/app/reservas/detalle?id={id_reserva}"
+_DETALLE_ASESORIA = "/app/asesorias/detalle?id={id_reserva}"
 _CREDITOS = "/app/reservas/creditos"
 _RUTAS_LEGALES = {
     "terminos_uso": "terminos-de-uso",
@@ -56,6 +57,8 @@ AVISOS: dict[str, Aviso] = {
     "reserva_cancelada_con_pagos": _VER_MI,
     "reserva_reprogramada": _VER_MI,
     "inasistencia_marcada": _VER_MI,
+    "asesoria_confirmada_profesional": _aviso("ASESORÍA", "Ver la asesoría", _DETALLE_ASESORIA),
+    "asesoria_encuentro_cambiado": _aviso("ASESORÍA", "Ver la asesoría", _DETALLE_ASESORIA),
     "eleccion_estudio_resuelta": _aviso("RESERVA", "Ver la reserva", _DETALLE, True),
     "credito_por_vencer": _aviso("CRÉDITO", "Ver mis créditos", _CREDITOS),
     "devolucion_solicitada": _aviso(
@@ -339,7 +342,10 @@ def _url_boton(aviso: Aviso, datos: dict[str, Any], url: str) -> str:
     campos = {k: quote(str(v), safe="") for k, v in datos.items()}
     if "tipo" in datos:
         campos["ruta"] = _RUTAS_LEGALES.get(str(datos["tipo"]), quote(str(datos["tipo"])))
-    return url + aviso.ruta.format_map(campos)
+    ruta = aviso.ruta
+    if str(datos.get("folio", "")).startswith("A-"):  # los avisos de reserva sirven a la asesoria
+        ruta = ruta.replace("/app/reservas/detalle", "/app/asesorias/detalle")
+    return url + ruta.format_map(campos)
 
 
 def componer(

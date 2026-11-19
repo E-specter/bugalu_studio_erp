@@ -26,6 +26,8 @@ METODO = {
     "reserva_reprogramada": "REQUEST",
     "reserva_cancelada_estudio": "CANCEL",
     "reserva_cancelada_con_pagos": "CANCEL",
+    "asesoria_confirmada_profesional": "REQUEST",
+    "asesoria_encuentro_cambiado": "REQUEST",
 }
 
 
@@ -79,7 +81,7 @@ def test_aviso_con_evento_lleva_el_ics_en_la_alternativa_y_como_adjunto(tipo: st
     calendario = next(p for p in msg.walk() if p.get_content_type() == "text/calendar")
     assert calendario.get_param("method") == METODO[tipo]
     adjunto = list(msg.iter_attachments())[0]
-    assert adjunto.get_filename() == "bugalu-R-2027-00042.ics"
+    assert adjunto.get_filename() == f"bugalu-{DATOS_AVISOS[tipo]['folio']}.ics"
     assert adjunto.get_content_disposition() == "attachment"
     for texto in (
         calendario.get_payload(decode=True).decode(),  # type: ignore[union-attr]

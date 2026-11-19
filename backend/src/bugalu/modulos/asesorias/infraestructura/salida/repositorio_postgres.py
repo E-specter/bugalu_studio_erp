@@ -17,7 +17,7 @@ from bugalu.compartido.errores import (
     RolNoAdmitido,
     SinPermiso,
 )
-from bugalu.modulos.asesorias.dominio.modelos import Especialidad, Horario, Profesional
+from bugalu.modulos.asesorias.dominio.modelos import Especialidad, Horario, Ocupado, Profesional
 from bugalu.modulos.catalogo.dominio.precio import ConfiguracionImpuestos
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo
 
@@ -247,8 +247,12 @@ class RepositorioAsesoriasPostgres:
 
     async def ocupados_en(
         self, id_profesional: UUID, desde: datetime, hasta: datetime
-    ) -> list[Tramo]:
-        return []  # shortcut: sin asesorias hasta la etapa B
+    ) -> list[Ocupado]:
+        filas = await self._filas(
+            "select inicio, fin, propia from public.ocupacion_profesional(%s, %s, %s)",
+            (id_profesional, desde, hasta),
+        )
+        return [Ocupado(*f) for f in filas]
 
     async def limites_reserva(self) -> tuple[int, int]:
         minima, maxima = (await self._filas("select * from public.limites_reserva()"))[0]

@@ -44,7 +44,10 @@ def armar(tipo: str, reserva: DatosReserva | None = RESERVA, datos: dict | None 
 
 
 def test_los_tipos_con_evento_son_los_de_la_spec() -> None:
-    assert TIPOS_CON_EVENTO == set(DATOS)
+    assert TIPOS_CON_EVENTO == set(DATOS) | {
+        "asesoria_confirmada_profesional",
+        "asesoria_encuentro_cambiado",
+    }  # los de asesoria: test_armado_asesorias
 
 
 @pytest.mark.parametrize(

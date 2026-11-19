@@ -4,7 +4,7 @@ from uuid import UUID
 
 from bugalu.compartido.errores import NoEncontrado, RangoInvalido
 from bugalu.modulos.asesorias.dominio.disponibilidad import minutos_libres_por_dia
-from bugalu.modulos.asesorias.dominio.modelos import Duracion, Horario
+from bugalu.modulos.asesorias.dominio.modelos import Duracion, Horario, Ocupado
 from bugalu.modulos.asesorias.dominio.precios import duraciones
 from bugalu.modulos.asesorias.dominio.puertos import RepositorioAsesorias
 from bugalu.modulos.reservas.dominio.disponibilidad import (
@@ -25,7 +25,7 @@ class DiaLibre:
 class Disponibilidad:
     limites: Limites
     horarios: list[Horario]
-    ocupados: list[Tramo]
+    ocupados: list[Ocupado]
     dias: list[DiaLibre]
     duraciones: list[Duracion]
 

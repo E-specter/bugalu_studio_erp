@@ -14,6 +14,7 @@ from bugalu.modulos.notificaciones.dominio.plantilla import (
     componer,
 )
 from bugalu.modulos.notificaciones.dominio.redaccion import redactar
+from bugalu.modulos.notificaciones.dominio.redaccion_rf15 import REDACTORES_RF15
 from bugalu.modulos.notificaciones.dominio.redaccion_rf16 import REDACTORES_RF16
 from bugalu.modulos.notificaciones.dominio.redaccion_rf18 import REDACTORES_RF18
 
@@ -175,7 +176,7 @@ def test_cada_tipo_redactable_tiene_fila_en_la_tabla_de_avisos() -> None:
     tipos = {
         "reserva_creada", "reserva_caducada", "pago_registrado", "pago_aprobado",
         "pago_rechazado", "reserva_finalizada_saldo", "reserva_cancelada_estudio",
-        "reserva_cancelada_cliente", "texto_legal_nuevo", *REDACTORES_RF18, *REDACTORES_RF16,
+        "reserva_cancelada_cliente", "texto_legal_nuevo", *REDACTORES_RF18, *REDACTORES_RF16, *REDACTORES_RF15,
     }  # fmt: skip
     assert tipos == set(AVISOS)
     with pytest.raises(ValueError):

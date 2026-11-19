@@ -11,6 +11,7 @@ from dotenv import dotenv_values
 
 from bugalu.compartido.configuracion import Configuracion
 from tests.conftest import UsuarioDePrueba
+from tests.modulos.pagos.infraestructura.conftest import pagos_limpios  # noqa: F401, E402
 from tests.modulos.reservas.infraestructura.conftest import (  # noqa: F401 - fixtures compartidas
     Ejecutar,
     administrador,
@@ -18,6 +19,8 @@ from tests.modulos.reservas.infraestructura.conftest import (  # noqa: F401 - fi
     cliente,
     cliente_a,
     con,
+    personal,
+    reservas_intactas,
     sql,
 )
 

@@ -21,7 +21,10 @@ _METODO = {
     "reserva_reprogramada": "REQUEST",
     "reserva_cancelada_estudio": "CANCEL",
     "reserva_cancelada_con_pagos": "CANCEL",
+    "asesoria_confirmada_profesional": "REQUEST",
+    "asesoria_encuentro_cambiado": "REQUEST",
 }
+_CONFIRMACIONES = frozenset({"pago_aprobado", "asesoria_confirmada_profesional"})
 TIPOS_CON_EVENTO = frozenset(_METODO)
 # SEQUENCE: segundos desde esta epoca propia (en Unix pasaria de 32 bits en 2038).
 EPOCA_SECUENCIA = datetime(2026, 1, 1, tzinfo=UTC)
@@ -30,7 +33,7 @@ EPOCA_SECUENCIA = datetime(2026, 1, 1, tzinfo=UTC)
 def _tiene_evento(p: Pendiente, reserva: DatosReserva | None) -> bool:
     if p.tipo not in _METODO:
         return False
-    if p.tipo == "pago_aprobado":  # es la confirmacion misma
+    if p.tipo in _CONFIRMACIONES:  # es la confirmacion misma
         return bool(p.datos.get("reserva_confirmada"))
     return reserva is not None and reserva.tiene_evento
 
@@ -51,6 +54,7 @@ def _evento(
         fin=datetime.fromisoformat(datos["fin"]) if "fin" in datos else reserva.fin,
         servicio=reserva.servicio,
         sala=reserva.sala,
+        ubicacion_texto=reserva.ubicacion,
     )
     metodo = _METODO[p.tipo]
     ics = generar_ics(
@@ -64,7 +68,12 @@ def _evento(
     )
     solicitud = metodo == "REQUEST"
     bloque = BloqueEvento(
-        texto_evento(metodo, p.tipo == "reserva_reprogramada", e.folio),
+        texto_evento(
+            metodo,
+            p.tipo == "reserva_reprogramada",
+            e.folio,
+            p.tipo == "asesoria_encuentro_cambiado",
+        ),
         con_aviso=solicitud,
         url_google=enlace_google(e, url) if solicitud else None,
         url_outlook=enlace_outlook(e, url) if solicitud else None,

@@ -27,6 +27,11 @@ class DatosEvento:
     fin: datetime
     servicio: str
     sala: str
+    ubicacion_texto: str | None = None  # asesoria: lugar o enlace en vez de la sala
+
+    @property
+    def es_asesoria(self) -> bool:
+        return self.folio.startswith("A-")
 
     def __post_init__(self) -> None:
         # UID y URL llevan estos dos valores sin escapar: solo UUID y folios de caracteres seguros.
@@ -44,18 +49,22 @@ def titulo(e: DatosEvento) -> str:
 
 
 def ubicacion(e: DatosEvento) -> str:
+    if e.ubicacion_texto:
+        return e.ubicacion_texto
     return f"Bugalú Studio, {e.sala}, {DIRECCION}"
 
 
 def url_detalle(e: DatosEvento, url: str) -> str:
-    return f"{url}/app/reservas/detalle?id={e.id_reserva}"
+    modulo = "asesorias" if e.es_asesoria else "reservas"
+    return f"{url}/app/{modulo}/detalle?id={e.id_reserva}"
 
 
 def descripcion(e: DatosEvento, url: str) -> str:
+    cosa, lista = ("Asesoría", "Mis asesorías") if e.es_asesoria else ("Reserva", "Mis reservas")
     return (
-        f"Reserva {e.folio} en Bugalú Studio: {e.servicio}, {e.sala}.\n"
+        f"{cosa} {e.folio} en Bugalú Studio: {e.servicio}, {e.sala}.\n"
         "Esta es una copia para tu calendario y no se sincroniza con la agenda de Bugalú. "
-        f"Lo vigente es lo que ves en Mis reservas: {url_detalle(e, url)}\n"
+        f"Lo vigente es lo que ves en {lista}: {url_detalle(e, url)}\n"
         "¿Dudas? WhatsApp +51 925 530 800."
     )
 
@@ -175,13 +184,18 @@ def enlace_outlook(e: DatosEvento, url: str) -> str:
     return f"https://outlook.live.com/calendar/0/deeplink/compose?{consulta}"
 
 
-def texto_evento(metodo: str, reprogramacion: bool, folio: str) -> str:
+def texto_evento(metodo: str, reprogramacion: bool, folio: str, encuentro: bool = False) -> str:
     archivo = f"bugalu-{folio}.ics"
     if metodo == "CANCEL":
         return (
             f"Adjuntamos la cancelación del evento (archivo {archivo}). Si añadiste tu reserva "
             "con el archivo, al abrirlo se quita de tu calendario. Si usaste los enlaces de "
             "Google o Outlook, bórrala a mano."
+        )
+    if encuentro:
+        return (
+            f"Adjuntamos el evento actualizado con el nuevo lugar o enlace (archivo {archivo}). "
+            "Si ya habías añadido el archivo anterior, este lo reemplaza."
         )
     if reprogramacion:
         return (

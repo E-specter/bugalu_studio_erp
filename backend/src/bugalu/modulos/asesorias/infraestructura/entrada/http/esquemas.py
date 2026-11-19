@@ -144,7 +144,7 @@ class DisponibilidadProfesional(BaseModel):
         return cls(
             limites=Limites(desde=d.limites.desde, hasta=d.limites.hasta),
             horarios=[Horario.desde_dominio(h) for h in d.horarios],
-            ocupados=[Ocupado(inicio=o.inicio, fin=o.fin) for o in d.ocupados],
+            ocupados=[Ocupado(inicio=o.inicio, fin=o.fin, propia=o.propia) for o in d.ocupados],
             dias=[DiaLibre(fecha=x.fecha, minutos_libres=x.minutos) for x in d.dias],
             duraciones=[Duracion.desde_dominio(x) for x in d.duraciones],
         )

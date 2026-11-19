@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, Protocol
 from uuid import UUID
 
-from bugalu.modulos.asesorias.dominio.modelos import Especialidad, Horario, Profesional
+from bugalu.modulos.asesorias.dominio.modelos import Especialidad, Horario, Ocupado, Profesional
 from bugalu.modulos.catalogo.dominio.precio import ConfiguracionImpuestos
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo
 
@@ -78,8 +78,8 @@ class RepositorioAsesorias(Protocol):
 
     async def ocupados_en(
         self, id_profesional: UUID, desde: datetime, hasta: datetime
-    ) -> list[Tramo]:
-        """Etapa B: asesorias vivas o ya dadas; sin ellas, vacio."""
+    ) -> list[Ocupado]:
+        """Asesorias vivas o ya dadas (no canceladas ni vencidas sin pago)."""
         ...
 
     async def limites_reserva(self) -> tuple[int, int]:

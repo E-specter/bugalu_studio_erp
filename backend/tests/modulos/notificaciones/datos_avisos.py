@@ -34,6 +34,14 @@ DATOS_AVISOS: dict[str, dict[str, Any]] = {
         "saldo": 190, "credito": 0, "sin_costo": False,
     },
     "inasistencia_marcada": {**_R, "retenido": 100},
+    "asesoria_confirmada_profesional": {
+        **_R, "folio": "A-2027-00007", "cliente": "Ana Torres", "modalidad": "virtual",
+        "lugar": None, "enlace": "https://meet.google.com/abc-defg-hij", "reserva_confirmada": True,
+    },
+    "asesoria_encuentro_cambiado": {
+        **_R, "folio": "A-2027-00007", "cliente": "Ana Torres", "profesional": "Pablo Uno",
+        "modalidad": "presencial", "lugar": "Av. Lima 123", "enlace": None,
+    },
     "eleccion_estudio_resuelta": {
         **_R, "cliente": "Ana Torres", "opcion": "devolucion", "monto": 100,
         "limite": "2027-03-17T04:59:59+00:00",

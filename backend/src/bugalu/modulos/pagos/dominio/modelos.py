@@ -32,6 +32,7 @@ class ReservaResumen:
     inicio: datetime
     estado: str
     porcentaje_igv: Decimal  # el guardado en la reserva al crearla (RF-20 CA-03)
+    tipo: str = "sala"  # sala | asesoria
 
 
 @dataclass(frozen=True)
@@ -72,6 +73,7 @@ class CapturaFirmada:
 class OrigenCredito:
     id_reserva: UUID
     folio: str
+    tipo: str = "sala"  # sala | asesoria
 
 
 @dataclass(frozen=True)

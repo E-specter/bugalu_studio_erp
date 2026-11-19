@@ -369,3 +369,23 @@ class HorarioSolapado(Conflicto):
 
 class HorarioConAsesorias(Conflicto):
     codigo = "horario_con_asesorias"
+
+
+class HorarioNoDisponible(Conflicto):
+    codigo = "horario_no_disponible"
+
+
+class DuracionNoOfrecida(Conflicto):
+    codigo = "duracion_no_ofrecida"
+
+
+class FueraDeHorario(DatosInvalidos):
+    codigo = "fuera_de_horario"
+
+
+class NoEditable(Conflicto):
+    codigo = "no_editable"
+
+
+class EnlaceInvalido(DatosInvalidos):
+    codigo = "enlace_invalido"

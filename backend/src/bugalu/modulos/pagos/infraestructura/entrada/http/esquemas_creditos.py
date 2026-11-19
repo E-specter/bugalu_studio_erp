@@ -16,6 +16,7 @@ from bugalu.modulos.reservas.infraestructura.entrada.http.esquemas import Devolu
 class OrigenCredito(BaseModel):
     id_reserva: UUID
     folio: str
+    tipo: str
 
 
 class Credito(BaseModel):
@@ -37,7 +38,9 @@ class Credito(BaseModel):
             "vence": c.vence.astimezone(LIMA),
             "estado": c.estado,
             "tipo": c.tipo,
-            "origen": OrigenCredito(id_reserva=c.origen.id_reserva, folio=c.origen.folio),
+            "origen": OrigenCredito(
+                id_reserva=c.origen.id_reserva, folio=c.origen.folio, tipo=c.origen.tipo
+            ),
         }
         if c.devolucion:  # opcional: solo si alguna vez se pidio
             campos["devolucion"] = Devolucion.desde_dominio(c.devolucion)

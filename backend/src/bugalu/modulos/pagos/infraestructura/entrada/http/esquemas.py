@@ -22,6 +22,7 @@ class CuotaDelPago(BaseModel):
 
 class ReservaDelPago(BaseModel):
     id: UUID
+    tipo: str
     folio: str
     inicio: datetime
     estado: str
@@ -78,6 +79,7 @@ class Pago(BaseModel):
             cuota=CuotaDelPago(id=p.cuota.id, hito=p.cuota.hito, monto=p.cuota.monto),
             reserva=ReservaDelPago(
                 id=p.reserva.id,
+                tipo=p.reserva.tipo,
                 folio=p.reserva.folio,
                 inicio=p.reserva.inicio.astimezone(LIMA),
                 estado=p.reserva.estado,

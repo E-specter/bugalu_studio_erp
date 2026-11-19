@@ -48,7 +48,7 @@ _INVALIDOS: dict[str, tuple[type[DatosInvalidos], str, str]] = {
 _CREDITO = (
     "select k.id, k.monto, k.saldo, k.vence, "
     "case when k.estado = 'vigente' and k.vence <= now() and not k.congelado "
-    "then 'vencido' else k.estado end, k.tipo, k.id_reserva, r.folio "
+    "then 'vencido' else k.estado end, k.tipo, k.id_reserva, r.folio, r.tipo "
     "from public.credito k join public.reserva r on r.id = k.id_reserva "
 )
 
@@ -116,7 +116,7 @@ class RepositorioCreditosPostgres:
                 f[3],
                 f[4],
                 f[5],
-                OrigenCredito(f[6], f[7]),
+                OrigenCredito(f[6], f[7], f[8]),
                 devoluciones.get(f[0]),
             )
             for f in filas

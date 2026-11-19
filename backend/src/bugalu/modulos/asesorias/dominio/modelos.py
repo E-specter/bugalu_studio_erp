@@ -5,6 +5,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from bugalu.modulos.catalogo.dominio.precio import Impuesto
+from bugalu.modulos.reservas.dominio.disponibilidad import Tramo
 
 
 @dataclass(frozen=True)
@@ -42,3 +43,10 @@ class Horario:
     id_profesional: UUID
     inicio: datetime
     fin: datetime
+
+
+@dataclass(frozen=True)
+class Ocupado(Tramo):
+    """Tramo ocupado de un profesional; `propia`: es del cliente que consulta."""
+
+    propia: bool = False

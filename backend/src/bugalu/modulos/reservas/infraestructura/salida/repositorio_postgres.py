@@ -488,42 +488,48 @@ class RepositorioReservasPostgres:
                 ) from None
             raise
 
+    async def cuotas_de(self, estados: Mapping[UUID, str]) -> dict[UUID, list[CuotaReserva]]:
+        """Cuotas y pagos de reservas (sala o asesoria); `estados`: id de reserva -> estado."""
+        cuotas: dict[UUID, list[CuotaReserva]] = {}
+        pagos: dict[UUID, list[PagoCuota]] = {}
+        ids = list(estados)
+        for f in await self._filas(  # la RLS deja ver solo los pagos propios (o todos al admin)
+            "select id_cuota, id, estado, metodo, monto, numero_operacion, motivo_rechazo, "
+            "registrado_en from public.comprobante_pago "
+            "where id_cuota in (select id from public.cuota where id_reserva = any(%s)) "
+            "order by registrado_en, id",
+            (ids,),
+        ):
+            pagos.setdefault(f[0], []).append(PagoCuota(*f[1:]))
+        for f in await self._filas(
+            "select id, id_reserva, hito, monto, estado, pagado from public.cuota "
+            "where id_reserva = any(%s) order by hito",
+            (ids,),
+        ):
+            de_la_cuota = pagos.get(f[0], [])
+            estado = estado_de_cuota(f[4], de_la_cuota)
+            cuotas.setdefault(f[1], []).append(
+                CuotaReserva(
+                    f[0],
+                    f[2],
+                    f[3],
+                    estado,
+                    cuota_pagable(estado, f[2], estados[f[1]]),
+                    tuple(de_la_cuota),
+                    f[5],
+                )
+            )
+        return cuotas
+
     async def _reservas(self, condicion: str, parametros: Sequence[Any]) -> list[Reserva]:
         filas = await self._filas(
             f"{_RESERVA} where {condicion} order by r.inicio, r.folio", parametros
         )
         ids = [f[0] for f in filas]
         cuotas: dict[UUID, list[CuotaReserva]] = {}
-        pagos: dict[UUID, list[PagoCuota]] = {}
         especialistas: dict[UUID, list[Referencia]] = {}
         if ids:
-            for f in await self._filas(  # la RLS deja ver solo los pagos propios (o todos al admin)
-                "select id_cuota, id, estado, metodo, monto, numero_operacion, motivo_rechazo, "
-                "registrado_en from public.comprobante_pago "
-                "where id_cuota in (select id from public.cuota where id_reserva = any(%s)) "
-                "order by registrado_en, id",
-                (ids,),
-            ):
-                pagos.setdefault(f[0], []).append(PagoCuota(*f[1:]))
-            estados = {f[0]: f[2] for f in filas}
-            for f in await self._filas(
-                "select id, id_reserva, hito, monto, estado, pagado from public.cuota "
-                "where id_reserva = any(%s) order by hito",
-                (ids,),
-            ):
-                de_la_cuota = pagos.get(f[0], [])
-                estado = estado_de_cuota(f[4], de_la_cuota)
-                cuotas.setdefault(f[1], []).append(
-                    CuotaReserva(
-                        f[0],
-                        f[2],
-                        f[3],
-                        estado,
-                        cuota_pagable(estado, f[2], estados[f[1]]),
-                        tuple(de_la_cuota),
-                        f[5],
-                    )
-                )
+            cuotas = await self.cuotas_de({f[0]: f[2] for f in filas})
             for f in await self._filas(
                 "select re.id_reserva, e.id, e.nombre from public.reserva_especialista re "
                 "join public.especialista e on e.id = re.id_especialista "
