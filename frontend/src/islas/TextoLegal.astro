@@ -4,6 +4,7 @@ import Aviso from '../componentes/Aviso.astro';
 import Boton from '../componentes/Boton.astro';
 import Tabla from '../componentes/Tabla.astro';
 import ContactoEstudio from '../componentes/internos/ContactoEstudio.astro';
+import EstilosProsa from '../componentes/internos/EstilosProsa.astro';
 
 interface Props {
   tipo: string; // clave de la API (terminos_uso...) o 'directorio'
@@ -13,6 +14,8 @@ interface Props {
 const { tipo, titulo, slug } = Astro.props;
 const directorio = tipo === 'directorio';
 ---
+
+<EstilosProsa />
 
 <!-- Un bloque por estado (estados-sistema): la isla clona el que toca. Sin JS, el noscript oculta la carga y da el contacto del estudio. -->
 <bugalu-texto-legal class="texto" tipo={tipo} data-slug={slug}>
@@ -65,6 +68,9 @@ const directorio = tipo === 'directorio';
         <div class="texto-avisos" data-avisos></div>
         <Panel titulo="En pocas palabras" variante="destacado"><p data-resumen></p></Panel>
         <div class="prosa" data-contenido></div>
+        <div data-valores hidden>
+          <Panel titulo="Valores vigentes"><p data-valores-texto></p></Panel>
+        </div>
       </div>
     </template>
   )}
@@ -82,29 +88,9 @@ const directorio = tipo === 'directorio';
   // @ts-nocheck
   import { listarTextosLegales, obtenerVersionTexto, tipos, esVersion, delTipo } from '../servicios/textos-legales.js';
   import { llenarAviso, formatearFecha } from '../servicios/formulario.js';
-
-  const PERMITIDOS = ['href', 'src', 'alt', 'title', 'colspan', 'rowspan', 'scope'];
-  // El backend ya sanea el HTML; esto es una segunda barrera en el navegador: DOMParser no ejecuta nada y se quita lo activo.
-  function limpiar(html) {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    doc.querySelectorAll('script, style, iframe, object, embed, form, link, meta, base, svg, math').forEach((n) => n.remove());
-    doc.body.querySelectorAll('*').forEach((n) => {
-      for (const a of [...n.attributes]) {
-        // Solo atributos permitidos; los enlaces, a https, correo, ancla o ruta propia (no `//x` ni `/\x`).
-        const url = ['href', 'src'].includes(a.name) && !/^(https?:|mailto:|#|\/(?![/\\]))/i.test(a.value.replace(/[\t\n\r ]/g, ''));
-        if (!PERMITIDOS.includes(a.name) || url) n.removeAttribute(a.name);
-      }
-    });
-    // Un texto con <h1> compite con el de la pagina: sus encabezados bajan un nivel (a11y: el contenido empieza en <h2>).
-    if (doc.body.querySelector('h1')) {
-      [...doc.body.querySelectorAll('h1, h2, h3, h4, h5')].reverse().forEach((h) => {
-        const nuevo = doc.createElement(`h${Number(h.tagName[1]) + 1}`);
-        nuevo.append(...h.childNodes);
-        h.replaceWith(nuevo);
-      });
-    }
-    return [...doc.body.childNodes];
-  }
+  import { limpiar } from '../servicios/prosa.js';
+  import { obtenerParametrosDanos } from '../servicios/franjas.js';
+  import { soles } from '../servicios/formatos.js';
 
   class BugaluTextoLegal extends HTMLElement {
     connectedCallback() {
@@ -172,8 +158,19 @@ const directorio = tipo === 'directorio';
       return 'Textos legales cargados';
     }
 
+    // VALORES VIGENTES: son los de hoy aunque se lea una version antigua (`?version=`).
+    valores(danos) {
+      if (!danos || danos.tarifa_hora_gestion == null || !Number.isInteger(danos.tope_horas_sesiones_perdidas)) return;
+      const tarifa = Number(danos.tarifa_hora_gestion) === 0 ? 'por fijar' : soles(danos.tarifa_hora_gestion);
+      const horas = danos.tope_horas_sesiones_perdidas;
+      this.querySelector('[data-valores-texto]').textContent = `Tarifa por hora de gestión: ${tarifa} · Tope por sesiones perdidas: ${horas} ${horas === 1 ? 'hora' : 'horas'} de sala`;
+      this.querySelector('[data-valores]').hidden = false;
+    }
+
     async texto() {
       const { slug, nombre } = tipos[this.tipo];
+      // RF-20 CA-12: el pie de las condiciones se pide junto con el texto y, si falla, el texto queda sin el pie y sin aviso.
+      const danos = this.tipo === 'condiciones_contratacion' ? obtenerParametrosDanos().catch(() => null) : null;
       const raiz = `/legal/${slug}/`;
       const pedida = new URLSearchParams(location.search).get('version');
       const lista = await listarTextosLegales();
@@ -216,6 +213,7 @@ const directorio = tipo === 'directorio';
       this.querySelector('[data-resumen]').textContent = resumen ?? '';
       this.querySelector('[data-resumen]').closest('.panel').hidden = !resumen;
       this.querySelector('[data-contenido]').replaceChildren(...limpiar(t.contenido_html ?? ''));
+      this.valores(await danos);
       return `${nombre}, versión ${t.version}`;
     }
   }
@@ -268,52 +266,5 @@ const directorio = tipo === 'directorio';
   }
   .texto :global(.texto-avisos:empty) {
     display: none;
-  }
-  /* Prosa (fuente-tamano-lectura, ancho medida-linea-lectura): el HTML llega del backend, asi que sus etiquetas se estilan desde aqui. */
-  .texto :global(.prosa) {
-    color: var(--color-texto-cuerpo);
-    font-size: var(--fuente-tamano-lectura);
-    line-height: var(--fuente-interlineado-lectura);
-    overflow-wrap: anywhere;
-  }
-  .texto :global(.prosa > * + *) {
-    margin-block-start: var(--espacio-4);
-  }
-  .texto :global(.prosa :is(h2, h3, h4)) {
-    margin-block-start: var(--espacio-8);
-    text-transform: none;
-  }
-  .texto :global(.prosa h2) {
-    font-size: var(--fuente-tamano-titulo-sm);
-  }
-  .texto :global(.prosa :is(h3, h4)) {
-    font-size: var(--fuente-tamano-lectura);
-  }
-  .texto :global(.prosa :is(ul, ol)) {
-    padding-inline-start: var(--espacio-6);
-  }
-  .texto :global(.prosa a) {
-    color: var(--color-texto-principal);
-    text-decoration: underline;
-  }
-  .texto :global(.prosa blockquote) {
-    margin-inline: 0;
-    padding-inline-start: var(--espacio-4);
-    border-inline-start: var(--borde-grosor-base) solid var(--color-borde-fuerte);
-  }
-  .texto :global(.prosa table) {
-    display: block;
-    max-inline-size: 100%;
-    overflow-x: auto;
-    border-collapse: collapse;
-  }
-  .texto :global(.prosa :is(th, td)) {
-    padding: var(--espacio-2) var(--espacio-3);
-    border: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
-    text-align: start;
-  }
-  .texto :global(.prosa img) {
-    max-inline-size: 100%;
-    block-size: auto;
   }
 </style>

@@ -13,6 +13,8 @@ export const contextos = { registro: 'Registro', reserva: 'Reserva de sala', ase
 export const listarTextosLegales = () => pedir('/api/v1/textos-legales', { sinToken: true });
 export const obtenerVersionTexto = (tipo, version) => pedir(`/api/v1/textos-legales/${encodeURIComponent(tipo)}/versiones/${encodeURIComponent(version)}`, { sinToken: true });
 export const publicarTexto = (cuerpo) => pedir('/api/v1/textos-legales', { method: 'POST', cuerpo });
+// RF-17 CA-18: el mismo HTML saneado que TextoLegal, sin guardar nada.
+export const previsualizarTexto = (contenido) => pedir('/api/v1/textos-legales/previsualizar', { method: 'POST', cuerpo: { contenido } });
 export const retirarVersion = (tipo, version) => pedir(`/api/v1/textos-legales/${encodeURIComponent(tipo)}/versiones/${encodeURIComponent(version)}`, { method: 'DELETE' });
 
 export const esVersion = (v) => /^\d+\.\d+\.\d+$/.test(v ?? '');

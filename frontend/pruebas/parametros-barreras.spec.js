@@ -6,7 +6,7 @@ import { simular, comoAdministrador, json, errorApi } from './ayudas-admin.js';
 const PARAMETROS = {
   dias_limite_pago: 3, horas_limite_pago: 24, anticipacion_minima_horas: 2, anticipacion_maxima_semanas: 8,
   porcentaje_adelanto: 50, horas_nivel_1: 48, horas_nivel_2: 24, porcentaje_penalizacion_nivel_2: 25, minutos_tolerancia_inasistencia: 15,
-  dias_vigencia_credito: 30, reprogramaciones_nivel_1: 2, reprogramaciones_nivel_2: 1,
+  dias_vigencia_credito: 30, reprogramaciones_nivel_1: 2, reprogramaciones_nivel_2: 1, tarifa_hora_gestion: '25.00', tope_horas_sesiones_perdidas: 8,
 };
 const previa = (cambios, extra = {}) => ({
   token: 't1', expira_en: '2026-11-16T15:10:00Z', palabra: 'CONFIRMAR', recurso: 'parametros', id_recurso: null, nombre_recurso: 'Parámetros de reserva',
@@ -60,7 +60,7 @@ for (const t of tamanos) {
     await expect(page.getByRole('heading', { name: /P3 Cancelación y adelanto/i })).toBeVisible();
     const valores = { 'Adelanto para confirmar (%)': '50', 'Límite del nivel 1 (horas)': '48', 'Límite del nivel 2 (horas)': '24', 'Penalización del nivel 2 (%)': '25', 'Tolerancia de inasistencia (min)': '15', 'Vigencia del crédito (días)': '30', 'Reprogramaciones del nivel 1': '2', 'Reprogramaciones del nivel 2': '1' };
     for (const [etiqueta, v] of Object.entries(valores)) await expect(page.getByLabel(etiqueta)).toHaveValue(v);
-    await expect(page.getByText('Si cambias un plazo, un porcentaje o un límite, te mostraremos el impacto y te pediremos confirmarlo.')).toBeVisible();
+    await expect(page.getByText('Si cambias un plazo, un porcentaje, un límite o un valor de daños, te mostraremos el impacto y te pediremos confirmarlo.')).toBeVisible();
     await sinViolaciones(page);
     await page.screenshot({ path: `pruebas/capturas/parametros-p3-${t.nombre}.png`, fullPage: true });
     expect(consola).toEqual([]);

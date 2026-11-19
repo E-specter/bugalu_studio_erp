@@ -234,6 +234,9 @@ test('publico: directorio con error de red ofrece Reintentar', async ({ page }) 
 async function admin(page, { lista = json(200, LISTA) } = {}) {
   await page.clock.setFixedTime(HOY);
   await comoAdministrador(page);
+  // Prellenado (RF-17 CA-16) y vista previa (CA-18): la version de partida llega vacia y la vista previa devuelve el texto en un <p>.
+  await page.route((u) => /^\/api\/v1\/textos-legales\/[^/]+\/versiones\/[^/]+$/.test(u.pathname), (r) => r.fulfill(json(200, texto({ contenido: '', resumenes: {} }))));
+  await simular(page, 'POST', '/textos-legales/previsualizar', (r) => r.fulfill(json(200, { contenido_html: `<p>${r.request().postDataJSON().contenido}</p>` })));
   return { lista: await simular(page, 'GET', '/textos-legales', lista) };
 }
 
@@ -250,10 +253,11 @@ for (const t of tamanos) {
     await expect(filas).toHaveCount(5);
     await expect(filas.nth(1)).toContainText('versión 1.0.0 · desde 1 dic 2026');
     await expect(filas.nth(1)).toContainText('1.1.0 · desde 15 dic 2026');
-    await expect(filas.nth(1).getByRole('link', { name: 'versión 1.0.0 · desde 1 dic 2026' })).toHaveAttribute('href', '/legal/terminos-de-uso/?version=1.0.0');
+    await expect(filas.nth(1).getByRole('link', { name: 'Ver versión 1.0.0 de Términos de uso' })).toHaveAttribute('href', '/app/textos/ver?tipo=terminos_uso&version=1.0.0');
     await expect(filas.nth(2)).toContainText('versión 1.2.3');
     await expect(filas.nth(3)).toContainText('SIN PUBLICAR');
-    await expect(page.getByRole('link', { name: 'Publicar versión de Términos de uso' })).toHaveAttribute('href', '/app/textos/publicar?tipo=terminos_uso');
+    await expect(page.getByRole('button', { name: 'Publicar versión de Términos de uso' })).toHaveAttribute('aria-disabled', 'true'); // hay programada: publicar daria 409
+    await expect(page.getByRole('link', { name: 'Publicar versión de Política de privacidad' })).toHaveAttribute('href', '/app/textos/publicar?tipo=politica_privacidad');
     await expect(page.getByRole('link', { name: 'Publicar versión de Declaración de agrupación' })).toHaveAttribute('href', '/app/textos/publicar?tipo=declaracion_agrupacion');
     await expect(page.getByRole('button', { name: 'Retirar versión 1.1.0 de Términos de uso' })).toBeVisible();
     await expect(page.getByRole('button', { name: /Retirar versión/ })).toHaveCount(1);
@@ -277,7 +281,7 @@ test('admin: retirar pide confirmar, Volver devuelve el foco y Retirar borra la 
   expect(aire).toBeGreaterThanOrEqual(16);
   await page.screenshot({ path: 'pruebas/capturas/textos-admin-retirar-1440.png', fullPage: true });
   await page.getByRole('button', { name: 'Volver' }).click();
-  await expect(page.getByRole('link', { name: 'Publicar versión de Términos de uso' })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Publicar versión de Términos de uso' })).toBeFocused();
   expect(borrados).toHaveLength(0);
   await page.getByRole('button', { name: 'Retirar versión 1.1.0 de Términos de uso' }).click();
   await page.getByRole('button', { name: 'Retirar versión', exact: true }).click();
@@ -430,8 +434,7 @@ test('admin: revision antes de publicar, volver a editar conserva todo y publica
   await expect(page.getByRole('link', { name: 'Saltar al contenido' })).not.toBeFocused();
   await expect(page.getByText('Al publicarla no podrás editarla. Avisaremos por correo a todos los clientes y regirá desde el 10 dic 2026 para las operaciones nuevas.')).toBeVisible();
   await expect(page.getByText('Cada cliente tendrá que aceptarlos de nuevo para reservar.')).toBeVisible();
-  await expect(page.getByText('# Título')).toBeVisible();
-  await expect(page.getByRole('region', { name: /contenido/i }).or(page.locator('[tabindex="0"]').filter({ hasText: '# Título' }))).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Contenido' })).toContainText('# Título'); // la vista previa que devuelve la API, con su formato
   await sinViolaciones(page);
   await page.screenshot({ path: 'pruebas/capturas/textos-admin-revision-1440.png', fullPage: true });
   await page.getByRole('button', { name: 'Volver a editar' }).click();

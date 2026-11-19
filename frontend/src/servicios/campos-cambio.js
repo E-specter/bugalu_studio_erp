@@ -29,6 +29,8 @@ export const CAMPOS = {
   dias_vigencia_credito: ['VIGENCIA DEL CRÉDITO', unidad('día', 'días')],
   reprogramaciones_nivel_1: ['REPROGRAMACIONES DEL NIVEL 1', sinFormato],
   reprogramaciones_nivel_2: ['REPROGRAMACIONES DEL NIVEL 2', sinFormato],
+  tarifa_hora_gestion: ['TARIFA POR HORA DE GESTIÓN', (v) => (Number(v) === 0 ? 'S/ 0,00 (por fijar)' : soles(v))], // RF-20 CA-11
+  tope_horas_sesiones_perdidas: ['TOPE POR SESIONES PERDIDAS', (v) => `${v} h de sala`],
 };
 
 // [etiqueta, valor formateado] de un cambio {campo, anterior, nuevo}.

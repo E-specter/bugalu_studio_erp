@@ -16,7 +16,7 @@ import BarraAcciones from '../componentes/BarraAcciones.astro';
       <Tabla titulo="Qué cambia" variante="partidas" columnas={['Campo', 'Antes', 'Después']} numericas={[1, 2]} />
     </Panel>
     <Panel codigo="C2" titulo="Impacto">
-      <Tabla titulo="Impacto" variante="partidas" columnas={['Ejemplo', 'Antes', 'Después']} numericas={[1, 2]} />
+      <div data-cs-impacto><Tabla titulo="Impacto" variante="partidas" columnas={['Ejemplo', 'Antes', 'Después']} numericas={[1, 2]} /></div>
       <Aviso variante="informacion" titulo=" " />
     </Panel>
     <Panel codigo="C3" titulo="Confirmar">
@@ -48,6 +48,9 @@ import BarraAcciones from '../componentes/BarraAcciones.astro';
     texto: sinFormato,
   };
   const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  // RF-20 CA-11: los valores de danos se aplican con los vigentes al levantar el acta; no hay reservas que los conserven.
+  const DANOS = ['tarifa_hora_gestion', 'tope_horas_sesiones_perdidas'];
+  const AVISO_DANOS = 'Se aplica a los daños que se registren desde ahora.';
 
   class BugaluCambioSensible extends HTMLElement {
     connectedCallback() {
@@ -82,13 +85,23 @@ import BarraAcciones from '../componentes/BarraAcciones.astro';
       this.pintar(previa);
       this.hidden = false;
       this.enfocarRevision();
-      this.anunciar(`Revisión lista: ${plural(previa.cambios.length, 'cambio', 'cambios')}, ${this.vigentes(previa.impacto.operaciones_vigentes)} sus condiciones.`);
+      const aviso = this.avisoImpacto(previa);
+      this.anunciar(`Revisión lista: ${plural(previa.cambios.length, 'cambio', 'cambios')}${aviso === AVISO_DANOS ? `. ${aviso}` : `, ${this.vigentes(previa.impacto.operaciones_vigentes)} sus condiciones.`}`);
       return new Promise((resolver) => (this.resolver = resolver));
     }
 
     // "2 reservas vigentes conservan" (de un profesional: "asesorías vigentes").
     vigentes(n) {
       return this.peticion.recurso === 'profesional' ? plural(n, 'asesoría vigente conserva', 'asesorías vigentes conservan') : plural(n, 'reserva vigente conserva', 'reservas vigentes conservan');
+    }
+
+    // Texto del aviso de C2. Solo danos: no hay reservas que conserven condiciones. Mezclado con otros campos: el de siempre y, a continuacion, el de danos.
+    avisoImpacto(previa) {
+      const danos = previa.cambios.filter((c) => DANOS.includes(c.campo)).length;
+      if (danos && danos === previa.cambios.length) return AVISO_DANOS;
+      const n = previa.impacto.operaciones_vigentes;
+      const base = `Se aplica solo a ${this.peticion.recurso === 'profesional' ? 'asesorías' : 'reservas'} nuevas. ${this.vigentes(n)} sus condiciones.`;
+      return danos ? `${base} ${AVISO_DANOS}` : base;
     }
 
     cerrar(resultado) {
@@ -125,12 +138,13 @@ import BarraAcciones from '../componentes/BarraAcciones.astro';
         const f = formatearCambio(c);
         return tr(th(f.etiqueta), td('Antes', f.anterior, 'tabla-num'), td('Después', f.nuevo, 'tabla-num cs-despues'));
       }));
+      // Sin ejemplos (danos) no se pinta la tabla y queda solo el aviso.
+      this.querySelector('[data-cs-impacto]').hidden = !previa.impacto.ejemplos.length;
       c2.replaceChildren(...previa.impacto.ejemplos.map((e) => {
         const dar = IMPACTO[e.tipo] ?? sinFormato;
         return tr(th(e.concepto), td('Antes', dar(e.antes), 'tabla-num'), td('Después', dar(e.despues), 'tabla-num cs-despues'));
       }));
-      const n = previa.impacto.operaciones_vigentes;
-      this.querySelector('.aviso-titulo').textContent = `Se aplica solo a ${this.peticion.recurso === 'profesional' ? 'asesorías' : 'reservas'} nuevas. ${this.vigentes(n)} sus condiciones.`;
+      this.querySelector('.aviso-titulo').textContent = this.avisoImpacto(previa);
     }
 
     ocupar(si) {
@@ -206,7 +220,7 @@ import BarraAcciones from '../componentes/BarraAcciones.astro';
 </script>
 
 <style>
-  .cs :global(.tabla + .aviso) {
+  .cs :global([data-cs-impacto]:not([hidden]) + .aviso) {
     margin-block-start: var(--espacio-4);
   }
   .cs:not([hidden]) {

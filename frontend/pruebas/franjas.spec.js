@@ -15,7 +15,7 @@ const disp = (extra = {}) => json(200, { limites: { desde: '2026-11-16T00:00:00-
 const PARAMETROS = {
   dias_limite_pago: 3, horas_limite_pago: 24, anticipacion_minima_horas: 2, anticipacion_maxima_semanas: 8,
   porcentaje_adelanto: 50, horas_nivel_1: 48, horas_nivel_2: 24, porcentaje_penalizacion_nivel_2: 25, minutos_tolerancia_inasistencia: 15,
-  dias_vigencia_credito: 30, reprogramaciones_nivel_1: 2, reprogramaciones_nivel_2: 1,
+  dias_vigencia_credito: 30, reprogramaciones_nivel_1: 2, reprogramaciones_nivel_2: 1, tarifa_hora_gestion: '25.00', tope_horas_sesiones_perdidas: 8,
 };
 
 async function base(page, { disponibilidad = disp(), sugerencia = json(200, []) } = {}) {

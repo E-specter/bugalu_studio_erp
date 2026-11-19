@@ -6,15 +6,18 @@ import Casilla from '../componentes/Casilla.astro';
 import Tabla from '../componentes/Tabla.astro';
 import BarraAcciones from '../componentes/BarraAcciones.astro';
 import EtiquetaTecnica from '../componentes/EtiquetaTecnica.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Icono from '../componentes/internos/Icono.astro';
+import EstilosProsa from '../componentes/internos/EstilosProsa.astro';
 import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
 import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
 
 interface Props {
-  vista: 'lista' | 'publicar';
+  vista: 'lista' | 'publicar' | 'ver';
 }
 const { vista } = Astro.props;
 // Panel de la vista mientras carga o falla (codigos y titulos de la spec RF-17-textos-legales).
-const principal = { lista: { titulo: 'Textos' }, publicar: { codigo: 'P1', titulo: 'Versión' } }[vista];
+const principal = { lista: { titulo: 'Textos' }, publicar: { codigo: 'P1', titulo: 'Versión' }, ver: { codigo: 'V1', titulo: 'Versión' } }[vista];
 const cambios = [
   { valor: 'mayor', etiqueta: 'Mayor', detalle: 'Cambia derechos u obligaciones. Avisa por correo; los términos se vuelven a aceptar.' },
   { valor: 'menor', etiqueta: 'Menor', detalle: 'Aclara o añade sin cambiar lo esencial. Avisa por correo.' },
@@ -23,6 +26,7 @@ const cambios = [
 ---
 
 <EstilosGestion />
+<EstilosProsa />
 
 <!-- Un bloque por estado (estados-sistema): la isla clona el que toca. Sin JS, el noscript oculta la carga y avisa. -->
 <bugalu-textos-legales class="textos" data-gestion vista={vista}>
@@ -32,7 +36,7 @@ const cambios = [
   <div data-salida><Panel {...principal} cargando /></div>
   <div data-revision hidden></div>
 
-  <EstadosIsla principal={principal} noEncontrada={vista === 'publicar' ? { etiqueta: 'Volver a textos', href: '/app/textos' } : undefined} />
+  <EstadosIsla principal={principal} noEncontrada={vista !== 'lista' ? { etiqueta: 'Volver a textos', href: '/app/textos' } : undefined} />
 
   {vista === 'lista' && (
     <>
@@ -44,16 +48,21 @@ const cambios = [
       <template data-fila>
         <tr>
           <th scope="row" data-nombre></th>
-          <td data-etiqueta="Vigente" data-vigente></td>
-          <td data-etiqueta="Programada" data-programada></td>
+          <td data-etiqueta="Vigente"><div class="textos-acciones textos-celda" data-vigente></div></td>
+          <td data-etiqueta="Programada"><div class="textos-acciones textos-celda" data-programada></div></td>
           <td>
             <div class="textos-acciones">
               <Boton variante="secundario" href="#" data-publicar>Publicar versión<span class="visualmente-oculto" data-objeto></span></Boton>
+              <div>
+                <Boton variante="secundario" aria-disabled="true" data-publicar data-bloqueado hidden>Publicar versión<span class="visualmente-oculto" data-objeto></span></Boton>
+                <span class="gestion-motivo" data-motivo-publicar hidden>Retira la versión programada para publicar otra.</span>
+              </div>
               <Boton variante="peligro" data-retirar hidden><span data-etiqueta-retiro></span><span class="visualmente-oculto" data-objeto></span></Boton>
             </div>
           </td>
         </tr>
       </template>
+      <template data-ver><Boton variante="secundario" href="#">Ver<span class="visualmente-oculto" data-objeto></span></Boton></template>
       <template data-sello="sin-publicar"><EtiquetaTecnica variante="aviso" texto="SIN PUBLICAR" /></template>
       <template data-estado="retirar">
         <Panel titulo="Retirar versión">
@@ -65,6 +74,23 @@ const cambios = [
         </Panel>
       </template>
     </>
+  )}
+
+  {vista === 'ver' && (
+    <template data-estado="datos">
+      <div class="gestion-formulario">
+        <Panel codigo="V1" titulo="Versión">
+          <dl class="gestion-datos">
+            <div><dt>Tipo de cambio</dt><dd data-campo="tipo_cambio"></dd></div>
+            <div><dt>Vigente desde</dt><dd><span data-campo="vigente_desde"></span> <span data-programada hidden><EtiquetaTecnica variante="aviso" texto="PROGRAMADA" /></span></dd></div>
+            <div><dt>Publicada el</dt><dd data-campo="publicado_en"></dd></div>
+            <div><dt>Resumen de cambios</dt><dd class="textos-plano" data-campo="resumen_cambios"></dd></div>
+          </dl>
+        </Panel>
+        <Panel codigo="V2" titulo="Resúmenes"><dl class="gestion-datos" data-resumenes></dl></Panel>
+        <Panel codigo="V3" titulo="Texto"><div class="prosa" data-contenido></div></Panel>
+      </div>
+    </template>
   )}
 
   {vista === 'publicar' && (
@@ -91,14 +117,46 @@ const cambios = [
             </div>
           </Panel>
           <Panel codigo="P2" titulo="Contenido">
-            <div class="gestion-formulario">
-              <Campo tipo="area" nombre="contenido" etiqueta="Contenido" ayuda="Texto completo en Markdown: # para títulos y - para listas." obligatorio rows="14" />
+            <div class="gestion-formulario" data-p2>
+              <p class="gestion-ayuda" data-ayuda-partida hidden></p>
+              <p class="gestion-ayuda" data-prellenado-cargando hidden></p>
+              <div data-prellenado-aviso></div>
+              <div class="textos-editor">
+                <div class="textos-columna">
+                  <div class="textos-barra">
+                    <input type="file" id="carga-md" class="visualmente-oculto" accept=".md,text/markdown" aria-describedby="campo-contenido-ayuda" data-carga-md />
+                    <label for="carga-md" class="textos-carga"><Icono nombre="upload" />Cargar archivo .md</label>
+                    <Boton variante="secundario" data-envio data-actualizar-previa>Actualizar vista previa</Boton>
+                  </div>
+                  <p class="textos-error-carga" role="alert" id="carga-md-error" data-error-carga hidden><Icono nombre="alert-triangle" /><span></span></p>
+                  <div data-confirmar-reemplazo hidden>
+                    <Aviso variante="aviso" titulo=" " texto="Se pierde lo que hay escrito en CONTENIDO.">
+                      <BarraAcciones variante="decision">
+                        <Boton slot="secundaria" variante="secundario" data-mantener>Mantener lo escrito</Boton>
+                        <Boton slot="principal" variante="peligro" data-reemplazar>Reemplazar contenido</Boton>
+                      </BarraAcciones>
+                    </Aviso>
+                  </div>
+                  <Campo tipo="area" nombre="contenido" etiqueta="Contenido" ayuda="Texto completo en Markdown: # para títulos y - para listas. Puedes cargar un archivo .md en UTF-8 de hasta 200 KB; reemplaza el contenido." obligatorio rows="14" />
+                </div>
+                <div class="textos-columna textos-columna-previa">
+                  <div class="textos-previa" role="region" aria-labelledby="textos-previa-titulo" tabindex="0" data-previa>
+                    <div class="textos-previa-cabecera">
+                      <h3 id="textos-previa-titulo" class="textos-previa-titulo">Vista previa</h3>
+                      <span data-desactualizada hidden><EtiquetaTecnica variante="aviso" texto="DESACTUALIZADA" /></span>
+                    </div>
+                    <div data-previa-aviso></div>
+                    <p class="gestion-ayuda" data-previa-mensaje></p>
+                    <div class="prosa" data-previa-html></div>
+                  </div>
+                </div>
+              </div>
               <fieldset class="gestion-grupo" data-contextos>
                 <legend>Resumen por paso</legend>
                 <p class="gestion-ayuda">Lo que verá la persona antes de aceptar. Frases cortas, en segunda persona. El primero es obligatorio; los demás, opcionales. Sin datos de una reserva concreta.</p>
               </fieldset>
               <Campo tipo="area" nombre="resumen_cambios" etiqueta="Resumen de cambios" ayuda="Qué cambia respecto de la versión anterior. Opcional." rows="3" />
-              <div><Boton tipo="submit" data-revisar>Revisar y publicar</Boton></div>
+              <div><Boton tipo="submit" data-envio data-revisar>Revisar y publicar</Boton></div>
             </div>
           </Panel>
         </form>
@@ -116,7 +174,7 @@ const cambios = [
             <div class="textos-consecuencias" data-consecuencias></div>
             <dl class="gestion-datos">
               <div><dt>Resumen</dt><dd class="textos-plano" data-campo="resumen"></dd></div>
-              <div><dt id="revision-contenido">Contenido</dt><dd><div class="textos-plano textos-desplazable" role="region" aria-labelledby="revision-contenido" tabindex="0" data-campo="contenido"></div></dd></div>
+              <div><dt id="revision-contenido">Contenido</dt><dd><div class="prosa textos-desplazable" role="region" aria-labelledby="revision-contenido" tabindex="0" data-campo="contenido"></div></dd></div>
             </dl>
             <BarraAcciones variante="formulario">
               <Boton slot="secundaria" variante="secundario" data-volver-editar>Volver a editar</Boton>
@@ -132,11 +190,18 @@ const cambios = [
 <script>
   // @ts-nocheck
   import { IslaGestion } from '../servicios/isla-gestion.js';
-  import { listarTextosLegales, publicarTexto, retirarVersion, tipos, contextos, delTipo, esVersion, siguienteVersion } from '../servicios/textos-legales.js';
+  import { listarTextosLegales, obtenerVersionTexto, previsualizarTexto, publicarTexto, retirarVersion, tipos, contextos, delTipo, esVersion, siguienteVersion } from '../servicios/textos-legales.js';
   import { formatearFecha, mostrarAviso, enfocarAviso, quitarError } from '../servicios/formulario.js';
+  import { limpiar } from '../servicios/prosa.js';
+  import { mensajeError } from '../servicios/isla-gestion.js';
   import { hoyLima, sumarDias, esFecha, instante, diaMesAnio } from '../servicios/formatos.js';
 
   const nombresCambio = { mayor: 'Mayor', menor: 'Menor', parche: 'Parche' };
+  const MAX_BYTES = 200000; // 200 KB: encaja con el limite de 300 000 caracteres de la API (RF-17, precisiones E1)
+  const MAX_CARACTERES = 300000; // el mismo limite que publicar y la vista previa de la API
+  const PROSA = { titulo: 2, nuevaPestana: true }; // Ver y R1: el texto cuelga de un <h2>
+  const peso = (bytes) => (bytes >= 1e6 ? `${(bytes / 1e6).toFixed(1).replace('.', ',')} MB` : `${Math.ceil(bytes / 1000)} KB`);
+  const excede = (texto) => texto.length > MAX_CARACTERES && [...texto].length > MAX_CARACTERES;
 
   class BugaluTextosLegales extends IslaGestion {
     avisosUrl = {
@@ -145,7 +210,7 @@ const cambios = [
     };
 
     iniciar() {
-      this.noEncontrada = ['No encontramos este texto.'];
+      this.noEncontrada = [this.vista === 'ver' ? 'Esa versión ya no existe: se retiró o el enlace está mal.' : 'No encontramos este texto.'];
       this.addEventListener('click', (e) => {
         const retirar = e.target.closest('[data-retirar]');
         if (retirar) this.confirmarRetiro(retirar.dataset.tipo, retirar.dataset.version);
@@ -153,9 +218,20 @@ const cambios = [
         else if (e.target.closest('[data-confirmar-retiro]')) this.retirar();
         else if (e.target.closest('[data-volver-editar]')) this.volverAEditar();
         else if (e.target.closest('[data-publicar-version]')) this.publicarVersion();
+        else if (e.target.closest('[data-actualizar-previa]')) this.actualizarPrevia();
+        else if (e.target.closest('[data-mantener]')) this.mantenerEscrito();
+        else if (e.target.closest('[data-reemplazar]')) this.reemplazar();
+        else if (e.target.closest('[data-reintentar-previa]')) this.reintentarPrevia(e.target.closest('[data-previa-aviso]'));
+        else if (e.target.closest('[data-reintentar-prellenado]')) this.prellenar();
       });
-      this.addEventListener('change', (e) => e.target.name === 'tipo_cambio' && this.alCambiarTipo());
-      this.addEventListener('input', (e) => e.target.name === 'version' && (this.versionEscrita = e.target.value !== ''));
+      this.addEventListener('change', (e) => {
+        if (e.target.name === 'tipo_cambio') this.alCambiarTipo();
+        else if (e.target.matches('[data-carga-md]')) this.cargarArchivo(e.target);
+      });
+      this.addEventListener('input', (e) => {
+        if (e.target.name === 'version') this.versionEscrita = e.target.value !== '';
+        else if (e.target.name === 'contenido') this.estadoPrevia();
+      });
     }
 
     alEnviar(formulario) {
@@ -185,13 +261,24 @@ const cambios = [
         const fila = modelo.content.cloneNode(true);
         fila.querySelector('[data-nombre]').textContent = nombre;
         const celdaVigente = fila.querySelector('[data-vigente]');
-        if (vigente) celdaVigente.append(this.enlaceVersion(slug, vigente, 'versión'));
+        if (vigente) celdaVigente.append(...this.versionConVer(tipo, nombre, vigente, 'versión '));
         else celdaVigente.append(this.querySelector('template[data-sello="sin-publicar"]').content.cloneNode(true));
         const celdaProgramada = fila.querySelector('[data-programada]');
-        celdaProgramada.textContent = programada ? `${programada.version} · desde ${formatearFecha(programada.vigente_desde)}` : '—';
-        const publicar = fila.querySelector('[data-publicar]');
-        publicar.href = `/app/textos/publicar?tipo=${encodeURIComponent(tipo)}`;
+        if (programada) celdaProgramada.append(...this.versionConVer(tipo, nombre, programada, ''));
+        else celdaProgramada.textContent = '—';
+        // Con una programada publicar daria 409 (RF-17, E1): el boton sigue a la vista, deshabilitado y con su motivo.
+        const botones = [...fila.querySelectorAll('[data-publicar]')];
+        const publicar = botones.find((b) => b.hasAttribute('data-bloqueado') === Boolean(programada));
+        botones.filter((b) => b !== publicar).forEach((b) => (b.hasAttribute('data-bloqueado') ? b.parentElement : b).remove());
+        publicar.dataset.tipo = tipo;
         publicar.querySelector('[data-objeto]').textContent = ` de ${nombre}`;
+        if (programada) {
+          const motivo = fila.querySelector('[data-motivo-publicar]');
+          motivo.id = `motivo-publicar-${tipo}`;
+          motivo.hidden = false;
+          publicar.hidden = false;
+          publicar.setAttribute('aria-describedby', motivo.id);
+        } else publicar.href = `/app/textos/publicar?tipo=${encodeURIComponent(tipo)}`;
         const retirar = fila.querySelector('[data-retirar]');
         if (programada) {
           retirar.hidden = false;
@@ -204,11 +291,12 @@ const cambios = [
       }));
     }
 
-    enlaceVersion(slug, t, palabra) {
-      const enlace = document.createElement('a');
-      enlace.href = `/legal/${slug}/?version=${encodeURIComponent(t.version)}`;
-      enlace.textContent = `${palabra} ${t.version} · desde ${formatearFecha(t.vigente_desde)}`;
-      return enlace;
+    // "versión 1.0.0 · desde 1 dic 2026" y su "Ver" (a la vista del panel, no a la pagina publica).
+    versionConVer(tipo, nombre, t, palabra) {
+      const ver = this.querySelector('template[data-ver]').content.cloneNode(true);
+      ver.querySelector('a').href = `/app/textos/ver?${new URLSearchParams({ tipo, version: t.version })}`;
+      ver.querySelector('[data-objeto]').textContent = ` versión ${t.version} de ${nombre}`;
+      return [`${palabra}${t.version} · desde ${formatearFecha(t.vigente_desde)}`, ver];
     }
 
     confirmarRetiro(tipo, version) {
@@ -224,7 +312,7 @@ const cambios = [
       this.mostrar('datos');
       this.pintarLista();
       this.anunciar('Textos');
-      this.querySelector(`[data-publicar][href$="tipo=${tipo}"]`).focus();
+      this.querySelector(`[data-publicar][data-tipo="${tipo}"]`).focus();
     }
 
     retirar() {
@@ -270,6 +358,39 @@ const cambios = [
       enfocarAviso(mostrarAviso(this, 'error', `Ya hay una versión programada de este texto${cual}. Retírala antes de publicar otra.`, '', { enlace: { texto: 'Volver a textos', href: '/app/textos' } }));
     }
 
+    // --- Ver (RF-17 CA-15): el texto de una version con su formato final ---
+
+    async ver() {
+      const parametros = new URLSearchParams(location.search);
+      const tipo = parametros.get('tipo');
+      const version = parametros.get('version');
+      if (!Object.hasOwn(tipos, tipo) || !esVersion(version)) return this.mostrar('no-encontrada');
+      let t;
+      try {
+        t = await obtenerVersionTexto(tipo, version);
+      } catch (error) {
+        if (error.estado === 404) return this.mostrar('no-encontrada');
+        throw error;
+      }
+      this.mostrar('datos');
+      const { nombre } = tipos[tipo];
+      const dato = (n, texto) => (this.querySelector(`[data-campo="${n}"]`).textContent = texto);
+      dato('tipo_cambio', nombresCambio[t.tipo_cambio] ?? t.tipo_cambio);
+      dato('vigente_desde', formatearFecha(t.vigente_desde));
+      this.querySelector('[data-programada]').hidden = !t.programada;
+      dato('publicado_en', t.publicado_en ? formatearFecha(t.publicado_en) : '—');
+      dato('resumen_cambios', t.resumen_cambios || '—');
+      this.querySelector('[data-resumenes]').replaceChildren(...Object.entries(t.resumenes ?? {}).map(([c, texto]) => {
+        const fila = document.createElement('div');
+        fila.append(Object.assign(document.createElement('dt'), { textContent: contextos[c] ?? c }), Object.assign(document.createElement('dd'), { textContent: texto, className: 'textos-plano' }));
+        return fila;
+      }));
+      this.querySelector('[data-contenido]').replaceChildren(...limpiar(t.contenido_html ?? '', PROSA));
+      document.querySelector('.encabezado-titulo').textContent = `${nombre} · versión ${t.version}`;
+      this.encabezado('Así la leen los clientes en la página pública.', nombre);
+      return `${nombre}, versión ${t.version}`;
+    }
+
     // --- Publicar ---
 
     async publicar() {
@@ -299,7 +420,180 @@ const cambios = [
         return nodo;
       }));
       this.encabezado(`${tipos[tipo].nombre}: elige el tipo de cambio y desde cuándo rige.`);
+      // El prellenado sale de la vigente (con programada no se puede publicar); sin versiones, los campos quedan vacios.
+      this.partida = vigente ?? programada;
+      this.previa = null;
+      this.estadoPrevia();
+      if (this.partida) this.prellenar();
       return `Publicar versión de ${tipos[tipo].nombre}`;
+    }
+
+    // --- Publicar: prellenado, archivo .md y vista previa (RF-17 CA-16 a CA-18) ---
+
+    get contenido() {
+      return this.formulario.querySelector('[name="contenido"]');
+    }
+
+    bloquearEditor(si) {
+      this.formulario.querySelectorAll('[data-p2] :is(textarea, input, button)').forEach((c) => (c.disabled = si));
+    }
+
+    async prellenar() {
+      const { version } = this.partida;
+      const cargando = this.querySelector('[data-prellenado-cargando]');
+      const ayuda = this.querySelector('[data-ayuda-partida]');
+      this.querySelector('[data-prellenado-aviso]').replaceChildren();
+      cargando.textContent = `Cargando la versión ${version}…`;
+      cargando.setAttribute('aria-busy', 'true');
+      cargando.hidden = false;
+      this.bloquearEditor(true);
+      let t;
+      try {
+        t = await obtenerVersionTexto(this.tipoTexto, version);
+      } catch {
+        cargando.hidden = true;
+        cargando.removeAttribute('aria-busy');
+        this.bloquearEditor(false);
+        const aviso = mostrarAviso(this, 'error', `No pudimos cargar la versión ${version} para partir de ella`, '', { boton: { texto: 'Reintentar', atributo: 'data-reintentar-prellenado' }, destino: this.querySelector('[data-prellenado-aviso]') });
+        this.anunciar(this.textoDe(aviso));
+        return;
+      }
+      cargando.hidden = true;
+      cargando.removeAttribute('aria-busy');
+      this.bloquearEditor(false);
+      this.contenido.value = t.contenido ?? '';
+      for (const c of tipos[this.tipoTexto].contextos) this.formulario.querySelector(`[name="resumen_${c}"]`).value = t.resumenes?.[c] ?? '';
+      ayuda.textContent = `Parte de la versión ${version}. Cambia solo lo necesario.`;
+      ayuda.hidden = false;
+      this.actualizarPrevia();
+    }
+
+    // Mensaje de la vista previa mientras no hay ninguna que mostrar.
+    estadoPrevia() {
+      if (!this.formulario) return;
+      if (!this.previa) this.querySelector('[data-previa-mensaje]').textContent = this.contenido.value.trim() ? 'Pulsa «Actualizar vista previa» para ver el texto con su formato final.' : 'Escribe el contenido para ver la vista previa.';
+      this.marcarDesactualizada();
+    }
+
+    marcarDesactualizada() {
+      this.querySelector('[data-desactualizada]').hidden = !this.previa || this.previa.contenido === this.contenido.value.trim();
+    }
+
+    // Pide el HTML y lo pinta; la vista anterior sigue hasta que llega (`aria-busy`). Lanza el error de la API.
+    async generarPrevia(contenido) {
+      const region = this.querySelector('[data-previa]');
+      region.setAttribute('aria-busy', 'true');
+      try {
+        const { contenido_html: html } = await previsualizarTexto(contenido);
+        if (typeof html !== 'string') throw new Error('respuesta sin contenido_html');
+        this.previa = { contenido, html };
+      } finally {
+        region.removeAttribute('aria-busy');
+      }
+      this.querySelector('[data-previa-aviso]').replaceChildren();
+      this.querySelector('[data-previa-mensaje]').textContent = '';
+      this.querySelector('[data-previa-html]').replaceChildren(...limpiar(this.previa.html, { titulo: 3, nuevaPestana: true }));
+      this.marcarDesactualizada();
+    }
+
+    // Sin llamada si el contenido esta vacio o pasa de 300 000 caracteres; si no, con carga en el boton.
+    actualizarPrevia() {
+      if (this.ocupado) return;
+      const contenido = this.contenido.value.trim();
+      const mensaje = !contenido ? 'Escribe el contenido para ver la vista previa.' : excede(contenido) ? 'El contenido supera los 300 000 caracteres. Acórtalo para verlo y publicarlo.' : '';
+      if (mensaje) {
+        this.querySelector('[data-previa-aviso]').replaceChildren();
+        this.querySelector('[data-previa-mensaje]').textContent = mensaje;
+        return this.anunciar(mensaje);
+      }
+      this.enviar(this.querySelector('[data-actualizar-previa]'), 'Actualizando…', () => this.generarPrevia(contenido).then(() => null, (error) => ({ error })), (r) => {
+        if (r?.error) this.errorPrevia(r.error, this.querySelector('[data-previa-aviso]'));
+        else this.anunciar('Vista previa actualizada.');
+      });
+    }
+
+    // Los errores de la vista previa. En el bloque conservan la ultima vista (con DESACTUALIZADA); en la revision (`destino` nulo) van sobre el formulario con foco.
+    errorPrevia(error, destino = null) {
+      const reintentar = { texto: 'Reintentar', atributo: 'data-reintentar-previa' };
+      const acceso = { texto: 'Ir al acceso interno', href: `/acceso/interno?${new URLSearchParams({ volver: location.pathname + location.search })}` };
+      const [titulo, texto, extra] = error.estado === 401 ? ['Tu sesión no es válida. Inicia sesión y vuelve a intentarlo.', '', { enlace: acceso, boton: reintentar }]
+        : error.estado === 403 ? ['Tu cuenta ya no puede publicar textos.', '', {}]
+        : error.estado === 422 ? [`El contenido supera los 300 000 caracteres. Acórtalo para ${destino ? 'verlo y publicarlo' : 'publicarlo'}.`, '', {}]
+        : [...mensajeError(error), { boton: reintentar }];
+      const aviso = mostrarAviso(this, 'error', titulo, texto, { ...extra, destino: destino ?? undefined });
+      aviso.querySelectorAll('a.boton').forEach((a) => Object.assign(a, { target: '_blank', rel: 'noopener' })); // otra pestana: lo escrito no se pierde
+      if (destino) this.anunciar(this.textoDe(aviso));
+      else enfocarAviso(aviso);
+      this.marcarDesactualizada();
+    }
+
+    // Titulo y texto del aviso como una frase (sin sus botones).
+    textoDe(aviso) {
+      return [...aviso.querySelectorAll('.aviso-titulo, .aviso-texto')].map((p) => p.textContent).join(' ').replace(/\s+/g, ' ').trim();
+    }
+
+    reintentarPrevia(enBloque) {
+      if (enBloque) this.actualizarPrevia();
+      else this.revisar_(this.formulario);
+    }
+
+    // --- Cargar archivo .md: se lee en el navegador, nunca se envia ---
+
+    errorCarga(mensaje) {
+      const error = this.querySelector('[data-error-carga]');
+      const entrada = this.querySelector('[data-carga-md]');
+      error.querySelector('span').textContent = mensaje ?? '';
+      error.hidden = !mensaje;
+      entrada.setAttribute('aria-describedby', `campo-contenido-ayuda${mensaje ? ' carga-md-error' : ''}`);
+      if (mensaje) entrada.setAttribute('aria-invalid', 'true');
+      else entrada.removeAttribute('aria-invalid');
+    }
+
+    async cargarArchivo(entrada) {
+      const archivo = entrada.files[0];
+      if (!archivo) return;
+      this.querySelector('[data-confirmar-reemplazo]').hidden = true;
+      this.errorCarga();
+      const { name: nombre, size } = archivo;
+      let error = !/\.md$/i.test(nombre) ? `${nombre} no es un archivo .md. Elige un archivo Markdown.`
+        : size > MAX_BYTES ? `${nombre} pesa ${peso(size)}; el máximo es 200 KB.`
+        : size === 0 ? `${nombre} está vacío.` : '';
+      let texto = '';
+      if (!error) {
+        try {
+          texto = new TextDecoder('utf-8', { fatal: true }).decode(await archivo.arrayBuffer()); // sin el BOM inicial
+          if (!texto.trim()) error = `${nombre} está vacío.`;
+        } catch {
+          error = `${nombre} no está en UTF-8. Guárdalo con codificación UTF-8 y vuelve a cargarlo.`;
+        }
+      }
+      entrada.value = ''; // se puede volver a elegir el mismo archivo
+      if (error) return this.errorCarga(error);
+      this.pendiente = { nombre, texto };
+      if (!this.contenido.value.trim()) return this.reemplazar();
+      const confirmar = this.querySelector('[data-confirmar-reemplazo]');
+      const titulo = confirmar.querySelector('.aviso-titulo');
+      titulo.textContent = `¿Reemplazar el contenido por ${nombre}?`;
+      confirmar.querySelector('.aviso').removeAttribute('role');
+      confirmar.hidden = false;
+      titulo.tabIndex = -1;
+      titulo.focus();
+    }
+
+    mantenerEscrito() {
+      this.pendiente = null;
+      this.querySelector('[data-confirmar-reemplazo]').hidden = true;
+      this.querySelector('[data-carga-md]').focus();
+    }
+
+    reemplazar() {
+      const { nombre, texto } = this.pendiente;
+      this.pendiente = null;
+      this.querySelector('[data-confirmar-reemplazo]').hidden = true;
+      this.contenido.value = texto;
+      this.contenido.focus();
+      this.anunciar(`Contenido reemplazado por ${nombre}.`);
+      this.actualizarPrevia();
     }
 
     get cambio() {
@@ -334,6 +628,7 @@ const cambios = [
       if (!primero.value.trim()) errores.push({ entrada: primero, mensaje: 'Escribe el resumen.', texto: `Resumen de ${contextos[tipos[this.tipoTexto].contextos[0]].toLowerCase()}` });
       const contenido = campo('contenido').value.trim();
       if (!contenido) errores.push({ entrada: campo('contenido'), mensaje: 'Escribe el contenido.', texto: 'Contenido' });
+      else if (excede(contenido)) errores.push({ entrada: campo('contenido'), mensaje: 'El contenido supera los 300 000 caracteres. Acórtalo para publicarlo.', texto: 'Contenido' });
       if (!this.validar(errores, ['campo', 'campos'])) return null;
       const resumenes = Object.fromEntries(tipos[this.tipoTexto].contextos.map((c) => [c, campo(`resumen_${c}`).value.trim()]).filter(([, v]) => v));
       const cambios = campo('resumen_cambios').value.trim();
@@ -348,6 +643,12 @@ const cambios = [
       if (this.ocupado) return;
       const valores = this.leer(formulario);
       if (!valores) return;
+      // R1 muestra el texto ya visto: si la vista previa no corresponde al contenido, se pide antes y, si falla, no se abre.
+      if (this.previa?.contenido === valores.contenido) return this.abrirRevision(valores);
+      this.enviar(formulario.querySelector('[data-revisar]'), 'Preparando revisión…', () => this.generarPrevia(valores.contenido).then(() => null, (error) => ({ error })), (r) => (r?.error ? this.errorPrevia(r.error) : this.abrirRevision(valores)));
+    }
+
+    abrirRevision(valores) {
       this.valores = valores;
       const revision = this.querySelector('[data-revision]');
       revision.replaceChildren(this.querySelector('template[data-estado="revision"]').content.cloneNode(true));
@@ -359,7 +660,7 @@ const cambios = [
       const fecha = parche ? null : valores.vigente_desde.slice(0, 10);
       dato('vigente_desde', parche ? 'Al publicarla' : diaMesAnio(fecha));
       dato('resumen', Object.entries(valores.resumenes).map(([c, t]) => `${contextos[c]}: ${t}`).join('\n\n'));
-      dato('contenido', valores.contenido);
+      revision.querySelector('[data-campo="contenido"]').replaceChildren(...limpiar(this.previa.html, PROSA));
       const consecuencias = parche
         ? ['Al publicarla no podrás editarla ni retirarla, y rige desde ahora.']
         : [`Al publicarla no podrás editarla. Avisaremos por correo a todos los clientes y regirá desde el ${diaMesAnio(fecha)} para las operaciones nuevas.`, ...(valores.tipo === 'terminos_uso' && valores.tipo_cambio === 'mayor' ? ['Cada cliente tendrá que aceptarlos de nuevo para reservar.'] : [])];
@@ -410,6 +711,112 @@ const cambios = [
   }
   .textos :global(.textos-plano) {
     white-space: pre-wrap;
+  }
+  .textos :global([data-prellenado-aviso]:empty, [data-previa-aviso]:empty) {
+    display: none;
+  }
+  .textos :global(.textos-celda) {
+    align-items: center;
+  }
+  /* Editor (P2): CONTENIDO y VISTA PREVIA en dos columnas iguales desde punto-quiebre-escritorio; debajo, una tras otra. */
+  .textos :global(.textos-editor) {
+    display: grid;
+    gap: var(--espacio-5);
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .textos :global(.textos-columna) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    min-inline-size: 0;
+  }
+  .textos :global(.textos-barra) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-3);
+    align-items: center;
+  }
+  /* Control de carga sin adjunto: el aspecto del boton Secundario (captura de pago, carga-archivos.md); su foco es el del input oculto. */
+  .textos :global(.textos-carga) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--espacio-2);
+    box-sizing: border-box;
+    min-block-size: var(--medida-control-tactil);
+    padding: var(--espacio-2) var(--espacio-5);
+    background: var(--color-fondo-superficie);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-titulo);
+    font-weight: var(--fuente-peso-titulo);
+    font-size: var(--fuente-tamano-base);
+    line-height: var(--fuente-interlineado-interfaz);
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .textos :global([data-carga-md]:focus-visible + .textos-carga) {
+    outline: var(--borde-grosor-base) solid var(--color-foco-anillo);
+    outline-offset: var(--borde-grosor-base);
+  }
+  .textos :global([data-carga-md][aria-invalid='true'] + .textos-carga) {
+    border-color: var(--color-texto-alerta);
+  }
+  .textos :global([data-carga-md]:disabled + .textos-carga) {
+    opacity: var(--efecto-opacidad-capa);
+    cursor: not-allowed;
+  }
+  @media (hover: hover) {
+    .textos :global([data-carga-md]:not(:disabled) + .textos-carga:hover) {
+      background: var(--color-fondo-alerta);
+      color: var(--color-texto-sobre-alerta);
+    }
+  }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    .textos :global(.textos-carga) {
+      min-block-size: var(--medida-control-base);
+    }
+  }
+  .textos :global(.textos-error-carga) {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--espacio-2);
+    margin: 0;
+    color: var(--color-texto-alerta);
+    font-size: var(--fuente-tamano-pequeno);
+  }
+  .textos :global(.textos-previa) {
+    box-sizing: border-box;
+    padding: var(--espacio-3);
+    border: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+    max-block-size: calc(var(--espacio-20) * 4);
+    overflow: auto;
+  }
+  .textos :global(.textos-previa-cabecera) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-3);
+    margin-block-end: var(--espacio-3);
+  }
+  .textos :global(.textos-previa-titulo) {
+    font-family: var(--fuente-familia-tecnica);
+    font-size: var(--fuente-tamano-micro);
+  }
+  @media (min-width: 64em) { /* punto-quiebre-escritorio */
+    .textos :global(.textos-editor) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    /* Mismo alto que CONTENIDO: la vista previa se desplaza dentro de su columna. */
+    .textos :global(.textos-columna-previa) {
+      position: relative;
+      min-block-size: calc(var(--espacio-20) * 4);
+    }
+    .textos :global(.textos-previa) {
+      position: absolute;
+      inset: 0;
+      max-block-size: none;
+    }
   }
   .textos :global(.textos-desplazable) {
     max-block-size: calc(var(--espacio-20) * 4);

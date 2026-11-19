@@ -16,7 +16,7 @@ interface Props {
 }
 const { vista } = Astro.props;
 // Panel de la vista mientras carga o falla (codigos y titulos de la spec RF-03-franjas).
-const ayudaCambio = 'Si cambias un plazo, un porcentaje o un límite, te mostraremos el impacto y te pediremos confirmarlo.';
+const ayudaCambio = 'Si cambias un plazo, un porcentaje, un límite o un valor de daños, te mostraremos el impacto y te pediremos confirmarlo.';
 const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : { codigo: 'P1', titulo: 'Plazo para pagar' };
 ---
 
@@ -175,6 +175,13 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
               <Campo tipo="number" nombre="reprogramaciones_nivel_2" etiqueta="Reprogramaciones del nivel 2" ayuda="Cuántas veces se puede reprogramar con penalización." obligatorio min="0" step="1" inputmode="numeric" />
             </div>
           </Panel>
+          <Panel codigo="P4" titulo="Daños" ayuda="Se publican al pie de las condiciones de contratación.">
+            <div slot="acciones" data-por-fijar hidden><EtiquetaTecnica variante="aviso" texto="POR FIJAR" /></div>
+            <div class="gestion-formulario">
+              <Campo tipo="number" nombre="tarifa_hora_gestion" etiqueta="Tarifa por hora de gestión (S/)" ayuda="Lo que cobramos por cada hora que el personal dedica a conseguir una reparación. Con 0,00 las condiciones dicen «por fijar»." obligatorio min="0" max="9999.99" step="0.01" inputmode="decimal" />
+              <Campo tipo="number" nombre="tope_horas_sesiones_perdidas" etiqueta="Tope por sesiones perdidas (horas de sala)" ayuda="Máximo de horas de reservas canceladas que se cobran por un daño intencional o un incumplimiento grave." obligatorio min="1" max="200" step="1" inputmode="numeric" />
+            </div>
+          </Panel>
         </div>
         <div><Boton tipo="submit" data-envio>Guardar parámetros</Boton><p class="gestion-ayuda">{ayudaCambio}</p></div>
       </form>
@@ -188,7 +195,7 @@ const principal = vista === 'semana' ? { codigo: 'F1', titulo: 'Publicadas' } : 
   import { listarSalas, obtenerDisponibilidad } from '../servicios/reservas.js';
   import { obtenerSugerencia, publicarFranjas, retirarFranja, registrarCierre, quitarCierre, obtenerParametros, guardarParametros } from '../servicios/franjas.js';
   import { guardarSala, estadoItse, cuando } from '../servicios/aforo.js';
-  import { hoyLima, fechaDe, horaDe, instante, sumarDias, lunesDe, semanaDe, rangoSemana, diaCorto, diaLargo, diaMes, nombreDia } from '../servicios/formatos.js';
+  import { leerImporte, hoyLima, fechaDe, horaDe, instante, sumarDias, lunesDe, semanaDe, rangoSemana, diaCorto, diaLargo, diaMes, nombreDia } from '../servicios/formatos.js';
   import { mostrarAviso, enfocarAviso, limpiarAvisos, quitarError, ponerError, llenarAviso } from '../servicios/formulario.js';
 
   const minutos = (hora) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5));
@@ -205,6 +212,16 @@ const LIMITES = {
   minutos_tolerancia_inasistencia: [0], dias_vigencia_credito: [1], reprogramaciones_nivel_1: [0], reprogramaciones_nivel_2: [0],
 };
 const PARAMETROS = Object.keys(LIMITES);
+// RF-20 CA-11: valores de danos, sensibles. La tarifa viaja como texto decimal ("25.00"); `25` y `25.00` son el mismo valor.
+const DANOS = ['tarifa_hora_gestion', 'tope_horas_sesiones_perdidas'];
+const ERROR_TARIFA = 'Escribe un importe de 0 a 9 999,99, con hasta dos decimales.';
+const ERROR_TOPE = 'Escribe un número entero de 1 a 200.';
+// '' si es valido; `invalido`: la API rechazo el campo, que no dice mas.
+const errorDanos = (entrada, invalido = false) => {
+  const v = entrada.value.trim();
+  if (entrada.name === 'tarifa_hora_gestion') return !v && !entrada.validity.badInput && !invalido ? 'Escribe la tarifa por hora de gestión.' : invalido || leerImporte(v) === null || Number(v) > 9999.99 ? ERROR_TARIFA : '';
+  return !v && !entrada.validity.badInput && !invalido ? 'Escribe el tope de horas de sala.' : invalido || !/^\d+$/.test(v) || v < 1 || v > 200 ? ERROR_TOPE : '';
+};
 const esSensible = (nombre) => !nombre.startsWith('anticipacion_');
 const errorLimite = (nombre) => {
   const [min, max] = LIMITES[nombre];
@@ -237,6 +254,13 @@ const errorLimite = (nombre) => {
       });
       // Al salir de un campo de F4 se valida ese campo (formularios.md). Si el foco va al botón no se valida: el error movería el botón y se perdería el clic; el envío valida todo.
       this.addEventListener('focusout', (e) => e.target.matches?.('[data-formulario="aforo"] input') && !e.relatedTarget?.matches?.('[data-envio]') && this.validarCampo(e.target));
+      // Los dos campos de danos se validan al salir; mismo criterio que F4 para no mover el boton antes del clic.
+      this.addEventListener('focusout', (e) => {
+        if (!DANOS.includes(e.target.name) || e.relatedTarget?.matches?.('[data-envio]')) return;
+        quitarError(e.target);
+        const mensaje = errorDanos(e.target);
+        if (mensaje) ponerError(this, e.target, mensaje);
+      });
       this.addEventListener('change', (e) => {
         if (e.target.name === 'todo-el-dia') this.querySelector('[data-horas]').hidden = e.target.checked;
         if (e.target.name === 'sala') location.assign(this.enlace(this.lunes, e.target.value));
@@ -279,7 +303,8 @@ const errorLimite = (nombre) => {
       } else if (error.estado === 422 && error.detalles?.campo) {
         const entrada = this.querySelector(`[name="${error.detalles.campo}"]`);
         if (!entrada) return false;
-        this.validar([{ entrada, mensaje: LIMITES[entrada.name] ? errorLimite(entrada.name) : 'Escribe un número entero mayor que 0.', texto: this.etiqueta(entrada) }]);
+        const mensaje = DANOS.includes(entrada.name) ? errorDanos(entrada, true) : LIMITES[entrada.name] ? errorLimite(entrada.name) : 'Escribe un número entero mayor que 0.';
+        this.validar([{ entrada, mensaje, texto: this.etiqueta(entrada) }]);
       } else return false;
       return true;
     }
@@ -618,7 +643,8 @@ const errorLimite = (nombre) => {
 
     llenarParametros(datos) {
       this.cargado = datos;
-      PARAMETROS.forEach((nombre) => (this.querySelector(`[name="${nombre}"]`).value = datos[nombre]));
+      [...PARAMETROS, ...DANOS].forEach((nombre) => (this.querySelector(`[name="${nombre}"]`).value = datos[nombre] ?? ''));
+      this.querySelector('[data-por-fijar]').hidden = Number(datos.tarifa_hora_gestion) !== 0;
     }
 
     plazosIncoherentes() {
@@ -638,16 +664,24 @@ const errorLimite = (nombre) => {
       if (!errores.some((e) => e.entrada === nivel1 || e.entrada === nivel2) && Number(nivel2.value) >= Number(nivel1.value)) {
         errores.push({ entrada: nivel2, mensaje: `Debe ser menor que el límite del nivel 1 (${nivel1.value} h).`, texto: this.etiqueta(nivel2) });
       }
+      const danos = DANOS.map((n) => formulario.querySelector(`[name="${n}"]`));
+      danos.forEach(quitarError);
+      danos.forEach((entrada) => {
+        const mensaje = errorDanos(entrada);
+        if (mensaje) errores.push({ entrada, mensaje, texto: this.etiqueta(entrada) });
+      });
       if (!this.validar(errores)) return;
-      const cuerpo = Object.fromEntries(campos.map((c) => [c.name, Number(c.value)]));
-      const cambiados = PARAMETROS.filter((n) => cuerpo[n] !== Number(this.cargado[n]));
+      const cuerpo = { ...Object.fromEntries(campos.map((c) => [c.name, Number(c.value)])), tarifa_hora_gestion: leerImporte(danos[0].value), tope_horas_sesiones_perdidas: Number(danos[1].value) };
+      const todos = [...PARAMETROS, ...DANOS];
+      const cambiados = todos.filter((n) => Number(cuerpo[n]) !== Number(this.cargado[n]));
       const sensibles = cambiados.filter(esSensible);
       const boton = formulario.querySelector('[data-envio]');
       const exito = (datos, conEnlace = false) => {
         this.llenarParametros(datos ?? cuerpo);
         limpiarAvisos(this);
         const enlace = conEnlace ? { enlace: { texto: 'Ver en el registro de cambios', href: '/app/cambios?recurso=parametros' } } : undefined;
-        enfocarAviso(mostrarAviso(this, 'exito', 'Parámetros guardados', 'La anticipación ya vale en el calendario; los plazos de pago, en las reservas nuevas.', enlace));
+        const danosCambiados = cambiados.some((n) => DANOS.includes(n));
+        enfocarAviso(mostrarAviso(this, 'exito', 'Parámetros guardados', `La anticipación ya vale en el calendario; los plazos de pago, en las reservas nuevas.${danosCambiados ? ' Los valores de daños ya se ven al pie de las condiciones.' : ''}`, enlace));
       };
       const resto = cambiados.filter((n) => !esSensible(n));
       this.ctx = {

@@ -1,0 +1,53 @@
+---
+// Pieza interna (no es del catalogo): estilos de la prosa de un texto legal (fuente-tamano-lectura, ancho medida-linea-lectura).
+// El HTML llega del backend, asi que sus etiquetas se estilan desde aqui. La comparten la pagina publica y el panel del Administrador.
+---
+
+<style is:global>
+  .prosa {
+    color: var(--color-texto-cuerpo);
+    font-size: var(--fuente-tamano-lectura);
+    line-height: var(--fuente-interlineado-lectura);
+    overflow-wrap: anywhere;
+  }
+  .prosa > * + * {
+    margin-block-start: var(--espacio-4);
+  }
+  .prosa :is(h2, h3, h4, h5, h6) {
+    margin-block-start: var(--espacio-8);
+    text-transform: none;
+  }
+  .prosa h2 {
+    font-size: var(--fuente-tamano-titulo-sm);
+  }
+  .prosa :is(h3, h4, h5, h6) {
+    font-size: var(--fuente-tamano-lectura);
+  }
+  .prosa :is(ul, ol) {
+    padding-inline-start: var(--espacio-6);
+  }
+  .prosa a {
+    color: var(--color-texto-principal);
+    text-decoration: underline;
+  }
+  .prosa blockquote {
+    margin-inline: 0;
+    padding-inline-start: var(--espacio-4);
+    border-inline-start: var(--borde-grosor-base) solid var(--color-borde-fuerte);
+  }
+  .prosa table {
+    display: block;
+    max-inline-size: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+  }
+  .prosa :is(th, td) {
+    padding: var(--espacio-2) var(--espacio-3);
+    border: var(--borde-grosor-fino) solid var(--color-borde-fuerte);
+    text-align: start;
+  }
+  .prosa img {
+    max-inline-size: 100%;
+    block-size: auto;
+  }
+</style>

@@ -40,8 +40,8 @@ export function llenarAviso(aviso, titulo, texto) {
 }
 
 // Aviso de resultado arriba del formulario. `enlaces`: [{texto, href}] (resumen de errores); `boton`: {texto, atributo} (Reintentar);
-// `enlace`: {texto, href} (accion principal que navega).
-export function mostrarAviso(isla, variante, titulo, texto, { enlaces, boton, enlace } = {}) {
+// `enlace`: {texto, href} (accion principal que navega); `destino`: contenedor distinto de [data-avisos] (aviso local de un bloque).
+export function mostrarAviso(isla, variante, titulo, texto, { enlaces, boton, enlace, destino } = {}) {
   const fragmento = plantilla(isla, `aviso-${variante}`);
   const aviso = fragmento.querySelector('.aviso');
   llenarAviso(aviso, titulo, texto);
@@ -72,7 +72,7 @@ export function mostrarAviso(isla, variante, titulo, texto, { enlaces, boton, en
     control.href = enlace.href;
     cuerpo.append(bloque);
   }
-  isla.querySelector('[data-avisos]').replaceChildren(fragmento);
+  (destino ?? isla.querySelector('[data-avisos]')).replaceChildren(fragmento);
   return aviso;
 }
 
