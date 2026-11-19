@@ -12,7 +12,16 @@ from bugalu.modulos.asesorias.dominio.asesoria import Asesoria as AsesoriaDomini
 from bugalu.modulos.asesorias.dominio.asesoria import PersonaAsesoria
 from bugalu.modulos.catalogo.infraestructura.entrada.http.esquemas import Impuesto
 from bugalu.modulos.reservas.dominio.disponibilidad import LIMA
-from bugalu.modulos.reservas.infraestructura.entrada.http.esquemas import Cuota, Instante, Politica
+from bugalu.modulos.reservas.infraestructura.entrada.http.esquemas import (
+    CancelacionReserva,
+    Cuota,
+    Devolucion,
+    Instante,
+    Politica,
+    ReprogramacionReserva,
+    cancelacion_a_esquema,
+    referencia_a_esquema,
+)
 
 
 class NuevaAsesoria(BaseModel):
@@ -83,7 +92,10 @@ class Asesoria(BaseModel):
     version_condiciones: str | None = None
     cliente: Cliente | None = None
     notas: str | None = None
-    reprogramaciones: list[Any] = []
+    reprogramaciones: list[ReprogramacionReserva] = []
+    cancelacion: CancelacionReserva | None = None
+    eleccion_estudio: str | None = None
+    devolucion: Devolucion | None = None
 
     @classmethod
     def desde_dominio(cls, a: AsesoriaDominio) -> Asesoria:
@@ -130,6 +142,21 @@ class Asesoria(BaseModel):
             if a.cliente
             else None,
             notas=a.notas,
+            reprogramaciones=[
+                ReprogramacionReserva(
+                    **{
+                        **vars(g),
+                        "anterior_inicio": g.anterior_inicio.astimezone(LIMA),
+                        "nuevo_inicio": g.nuevo_inicio.astimezone(LIMA),
+                        "en": g.en.astimezone(LIMA),
+                        "por": referencia_a_esquema(g.por),
+                    }
+                )
+                for g in a.reprogramaciones
+            ],
+            cancelacion=cancelacion_a_esquema(a.cancelacion) if a.cancelacion else None,
+            eleccion_estudio=a.eleccion_estudio,
+            devolucion=Devolucion.desde_dominio(a.devolucion) if a.devolucion else None,
         )
 
 
@@ -166,3 +193,12 @@ class AsesoriaResumen(BaseModel):
             por_cerrar=agenda.por_cerrar(a.estado, a.fin, ahora),
             encuentro_pendiente=agenda.encuentro_pendiente(a.modalidad, a.lugar, a.enlace),
         )
+
+
+class VistaReprogramacionAsesoria(BaseModel):
+    nivel: int | None
+    penalizacion: Decimal
+    precio: PrecioAsesoria
+    saldo: Decimal
+    credito: Decimal
+    reprogramaciones_restantes: int

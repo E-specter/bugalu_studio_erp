@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime, time
 from uuid import UUID
 
-from bugalu.compartido.errores import DatosInvalidos, HorarioConAsesorias, NoEncontrado
+from bugalu.compartido.errores import DatosInvalidos, NoEncontrado
 from bugalu.modulos.asesorias.aplicacion.permisos import exigir_gestion
 from bugalu.modulos.asesorias.dominio.disponibilidad import validar_horarios_nuevos
 from bugalu.modulos.asesorias.dominio.modelos import Horario
@@ -57,12 +57,8 @@ class RetirarHorario:
 
     async def ejecutar(self, id_actor: UUID, id_profesional: UUID, id_horario: UUID) -> None:
         await _exigir_perfil_y_gestion(self._repo, id_actor, id_profesional)
-        horario = await self._repo.obtener_horario(id_profesional, id_horario)
-        if horario is None:
+        if await self._repo.obtener_horario(id_profesional, id_horario) is None:
             raise NoEncontrado("No existe el horario.")
-        vivas = await self._repo.asesorias_vivas_en(id_profesional, horario.inicio, horario.fin)
-        if vivas:
-            raise HorarioConAsesorias(
-                "El horario tiene asesorias vivas.", {"asesorias": [str(a) for a in vivas]}
-            )
-        await self._repo.retirar_horario(id_horario)
+        await self._repo.retirar_horario(
+            id_horario
+        )  # la base cuenta las vivas: HorarioConAsesorias

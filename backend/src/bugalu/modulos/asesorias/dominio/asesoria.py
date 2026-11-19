@@ -6,7 +6,16 @@ from uuid import UUID
 
 from bugalu.modulos.asesorias.dominio.modelos import Horario, Profesional
 from bugalu.modulos.catalogo.dominio.precio import ConfiguracionImpuestos
-from bugalu.modulos.reservas.dominio.modelos import CuotaReserva, Politica, RequisitosReserva
+from bugalu.modulos.reservas.dominio.modelos import (
+    CancelacionReserva,
+    CuotaReserva,
+    Devolucion,
+    Politica,
+    Reprogramacion,
+    RequisitosReserva,
+    VistaCancelacion,
+    VistaReprogramacion,
+)
 
 
 @dataclass(frozen=True)
@@ -51,6 +60,10 @@ class Asesoria:
     version_condiciones: str | None = None
     cliente: PersonaAsesoria | None = None  # solo su profesional y el administrador
     notas: str | None = None  # idem
+    cancelacion: CancelacionReserva | None = None  # solo el cliente y el administrador
+    reprogramaciones: tuple[Reprogramacion, ...] = ()
+    eleccion_estudio: str | None = None
+    devolucion: Devolucion | None = None
 
     @property
     def duracion(self) -> int:
@@ -59,6 +72,18 @@ class Asesoria:
     @property
     def constancia_disponible(self) -> bool:
         return self.estado == "realizada"
+
+
+@dataclass(frozen=True)
+class ContextoAsesoria:
+    """Lo que se conserva al reprogramar: mismo profesional, duracion y precio."""
+
+    id_profesional: UUID
+    inicio: datetime
+    fin: datetime
+    estudio: bool
+    precio: dict[str, Any]
+    total: Decimal
 
 
 class RepositorioAgenda(Protocol):
@@ -110,3 +135,44 @@ class RepositorioAgenda(Protocol):
     ) -> None:
         """Lanza NoEncontrado, SinPermiso o NoEditable (la base lo decide)."""
         ...
+
+    async def tipo_de_reserva(self, id_reserva: UUID) -> str | None: ...
+
+    async def cancelar(
+        self,
+        id_reserva: UUID,
+        nota: str | None,
+        nivel_esperado: int | None,
+        por: str | None,
+        aviso_en: datetime | None,
+    ) -> None: ...
+
+    async def vista_cancelacion(
+        self, id_reserva: UUID, aviso_en: datetime | None
+    ) -> VistaCancelacion: ...
+
+    async def marcar_inasistencia(self, id_reserva: UUID) -> None: ...
+
+    async def aplicar_excepcion(self, id_reserva: UUID, motivo: str) -> None: ...
+
+    async def elegir_devolucion_del_estudio(self, id_reserva: UUID) -> None: ...
+
+    async def contexto_asesoria(self, id_reserva: UUID) -> ContextoAsesoria: ...
+
+    async def ocupada_excluyendo(
+        self, id_profesional: UUID, inicio: datetime, fin: datetime, excluir: UUID
+    ) -> bool: ...
+
+    async def vista_reprogramacion(
+        self, id_reserva: UUID, inicio: datetime, total: Decimal, precio: dict[str, Any]
+    ) -> VistaReprogramacion: ...
+
+    async def reprogramar(
+        self,
+        id_reserva: UUID,
+        inicio: datetime,
+        nivel_esperado: int | None,
+        total_esperado: Decimal | None,
+        precio: dict[str, Any],
+        total: Decimal,
+    ) -> None: ...

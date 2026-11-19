@@ -101,7 +101,7 @@ select throws_ok($$insert into public.asesoria (id_reserva, modalidad) values ((
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', true);
-select is((select string_agg(id_profesional::text, ',') from public.reserva where tipo = 'asesoria'), '00000000-0000-0000-0000-0000000000b2', 'el profesional ve solo las suyas');
+select is((select string_agg(id_profesional::text, ',') from public.asesoria_vista), '00000000-0000-0000-0000-0000000000b2', 'el profesional ve solo las suyas, por su vista (B2: ya no lee reserva)');
 select is((select count(*)::int from public.reserva where tipo = 'sala'), 0, 'y ninguna reserva de sala');
 select is((select count(*)::int from public.cuota), 0, 'no ve cuotas');
 select throws_ok($$insert into public.reserva (tipo, id_cliente, id_profesional, inicio, fin, total, vence_pago)

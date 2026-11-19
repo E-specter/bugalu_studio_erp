@@ -55,6 +55,13 @@ class ClienteConOperaciones(Conflicto):
         )
 
 
+class ProfesionalConAsesorias(Conflicto):
+    codigo = "profesional_con_asesorias"
+
+    def __init__(self, detalles: dict[str, Any]) -> None:
+        super().__init__("El profesional tiene asesorias vivas.", detalles)
+
+
 class VerificacionNoValida(Conflicto):
     codigo = "verificacion_no_valida"
 

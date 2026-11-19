@@ -1,5 +1,5 @@
-from collections.abc import Sequence
-from datetime import datetime
+from collections.abc import Mapping, Sequence
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -15,9 +15,11 @@ from bugalu.compartido.errores import (
     NoEncontrado,
     SinPermiso,
     TextoDesactualizado,
+    TramoNoDisponible,
 )
 from bugalu.modulos.asesorias.dominio.asesoria import (
     Asesoria,
+    ContextoAsesoria,
     NuevaAsesoria,
     PersonaAsesoria,
 )
@@ -26,18 +28,45 @@ from bugalu.modulos.asesorias.infraestructura.salida.repositorio_postgres import
     RepositorioAsesoriasPostgres,
 )
 from bugalu.modulos.catalogo.dominio.precio import ConfiguracionImpuestos
-from bugalu.modulos.reservas.dominio.modelos import Politica, RequisitosReserva
+from bugalu.modulos.reservas.dominio.modelos import (
+    CancelacionReserva,
+    Excepcion,
+    Politica,
+    Referencia,
+    RequisitosReserva,
+    VistaCancelacion,
+    VistaReprogramacion,
+)
 from bugalu.modulos.reservas.infraestructura.salida.repositorio_postgres import (
     RepositorioReservasPostgres,
 )
 
 _TOPE_LISTA = 500
+
+
+def _cancelacion(f: Sequence[Any], nombres: Mapping[UUID, str | None]) -> CancelacionReserva | None:
+    """Solo si se cancelo o se marco no asistio por la politica de RF-18."""
+    if f[18] is None or f[2] not in ("cancelada", "no_asistio"):
+        return None
+
+    def quien(id_: UUID | None) -> Referencia | None:
+        return Referencia(id_, nombres[id_]) if id_ is not None and id_ in nombres else None
+
+    excepcion = Excepcion(f[25], quien(f[26]), f[27]) if f[27] is not None else None
+    return CancelacionReserva(
+        f[17], f[18], f[19], f[20], f[21], f[22], f[23], quien(f[24]), excepcion
+    )
+
+
+# La vista (migracion 20261229100000) filtra por quien llama y anula el dinero del profesional.
 _SELECT = (
     "select r.id, r.folio, r.estado, r.motivo_cancelacion, r.inicio, r.fin, r.precio, "
-    "r.vence_pago, r.id_cliente, r.id_profesional, a.modalidad, a.lugar, a.enlace, "
-    "a.realizada_en, r.parametros_aplicados "
-    "from public.reserva r join public.asesoria a on a.id_reserva = r.id "
-    "where r.tipo = 'asesoria' "
+    "r.vence_pago, r.id_cliente, r.id_profesional, r.modalidad, r.lugar, r.enlace, "
+    "r.realizada_en, r.parametros_aplicados, r.con_dinero, r.eleccion_estudio, "
+    "r.nivel_cancelacion, r.aviso_en, r.cancelacion_por, r.pagado_cancelacion, r.retenido, "
+    "r.credito_generado, r.nota_cancelacion, r.id_cancelador, r.excepcion_motivo, "
+    "r.excepcion_por, r.excepcion_en "
+    "from public.asesoria_vista r where true "
 )
 # Mensajes de la barrera de la base (validar_asesoria_nueva) a su error de negocio.
 _BARRERA = {
@@ -162,7 +191,19 @@ class RepositorioAgendaPostgres:
                 (ids,),
             )
         }
-        cuotas = await self._reservas.cuotas_de({f[0]: f[2] for f in filas}) if detalle else {}
+        cuotas = (
+            await self._reservas.cuotas_de(
+                {f[0]: f[2] for f in filas}, {f[0]: f[5] + timedelta(hours=48) for f in filas}
+            )
+            if detalle
+            else {}
+        )
+        con_dinero = [f for f in filas if f[15]]
+        reprogramaciones = await self._reservas.reprogramaciones_de([f[0] for f in con_dinero])
+        devoluciones = await self._reservas.devoluciones_del_estudio_de([f[0] for f in con_dinero])
+        nombres = await self._reservas.nombres_de_clientes(
+            list({i for f in con_dinero for i in (f[24], f[26]) if i})
+        )
         resultado = []
         for f in filas:
             notas = None
@@ -202,6 +243,10 @@ class RepositorioAgendaPostgres:
                     version_condiciones=version,
                     cliente=contactos.get(f[0]),
                     notas=notas,
+                    cancelacion=_cancelacion(f, nombres) if f[15] and detalle else None,
+                    reprogramaciones=tuple(reprogramaciones.get(f[0], [])) if detalle else (),
+                    eleccion_estudio=f[16] if detalle else None,
+                    devolucion=devoluciones.get(f[0]) if detalle else None,
                 )
             )
         return resultado
@@ -252,3 +297,69 @@ class RepositorioAgendaPostgres:
             if error.diag.message_primary == "no_editable":
                 raise NoEditable("La asesoria ya no admite cambios de encuentro.") from None
             raise
+
+    # --- politica de RF-18 (reutiliza las funciones y el traductor de errores de reservas) ---
+
+    async def tipo_de_reserva(self, id_reserva: UUID) -> str | None:
+        return await self._reservas.tipo_de_reserva(id_reserva)
+
+    async def cancelar(
+        self,
+        id_reserva: UUID,
+        nota: str | None,
+        nivel_esperado: int | None,
+        por: str | None,
+        aviso_en: datetime | None,
+    ) -> None:
+        await self._reservas.cancelar_reserva(id_reserva, nota, nivel_esperado, por, aviso_en)
+
+    async def vista_cancelacion(
+        self, id_reserva: UUID, aviso_en: datetime | None
+    ) -> VistaCancelacion:
+        return await self._reservas.vista_cancelacion(id_reserva, aviso_en)
+
+    async def marcar_inasistencia(self, id_reserva: UUID) -> None:
+        await self._reservas.marcar_inasistencia(id_reserva)
+
+    async def aplicar_excepcion(self, id_reserva: UUID, motivo: str) -> None:
+        await self._reservas.aplicar_excepcion(id_reserva, motivo)
+
+    async def elegir_devolucion_del_estudio(self, id_reserva: UUID) -> None:
+        await self._reservas.elegir_estudio_devolucion(id_reserva)
+
+    async def contexto_asesoria(self, id_reserva: UUID) -> ContextoAsesoria:
+        (
+            inicio,
+            fin,
+            estudio,
+            precio,
+            total,
+            id_profesional,
+        ) = await self._reservas.contexto_asesoria(id_reserva)
+        return ContextoAsesoria(id_profesional, inicio, fin, estudio, precio, total)
+
+    async def ocupada_excluyendo(
+        self, id_profesional: UUID, inicio: datetime, fin: datetime, excluir: UUID
+    ) -> bool:
+        return bool(await self._perfiles.ocupados_en(id_profesional, inicio, fin, excluir))
+
+    async def vista_reprogramacion(
+        self, id_reserva: UUID, inicio: datetime, total: Decimal, precio: dict[str, Any]
+    ) -> VistaReprogramacion:
+        return await self._reservas.vista_reprogramacion(id_reserva, inicio, total, precio)
+
+    async def reprogramar(
+        self,
+        id_reserva: UUID,
+        inicio: datetime,
+        nivel_esperado: int | None,
+        total_esperado: Decimal | None,
+        precio: dict[str, Any],
+        total: Decimal,
+    ) -> None:
+        try:
+            await self._reservas.reprogramar_reserva(
+                id_reserva, inicio, nivel_esperado, total_esperado, None, precio, total, ()
+            )
+        except TramoNoDisponible:  # la exclusion por profesional (CA-07)
+            raise HorarioNoDisponible("Ese horario ya no esta disponible.") from None

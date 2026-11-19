@@ -1,6 +1,6 @@
 import json
 from collections.abc import Mapping, Sequence
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -16,6 +16,7 @@ from bugalu.compartido.errores import (
     ExcepcionNoAplicable,
     ExcepcionYaAplicada,
     FranjaSolapada,
+    FueraDeHorario,
     LimiteReprogramaciones,
     NivelCambiado,
     NoAplicable,
@@ -151,6 +152,10 @@ def _traducir_reprogramacion(error: Error) -> ErrorDeNegocio:
     if isinstance(error, errors.ExclusionViolation):  # RN-01: la base decide el solape
         return TramoNoDisponible("Ese horario ya no está disponible.")
     codigo = error.diag.message_primary or ""
+    if (
+        codigo == "fuera_de_horario"
+    ):  # asesorias: el horario nuevo no cabe en un bloque del profesional
+        return FueraDeHorario("La asesoria completa no cabe en un horario publicado.")
     if codigo in ("nivel_cambiado", "precio_cambiado"):
         d = json.loads(error.diag.message_detail or "{}")  # sin el desglose: lo suma el caso de uso
         centimos = Decimal("0.01")
@@ -488,8 +493,14 @@ class RepositorioReservasPostgres:
                 ) from None
             raise
 
-    async def cuotas_de(self, estados: Mapping[UUID, str]) -> dict[UUID, list[CuotaReserva]]:
-        """Cuotas y pagos de reservas (sala o asesoria); `estados`: id de reserva -> estado."""
+    async def cuotas_de(
+        self,
+        estados: Mapping[UUID, str],
+        plazo_saldo: Mapping[UUID, datetime] | None = None,
+    ) -> dict[UUID, list[CuotaReserva]]:
+        """Cuotas y pagos de reservas (sala o asesoria); `estados`: id de reserva -> estado;
+        `plazo_saldo`: hasta cuando se paga la cuota `al_terminar` (asesorias: fin + 48 h)."""
+        ahora = datetime.now(UTC)
         cuotas: dict[UUID, list[CuotaReserva]] = {}
         pagos: dict[UUID, list[PagoCuota]] = {}
         ids = list(estados)
@@ -514,7 +525,12 @@ class RepositorioReservasPostgres:
                     f[2],
                     f[3],
                     estado,
-                    cuota_pagable(estado, f[2], estados[f[1]]),
+                    cuota_pagable(
+                        estado,
+                        f[2],
+                        estados[f[1]],
+                        bool(plazo_saldo and f[1] in plazo_saldo and ahora > plazo_saldo[f[1]]),
+                    ),
                     tuple(de_la_cuota),
                     f[5],
                 )
@@ -607,6 +623,29 @@ class RepositorioReservasPostgres:
     async def obtener_reserva(self, id_reserva: UUID) -> Reserva | None:
         encontradas = await self._reservas("r.id = %s", (id_reserva,))
         return encontradas[0] if encontradas else None
+
+    async def reprogramaciones_de(self, ids: Sequence[UUID]) -> dict[UUID, list[Reprogramacion]]:
+        return await self._reprogramaciones(ids)
+
+    async def devoluciones_del_estudio_de(self, ids: Sequence[UUID]) -> dict[UUID, Any]:
+        return await self._devoluciones_del_estudio(ids)
+
+    async def tipo_de_reserva(self, id_reserva: UUID) -> str | None:
+        """`sala`, `asesoria` o null si no es visible para quien llama."""
+        fila = (await self._filas("select public.tipo_de_reserva(%s)", (id_reserva,)))[0][0]
+        return str(fila) if fila else None
+
+    async def contexto_asesoria(self, id_reserva: UUID) -> tuple[Any, ...]:
+        """(inicio, fin, estudio, precio, total, id_profesional) de la asesoria a reprogramar."""
+        try:
+            filas = await self._filas(
+                "select inicio, fin, estudio, precio, total, id_profesional "
+                "from public.contexto_reprogramacion(%s)",
+                (id_reserva,),
+            )
+        except (errors.NoDataFound, errors.InsufficientPrivilege, errors.RaiseException) as e:
+            raise _traducir_reprogramacion(e) from None
+        return tuple(filas[0])
 
     async def existe_reserva(self, id_reserva: UUID) -> bool:
         return bool((await self._filas("select public.existe_reserva(%s)", (id_reserva,)))[0][0])
@@ -722,7 +761,7 @@ class RepositorioReservasPostgres:
         inicio: datetime,
         nivel_esperado: int | None,
         total_esperado: Decimal | None,
-        id_franja: UUID,
+        id_franja: UUID | None,
         precio: dict[str, Any],
         total: Decimal,
         especialistas: Sequence[EspecialistaAplicado],

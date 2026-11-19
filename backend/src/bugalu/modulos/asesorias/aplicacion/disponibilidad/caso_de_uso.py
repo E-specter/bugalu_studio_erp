@@ -35,9 +35,13 @@ class ConsultarDisponibilidadProfesional:
         self._repo = repo
 
     async def ejecutar(
-        self, id_profesional: UUID, desde: datetime, hasta: datetime, ahora: datetime
+        self,
+        id_profesional: UUID,
+        desde: datetime,
+        hasta: datetime,
+        ahora: datetime,
+        excluir: UUID | None = None,
     ) -> Disponibilidad:
-        # shortcut: `excluir_asesoria` (reprogramar) llega en la etapa B, con las asesorias.
         if not timedelta(0) < hasta - desde <= timedelta(days=MAXIMO_DIAS):
             raise RangoInvalido(
                 f"El rango debe durar de 1 a {MAXIMO_DIAS} dias.", {"campo": "hasta"}
@@ -48,7 +52,7 @@ class ConsultarDisponibilidadProfesional:
         minima, maxima = await self._repo.limites_reserva()
         limites = calcular_limites(ahora, minima, maxima)
         horarios = await self._repo.listar_horarios(id_profesional, desde, hasta)
-        ocupados = await self._repo.ocupados_en(id_profesional, desde, hasta)
+        ocupados = await self._repo.ocupados_en(id_profesional, desde, hasta, excluir)
         dias = minutos_libres_por_dia(
             desde, hasta, [Tramo(h.inicio, h.fin) for h in horarios], ocupados, limites
         )

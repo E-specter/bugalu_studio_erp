@@ -292,6 +292,12 @@ class Politica(BaseModel):
     reprogramaciones_nivel_2: int
 
 
+class ReservaDeDevolucion(BaseModel):
+    id: UUID
+    folio: str
+    tipo: Literal["sala", "asesoria"]
+
+
 class Devolucion(BaseModel):
     id: UUID
     id_credito: UUID | None
@@ -309,6 +315,7 @@ class Devolucion(BaseModel):
     nota_realizada: str | None = None
     realizada_en: datetime | None = None
     limite: datetime | None = None
+    reserva: ReservaDeDevolucion | None = None
 
     @classmethod
     def desde_dominio(cls, d: modelos.Devolucion) -> Devolucion:
@@ -323,6 +330,7 @@ class Devolucion(BaseModel):
                 "decidida_en": lima(d.decidida_en),
                 "realizada_en": lima(d.realizada_en),
                 "limite": lima(d.limite),
+                "reserva": ReservaDeDevolucion(id=d.id_reserva, folio=d.folio, tipo=d.tipo_reserva),
             }
         )
 
@@ -492,3 +500,8 @@ class Reserva(BaseModel):
             **({"eleccion_estudio": r.eleccion_estudio} if r.eleccion_estudio else {}),
             **({"devolucion": Devolucion.desde_dominio(r.devolucion)} if r.devolucion else {}),
         )
+
+
+# Para la politica de las asesorias (modulo asesorias), que reutiliza estas conversiones.
+cancelacion_a_esquema = _cancelacion
+referencia_a_esquema = _referencia

@@ -355,10 +355,10 @@ async def consultar_disponibilidad(
     id_profesional: UUID,
     desde: Annotated[Instante, Query()],
     hasta: Annotated[Instante, Query()],
-    excluir_asesoria: Annotated[UUID | None, Query()] = None,  # etapa B: se acepta y se ignora
+    excluir_asesoria: Annotated[UUID | None, Query()] = None,
 ) -> e.DisponibilidadProfesional:
     async with _contexto(request, claims) as conexion:
         resultado = await ConsultarDisponibilidadProfesional(
             RepositorioAsesoriasPostgres(conexion)
-        ).ejecutar(id_profesional, desde, hasta, datetime.now(UTC))
+        ).ejecutar(id_profesional, desde, hasta, datetime.now(UTC), excluir_asesoria)
     return e.DisponibilidadProfesional.desde_dominio(resultado)

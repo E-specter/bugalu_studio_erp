@@ -17,18 +17,12 @@ from bugalu.modulos.reservas.aplicacion.actualizar_parametros.caso_de_uso import
     ActualizarParametros,
 )
 from bugalu.modulos.reservas.aplicacion.actualizar_sala.caso_de_uso import ActualizarSala
-from bugalu.modulos.reservas.aplicacion.aplicar_excepcion.caso_de_uso import AplicarExcepcion
-from bugalu.modulos.reservas.aplicacion.cancelar_reserva.caso_de_uso import CancelarReserva
 from bugalu.modulos.reservas.aplicacion.consultar_disponibilidad.caso_de_uso import (
     ConsultarDisponibilidad,
-)
-from bugalu.modulos.reservas.aplicacion.elegir_estudio.caso_de_uso import (
-    ElegirDevolucionDelEstudio,
 )
 from bugalu.modulos.reservas.aplicacion.listar_mis_reservas.caso_de_uso import ListarMisReservas
 from bugalu.modulos.reservas.aplicacion.listar_reservas.caso_de_uso import ListarReservas
 from bugalu.modulos.reservas.aplicacion.listar_salas.caso_de_uso import ListarSalas
-from bugalu.modulos.reservas.aplicacion.marcar_inasistencia.caso_de_uso import MarcarInasistencia
 from bugalu.modulos.reservas.aplicacion.obtener_parametros.caso_de_uso import ObtenerParametros
 from bugalu.modulos.reservas.aplicacion.obtener_parametros_danos.caso_de_uso import (
     ObtenerParametrosDanos,
@@ -38,36 +32,22 @@ from bugalu.modulos.reservas.aplicacion.publicar_franjas.caso_de_uso import Publ
 from bugalu.modulos.reservas.aplicacion.quitar_cierre.caso_de_uso import QuitarCierre
 from bugalu.modulos.reservas.aplicacion.registrar_cierre.caso_de_uso import RegistrarCierre
 from bugalu.modulos.reservas.aplicacion.registrar_reserva.caso_de_uso import RegistrarReserva
-from bugalu.modulos.reservas.aplicacion.reprogramar_reserva.caso_de_uso import (
-    ReprogramarReserva,
-    SimularReprogramacion,
-)
 from bugalu.modulos.reservas.aplicacion.retirar_franja.caso_de_uso import RetirarFranja
 from bugalu.modulos.reservas.aplicacion.sugerir_franjas.caso_de_uso import SugerirFranjas
-from bugalu.modulos.reservas.aplicacion.vista_cancelacion.caso_de_uso import (
-    VistaCancelacion as VistaCancelacionCaso,
-)
 from bugalu.modulos.reservas.dominio.disponibilidad import LIMA
 from bugalu.modulos.reservas.dominio.disponibilidad import Tramo as TramoDominio
 from bugalu.modulos.reservas.infraestructura.entrada.http.esquemas import (
     CambiosSala,
-    Cancelacion,
     Cierre,
     Disponibilidad,
-    EleccionEstudio,
     Franja,
     Instante,
-    NuevaExcepcion,
     NuevaReserva,
     NuevasFranjas,
     NuevoCierre,
-    NuevoHorario,
-    Reprogramacion,
     Reserva,
     Sala,
     Tramo,
-    VistaCancelacion,
-    VistaReprogramacion,
 )
 from bugalu.modulos.reservas.infraestructura.salida.cotizador_catalogo import CotizadorCatalogo
 from bugalu.modulos.reservas.infraestructura.salida.repositorio_postgres import (
@@ -337,134 +317,4 @@ async def listar_reservas(
 async def obtener_reserva(request: Request, claims: Claims, id_reserva: UUID) -> Reserva:
     async with transaccion_con_identidad(_pool(request), claims) as conexion:
         reserva = await ObtenerReserva(RepositorioReservasPostgres(conexion)).ejecutar(id_reserva)
-    return Reserva.desde_dominio(reserva)
-
-
-@router.get(
-    "/reservas/{id_reserva}/cancelacion",
-    dependencies=SOLO_CLIENTES,
-    response_model=VistaCancelacion,
-    summary="Vista previa de la cancelacion: nivel, retencion y credito; sin cambiar nada",
-    responses=_respuestas(401, 403, 404, 409, 422),
-)
-async def vista_cancelacion(
-    request: Request,
-    claims: Claims,
-    id_reserva: UUID,
-    aviso_en: Annotated[Instante | None, Query()] = None,
-) -> VistaCancelacion:
-    async with transaccion_con_identidad(_pool(request), claims) as conexion:
-        vista = await VistaCancelacionCaso(RepositorioReservasPostgres(conexion)).ejecutar(
-            id_reserva, aviso_en
-        )
-    return VistaCancelacion.desde_dominio(vista)
-
-
-@router.post(
-    "/reservas/{id_reserva}/cancelar",
-    dependencies=SOLO_CLIENTES,
-    response_model=Reserva,
-    response_model_exclude_unset=True,
-    summary="Cancela con la politica de niveles (RF-18): el dueno con su nivel esperado; "
-    "el administrador por el estudio o en nombre del cliente",
-    responses=_respuestas(401, 403, 404, 409, 422),
-)
-async def cancelar_reserva(
-    request: Request, claims: Claims, id_reserva: UUID, cuerpo: Cancelacion | None = None
-) -> Reserva:
-    cuerpo = cuerpo or Cancelacion()
-    async with transaccion_con_identidad(_pool(request), claims) as conexion:
-        reserva = await CancelarReserva(RepositorioReservasPostgres(conexion)).ejecutar(
-            id_reserva, cuerpo.nota, cuerpo.nivel_esperado, cuerpo.por, cuerpo.aviso_en
-        )
-    return Reserva.desde_dominio(reserva)
-
-
-@router.post(
-    "/reservas/{id_reserva}/inasistencia",
-    response_model=Reserva,
-    response_model_exclude_unset=True,
-    summary="Marca la inasistencia, desde la tolerancia hasta el fin (personal o administrador)",
-    responses=_respuestas(401, 403, 404, 409),
-)
-async def marcar_inasistencia(request: Request, claims: Claims, id_reserva: UUID) -> Reserva:
-    async with transaccion_con_identidad(_pool(request), claims) as conexion:
-        reserva = await MarcarInasistencia(RepositorioReservasPostgres(conexion)).ejecutar(
-            id_reserva
-        )
-    return Reserva.desde_dominio(reserva)
-
-
-@router.post(
-    "/reservas/{id_reserva}/excepcion",
-    response_model=Reserva,
-    response_model_exclude_unset=True,
-    summary="Trata como nivel 1 una cancelacion de nivel 2 o 3, o una inasistencia (administrador)",
-    responses=_respuestas(401, 403, 404, 409, 422),
-)
-async def aplicar_excepcion(
-    request: Request, claims: Claims, id_reserva: UUID, cuerpo: NuevaExcepcion
-) -> Reserva:
-    async with transaccion_con_identidad(_pool(request), claims) as conexion:
-        reserva = await AplicarExcepcion(RepositorioReservasPostgres(conexion)).ejecutar(
-            id_reserva, cuerpo.motivo
-        )
-    return Reserva.desde_dominio(reserva)
-
-
-@router.post(
-    "/reservas/{id_reserva}/reprogramar/simular",
-    dependencies=SOLO_CLIENTES,
-    response_model=VistaReprogramacion,
-    summary="Vista previa de reprogramar: nivel, penalizacion, precio nuevo, saldo y credito; "
-    "sin cambiar nada (dueno; administrador tras una cancelacion del estudio)",
-    responses=_respuestas(401, 403, 404, 409, 422),
-)
-async def simular_reprogramacion(
-    request: Request, claims: Claims, id_reserva: UUID, cuerpo: NuevoHorario
-) -> VistaReprogramacion:
-    ahora = datetime.now(UTC)
-    async with transaccion_con_identidad(_pool(request), claims) as conexion:
-        vista = await SimularReprogramacion(
-            RepositorioReservasPostgres(conexion), CotizadorCatalogo(conexion)
-        ).ejecutar(id_reserva, cuerpo.inicio, ahora)
-    return VistaReprogramacion.desde_dominio(vista)
-
-
-@router.post(
-    "/reservas/{id_reserva}/reprogramar",
-    dependencies=SOLO_CLIENTES,
-    response_model=Reserva,
-    response_model_exclude_unset=True,
-    summary="Reprograma a otro horario de la misma sala con la politica de niveles (RF-18); "
-    "tras una cancelacion del estudio, sin costo (`nivel_esperado: null`)",
-    responses=_respuestas(401, 403, 404, 409, 422),
-)
-async def reprogramar_reserva(
-    request: Request, claims: Claims, id_reserva: UUID, cuerpo: Reprogramacion
-) -> Reserva:
-    ahora = datetime.now(UTC)
-    async with transaccion_con_identidad(_pool(request), claims) as conexion:
-        reserva = await ReprogramarReserva(
-            RepositorioReservasPostgres(conexion), CotizadorCatalogo(conexion)
-        ).ejecutar(id_reserva, cuerpo.inicio, cuerpo.nivel_esperado, cuerpo.total_esperado, ahora)
-    return Reserva.desde_dominio(reserva)
-
-
-@router.post(
-    "/reservas/{id_reserva}/eleccion-estudio",
-    dependencies=SOLO_CLIENTES,
-    response_model=Reserva,
-    response_model_exclude_unset=True,
-    summary="Tras una cancelacion del estudio, elige la devolucion integra de lo pagado "
-    "(dueno o administrador)",
-    responses=_respuestas(401, 403, 404, 409, 422),
-)
-async def elegir_devolucion_del_estudio(
-    request: Request, claims: Claims, id_reserva: UUID, cuerpo: EleccionEstudio
-) -> Reserva:
-    async with transaccion_con_identidad(_pool(request), claims) as conexion:
-        reserva = await ElegirDevolucionDelEstudio(RepositorioReservasPostgres(conexion)).ejecutar(
-            id_reserva
-        )
     return Reserva.desde_dominio(reserva)

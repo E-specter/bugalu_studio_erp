@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 from bugalu.compartido.errores import (
     AlmacenamientoNoDisponible,
     EspecialidadDuplicada,
+    HorarioConAsesorias,
     HorarioSolapado,
 )
 from bugalu.modulos.asesorias.dominio.modelos import Especialidad, Horario, Profesional
@@ -121,17 +122,18 @@ class RepositorioFalso:
     async def obtener_horario(self, id_profesional: UUID, id_horario: UUID) -> Horario | None:
         return next((h for h in self.horarios if h.id == id_horario), None)
 
-    async def asesorias_vivas_en(
-        self, id_profesional: UUID, inicio: datetime, fin: datetime
-    ) -> list[UUID]:
-        return self.vivas
-
     async def retirar_horario(self, id_horario: UUID) -> None:
+        if self.vivas:
+            raise HorarioConAsesorias("vivas", {"asesorias": [str(a) for a in self.vivas]})
         self.horarios = [h for h in self.horarios if h.id != id_horario]
         self.escrituras.append("retiro")
 
     async def ocupados_en(
-        self, id_profesional: UUID, desde: datetime, hasta: datetime
+        self,
+        id_profesional: UUID,
+        desde: datetime,
+        hasta: datetime,
+        excluir: UUID | None = None,
     ) -> list[Tramo]:
         return []
 

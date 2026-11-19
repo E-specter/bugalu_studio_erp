@@ -1,3 +1,4 @@
+import json
 from collections.abc import Collection, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from datetime import datetime
@@ -5,12 +6,13 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from psycopg import AsyncConnection, errors
+from psycopg import AsyncConnection, Error, errors
 from psycopg.types.json import Jsonb
 
 from bugalu.compartido.errores import (
     DatosInvalidos,
     EspecialidadDuplicada,
+    HorarioConAsesorias,
     HorarioSolapado,
     NoEncontrado,
     PerfilExistente,
@@ -19,7 +21,7 @@ from bugalu.compartido.errores import (
 )
 from bugalu.modulos.asesorias.dominio.modelos import Especialidad, Horario, Ocupado, Profesional
 from bugalu.modulos.catalogo.dominio.precio import ConfiguracionImpuestos
-from bugalu.modulos.reservas.dominio.disponibilidad import Tramo
+from bugalu.modulos.reservas.dominio.disponibilidad import LIMA, Tramo
 
 _TOPE_SUGERENCIA = 200
 _PERFIL = (
@@ -237,20 +239,25 @@ class RepositorioAsesoriasPostgres:
         )
         return Horario(*filas[0]) if filas else None
 
-    async def asesorias_vivas_en(
-        self, id_profesional: UUID, inicio: datetime, fin: datetime
-    ) -> list[UUID]:
-        return []  # shortcut: sin tabla `asesoria` hasta la etapa B
-
     async def retirar_horario(self, id_horario: UUID) -> None:
-        await self._filas("select public.retirar_horario(%s)", (id_horario,))
+        try:
+            await self._filas("select public.retirar_horario(%s)", (id_horario,))
+        except Error as error:
+            if error.sqlstate != "BG005":
+                raise
+            vivas = json.loads(error.diag.message_detail or "[]")
+            for v in vivas:
+                v["inicio"] = datetime.fromisoformat(v["inicio"]).astimezone(LIMA).isoformat()
+            raise HorarioConAsesorias(
+                "El horario tiene asesorias vivas.", {"asesorias": vivas}
+            ) from None
 
     async def ocupados_en(
-        self, id_profesional: UUID, desde: datetime, hasta: datetime
+        self, id_profesional: UUID, desde: datetime, hasta: datetime, excluir: UUID | None = None
     ) -> list[Ocupado]:
         filas = await self._filas(
-            "select inicio, fin, propia from public.ocupacion_profesional(%s, %s, %s)",
-            (id_profesional, desde, hasta),
+            "select inicio, fin, propia from public.ocupacion_profesional(%s, %s, %s, %s)",
+            (id_profesional, desde, hasta, excluir),
         )
         return [Ocupado(*f) for f in filas]
 

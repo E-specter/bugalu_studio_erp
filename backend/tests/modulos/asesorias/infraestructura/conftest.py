@@ -18,6 +18,7 @@ from tests.modulos.reservas.infraestructura.conftest import (  # noqa: F401 - fi
     app,
     cliente,
     cliente_a,
+    cliente_b,
     con,
     personal,
     reservas_intactas,

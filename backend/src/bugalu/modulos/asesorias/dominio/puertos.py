@@ -68,16 +68,12 @@ class RepositorioAsesorias(Protocol):
 
     async def obtener_horario(self, id_profesional: UUID, id_horario: UUID) -> Horario | None: ...
 
-    async def asesorias_vivas_en(
-        self, id_profesional: UUID, inicio: datetime, fin: datetime
-    ) -> list[UUID]:
-        """Etapa B: las asesorias `pre_reservada` o `confirmada` dentro del bloque."""
+    async def retirar_horario(self, id_horario: UUID) -> None:
+        """Lanza HorarioConAsesorias con `detalles.asesorias = [{id, folio, inicio}]` (la base)."""
         ...
 
-    async def retirar_horario(self, id_horario: UUID) -> None: ...
-
     async def ocupados_en(
-        self, id_profesional: UUID, desde: datetime, hasta: datetime
+        self, id_profesional: UUID, desde: datetime, hasta: datetime, excluir: UUID | None = None
     ) -> list[Ocupado]:
         """Asesorias vivas o ya dadas (no canceladas ni vencidas sin pago)."""
         ...

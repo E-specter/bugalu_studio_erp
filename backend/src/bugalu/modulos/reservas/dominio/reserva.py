@@ -106,8 +106,18 @@ def estado_de_cuota(estado_base: str, pagos: Iterable[PagoCuota]) -> str:
     )
 
 
-def cuota_pagable(estado_cuota: str, hito: str, estado_reserva: str) -> bool:
-    """CA-02: pendiente, reserva viva y `al_terminar` solo desde que se confirma."""
+def cuota_pagable(
+    estado_cuota: str, hito: str, estado_reserva: str, plazo_vencido: bool = False
+) -> bool:
+    """CA-02: pendiente, reserva viva y `al_terminar` solo desde que se confirma (`realizada` y
+    el plazo de 48 h tras el fin son de las asesorias, RF-15 CA-10)."""
     if estado_cuota != "pendiente" or estado_reserva in ("cancelada", "no_asistio"):
         return False
-    return hito != "al_terminar" or estado_reserva in ("confirmada", "en_curso", "finalizada")
+    if hito != "al_terminar":
+        return True
+    return not plazo_vencido and estado_reserva in (
+        "confirmada",
+        "en_curso",
+        "finalizada",
+        "realizada",
+    )

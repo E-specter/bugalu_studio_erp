@@ -13,6 +13,9 @@ from bugalu.modulos.asesorias.infraestructura.entrada.http.router import router 
 from bugalu.modulos.asesorias.infraestructura.entrada.http.router_agenda import (
     router as router_agenda,
 )
+from bugalu.modulos.asesorias.infraestructura.entrada.http.router_politica import (
+    router as router_politica,
+)
 from bugalu.modulos.catalogo.infraestructura.entrada.http.router import router as router_catalogo
 from bugalu.modulos.catalogo.infraestructura.entrada.http.router_cambios import (
     router as router_cambios,
@@ -89,4 +92,5 @@ def crear_app() -> FastAPI:
     app.include_router(router_reclamaciones, prefix="/api/v1")
     app.include_router(router_asesorias, prefix="/api/v1")
     app.include_router(router_agenda, prefix="/api/v1")
+    app.include_router(router_politica, prefix="/api/v1")
     return app

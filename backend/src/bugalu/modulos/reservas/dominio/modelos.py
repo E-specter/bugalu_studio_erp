@@ -169,6 +169,7 @@ class Devolucion:
     nota_realizada: str | None = None
     realizada_en: datetime | None = None
     limite: datetime | None = None
+    tipo_reserva: str = "sala"  # sala | asesoria
 
 
 @dataclass(frozen=True)
