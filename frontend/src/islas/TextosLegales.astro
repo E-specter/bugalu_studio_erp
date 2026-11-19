@@ -461,8 +461,12 @@ const cambios = [
       cargando.hidden = true;
       cargando.removeAttribute('aria-busy');
       this.bloquearEditor(false);
-      this.contenido.value = t.contenido ?? '';
-      for (const c of tipos[this.tipoTexto].contextos) this.formulario.querySelector(`[name="resumen_${c}"]`).value = t.resumenes?.[c] ?? '';
+      // Solo los campos vacios: si el prellenado falló y el Administrador ya escribió, Reintentar no pisa lo suyo.
+      if (!this.contenido.value.trim()) this.contenido.value = t.contenido ?? '';
+      for (const c of tipos[this.tipoTexto].contextos) {
+        const campo = this.formulario.querySelector(`[name="resumen_${c}"]`);
+        if (!campo.value.trim()) campo.value = t.resumenes?.[c] ?? '';
+      }
       ayuda.textContent = `Parte de la versión ${version}. Cambia solo lo necesario.`;
       ayuda.hidden = false;
       this.actualizarPrevia();
@@ -508,7 +512,8 @@ const cambios = [
       }
       this.enviar(this.querySelector('[data-actualizar-previa]'), 'Actualizando…', () => this.generarPrevia(contenido).then(() => null, (error) => ({ error })), (r) => {
         if (r?.error) this.errorPrevia(r.error, this.querySelector('[data-previa-aviso]'));
-        else this.anunciar('Vista previa actualizada.');
+        else this.anunciar(`${this.avisoPrevio ?? ''}Vista previa actualizada.`);
+        this.avisoPrevio = null;
       });
     }
 
@@ -592,7 +597,8 @@ const cambios = [
       this.querySelector('[data-confirmar-reemplazo]').hidden = true;
       this.contenido.value = texto;
       this.contenido.focus();
-      this.anunciar(`Contenido reemplazado por ${nombre}.`);
+      this.avisoPrevio = `Contenido reemplazado por ${nombre}. `; // un solo anuncio con el de la vista previa
+      this.anunciar(this.avisoPrevio.trim());
       this.actualizarPrevia();
     }
 

@@ -365,7 +365,7 @@ test('archivo: con CONTENIDO vacio reemplaza sin preguntar, sin BOM, con foco en
   await expect(page.locator('[data-confirmar-reemplazo]')).toBeHidden();
   await expect(previa(page)).toContainText('# Ñandú');
   expect(v.previas).toHaveLength(1);
-  await expect(page.getByRole('status').filter({ hasText: 'Vista previa actualizada.' })).toHaveCount(1);
+  await expect(page.getByRole('status').filter({ hasText: 'Contenido reemplazado por nuevo.md. Vista previa actualizada.' })).toHaveCount(1);
   // El input se vacia: se puede volver a elegir el mismo archivo.
   expect(await carga(page).inputValue()).toBe('');
   await carga(page).setInputFiles(archivo('nuevo.md', '# Otra vez'));
@@ -693,4 +693,46 @@ test('R1: a 320 px no desborda', async ({ page }) => {
   await expect(page.getByRole('region', { name: 'Contenido' })).toBeVisible();
   expect(await sinDesborde(page)).toBe(true);
   await page.screenshot({ path: 'pruebas/capturas/rf17-editor-revision-320.png', fullPage: true });
+});
+
+// --- Retoques de auditoria ---
+test('prellenado: si fallo y el Administrador escribio, Reintentar no pisa lo escrito', async ({ page }) => {
+  let falla = true;
+  await admin(page, { version: (r) => (falla ? r.fulfill(errorApi(503, 'servicio_no_disponible')) : r.fulfill(json(200, texto()))) });
+  await page.goto(EDITAR);
+  await expect(aviso(page, 'No pudimos cargar la versión 1.0.0')).toBeVisible();
+  await contenido(page).fill('# Lo mío');
+  await page.locator('[name="resumen_registro"]').fill('Mi resumen.');
+  falla = false;
+  await page.getByRole('button', { name: 'Reintentar' }).click();
+  await expect(aviso(page, 'No pudimos cargar')).toHaveCount(0);
+  await expect(page.getByText('Parte de la versión 1.0.0.')).toBeVisible();
+  await expect(contenido(page)).toHaveValue('# Lo mío');
+  await expect(page.locator('[name="resumen_registro"]')).toHaveValue('Mi resumen.');
+});
+
+const HOSTIL = '<h2>Ok</h2><script>window.__xss = 1</script><img src="x" onerror="window.__xss = 2"><a href="javascript:window.__xss=3" onclick="window.__xss=4">mal</a>';
+const limpio = async (page, zona) => {
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+  await expect(zona.locator('script')).toHaveCount(0);
+  await expect(zona.locator('[onerror], [onclick]')).toHaveCount(0);
+  await expect(zona.locator('a[href^="javascript"]')).toHaveCount(0);
+};
+test('xss: Ver no ejecuta ni conserva HTML hostil', async ({ page }) => {
+  await admin(page, { version: (r) => r.fulfill(json(200, texto({ contenido_html: HOSTIL }))) });
+  await page.goto('/app/textos/ver?tipo=terminos_uso&version=1.0.0');
+  await expect(page.getByRole('region', { name: /V3 Texto/i }).getByRole('heading', { name: 'Ok' })).toBeVisible();
+  await limpio(page, page.getByRole('region', { name: /V3 Texto/i }));
+});
+test('xss: vista previa y R1 no ejecutan ni conservan HTML hostil', async ({ page }) => {
+  await admin(page, { version: (r) => r.fulfill(json(200, texto())), previa: (r) => r.fulfill(json(200, { contenido_html: HOSTIL })) });
+  await page.goto(EDITAR);
+  await expect(previa(page).getByRole('heading', { name: 'Ok' })).toBeVisible();
+  await limpio(page, previa(page));
+  await llenar(page);
+  await page.getByRole('button', { name: 'Revisar y publicar' }).click();
+  const region = page.getByRole('region', { name: 'Contenido' });
+  await expect(region.getByRole('heading', { name: 'Ok' })).toBeVisible();
+  await limpio(page, region);
 });
