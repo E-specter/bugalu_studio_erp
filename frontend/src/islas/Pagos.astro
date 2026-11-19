@@ -124,7 +124,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
           <div class="gestion-lateral">
             <Panel codigo="V3" titulo="Reserva" variante="lateral">
               <dl class="gestion-datos">
-                <div><dt>Reserva</dt><dd><a class="pagos-enlace" data-reserva href="#"></a></dd></div>
+                <div><dt data-dt-reserva>Reserva</dt><dd><a class="pagos-enlace" data-reserva href="#"></a></dd></div>
                 <div><dt>Sesión</dt><dd data-campo="sesion"></dd></div>
                 <div><dt>Estado</dt><dd data-campo="estado"></dd></div>
                 <div><dt>Cuota</dt><dd data-campo="cuota"></dd></div>
@@ -292,6 +292,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
   import { listarDevoluciones, obtenerDevolucion, decidirDevolucion, marcarRealizada } from '../servicios/creditos.js';
   import { faltan } from '../servicios/reservas.js';
   import { leerImporte, mostrarImporte } from '../servicios/formatos.js';
+  import { obtenerAsesoria, duracionTexto, nombreMostrado, ESTADOS_ASESORIA } from '../servicios/asesorias.js';
   import { listarPagos, obtenerPago, obtenerCaptura, aprobarPago, rechazarPago, obtenerInstrucciones, guardarInstrucciones, obtenerContacto, guardarContacto } from '../servicios/pagos.js';
   import { soles, porcentaje, fechaDe, horaDe, diaMes, diaMesAnio } from '../servicios/formatos.js';
   import { mostrarAviso, enfocarAviso, ponerError, quitarError, limpiarAvisos, llenarAviso } from '../servicios/formulario.js';
@@ -329,6 +330,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
     avisosUrl = {
       'pago-aprobado': ['Pago aprobado', 'La cuota quedó pagada y avisamos al cliente.'],
       'reserva-confirmada': ['Pago aprobado', 'La reserva quedó confirmada y avisamos al cliente.'],
+      'asesoria-confirmada': ['Pago aprobado', 'La asesoría quedó confirmada y avisamos al cliente.'],
       'pago-rechazado': ['Pago rechazado', 'Avisamos al cliente con el motivo.'],
       'datos-actualizados': ['Datos para pagar guardados', 'Los clientes ya ven los nuevos.'],
       'devolucion-decidida': ['Decisión registrada', 'Avisamos al cliente por correo.'],
@@ -414,12 +416,16 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
       this.mostrar('datos');
       const validados = estado !== 'pendiente_validacion';
       this.querySelector('caption').textContent = `Pagos ${nombre}`;
+      if (pagos.every((p) => p.reserva.tipo === 'asesoria')) this.querySelector('thead th:nth-child(1)').textContent = 'Asesoría';
       if (validados) this.querySelector('thead th:nth-child(6)').textContent = 'Validado';
       const modelo = this.querySelector('template[data-fila]');
       this.querySelector('tbody').replaceChildren(...pagos.map((p) => {
         const fila = modelo.content.cloneNode(true).firstElementChild;
-        fila.querySelector('[data-folio]').textContent = p.reserva.folio;
-        fila.querySelector('[data-cuota]').textContent = HITOS[p.cuota.hito] ?? p.cuota.hito;
+        const ases = p.reserva.tipo === 'asesoria';
+        const folio = fila.querySelector('[data-folio]');
+        if (ases) folio.replaceChildren(Object.assign(document.createElement('a'), { className: 'pagos-enlace', textContent: p.reserva.folio, href: `/app/asesorias/detalle?id=${encodeURIComponent(p.reserva.id)}` }));
+        else folio.textContent = p.reserva.folio;
+        fila.querySelector('[data-cuota]').textContent = ases ? `Asesoría · ${p.cuota.hito === 'al_reservar' ? 'Pago único' : 'Penalización por reprogramar'}` : HITOS[p.cuota.hito] ?? p.cuota.hito;
         const cliente = fila.querySelector('[data-cliente]');
         cliente.textContent = p.cliente?.nombre ?? 'Sin nombre';
         if (!p.cliente?.nombre) cliente.classList.add('pagos-sin-nombre');
@@ -550,7 +556,9 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
       campo('cliente', cliente);
       const enlace = this.querySelector('[data-reserva]');
       enlace.textContent = d.folio;
-      enlace.href = `/app/reservas/detalle?id=${encodeURIComponent(d.id_reserva)}`;
+      const asesoriaDev = d.reserva?.tipo === 'asesoria';
+      enlace.href = `${asesoriaDev ? '/app/asesorias/detalle' : '/app/reservas/detalle'}?id=${encodeURIComponent(d.reserva?.id ?? d.id_reserva)}`;
+      if (asesoriaDev) enlace.closest('div').querySelector('dt').textContent = 'Asesoría';
       campo('tipo', TIPOS_DEVOLUCION[d.tipo] ?? d.tipo);
       campo('monto', soles(d.monto_solicitado));
       campo('solicitada', horaAnio(d.solicitada_en));
@@ -566,7 +574,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
         if (plazo) plazoEn('plazo-devolver');
         else this.querySelector('[data-fila="plazo-devolver"]').remove();
       } else this.resultado(d);
-      this.encabezado(`${cliente} · ${TIPOS_DEVOLUCION[d.tipo] ?? d.tipo} de la reserva ${d.folio}`, d.folio);
+      this.encabezado(`${cliente} · ${TIPOS_DEVOLUCION[d.tipo] ?? d.tipo} de la ${asesoriaDev ? 'asesoría' : 'reserva'} ${d.folio}`, d.folio);
       return `Devolución de ${d.folio}`;
     }
 
@@ -680,24 +688,39 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
       campo('operacion').textContent = p.numero_operacion;
       campo('registrado').textContent = horaAnio(p.registrado_en);
       campo('cliente').textContent = cliente;
+      const ases = p.reserva.tipo === 'asesoria';
       const enlace = this.querySelector('[data-reserva]');
       enlace.textContent = p.reserva.folio;
-      enlace.href = `/app/reservas/detalle?id=${encodeURIComponent(p.reserva.id)}`;
+      enlace.href = `${ases ? '/app/asesorias/detalle' : '/app/reservas/detalle'}?id=${encodeURIComponent(p.reserva.id)}`;
       campo('sesion').textContent = horaAnio(p.reserva.inicio);
-      const [textoEstado, variante] = ESTADOS_RESERVA[p.reserva.estado] ?? [p.reserva.estado, 'neutra'];
+      if (ases) {
+        this.querySelector('[data-dt-reserva]').textContent = 'Asesoría';
+        enlace.closest('section').querySelector('.panel-titulo').lastChild.textContent = ' Asesoría';
+        this.pintarSesionAsesoria(p, campo('sesion'));
+      }
+      const [textoEstado, variante] = (ases ? ESTADOS_ASESORIA : ESTADOS_RESERVA)[p.reserva.estado] ?? [p.reserva.estado, 'neutra'];
       campo('estado').append(this.sello(variante, textoEstado));
       campo('cuota').textContent = `${cuota} · ${soles(p.cuota.monto)}`;
       const confirma = p.cuota.hito === 'al_reservar' && p.reserva.estado === 'pre_reservada';
-      this.querySelector('[data-consecuencias]').textContent = `Al aprobar, la cuota queda pagada${confirma ? ', la reserva se confirma' : ''} y avisamos al cliente. No se puede deshacer.`;
+      this.querySelector('[data-consecuencias]').textContent = `Al aprobar, la cuota queda pagada${confirma ? `, la ${ases ? 'asesoría' : 'reserva'} se confirma` : ''} y avisamos al cliente. No se puede deshacer.`;
       const tituloRechazo = this.querySelector('[data-panel="rechazo"] .panel-titulo');
       tituloRechazo.querySelector('.pagos-folio-titulo')?.remove();
       tituloRechazo.lastChild.textContent = ' Rechazar pago de '; // tras el codigo V4
       tituloRechazo.append(folioTitulo(p.reserva.folio));
       if (p.estado !== 'pendiente_validacion') this.mostrarResultado(p);
       this.encabezado('', p.reserva.folio);
-      document.querySelector('.encabezado-descripcion')?.replaceChildren(`${cliente} · ${cuota} de la reserva `, folioTitulo(p.reserva.folio));
+      document.querySelector('.encabezado-descripcion')?.replaceChildren(`${cliente} · ${cuota} de la ${ases ? 'asesoría' : 'reserva'} `, folioTitulo(p.reserva.folio));
       this.cargarCaptura();
       return `Pago de ${p.reserva.folio}`;
+    }
+
+    // El pago no trae duración ni profesional: se leen de la asesoría; si falla, queda la fecha.
+    async pintarSesionAsesoria(p, dd) {
+      try {
+        const a = await obtenerAsesoria(p.reserva.id);
+        if (!a?.profesional || this.pago !== p) return;
+        dd.textContent = `Asesoría de ${duracionTexto(a.duracion)} con ${nombreMostrado(a.profesional)} · ${horaAnio(p.reserva.inicio)}`;
+      } catch {}
     }
 
     noExiste() {
@@ -772,7 +795,7 @@ const sugerencias = ['El monto no coincide', 'Operación no encontrada', 'Captur
 
     aprobar(boton) {
       const confirma = this.pago.cuota.hito === 'al_reservar';
-      this.enviar(boton, 'Aprobando…', () => aprobarPago(this.registro), (r) => this.terminar(confirma && r.reserva?.estado === 'confirmada' ? 'reserva-confirmada' : 'pago-aprobado'), true);
+      this.enviar(boton, 'Aprobando…', () => aprobarPago(this.registro), (r) => this.terminar(confirma && r.reserva?.estado === 'confirmada' ? (this.pago.reserva.tipo === 'asesoria' ? 'asesoria-confirmada' : 'reserva-confirmada') : 'pago-aprobado'), true);
     }
 
     rechazar(formulario) {

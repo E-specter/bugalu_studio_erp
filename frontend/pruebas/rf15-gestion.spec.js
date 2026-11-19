@@ -256,6 +256,71 @@ test('el profesional ve la cancelacion y las reprogramaciones sin montos ni nive
   await sinViolaciones(page);
 });
 
+const CON_MONTOS = { aviso_en: '2026-11-14T10:00:00-05:00', por: 'estudio', nivel: 1, credito: '120.00', retenido: '20.00', pagado: '140.00' };
+const sinDinero = async (page) => {
+  const estado = page.locator('[data-estado-reserva]');
+  await expect(estado).not.toContainText('S/');
+  await expect(estado).not.toContainText(/nivel/i);
+};
+
+test('el profesional no ve importes en la barra de estado de una cancelada ni de una inasistencia', async ({ page }) => {
+  await comoCliente(page, 'profesional');
+  await ver(page, paraProfesional(asesoria({ estado: 'cancelada', motivo_cancelacion: 'administrador', cancelacion: CON_MONTOS })));
+  await expect(page.locator('[data-estado-reserva]')).toContainText('Cancelada por el estudio.');
+  await sinDinero(page);
+  await ver(page, paraProfesional(asesoria({ estado: 'cancelada', motivo_cancelacion: 'administrador', eleccion_estudio: 'devolucion', cancelacion: CON_MONTOS, devolucion: { monto: '140.00', estado: 'pendiente' } })));
+  await expect(page.locator('[data-estado-reserva]')).toContainText('Cancelada');
+  await sinDinero(page);
+  await ver(page, paraProfesional(asesoria({ estado: 'no_asistio', cancelacion: { ...CON_MONTOS, por: 'cliente' } })));
+  await expect(page.locator('[data-estado-reserva]')).toContainText('El cliente no asistió.');
+  await sinDinero(page);
+  await sinViolaciones(page);
+});
+
+test('sin enlace de Google Meet no hay "Entrar a la videollamada"', async ({ page }) => {
+  await comoCliente(page, 'profesional');
+  await ver(page, paraProfesional(proxima({ enlace: 'https://zoom.us/j/123' })));
+  await expect(page.getByRole('link', { name: /videollamada/i })).toHaveCount(0);
+  await ver(page, paraProfesional(proxima({ enlace: 'https://meet.google.com/abc-defg-hij' })));
+  await expect(page.getByRole('link', { name: /videollamada/i })).toHaveAttribute('href', 'https://meet.google.com/abc-defg-hij');
+});
+
+test('el Administrador enlaza cada cuota a revisar pago y el aviso lugar-guardado de la URL existe', async ({ page }) => {
+  await comoCliente(page, 'administrador');
+  await ver(page, paraAdmin(confirmada({ inicio: dentroDe(3 * 24 * 60), fin: dentroDe(3 * 24 * 60 + 60) })), '&aviso=lugar-guardado');
+  await expect(aviso(page)).toContainText('Guardado. Avisamos al cliente y a su profesional por correo con el evento actualizado.');
+  await expect(page.getByRole('link', { name: /Revisar pago de A-2026-00001/ })).toHaveAttribute('href', '/app/pagos/revisar?id=pg1');
+  await sinViolaciones(page);
+  await comoCliente(page, 'profesional');
+  await ver(page, paraProfesional(proxima()));
+  await expect(page.getByRole('link', { name: /Revisar pago/ })).toHaveCount(0);
+});
+
+test('guardar el lugar vacío envía null ("por confirmar")', async ({ page }) => {
+  await comoCliente(page, 'administrador');
+  const cambios = await simular(page, 'PATCH', `/asesorias/${AID}/encuentro`, json(200, paraAdmin(proxima({ modalidad: 'presencial' }))));
+  await ver(page, paraAdmin(proxima({ modalidad: 'presencial', lugar: 'Ambiente 2' })));
+  await page.getByRole('button', { name: 'Cambiar lugar' }).click();
+  await page.getByRole('textbox', { name: 'Lugar' }).fill('');
+  await panelLugar(page).getByRole('button', { name: 'Guardar y avisar' }).click();
+  await expect(aviso(page)).toContainText('Guardado');
+  expect(cambios[0].cuerpo).toEqual({ modalidad: 'presencial', lugar: null });
+});
+
+test('administrador: 409 horario_con_asesorias al retirar un bloque dice que las cancele por el estudio', async ({ page }) => {
+  await comoCliente(page, 'administrador');
+  await page.clock.setFixedTime(new Date('2026-11-15T15:00:00Z'));
+  await simular(page, 'GET', '/profesionales/p1', json(200, { ...PROF, activo: true, publicado: true, duraciones: PROF.duraciones }));
+  await simular(page, 'GET', '/profesionales/p1/disponibilidad', json(200, { limites: { desde: '2026-11-15T17:00:00-05:00', hasta: '2027-01-10T00:00:00-05:00' }, horarios: [{ id: 'h1', inicio: '2026-11-17T10:00:00-05:00', fin: '2026-11-17T13:00:00-05:00' }], ocupados: [], dias: [], duraciones: PROF.duraciones }));
+  await simular(page, 'DELETE', '/profesionales/p1/horarios/h1', json(409, { error: { codigo: 'horario_con_asesorias', mensaje: 'x', detalles: { asesorias: [{ id: 'a1', folio: 'A-2026-00001', inicio: '2026-11-17T11:00:00-05:00' }] } } }));
+  await page.goto('/app/asesorias/horarios?id=p1&semana=2026-W47');
+  await page.getByRole('button', { name: /Retirar bloque del martes 17/ }).click();
+  const a = page.locator('.aviso').filter({ hasText: 'Este bloque tiene asesorías agendadas' });
+  await expect(a).toContainText('Cancélalas por el estudio antes de retirarlo: cada cliente elegirá reprogramar o la devolución.');
+  await expect(a.getByRole('link', { name: 'A-2026-00001 · 17 nov, 11:00' })).toHaveAttribute('href', '/app/asesorias/detalle?id=a1');
+  await sinViolaciones(page);
+});
+
 test('detalle: 404 de una ajena lleva a la agenda; 401, 503, red y no JSON muestran su estado', async ({ page }) => {
   const consola = vigilarConsola(page);
   await comoCliente(page, 'profesional');

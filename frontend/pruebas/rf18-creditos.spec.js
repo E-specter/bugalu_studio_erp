@@ -59,7 +59,7 @@ for (const t of tamanos) {
     await expect(page.getByRole('button', { name: 'Pedir devolución de R-2026-00001' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Pedir devolución de R-2026-00002' })).toBeVisible();
     await expect(page.getByRole('button', { name: /Pedir devolución de R-2026-0000[34]/ })).toHaveCount(0);
-    await expect(page.getByRole('region', { name: /Cómo funciona/i })).toContainText('Cada crédito vence 30 días después de generarse y te avisamos 7 días antes. Solo tú lo usas, en cualquier reserva tuya. Los créditos de nivel 1 y de caso excepcional admiten devolución; los de nivel 2 y los de reprogramación, no.');
+    await expect(page.getByRole('region', { name: /Cómo funciona/i })).toContainText('Cada crédito vence 30 días después de generarse y te avisamos 7 días antes. Solo tú lo usas. Úsalo en tus reservas o asesorías. Los créditos de nivel 1 y de caso excepcional admiten devolución; los de nivel 2 y los de reprogramación, no.');
     await expect(page.getByRole('region', { name: /Cómo funciona/i }).getByRole('link', { name: 'Leer las condiciones' })).toHaveAttribute('href', '/legal/condiciones-de-contratacion/');
     await expect(anuncio(page)).toHaveText('4 créditos vigentes, S/ 180,00 disponible');
     await sinViolaciones(page);

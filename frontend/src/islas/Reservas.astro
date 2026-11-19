@@ -398,7 +398,7 @@ const filtros = [
         <tr>
           <th scope="row"><span data-concepto></span><span class="gestion-motivo reservas-rechazo" data-rechazo hidden></span></th>
           <td data-etiqueta="Importe" class="tabla-num" data-importe></td>
-          <td data-etiqueta="Estado"><EtiquetaTecnica texto="Estado" /><span class="gestion-motivo" data-sub hidden></span></td>
+          <td data-etiqueta="Estado"><EtiquetaTecnica texto="Estado" /><span class="gestion-motivo" data-sub hidden></span><a class="reservas-enlace" data-pago hidden>Revisar pago</a></td>
         </tr>
       </template>
       <template data-fila-reprog>
@@ -589,6 +589,7 @@ const filtros = [
         }
         this.avisosUrl = ASES ? {
           'asesoria-cancelada': ['Asesoría cancelada'],
+          'lugar-guardado': ['Guardado', 'Avisamos al cliente y a su profesional por correo con el evento actualizado.'],
           'devolucion-elegida': ['Elegiste la devolución íntegra. Avisamos al estudio.'],
           'pago-registrado': ['Pago registrado. Queda pendiente de validación', 'Te avisaremos por correo cuando el estudio lo revise.'],
           'pagado-con-credito': ['Pagaste con tu crédito', 'Tu asesoría quedó confirmada.'],
@@ -780,6 +781,11 @@ const filtros = [
           fila.querySelector('[data-concepto]').textContent = ASES ? textoCuotaAsesoria(c, totalDe(r)) : textoCuota(c, r.precio.total);
           fila.querySelector('[data-importe]').textContent = soles(c.monto);
           poner(fila.querySelector('.etiqueta'), CUOTAS[c.estado] ?? [String(c.estado).replace(/_/g, ' ').replace(/^./, (x) => x.toUpperCase()), 'neutra']);
+          // D3 del Administrador: el último pago de la cuota enlaza a su revisión (RF-05).
+          const ultimo = ASES && this.rol === 'administrador' ? [...(c.pagos ?? [])].sort((a, b) => Date.parse(b.registrado_en) - Date.parse(a.registrado_en))[0] : null;
+          const enlacePago = fila.querySelector('[data-pago]');
+          enlacePago.hidden = !ultimo;
+          if (ultimo) Object.assign(enlacePago, { href: `/app/pagos/revisar?id=${encodeURIComponent(ultimo.id)}`, ariaLabel: `Revisar pago de ${r.folio}, ${fila.querySelector('[data-concepto]').textContent}` });
           const rechazo = ultimoRechazo(c);
           oculto(fila.querySelector('[data-rechazo]'), rechazo && `Pago rechazado el ${diaMes(fechaDe(rechazo.registrado_en))}: ${rechazo.motivo_rechazo}`);
           // Anulada: por qué; pendiente con algo aplicado (crédito o captura): cuánto falta, en texto.
@@ -905,6 +911,8 @@ const filtros = [
       const c = r.cancelacion;
       const dueno = this.rol === 'cliente';
       const t = tolerancia(r);
+      // CA-08: el profesional no ve importes ni nivel; solo quién canceló.
+      if (ASES && this.rol === 'profesional') return r.estado === 'no_asistio' ? 'El cliente no llegó a la sesión.' : { estudio: 'Cancelada por el estudio.', cliente: 'Cancelada por el cliente.' }[c?.por] ?? '';
       if (r.estado === 'no_asistio') {
         return `${dueno ? 'No llegaste' : 'No llegó'}${t === null ? ' a la sesión' : ` en los primeros ${t} minutos`}. Se retuvo lo pagado (${soles(r.pagado ?? c?.pagado ?? '0.00')}); no hay crédito ni cobro adicional.`;
       }
@@ -931,7 +939,7 @@ const filtros = [
       else if (caducada(r)) tono = 'problema';
       else if (r.estado === 'no_asistio') [tono, dato] = ['problema', this.datoTerminal(r)];
       else if (this.eleccionPendiente(r)) [tono, texto] = ['pendiente', this.rol === 'cliente' ? 'El estudio canceló tu sesión · elige qué hacer' : 'El estudio canceló la sesión · elige por el cliente'];
-      else if (r.estado === 'cancelada' && r.eleccion_estudio === 'devolucion') [texto, dato] = ['Cancelada por el estudio · devolución íntegra', this.textoDevolucion(r)];
+      else if (r.estado === 'cancelada' && r.eleccion_estudio === 'devolucion' && !(ASES && this.rol === 'profesional')) [texto, dato] = ['Cancelada por el estudio · devolución íntegra', this.textoDevolucion(r)];
       else if (r.estado === 'cancelada') dato = this.datoTerminal(r);
       else if (r.estado === 'confirmada') [tono, dato] = ['correcto', restoTexto ?? 'Pagas el resto al terminar la sesión.'];
       else if (r.estado === 'en_curso') dato = restoTexto ?? 'Pagas el resto al terminar.';
@@ -995,7 +1003,7 @@ const filtros = [
       if (!ASES) return;
       const virtual = r.modalidad === 'virtual';
       const dato = virtual ? r.enlace : r.lugar;
-      const entra = r.estado === 'confirmada' && virtual && r.enlace && Date.parse(r.fin) > Date.now();
+      const entra = r.estado === 'confirmada' && virtual && ENLACE_MEET.test(r.enlace ?? '') && Date.parse(r.fin) > Date.now();
       videollamada.hidden = !entra;
       if (entra) {
         const a = videollamada.querySelector('a');

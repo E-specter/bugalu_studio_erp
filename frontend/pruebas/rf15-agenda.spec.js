@@ -88,7 +88,7 @@ test('agenda: POR CERRAR lleva a cerrar y mantiene el profesional elegido', asyn
   const vistas = await api(page);
   await page.goto(`${RUTA}?ver=por_cerrar&profesional=${PID}`);
   await expect(page.getByRole('link', { name: 'Por cerrar (1)' })).toHaveAttribute('aria-current', 'true');
-  await expect(page.getByRole('link', { name: /Cerrar asesoría A-2026-00003/ })).toHaveAttribute('href', '/app/asesorias/detalle?id=x3&accion=cerrar');
+  await expect(page.getByRole('link', { name: /Ver asesoría A-2026-00003/ })).toHaveAttribute('href', '/app/asesorias/detalle?id=x3'); // Cerrar llega con la etapa C
   await expect(page.locator('[data-salida] tbody').getByText('Por cerrar', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Próximas' })).toHaveAttribute('href', `${RUTA}?profesional=${PID}`);
   expect(vistas[0].url.searchParams.get('por_cerrar')).toBe('true');

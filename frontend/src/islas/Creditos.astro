@@ -70,7 +70,7 @@ const filtros = [
           <div class="gestion-lateral">
             <div data-lateral="info">
               <Panel titulo="Cómo funciona" variante="lateral">
-                <p>Cada crédito vence 30 días después de generarse y te avisamos 7 días antes. Solo tú lo usas, en cualquier reserva tuya. Los créditos de nivel 1 y de caso excepcional admiten devolución; los de nivel 2 y los de reprogramación, no.</p>
+                <p>Cada crédito vence 30 días después de generarse y te avisamos 7 días antes. Solo tú lo usas. Úsalo en tus reservas o asesorías. Los créditos de nivel 1 y de caso excepcional admiten devolución; los de nivel 2 y los de reprogramación, no.</p>
                 <p><a class="creditos-enlace" href="/legal/condiciones-de-contratacion/">Leer las condiciones</a></p>
               </Panel>
             </div>
@@ -96,7 +96,7 @@ const filtros = [
           <td data-etiqueta="Saldo" class="tabla-num"><span data-saldo></span><span class="gestion-motivo" data-de hidden></span></td>
           <td data-etiqueta="Vence"><span data-vence></span></td>
           <td data-etiqueta="Estado"><span class="creditos-sellos" data-sellos></span><span class="gestion-motivo" data-devolucion hidden></span></td>
-          <td><Boton variante="secundario" data-pedir hidden>Pedir devolución<span class="visualmente-oculto" data-objeto></span></Boton></td>
+          <td><Boton variante="secundario" data-pedir hidden>Pedir devolución<span class="visualmente-oculto" data-objeto></span></Boton><span class="gestion-motivo" data-sin-devolucion hidden></span></td>
         </tr>
       </template>
     </>
@@ -138,6 +138,7 @@ const filtros = [
   // estado -> [texto, variante de la etiqueta]
   const ESTADOS = { vigente: ['Vigente', 'exito'], agotado: ['Agotado', 'neutra'], vencido: ['Vencido', 'alerta'] };
   const MOTIVO = 'Escribe el motivo, de 10 a 500 caracteres.';
+  const SIN_DEVOLUCION = 'Sin devolución: nació de una asesoría.';
   const CONFLICTOS = {
     devolucion_pendiente: 'Ya pediste la devolución de este crédito.',
     credito_no_vigente: 'Este crédito ya no está vigente.',
@@ -198,10 +199,11 @@ const filtros = [
       const raiz = this.querySelector('template[data-fila]').content.cloneNode(true).firstElementChild;
       const folio = raiz.querySelector('[data-folio]');
       folio.textContent = c.origen?.folio ?? '';
-      folio.href = `/app/reservas/detalle?id=${encodeURIComponent(c.origen?.id_reserva ?? '')}`;
+      const asesoria = c.origen?.tipo === 'asesoria';
+      folio.href = `${asesoria ? '/app/asesorias/detalle' : '/app/reservas/detalle'}?id=${encodeURIComponent(c.origen?.id_reserva ?? '')}`;
       const tipo = TIPOS_CREDITO[c.tipo] ?? c.tipo;
       const celdaTipo = raiz.querySelector('[data-tipo]');
-      celdaTipo.textContent = tipo;
+      celdaTipo.textContent = asesoria ? `${tipo} · asesoría` : tipo;
       raiz.querySelector('[data-saldo]').textContent = soles(c.saldo);
       if (Number(c.monto) !== Number(c.saldo)) {
         const de = raiz.querySelector('[data-de]');
@@ -251,7 +253,12 @@ const filtros = [
         const raiz = this.fila(c, !vigentes);
         const pedir = raiz.querySelector('[data-pedir]');
         // Solo nivel 1 y caso excepcional vigentes, sin devolucion pedida ni decidida.
-        pedir.hidden = !(vigentes && ['nivel_1', 'excepcion'].includes(c.tipo) && c.estado === 'vigente' && !c.devolucion);
+        const deAsesoria = c.origen?.tipo === 'asesoria';
+        pedir.hidden = deAsesoria || !(vigentes && ['nivel_1', 'excepcion'].includes(c.tipo) && c.estado === 'vigente' && !c.devolucion);
+        // CA-10 a: un crédito nacido de una asesoría no admite devolución en dinero.
+        const sin = raiz.querySelector('[data-sin-devolucion]');
+        sin.hidden = !(deAsesoria && vigentes && c.estado === 'vigente');
+        sin.textContent = sin.hidden ? '' : SIN_DEVOLUCION;
         pedir.dataset.pedir = c.id;
         raiz.querySelector('[data-objeto]').textContent = ` de ${c.origen?.folio ?? ''}`;
         return raiz;
@@ -332,7 +339,7 @@ const filtros = [
 
     errorEnvio(error) {
       if (error.estado === 409 || error.estado === 404) {
-        const texto = CONFLICTOS[error.codigo] ?? CONFLICTOS.credito_no_vigente;
+        const texto = error.codigo === 'devolucion_no_permitida' && this.actual?.origen?.tipo === 'asesoria' ? SIN_DEVOLUCION : CONFLICTOS[error.codigo] ?? CONFLICTOS.credito_no_vigente;
         this.cargar().then(() => enfocarAviso(mostrarAviso(this, 'informacion', texto)));
         return true;
       }
