@@ -2,18 +2,18 @@
 id: pantalla-rf-17-textos-legales
 titulo: Pantalla — Textos legales públicos, publicación de versiones y documentos repetidos
 estado: aprobado
-depende_de: [RF-17, RF-16, ADR-012, diseno-brief, patron-estructura-app, patron-formularios, patron-tablas-y-tableros, patron-estados-sistema, comp-pie-publico, comp-tabla, comp-panel, comp-campo, comp-casilla, comp-barra-acciones, comp-aviso, comp-boton, comp-etiqueta-tecnica]
+depende_de: [RF-17, RF-16, RF-20, ADR-012, diseno-brief, patron-estructura-app, patron-formularios, patron-tablas-y-tableros, patron-estados-sistema, comp-pie-publico, comp-tabla, comp-panel, comp-campo, comp-casilla, comp-barra-acciones, comp-aviso, comp-boton, comp-etiqueta-tecnica]
 ---
 
 # Textos legales
 
 | Campo | Valor |
 |---|---|
-| Requerimiento | [RF-17](../../03-requerimientos/RF-17.md): CA-01, CA-02, CA-03 (vista del Administrador), CA-14 y decisión 4 (documento repetido) |
+| Requerimiento | [RF-17](../../03-requerimientos/RF-17.md): CA-01, CA-02, CA-03 (vista del Administrador), CA-14 y decisión 4 (documento repetido); ampliación del 2026-11-19 (ver, prellenar, cargar `.md` y vista previa) en [editor de textos](RF-17-textos-editor.md); [RF-20](../../03-requerimientos/RF-20.md) CA-12 (pie de las condiciones) |
 | Actores | Cualquiera (páginas públicas); Administrador (publicar, retirar, revisar documentos) |
 | Estructura | Landing para las páginas públicas; App, panel interno, para el Administrador |
-| Ruta | `/legal/` · `/legal/{terminos-de-uso\|privacidad\|condiciones-de-contratacion\|declaracion-de-agrupacion}/?version=` · `/app/textos` · `/app/textos/publicar?tipo=` · `/app/usuarios?documento=repetido`. URL: `version`, `tipo`, `documento`, `aviso` |
-| Isla | `<bugalu-texto-legal tipo="…">` y `<bugalu-textos-legales vista="lista\|publicar">` (nuevas); `<bugalu-solicitudes>` (amplía la vista usuarios) |
+| Ruta | `/legal/` · `/legal/{terminos-de-uso\|privacidad\|condiciones-de-contratacion\|declaracion-de-agrupacion}/?version=` · `/app/textos` · `/app/textos/ver?tipo=&version=` · `/app/textos/publicar?tipo=` · `/app/usuarios?documento=repetido`. URL: `version`, `tipo`, `documento`, `aviso` |
+| Isla | `<bugalu-texto-legal tipo="…">` y `<bugalu-textos-legales vista="lista\|publicar\|ver">` (nuevas); `<bugalu-solicitudes>` (amplía la vista usuarios) |
 
 ## Páginas públicas
 
@@ -27,20 +27,21 @@ depende_de: [RF-17, RF-16, ADR-012, diseno-brief, patron-estructura-app, patron-
 | Principal | [aviso](../componentes/aviso.md) Información (si aplica) | Versión antigua: "Estás leyendo la versión 0.9.0, que ya no está vigente." + "Leer la versión vigente (1.0.0)". Hay programada: "Desde el 15 dic 2026 rige la versión 1.1.0." + "Leer la versión 1.1.0" |
 | Principal | [panel](../componentes/panel.md) Destacado `EN POCAS PALABRAS` | `resumen` tal cual |
 | Principal | Prosa | `contenido` en `fuente-tamano-lectura`, `fuente-interlineado-lectura`, ancho `medida-linea-lectura`; encabezados del texto desde `<h2>` |
+| Principal, solo en `condiciones-de-contratacion` | [panel](../componentes/panel.md) Base `VALORES VIGENTES` tras la prosa | `GET /parametros/danos` (RF-20 CA-12), pedido junto con el texto: "Tarifa por hora de gestión: S/ 25,00 · Tope por sesiones perdidas: 8 horas de sala". Tarifa `0.00` → "Tarifa por hora de gestión: por fijar"; tope 1 → "1 hora de sala". Vale para cualquier `?version=`: son los vigentes, como dice el título |
 | Pie | [pie público](../componentes/pie-publico.md) Completa | — |
 
 `/legal/`: `<h1>` TEXTOS LEGALES, "Las reglas con las que trabajamos. Cada texto indica su versión y desde cuándo rige." y [tabla](../componentes/tabla.md) Directorio TEXTO (enlace) · VERSIÓN · VIGENTE DESDE · PRÓXIMA VERSIÓN ("1.1.0 desde el 15 dic 2026" o "—").
 
-Estados: carga "Cargando…" con `aria-busy` · 404 "No existe la versión {v} de este texto." + "Leer la versión vigente" · sin versión publicada "Este texto aún no está publicado." · 503, red: aviso Error "No pudimos cargar el texto. Inténtalo de nuevo en unos minutos." + "Reintentar" · sin JS: ver Pendientes.
+Estados: carga "Cargando…" con `aria-busy` · 404 "No existe la versión {v} de este texto." + "Leer la versión vigente" · sin versión publicada "Este texto aún no está publicado." · 503, red: aviso Error "No pudimos cargar el texto. Inténtalo de nuevo en unos minutos." + "Reintentar" · sin JS: ver Pendientes. `VALORES VIGENTES` no tiene carga ni error propios: se pinta solo si el texto cargó y su petición respondió 200; si falla (503, red, no JSON), el texto queda legible sin el pie y sin aviso.
 
 ## Administrador: textos
 
 | Vista | Región | Componente (variante) | Contenido |
 |---|---|---|---|
-| Lista | Principal | panel `TEXTOS` + tabla Directorio | TEXTO · VIGENTE ("versión 1.0.0 · desde 1 dic 2026", enlazada; sin versión: [etiqueta](../componentes/etiqueta-tecnica.md) Aviso SIN PUBLICAR) · PROGRAMADA (versión y fecha, o "—") · "Publicar versión de {texto}" ([botón](../componentes/boton.md) Secundario como enlace) y, si hay programada, "Retirar versión {v}" (Peligro) |
+| Lista | Principal | panel `TEXTOS` + tabla Directorio | TEXTO · VIGENTE ("versión 1.0.0 · desde 1 dic 2026" + "Ver", [editor](RF-17-textos-editor.md#ver); sin versión: [etiqueta](../componentes/etiqueta-tecnica.md) Aviso SIN PUBLICAR) · PROGRAMADA (versión y fecha + "Ver", o "—") · "Publicar versión de {texto}" ([botón](../componentes/boton.md) Secundario como enlace) y, si hay programada, "Retirar versión {v}" (Peligro) |
 | Lista, retirar | Principal | panel `RETIRAR VERSIÓN {v} DE {TEXTO}` en lugar de la tabla | "Se borra el contenido y no se puede recuperar. La versión vigente sigue rigiendo." + [barra](../componentes/barra-acciones.md) Decisión: "Volver" + Peligro "Retirar versión" |
-| Publicar | Principal (un `<form>`) | panel `P1 VERSIÓN` → panel `P2 CONTENIDO` | P1: `<dl>` TEXTO y ÚLTIMA VERSIÓN; TIPO DE CAMBIO ([casillas](../componentes/casilla.md) Radio con detalle); VERSIÓN ([campo](../componentes/campo.md) Texto, prellenada con la siguiente según el tipo); VIGENTE DESDE (`date`, `min` = hoy + 15 días; con Parche se sustituye por "Rige al publicarla."). P2: CONTENIDO (Área, obligatorio) → grupo `<fieldset>` RESUMEN POR PASO (un Área por contexto del texto; el primero obligatorio) → RESUMEN DE CAMBIOS (Área, opcional) → Primario "Revisar y publicar". TIPO DE CAMBIO lleva "(obligatorio)" en su `<legend>` |
-| Publicar, revisión | Principal | panel `R1 REVISA ANTES DE PUBLICAR` | `<dl>` de P1, consecuencias (Copy), resumen y contenido como texto plano (contenedor con desplazamiento, `tabindex="0"`) + barra Formulario: "Volver a editar" + Primario "Publicar versión" |
+| Publicar | Principal (un `<form>`) | panel `P1 VERSIÓN` → panel `P2 CONTENIDO` | P1: `<dl>` TEXTO y ÚLTIMA VERSIÓN; TIPO DE CAMBIO ([casillas](../componentes/casilla.md) Radio con detalle); VERSIÓN ([campo](../componentes/campo.md) Texto, prellenada con la siguiente según el tipo); VIGENTE DESDE (`date`, `min` = hoy + 15 días; con Parche se sustituye por "Rige al publicarla."). P2: CONTENIDO (Área, obligatorio; prellenado, con "Cargar archivo .md" y VISTA PREVIA, [editor](RF-17-textos-editor.md#publicar-contenido-y-vista-previa)) → grupo `<fieldset>` RESUMEN POR PASO (un Área por contexto del texto; el primero obligatorio) → RESUMEN DE CAMBIOS (Área, opcional) → Primario "Revisar y publicar". TIPO DE CAMBIO lleva "(obligatorio)" en su `<legend>` |
+| Publicar, revisión | Principal | panel `R1 REVISA ANTES DE PUBLICAR` | `<dl>` de P1, consecuencias (Copy), resumen como texto y contenido con formato final ([editor](RF-17-textos-editor.md#revisión-r1); contenedor con desplazamiento, `tabindex="0"`) + barra Formulario: "Volver a editar" + Primario "Publicar versión" |
 
 **Decisión del brief:** publicar es irreversible (la versión queda inmutable), así que tiene revisión propia ([formularios](../patrones/formularios.md#prevención-de-errores)), sin palabra escrita: esa barrera es solo para los [cambios sensibles](RF-20-cambios-sensibles.md). La revisión es un estado de la vista, como allí; "Volver a editar" conserva todo.
 
@@ -78,7 +79,7 @@ En [usuarios](RF-01-solicitudes.md#composición): las etiquetas Filtro suman "Do
 
 ## Pendientes
 
-- **leader / dev-backend:** `contenido` es Markdown y las páginas son estáticas: renderizarlo en el navegador pide una dependencia. Proponemos que la API devuelva también `contenido_html` saneado (lista blanca de etiquetas).
+- Resuelto: la API devuelve `contenido_html` saneado ([precisiones de RF-17](../../03-requerimientos/RF-17.md#precisiones-de-contrato-leader-tras-las-specs-de-pantalla)).
 - **leader:** un texto legal no debería depender de JavaScript para leerse; con salida estática y textos en la base, el `<noscript>` solo puede dar el contacto. Alternativa: generar las páginas al publicar.
 - **leader / dev-backend:** documento repetido: proponemos `documento_repetido` en el `Perfil` que ve el Administrador y el filtro `GET /usuarios?documento_repetido=true`.
 - Resuelto: `/libro-de-reclamaciones/` ya tiene pantalla ([formulario de RF-16](RF-16-formulario.md)).

@@ -9,7 +9,7 @@ depende_de: [RF-20, RF-02, RF-03, ADR-013, ADR-015, diseno-brief, patron-formula
 
 | Campo | Valor |
 |---|---|
-| Requerimiento | [RF-20](../../03-requerimientos/RF-20.md): CA-01 a CA-07, CA-09, CA-10 (el registro, en [registro de cambios](RF-20-registro-cambios.md)) |
+| Requerimiento | [RF-20](../../03-requerimientos/RF-20.md): CA-01 a CA-07, CA-09, CA-10 (el registro, en [registro de cambios](RF-20-registro-cambios.md)); ampliación del 2026-11-19: CA-11 y CA-13 en [daños](#daños) (el pie público de CA-12, en [textos legales](RF-17-textos-legales.md#páginas-públicas)) |
 | Actores | Administrador (cambia); Visitante y Artista/Cliente (ven el desglose) |
 | Estructura | App, panel interno, dentro de las vistas de [tarifas](RF-02-tarifas.md) y [parámetros](RF-03-franjas.md); el desglose, donde ya hay precio |
 | Ruta | Las existentes + `/app/tarifas/impuestos` (URL: `aviso`). El paso de revisión **no tiene URL** (ver decisión) |
@@ -31,7 +31,7 @@ depende_de: [RF-20, RF-02, RF-03, ADR-013, ADR-015, diseno-brief, patron-formula
 | Servicio (S2) | TARIFA POR HORA, MONTO FIJO · importe |
 | Especialista (E2) | MONTO FIJO, MONTO VARIABLE · importe; UNIDAD · "Por hora" / "Por media hora" |
 | Recargos (R1) | NOCHE (%), FIN DE SEMANA (%), FERIADO (%) · porcentaje; NOCHE DESDE / HASTA · `HH:mm`. Los feriados (R2) no pasan por aquí |
-| Parámetros | DÍAS ANTES DEL INICIO · "N días"; HORAS DESDE LA SOLICITUD, LÍMITE DEL NIVEL 1 y 2 · "N h"; ADELANTO PARA CONFIRMAR · porcentaje. La anticipación (P2) sola no pasa por aquí |
+| Parámetros | DÍAS ANTES DEL INICIO · "N días"; HORAS DESDE LA SOLICITUD, LÍMITE DEL NIVEL 1 y 2 · "N h"; ADELANTO PARA CONFIRMAR · porcentaje; TARIFA POR HORA DE GESTIÓN · importe (`0.00` → "S/ 0,00 (por fijar)"); TOPE POR SESIONES PERDIDAS · "N h de sala". La anticipación (P2) sola no pasa por aquí |
 | Impuestos | PORCENTAJE DE IGV · porcentaje; LOS PRECIOS INCLUYEN IGV · "Sí" / "No" |
 
 Formatos: [formato de datos](../patrones/estructura-app.md#formato-de-datos) (porcentaje "18 %", importe `S/ 120,00`). `anterior` y `nuevo` llegan como texto; la isla solo los formatea.
@@ -67,7 +67,7 @@ Formatos: [formato de datos](../patrones/estructura-app.md#formato-de-datos) (po
 ## Integración sin rehacer las pantallas
 
 - [Tarifas](RF-02-tarifas.md): S2, E2 y R1 conservan campos, botones y avisos; bajo "Guardar servicio", "Guardar especialista" y "Guardar recargos" se añade la ayuda "Si cambias un importe o un porcentaje, te mostraremos el impacto y te pediremos confirmarlo." En Lista, la ranura `acciones` suma "Impuestos" (Secundario como enlace) junto a "Recargos y feriados".
-- [Parámetros](RF-03-franjas.md): se añade el panel `P3 CANCELACIÓN Y ADELANTO` antes de "Guardar parámetros", con campos `type="number"`, `step="1"` y obligatorios, en este orden: ADELANTO PARA CONFIRMAR (%) (1 a 100), LÍMITE DEL NIVEL 1 (HORAS), LÍMITE DEL NIVEL 2 (HORAS), PENALIZACIÓN DEL NIVEL 2 (%) (0 a 100), TOLERANCIA DE INASISTENCIA (MIN), VIGENCIA DEL CRÉDITO (DÍAS), REPROGRAMACIONES DEL NIVEL 1 y REPROGRAMACIONES DEL NIVEL 2 (los de ADR-015 ya tienen nombre en el contrato). Las ayudas, en [parámetros, copy](RF-03-franjas.md#copy). Bajo el botón: "Si cambias un plazo, un porcentaje o un límite, te mostraremos el impacto y te pediremos confirmarlo."
+- [Parámetros](RF-03-franjas.md): se añade el panel `P3 CANCELACIÓN Y ADELANTO` antes de "Guardar parámetros", con campos `type="number"`, `step="1"` y obligatorios, en este orden: ADELANTO PARA CONFIRMAR (%) (1 a 100), LÍMITE DEL NIVEL 1 (HORAS), LÍMITE DEL NIVEL 2 (HORAS), PENALIZACIÓN DEL NIVEL 2 (%) (0 a 100), TOLERANCIA DE INASISTENCIA (MIN), VIGENCIA DEL CRÉDITO (DÍAS), REPROGRAMACIONES DEL NIVEL 1 y REPROGRAMACIONES DEL NIVEL 2 (los de ADR-015 ya tienen nombre en el contrato); después, el panel `P4 DAÑOS` ([daños](#daños)). Las ayudas, en [parámetros, copy](RF-03-franjas.md#copy). Bajo el botón: "Si cambias un plazo, un porcentaje, un límite o un valor de daños, te mostraremos el impacto y te pediremos confirmarlo."
 - [Impuestos](#impuestos): bajo "Revisar cambio", "Te mostraremos el impacto y te pediremos confirmarlo." (ahí siempre hay revisión).
 - El aviso fijo de S2 y E2 y el éxito de parámetros ya dicen que solo cambian las reservas nuevas: se mantienen.
 
@@ -81,6 +81,26 @@ Ruta Inicio / Tarifas / Impuestos · `[A8] CATÁLOGO / IMPUESTOS` · título IMP
 | Lateral | panel Lateral `I2 CÓMO SE MUESTRA` | Texto fijo de CA-02: "Con IGV incluido, un total de S/ 150,00 al 18 % se muestra con base S/ 127,12 e IGV S/ 22,88. Los comprobantes se emiten fuera de la app." |
 
 Datos: `GET /impuestos` → `Impuestos`. Validación: "Escribe un porcentaje de 0 a 99,99, con hasta dos decimales." Carga, 401, 403, 503 y sin JS: como [tarifas](RF-02-tarifas.md#estados). Éxito: "IGV actualizado. Rige para las simulaciones y reservas nuevas."
+
+## Daños
+
+Ampliación del 2026-11-19 (CA-11, CA-13). Panel `P4 DAÑOS` de [parámetros](RF-03-franjas.md#composición), tras P3 y antes de "Guardar parámetros". Datos: `tarifa_hora_gestion` y `tope_horas_sesiones_perdidas` de `GET`/`PATCH /parametros`. Los dos son sensibles: al guardar pasan por el [flujo con barreras](#flujo-con-barreras) tal cual, con las etiquetas y formatos de la tabla de campos (también en el [registro de cambios](RF-20-registro-cambios.md)). La isla compara como número (`25` y `25.00` son el mismo valor): reescribir un valor igual no abre la revisión.
+
+| Campo | Marcado | Ayuda |
+|---|---|---|
+| TARIFA POR HORA DE GESTIÓN (S/) | `type="number"`, `min="0"`, `max="9999.99"`, `step="0.01"`, `inputmode="decimal"`, `required`; el valor tal como llega ("25.00") | "Lo que cobramos por cada hora que el personal dedica a conseguir una reparación. Con 0,00 las condiciones dicen «por fijar»." |
+| TOPE POR SESIONES PERDIDAS (HORAS DE SALA) | `type="number"`, `min="1"`, `max="200"`, `step="1"`, `inputmode="numeric"`, `required` | "Máximo de horas de reservas canceladas que se cobran por un daño intencional o un incumplimiento grave." |
+
+Ayuda del panel: "Se publican al pie de las condiciones de contratación." Con la tarifa guardada en `0.00`, [etiqueta](../componentes/etiqueta-tecnica.md) Aviso POR FIJAR a la derecha del título del panel, como F4 de [franjas](RF-03-franjas.md) (es texto, no solo color). Una columna en todos los anchos, como P1 a P3.
+
+| Situación | Forma y texto |
+|---|---|
+| Validación (al salir y al enviar; también 422 `datos_invalidos` con `detalles.campo`) | Vacío: "Escribe la tarifa por hora de gestión." · "Escribe el tope de horas de sala." Fuera de rango: "Escribe un importe de 0 a 9 999,99, con hasta dos decimales." · "Escribe un número entero de 1 a 200." Aviso resumen de la vista |
+| C2 IMPACTO | Lo que traiga `impacto`; con `ejemplos` vacío no se pinta la tabla y queda solo el aviso (ver Pendientes) |
+| Éxito | El de parámetros + "Los valores de daños ya se ven al pie de las condiciones." y "Ver en el registro de cambios" |
+| Carga, 401, 403, 503, red, no JSON | Los de [parámetros](RF-03-franjas.md#estados) y de la revisión (arriba) |
+
+Accesibilidad: P4 es `<section>` con `<h2>`; la etiqueta POR FIJAR va fuera del `<h2>` y la ayuda de la tarifa la repite en texto ("Con 0,00…"); cada error, unido al campo con `aria-describedby` y `aria-invalid="true"`.
 
 ## Desglose de IGV
 
@@ -104,4 +124,7 @@ Origen: `Simulacion.impuesto` y `Reserva.precio.impuesto` (`{nombre, porcentaje,
 
 ## Pendientes
 
-Ninguno. Cerrados con la implementación (revisión visual TAREA-RF20-6): `impacto.ejemplos[].tipo` (`importe`, `fecha_hora`, `texto`), `campo` de recargos con punto (`noche.porcentaje`…), `porcentaje_adelanto` en `Simulacion` y los nombres de ADR-015 en P3.
+- **leader / dev-backend (daños):** CA-05 no fija `impacto` para los dos campos. Las condiciones hablan de la tarifa y el tope "vigentes", así que el cambio parece valer también para las reservas ya hechas y el aviso de C2 ("{N} reservas vigentes conservan sus condiciones") sería falso: decidir si las reservas guardan estos valores en `parametros_aplicados` o si C2 lleva otro aviso. El backend en curso (D2, sin commit) da un ejemplo genérico con el nombre del campo como concepto ("Tarifa hora gestion"); si se mantiene, el concepto debe ser la etiqueta: "Tarifa por hora de gestión", "Tope por sesiones perdidas".
+- **dev-backend (daños):** `GET /parametros/danos` se supone `{tarifa_hora_gestion: "25.00", tope_horas_sesiones_perdidas: 8}` (así va el backend en curso), con la tarifa como texto decimal.
+
+Cerrados con la implementación (revisión visual TAREA-RF20-6): `impacto.ejemplos[].tipo` (`importe`, `fecha_hora`, `texto`), `campo` de recargos con punto (`noche.porcentaje`…), `porcentaje_adelanto` en `Simulacion` y los nombres de ADR-015 en P3.
