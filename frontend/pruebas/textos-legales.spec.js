@@ -386,14 +386,25 @@ test('admin: la version se prellena segun el tipo de cambio y respeta lo que esc
   await expect(version).toHaveValue('1.0.7');
 });
 
-test('admin: fecha minima a 15 dias y el parche rige al publicarse', async ({ page }) => {
+test('admin: fecha minima a hoy+16 (reloj a media manana de Lima) y el parche rige al publicarse', async ({ page }) => {
   await admin(page, { lista: json(200, [LISTA[0]]) });
   await page.goto('/app/textos/publicar?tipo=terminos_uso');
   await page.getByRole('radio', { name: /^Mayor/ }).check();
-  await expect(page.getByLabel(/^Vigente desde/)).toHaveAttribute('min', '2026-11-30');
+  await expect(page.getByLabel(/^Vigente desde/)).toHaveAttribute('min', '2026-12-01');
   await page.getByRole('radio', { name: /^Parche/ }).check();
   await expect(page.getByLabel(/^Vigente desde/)).toBeHidden();
   await expect(page.getByText('Rige al publicarla.', { exact: true })).toBeVisible();
+});
+
+test('admin: hoy+15 se rechaza localmente y hoy+16 pasa a la revision', async ({ page }) => {
+  await admin(page, { lista: json(200, [LISTA[0]]) });
+  await page.goto('/app/textos/publicar?tipo=terminos_uso');
+  await llenar(page, { cambio: 'Mayor', version: '2.0.0', fecha: '2026-11-30' });
+  await page.getByRole('button', { name: 'Revisar y publicar' }).click();
+  await expect(page.getByText('Elige una fecha desde el 1 dic 2026: los clientes necesitan 15 días de aviso.')).toBeVisible();
+  await page.getByLabel(/^Vigente desde/).fill('2026-12-01');
+  await page.getByRole('button', { name: 'Revisar y publicar' }).click();
+  await expect(page.getByRole('button', { name: 'Publicar versión', exact: true })).toBeVisible();
 });
 
 test('admin: primera version de un texto, sin aviso previo y desde hoy', async ({ page }) => {
@@ -487,7 +498,7 @@ test('admin: 422 aviso_insuficiente deja el error bajo la fecha', async ({ page 
   await llenar(page, { cambio: 'Menor', version: '1.2.0', fecha: '2026-12-01' });
   await page.getByRole('button', { name: 'Revisar y publicar' }).click();
   await page.getByRole('button', { name: 'Publicar versión', exact: true }).click();
-  await expect(page.getByText('Elige una fecha desde el 30 nov 2026: los clientes necesitan 15 días de aviso.')).toBeVisible();
+  await expect(page.getByText('Elige una fecha desde el 1 dic 2026: los clientes necesitan 15 días de aviso.')).toBeVisible();
   await expect(page.getByLabel(/^Vigente desde/)).toHaveAttribute('aria-invalid', 'true');
 });
 

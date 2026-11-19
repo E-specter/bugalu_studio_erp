@@ -402,7 +402,7 @@ const cambios = [
       this.ultima = (programada ?? vigente)?.version ?? null;
       this.versionEscrita = false;
       const hoy = hoyLima();
-      this.fechaMinima = this.ultima ? sumarDias(hoy, 15) : hoy; // la primera version de un texto rige sin aviso previo
+      this.fechaMinima = this.ultima ? sumarDias(hoy, 16) : hoy; // hoy+16: el backend exige 15 dias exactos y la medianoche de Lima ya paso; la primera version rige sin aviso previo
       this.mostrar('datos');
       this.formulario = this.querySelector('form');
       this.querySelector('[data-campo="nombre"]').textContent = tipos[tipo].nombre;
