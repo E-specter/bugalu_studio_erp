@@ -11,7 +11,10 @@ from bugalu.modulos.notificaciones.dominio.formato import (
     _soles,
     formatear_soles,
 )
-from bugalu.modulos.notificaciones.dominio.redaccion_rf15 import REDACTORES_RF15
+from bugalu.modulos.notificaciones.dominio.redaccion_rf15 import (
+    ASESORIA_DE_RESERVA,
+    REDACTORES_RF15,
+)
 from bugalu.modulos.notificaciones.dominio.redaccion_rf16 import REDACTORES_RF16
 from bugalu.modulos.notificaciones.dominio.redaccion_rf18 import REDACTORES_RF18
 
@@ -167,6 +170,8 @@ def redactar(
         return _reserva_creada(datos, instrucciones)
     if tipo == "reserva_finalizada_saldo":
         return _reserva_finalizada_saldo(datos, instrucciones)
+    if tipo in ASESORIA_DE_RESERVA and str(datos.get("folio", "")).startswith("A-"):
+        return ASESORIA_DE_RESERVA[tipo](datos)
     if tipo in REDACTORES_RF15:
         return REDACTORES_RF15[tipo](datos)
     if tipo in REDACTORES_RF18:

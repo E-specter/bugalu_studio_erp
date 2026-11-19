@@ -476,13 +476,16 @@ async def test_409_horario_con_asesorias_y_profesional_con_asesorias(
     assert (
         [v["id"] for v in vivas] == [id_]
         and vivas[0]["folio"].startswith("A-")
-        and vivas[0]["inicio"]
+        and vivas[0]["inicio"].endswith("-05:00")
     )
     r = await cliente.patch(
         f"/api/v1/usuarios/{prof.id}", headers=con(administrador), json={"rol": "cliente"}
     )
     assert (r.status_code, codigo(r)) == (409, "profesional_con_asesorias")
     assert r.json()["error"]["detalles"]["asesorias"][0]["id"] == id_
+    assert r.json()["error"]["detalles"]["asesorias"][0]["inicio"].endswith(
+        "-05:00"
+    )  # hora de Lima
     assert sql("select rol from public.usuario where id = %s", prof.id) == [("profesional",)]
     sql(
         "update public.reserva set estado = 'cancelada', motivo_cancelacion = 'cliente' where id = %s",
@@ -513,3 +516,139 @@ async def test_el_profesional_no_lee_el_dinero_de_reserva_por_sql(
         assert c.execute(
             "select total, retenido, credito_generado from public.asesoria_vista"
         ).fetchall() == [(None, None, None)]
+
+
+# --- vista previa de precios del profesional ---
+
+
+async def test_la_vista_previa_del_profesional_cuenta_sus_asesorias_vivas_y_no_cambia_el_total(
+    cliente: AsyncClient,
+    cliente_a: UsuarioDePrueba,
+    administrador: UsuarioDePrueba,
+    prof: UsuarioDePrueba,
+    ases: Callable[..., str],
+    sql: Ejecutar,
+) -> None:
+    viva, pendiente = ases(cliente_a, "10 days"), ases(cliente_a, "20 days", "pre_reservada")
+    sql(  # la cancelada no cuenta
+        "update public.reserva set estado = 'cancelada', motivo_cancelacion = 'cliente' where id = %s",
+        UUID(ases(cliente_a, "30 days")),
+    )
+    p = await cliente.post(
+        "/api/v1/cambios-sensibles/previsualizar",
+        headers=con(administrador),
+        json={
+            "recurso": "profesional",
+            "id_recurso": str(prof.id),
+            "cambios": {"precios": {"30": "60.00"}},
+        },
+    )
+    assert p.status_code == 200 and p.json()["impacto"]["operaciones_vigentes"] == 2, p.text
+    c = await cliente.post(
+        "/api/v1/cambios-sensibles/confirmar",
+        headers=con(administrador),
+        json={"token": p.json()["token"], "palabra": "CONFIRMAR"},
+    )
+    assert c.status_code == 200
+    assert sql(
+        "select id::text, total from public.reserva where id in (%s, %s) order by id",
+        UUID(viva),
+        UUID(pendiente),
+    ) == sorted([(viva, 50), (pendiente, 50)])
+
+
+# --- avisos al cancelar o reprogramar (CA-14) y nota obligatoria (CA-11) ---
+
+
+def avisos(sql: Ejecutar, id_: str) -> dict[str, dict[str, Any]]:
+    filas = sql(
+        "select tipo, destinatario, datos from public.notificacion where datos ->> 'id_reserva' = %s",
+        id_,
+    )
+    return {f[0]: {"para": f[1], **f[2]} for f in filas}
+
+
+async def test_la_cancelacion_del_estudio_exige_nota_aunque_no_haya_pagos(
+    cliente: AsyncClient,
+    cliente_a: UsuarioDePrueba,
+    administrador: UsuarioDePrueba,
+    ases: Callable[..., str],
+    sql: Ejecutar,
+) -> None:
+    id_ = ases(cliente_a, "10 days", "pre_reservada")
+    sql("delete from public.cuota where id_reserva = %s", UUID(id_))
+    r = await post(cliente, administrador, f"{id_}/cancelar", {"por": "estudio"})
+    assert (r.status_code, codigo(r), r.json()["error"]["detalles"]) == (
+        422,
+        "nota_requerida",
+        {"campo": "nota"},
+    )
+    assert sql("select estado from public.reserva where id = %s", UUID(id_)) == [("pre_reservada",)]
+    r = await post(cliente, administrador, f"{id_}/cancelar", {"por": "estudio", "nota": "x"})
+    assert r.status_code == 200
+
+
+async def test_cancelar_una_asesoria_confirmada_avisa_al_profesional_y_al_cliente_con_texto_de_asesoria(
+    cliente: AsyncClient,
+    cliente_a: UsuarioDePrueba,
+    administrador: UsuarioDePrueba,
+    prof: UsuarioDePrueba,
+    ases: Callable[..., str],
+    sql: Ejecutar,
+) -> None:
+    sql("update public.usuario set nombre = 'Pablo Pro' where id = %s", prof.id)
+    por_estudio, por_cliente = ases(cliente_a, "10 days"), ases(cliente_a, "11 days")
+    await post(
+        cliente, administrador, f"{por_estudio}/cancelar", {"por": "estudio", "nota": "Sin sala"}
+    )
+    a = avisos(sql, por_estudio)
+    assert a["asesoria_cancelada_profesional"]["para"] == prof.correo
+    assert a["asesoria_cancelada_profesional"]["por"] == "estudio"
+    assert a["reserva_cancelada_estudio"]["para"] == cliente_a.correo
+    assert a["reserva_cancelada_estudio"]["modalidad"] == "virtual"
+    assert a["reserva_cancelada_estudio"]["profesional"] == "Pablo Pro"
+    await post(cliente, cliente_a, f"{por_cliente}/cancelar", {"nivel_esperado": 1})
+    a = avisos(sql, por_cliente)
+    assert a["asesoria_cancelada_profesional"]["por"] == "cliente"
+    assert a["reserva_cancelada_con_pagos"]["profesional"] == "Pablo Pro"
+    assert "pagado" not in a["asesoria_cancelada_profesional"]  # al profesional nunca el dinero
+
+
+async def test_cancelar_una_asesoria_sin_confirmar_no_avisa_al_profesional(
+    cliente: AsyncClient,
+    cliente_a: UsuarioDePrueba,
+    ases: Callable[..., str],
+    sql: Ejecutar,
+) -> None:
+    id_ = ases(cliente_a, "10 days", "pre_reservada")
+    sql("delete from public.cuota where id_reserva = %s", UUID(id_))
+    r = await post(cliente, cliente_a, f"{id_}/cancelar")
+    assert r.status_code == 200 and "asesoria_cancelada_profesional" not in avisos(sql, id_)
+
+
+async def test_reprogramar_una_asesoria_confirmada_avisa_al_profesional_y_al_cliente(
+    cliente: AsyncClient,
+    cliente_a: UsuarioDePrueba,
+    prof: UsuarioDePrueba,
+    ases: Callable[..., str],
+    sql: Ejecutar,
+) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    sql("update public.usuario set nombre = 'Pablo Pro' where id = %s", prof.id)
+    id_ = ases(cliente_a, "100 days")
+    nuevo = (datetime.now(UTC) + timedelta(days=10)).replace(minute=0, second=0, microsecond=0)
+    r = await post(
+        cliente,
+        cliente_a,
+        f"{id_}/reprogramar",
+        {"inicio": nuevo.isoformat(), "nivel_esperado": 1, "total_esperado": "50.00"},
+    )
+    assert r.status_code == 200, r.text
+    a = avisos(sql, id_)
+    assert a["asesoria_reprogramada_profesional"]["para"] == prof.correo
+    assert a["asesoria_reprogramada_profesional"]["anterior_inicio"]
+    assert a["reserva_reprogramada"]["para"] == cliente_a.correo
+    assert a["reserva_reprogramada"]["profesional"] == "Pablo Pro"
+    assert a["reserva_reprogramada"]["modalidad"] == "virtual"
+    assert "total" not in a["asesoria_reprogramada_profesional"]

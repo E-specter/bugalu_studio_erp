@@ -28,6 +28,8 @@ METODO = {
     "reserva_cancelada_con_pagos": "CANCEL",
     "asesoria_confirmada_profesional": "REQUEST",
     "asesoria_encuentro_cambiado": "REQUEST",
+    "asesoria_cancelada_profesional": "CANCEL",
+    "asesoria_reprogramada_profesional": "REQUEST",
 }
 
 

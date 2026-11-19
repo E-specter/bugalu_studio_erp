@@ -1,4 +1,3 @@
-import json
 from collections.abc import Collection, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from datetime import datetime
@@ -18,10 +17,11 @@ from bugalu.compartido.errores import (
     PerfilExistente,
     RolNoAdmitido,
     SinPermiso,
+    asesorias_vivas_en_lima,
 )
 from bugalu.modulos.asesorias.dominio.modelos import Especialidad, Horario, Ocupado, Profesional
 from bugalu.modulos.catalogo.dominio.precio import ConfiguracionImpuestos
-from bugalu.modulos.reservas.dominio.disponibilidad import LIMA, Tramo
+from bugalu.modulos.reservas.dominio.disponibilidad import Tramo
 
 _TOPE_SUGERENCIA = 200
 _PERFIL = (
@@ -245,11 +245,9 @@ class RepositorioAsesoriasPostgres:
         except Error as error:
             if error.sqlstate != "BG005":
                 raise
-            vivas = json.loads(error.diag.message_detail or "[]")
-            for v in vivas:
-                v["inicio"] = datetime.fromisoformat(v["inicio"]).astimezone(LIMA).isoformat()
             raise HorarioConAsesorias(
-                "El horario tiene asesorias vivas.", {"asesorias": vivas}
+                "El horario tiene asesorias vivas.",
+                {"asesorias": asesorias_vivas_en_lima(error.diag.message_detail)},
             ) from None
 
     async def ocupados_en(

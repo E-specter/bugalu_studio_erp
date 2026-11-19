@@ -1,6 +1,18 @@
 """Errores del kernel, sin dependencias de HTTP (formato de respuesta: manejadores_http)."""
 
+import json
+from datetime import datetime, timedelta, timezone
 from typing import Any
+
+_LIMA = timezone(timedelta(hours=-5))  # Lima no tiene horario de verano
+
+
+def asesorias_vivas_en_lima(detalle: str | None) -> list[dict[str, Any]]:
+    """El `detail` JSON de BG004/BG005 (asesorias vivas) con `inicio` en hora de Lima."""
+    vivas: list[dict[str, Any]] = json.loads(detalle or "[]")
+    for v in vivas:
+        v["inicio"] = datetime.fromisoformat(v["inicio"]).astimezone(_LIMA).isoformat()
+    return vivas
 
 
 class ErrorDeNegocio(Exception):

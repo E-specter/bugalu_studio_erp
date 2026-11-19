@@ -72,11 +72,17 @@ class PrevisualizarCambio:
             nombre,
             [(c, a, n) for c, (a, n) in diferencias.items()],
             ejemplos,
-            # shortcut: las asesorias vivas del profesional llegan en la etapa B (hoy no hay)
-            await self._catalogo.contar_operaciones_vigentes()
-            if recurso != "profesional" and sensibles.afecta_reservas_vigentes(recurso, diferencias)
-            else 0,
+            await self._operaciones_vigentes(recurso, id_recurso, diferencias),
         )
+
+    async def _operaciones_vigentes(
+        self, recurso: str, id_recurso: UUID | None, diferencias: Mapping[str, tuple[str, str]]
+    ) -> int:
+        if recurso == "profesional" and id_recurso:  # sus asesorias conservan el precio agendado
+            return await self._catalogo.contar_asesorias_vigentes(id_recurso)
+        if sensibles.afecta_reservas_vigentes(recurso, diferencias):
+            return await self._catalogo.contar_operaciones_vigentes()
+        return 0
 
     async def _ejemplos(
         self,

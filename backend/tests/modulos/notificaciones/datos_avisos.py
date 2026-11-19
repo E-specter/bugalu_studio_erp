@@ -42,6 +42,14 @@ DATOS_AVISOS: dict[str, dict[str, Any]] = {
         **_R, "folio": "A-2027-00007", "cliente": "Ana Torres", "profesional": "Pablo Uno",
         "modalidad": "presencial", "lugar": "Av. Lima 123", "enlace": None,
     },
+    "asesoria_cancelada_profesional": {
+        **_R, "folio": "A-2027-00007", "cliente": "Ana Torres", "por": "estudio",
+        "modalidad": "virtual", "lugar": None, "enlace": None,
+    },
+    "asesoria_reprogramada_profesional": {
+        **_R, "folio": "A-2027-00007", "cliente": "Ana Torres", "modalidad": "presencial",
+        "lugar": "Av. Lima 123", "enlace": None, "anterior_inicio": "2027-03-01T15:00:00+00:00",
+    },
     "eleccion_estudio_resuelta": {
         **_R, "cliente": "Ana Torres", "opcion": "devolucion", "monto": 100,
         "limite": "2027-03-17T04:59:59+00:00",

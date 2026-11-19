@@ -62,3 +62,20 @@ def test_sin_lugar_ni_enlace_dice_por_confirmar() -> None:
     c = armar("asesoria_encuentro_cambiado", datos, reserva("Por confirmar"))
     assert "Por confirmar" in c.cuerpo and c.evento is not None
     assert "LOCATION:Por confirmar" in c.evento.ics
+
+
+def test_cancelacion_al_profesional_lleva_cancel_y_remite_a_su_agenda() -> None:
+    datos = {**BASE, "por": "estudio", "modalidad": "virtual"}
+    c = armar("asesoria_cancelada_profesional", datos, reserva("Por confirmar"))
+    assert c.evento is not None and c.evento.metodo == "CANCEL"
+    assert "METHOD:CANCEL" in c.evento.ics and f"UID:reserva-{ID}@bugalu" in c.evento.ics
+    assert f"{URL}/app/asesorias/agenda" in c.cuerpo and "Ver mis asesorías" in c.cuerpo
+    assert armar("asesoria_cancelada_profesional", datos, reserva(None, False)).evento is None
+
+
+def test_reprogramacion_al_profesional_lleva_request_con_el_horario_nuevo() -> None:
+    datos = {**BASE, "anterior_inicio": "2027-03-09T15:00:00+00:00", "modalidad": "virtual"}
+    c = armar("asesoria_reprogramada_profesional", datos, reserva("Por confirmar"))
+    assert c.evento is not None and c.evento.metodo == "REQUEST"
+    assert f"/app/asesorias/detalle?id={ID}" in c.cuerpo
+    assert "Adjuntamos el evento con el nuevo horario" in c.cuerpo

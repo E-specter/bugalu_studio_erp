@@ -157,6 +157,14 @@ class RepositorioCatalogoPostgres:
         )
         return int(filas[0][0])
 
+    async def contar_asesorias_vigentes(self, id_profesional: UUID) -> int:
+        filas = await self._filas(
+            "select count(*) from public.reserva where tipo = 'asesoria' and id_profesional = %s "
+            "and estado in ('pre_reservada', 'confirmada') and inicio > now()",
+            (id_profesional,),
+        )
+        return int(filas[0][0])
+
     async def obtener_impuestos(self) -> ConfiguracionImpuestos:
         porcentaje, incluido = (
             await self._filas(

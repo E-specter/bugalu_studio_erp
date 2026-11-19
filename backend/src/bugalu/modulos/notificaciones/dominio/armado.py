@@ -23,7 +23,10 @@ _METODO = {
     "reserva_cancelada_con_pagos": "CANCEL",
     "asesoria_confirmada_profesional": "REQUEST",
     "asesoria_encuentro_cambiado": "REQUEST",
+    "asesoria_cancelada_profesional": "CANCEL",
+    "asesoria_reprogramada_profesional": "REQUEST",
 }
+_REPROGRAMACIONES = frozenset({"reserva_reprogramada", "asesoria_reprogramada_profesional"})
 _CONFIRMACIONES = frozenset({"pago_aprobado", "asesoria_confirmada_profesional"})
 TIPOS_CON_EVENTO = frozenset(_METODO)
 # SEQUENCE: segundos desde esta epoca propia (en Unix pasaria de 32 bits en 2038).
@@ -70,7 +73,7 @@ def _evento(
     bloque = BloqueEvento(
         texto_evento(
             metodo,
-            p.tipo == "reserva_reprogramada",
+            p.tipo in _REPROGRAMACIONES,
             e.folio,
             p.tipo == "asesoria_encuentro_cambiado",
         ),

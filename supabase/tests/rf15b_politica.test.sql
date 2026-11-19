@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(92);
+select plan(96);
 
 -- RF-15 etapa B (backend B2): politica de RF-18 para asesorias (CA-10, CA-11), barreras del profesional por SQL (CA-16),
 -- horario_con_asesorias y profesional_con_asesorias. La sala sigue igual (rf18_*.test.sql).
@@ -268,6 +268,17 @@ select lives_ok($$select public.cancelar_reserva('aa000000-0000-0000-0000-000000
 select throws_ok($$select public.cancelar_reserva('aa000000-0000-0000-0000-000000000004', 'Otra vez', null, 'estudio')$$, 'P0001', 'no_cancelable', 'ya cancelada');
 reset role;
 select is((select estado || ':' || eleccion_estudio || ':' || retenido::text from public.reserva where id = 'aa000000-0000-0000-0000-000000000004'), 'cancelada:pendiente:0.00', 'queda esperando la eleccion del cliente, sin retencion');
+-- CA-14: el profesional de una asesoria confirmada se entera de su cancelacion; la pre-reservada no avisa.
+select is((select count(*)::int from public.notificacion where tipo = 'asesoria_cancelada_profesional' and destinatario = 'p2@t.pe'
+           and datos ->> 'id_reserva' = 'aa000000-0000-0000-0000-000000000004' and datos ->> 'por' = 'estudio'), 1, 'aviso al profesional');
+select pg_temp.mk('000000000040', 'c1', 'b1', interval '10 days', 30, 'pre_reservada', 0);  -- sin pagos
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ad","role":"authenticated"}', true);
+select throws_ok($$select public.cancelar_reserva('aa000000-0000-0000-0000-000000000040', null, null, 'estudio')$$, 'P0001', 'nota_requerida', 'CA-11: la nota es obligatoria aunque no haya pagos');
+select lives_ok($$select public.cancelar_reserva('aa000000-0000-0000-0000-000000000040', 'Sin sala', null, 'estudio')$$, 'con nota cancela');
+reset role;
+select is((select count(*)::int from public.notificacion where tipo = 'asesoria_cancelada_profesional'
+           and datos ->> 'id_reserva' = 'aa000000-0000-0000-0000-000000000040'), 0, 'una asesoria sin confirmar no avisa al profesional');
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c1","role":"authenticated"}', true);
 select throws_ok($$select public.elegir_estudio_devolucion('aa000000-0000-0000-0000-000000000004')$$, 'P0002', null, 'otro cliente no elige por ella: 404');

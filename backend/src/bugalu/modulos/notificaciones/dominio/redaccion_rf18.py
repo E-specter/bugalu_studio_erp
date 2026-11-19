@@ -7,7 +7,7 @@ from typing import Any
 from bugalu.modulos.notificaciones.dominio.formato import _fecha, _horario, _lima, _soles
 
 
-def _reserva_cancelada_con_pagos(datos: dict[str, Any]) -> tuple[str, str]:
+def _detalle_cancelacion(datos: dict[str, Any]) -> str:
     credito = Decimal(str(datos["credito"]))
     vence = (
         f"El crédito vence el {_fecha(_lima(datos['credito_vence']))} (hora de Lima).\n"
@@ -15,12 +15,18 @@ def _reserva_cancelada_con_pagos(datos: dict[str, Any]) -> tuple[str, str]:
         else "No queda crédito a tu favor.\n"
     )
     return (
-        f"Cancelamos tu reserva {datos['folio']}",
-        f"Tu reserva {datos['folio']} ({_horario(datos)}, hora de Lima) quedó cancelada.\n\n"
         f"Nivel de cancelación: nivel {datos['nivel']}\n"
         f"Pagado: {_soles(datos['pagado'])}\n"
         f"Retenido: {_soles(datos['retenido'])}\n"
-        f"Crédito a tu favor: {_soles(datos['credito'])}\n{vence}",
+        f"Crédito a tu favor: {_soles(datos['credito'])}\n{vence}"
+    )
+
+
+def _reserva_cancelada_con_pagos(datos: dict[str, Any]) -> tuple[str, str]:
+    return (
+        f"Cancelamos tu reserva {datos['folio']}",
+        f"Tu reserva {datos['folio']} ({_horario(datos)}, hora de Lima) quedó cancelada.\n\n"
+        + _detalle_cancelacion(datos),
     )
 
 
@@ -76,21 +82,23 @@ def _devolucion_realizada(datos: dict[str, Any]) -> tuple[str, str]:
     )
 
 
-def _reserva_reprogramada(datos: dict[str, Any]) -> tuple[str, str]:
+def _costo_reprogramacion(datos: dict[str, Any]) -> str:
     if datos.get("sin_costo"):
-        costo = "La reprogramación es sin costo: el precio no cambia.\n"
-    else:
-        credito = Decimal(str(datos["credito"]))
-        costo = (
-            f"Nivel de reprogramación: nivel {datos['nivel']}\n"
-            f"Penalización: {_soles(datos['penalizacion'])}\n"
-            f"Saldo por pagar: {_soles(datos['saldo'])}\n"
-            + (f"Crédito a tu favor: {_soles(credito)}\n" if credito > 0 else "")
-        )
+        return "La reprogramación es sin costo: el precio no cambia.\n"
+    credito = Decimal(str(datos["credito"]))
+    return (
+        f"Nivel de reprogramación: nivel {datos['nivel']}\n"
+        f"Penalización: {_soles(datos['penalizacion'])}\n"
+        f"Saldo por pagar: {_soles(datos['saldo'])}\n"
+        + (f"Crédito a tu favor: {_soles(credito)}\n" if credito > 0 else "")
+    )
+
+
+def _reserva_reprogramada(datos: dict[str, Any]) -> tuple[str, str]:
     return (
         f"Reprogramamos tu reserva {datos['folio']}",
         f"Tu reserva {datos['folio']} pasó del {_fecha(_lima(datos['anterior_inicio']))} "
-        f"a {_horario(datos)} (hora de Lima).\n\n{costo}",
+        f"a {_horario(datos)} (hora de Lima).\n\n{_costo_reprogramacion(datos)}",
     )
 
 

@@ -13,6 +13,7 @@ from bugalu.compartido.errores import (
     SinPermiso,
     UltimoAdministrador,
     VerificacionNoValida,
+    asesorias_vivas_en_lima,
 )
 
 
@@ -29,7 +30,7 @@ def traduciendo_errores_de_postgres() -> Iterator[None]:
             raise ClienteConOperaciones(json.loads(error.diag.message_detail or "{}")) from error
         if error.sqlstate == "BG004":
             raise ProfesionalConAsesorias(
-                {"asesorias": json.loads(error.diag.message_detail or "[]")}
+                {"asesorias": asesorias_vivas_en_lima(error.diag.message_detail)}
             ) from error
         if error.sqlstate == "42501":
             raise SinPermiso("No tienes permiso para esta operacion.") from error

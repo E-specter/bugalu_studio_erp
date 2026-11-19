@@ -47,6 +47,8 @@ def test_los_tipos_con_evento_son_los_de_la_spec() -> None:
     assert TIPOS_CON_EVENTO == set(DATOS) | {
         "asesoria_confirmada_profesional",
         "asesoria_encuentro_cambiado",
+        "asesoria_cancelada_profesional",
+        "asesoria_reprogramada_profesional",
     }  # los de asesoria: test_armado_asesorias
 
 
