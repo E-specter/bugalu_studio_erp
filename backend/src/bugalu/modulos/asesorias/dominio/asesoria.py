@@ -39,6 +39,23 @@ class PersonaAsesoria:
 
 
 @dataclass(frozen=True)
+class AvisoDeCancelacion:
+    """Cancelacion para su profesional: cuando y por quien, sin dinero (CA-16)."""
+
+    aviso_en: datetime
+    por: str
+
+
+@dataclass(frozen=True)
+class CambioDeHorario:
+    """Reprogramacion para su profesional: solo fechas, sin penalizacion ni nivel (CA-16)."""
+
+    anterior_inicio: datetime
+    nuevo_inicio: datetime
+    en: datetime
+
+
+@dataclass(frozen=True)
 class Asesoria:
     id: UUID
     folio: str
@@ -60,8 +77,8 @@ class Asesoria:
     version_condiciones: str | None = None
     cliente: PersonaAsesoria | None = None  # solo su profesional y el administrador
     notas: str | None = None  # idem
-    cancelacion: CancelacionReserva | None = None  # solo el cliente y el administrador
-    reprogramaciones: tuple[Reprogramacion, ...] = ()
+    cancelacion: CancelacionReserva | AvisoDeCancelacion | None = None
+    reprogramaciones: tuple[Reprogramacion | CambioDeHorario, ...] = ()
     eleccion_estudio: str | None = None
     devolucion: Devolucion | None = None
 

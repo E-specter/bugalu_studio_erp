@@ -373,7 +373,7 @@ async def test_inasistencia_por_su_profesional_o_el_administrador(
     a = r.json()
     assert r.status_code == 200 and a["estado"] == "no_asistio", r.text
     assert (
-        "cuotas" not in a and "pagado" not in a and "cancelacion" not in a
+        "cuotas" not in a and "pagado" not in a and set(a["cancelacion"]) == {"aviso_en", "por"}
     )  # el profesional no ve dinero
     r = await post(cliente, prof, f"{pasada}/inasistencia")
     assert (r.status_code, codigo(r)) == (409, "no_aplicable")
@@ -652,3 +652,60 @@ async def test_reprogramar_una_asesoria_confirmada_avisa_al_profesional_y_al_cli
     assert a["reserva_reprogramada"]["profesional"] == "Pablo Pro"
     assert a["reserva_reprogramada"]["modalidad"] == "virtual"
     assert "total" not in a["asesoria_reprogramada_profesional"]
+
+
+# --- CA-16: el profesional nunca ve dinero ni nivel ---
+
+
+def _claves(valor: Any) -> set[str]:
+    if isinstance(valor, dict):
+        return set(valor) | {c for v in valor.values() for c in _claves(v)}
+    if isinstance(valor, list):
+        return {c for v in valor for c in _claves(v)}
+    return set()
+
+
+async def test_el_profesional_no_recibe_dinero_ni_nivel_en_cancelacion_devolucion_y_reprogramaciones(
+    cliente: AsyncClient,
+    cliente_a: UsuarioDePrueba,
+    administrador: UsuarioDePrueba,
+    prof: UsuarioDePrueba,
+    ases: Callable[..., str],
+) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    # reprogramada con penalizacion (nivel 2) y luego cancelada por el cliente (nivel 1, con credito)
+    con_credito = ases(cliente_a, "30 hours")
+    nuevo = (datetime.now(UTC) + timedelta(days=10)).replace(minute=0, second=0, microsecond=0)
+    r = await post(
+        cliente,
+        cliente_a,
+        f"{con_credito}/reprogramar",
+        {"inicio": nuevo.isoformat(), "nivel_esperado": 2, "total_esperado": "50.00"},
+    )
+    assert r.status_code == 200, r.text
+    r = await post(cliente, cliente_a, f"{con_credito}/cancelar", {"nivel_esperado": 1})
+    assert r.status_code == 200, r.text
+    # cancelada por el estudio con devolucion integra
+    con_devolucion = ases(cliente_a, "0 hours")
+    await post(
+        cliente, administrador, f"{con_devolucion}/cancelar", {"por": "estudio", "nota": "Falla"}
+    )
+    r = await post(
+        cliente, cliente_a, f"{con_devolucion}/eleccion-estudio", {"opcion": "devolucion"}
+    )
+    assert r.status_code == 200, r.text
+
+    dinero = {"cuotas", "pagado", "politica", "devolucion", "retenido", "credito", "penalizacion"}
+    dinero |= {"total_anterior", "total_nuevo", "version_condiciones"}
+    for id_ in (con_credito, con_devolucion):
+        a = (await cliente.get(f"/api/v1/asesorias/{id_}", headers=con(prof))).json()
+        claves = _claves(a)
+        assert not claves & dinero and not {c for c in claves if "nivel" in c}, claves
+        assert a["precio"]["total"] == "50.00" and a["estado"] == "cancelada"
+        assert set(a["cancelacion"]) == {"aviso_en", "por"} and a["cancelacion"]["por"]
+        for u in (cliente_a, administrador):
+            claves = _claves((await cliente.get(f"/api/v1/asesorias/{id_}", headers=con(u))).json())
+            assert {"pagado", "politica", "retenido", "credito"} <= claves, (u, claves)
+    a = (await cliente.get(f"/api/v1/asesorias/{con_credito}", headers=con(prof))).json()
+    assert [set(g) for g in a["reprogramaciones"]] == [{"anterior_inicio", "nuevo_inicio", "en"}]

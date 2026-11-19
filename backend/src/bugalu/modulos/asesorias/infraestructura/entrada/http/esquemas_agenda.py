@@ -9,6 +9,12 @@ from pydantic import BaseModel, ConfigDict, StringConstraints, model_validator
 
 from bugalu.modulos.asesorias.dominio import agenda
 from bugalu.modulos.asesorias.dominio.asesoria import Asesoria as AsesoriaDominio
+from bugalu.modulos.asesorias.dominio.asesoria import (
+    AvisoDeCancelacion as AvisoDeCancelacionDominio,
+)
+from bugalu.modulos.asesorias.dominio.asesoria import (
+    CambioDeHorario as CambioDeHorarioDominio,
+)
 from bugalu.modulos.asesorias.dominio.asesoria import PersonaAsesoria
 from bugalu.modulos.catalogo.infraestructura.entrada.http.esquemas import Impuesto
 from bugalu.modulos.reservas.dominio.disponibilidad import LIMA
@@ -69,6 +75,17 @@ class PrecioAsesoria(BaseModel):
     impuesto: Impuesto
 
 
+class AvisoDeCancelacion(BaseModel):
+    aviso_en: datetime
+    por: str
+
+
+class CambioDeHorario(BaseModel):
+    anterior_inicio: datetime
+    nuevo_inicio: datetime
+    en: datetime
+
+
 class Asesoria(BaseModel):
     id: UUID
     tipo: Literal["asesoria"] = "asesoria"
@@ -92,8 +109,8 @@ class Asesoria(BaseModel):
     version_condiciones: str | None = None
     cliente: Cliente | None = None
     notas: str | None = None
-    reprogramaciones: list[ReprogramacionReserva] = []
-    cancelacion: CancelacionReserva | None = None
+    reprogramaciones: list[ReprogramacionReserva | CambioDeHorario] = []
+    cancelacion: CancelacionReserva | AvisoDeCancelacion | None = None
     eleccion_estudio: str | None = None
     devolucion: Devolucion | None = None
 
@@ -142,22 +159,24 @@ class Asesoria(BaseModel):
             if a.cliente
             else None,
             notas=a.notas,
-            reprogramaciones=[
-                ReprogramacionReserva(
-                    **{
-                        **vars(g),
-                        "anterior_inicio": g.anterior_inicio.astimezone(LIMA),
-                        "nuevo_inicio": g.nuevo_inicio.astimezone(LIMA),
-                        "en": g.en.astimezone(LIMA),
-                        "por": referencia_a_esquema(g.por),
-                    }
-                )
-                for g in a.reprogramaciones
-            ],
-            cancelacion=cancelacion_a_esquema(a.cancelacion) if a.cancelacion else None,
+            reprogramaciones=[_reprogramacion(g, lima) for g in a.reprogramaciones],
+            cancelacion=_cancelacion(a.cancelacion),
             eleccion_estudio=a.eleccion_estudio,
             devolucion=Devolucion.desde_dominio(a.devolucion) if a.devolucion else None,
         )
+
+
+def _reprogramacion(g: Any, lima: Any) -> ReprogramacionReserva | CambioDeHorario:
+    fechas = {c: lima(getattr(g, c)) for c in ("anterior_inicio", "nuevo_inicio", "en")}
+    if isinstance(g, CambioDeHorarioDominio):
+        return CambioDeHorario(**fechas)
+    return ReprogramacionReserva(**{**vars(g), **fechas, "por": referencia_a_esquema(g.por)})
+
+
+def _cancelacion(c: Any) -> CancelacionReserva | AvisoDeCancelacion | None:
+    if isinstance(c, AvisoDeCancelacionDominio):
+        return AvisoDeCancelacion(aviso_en=c.aviso_en.astimezone(LIMA), por=c.por)
+    return cancelacion_a_esquema(c) if c else None
 
 
 def _persona(p: PersonaAsesoria) -> dict[str, Any]:

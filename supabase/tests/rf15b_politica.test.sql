@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(96);
+select plan(101);
 
 -- RF-15 etapa B (backend B2): politica de RF-18 para asesorias (CA-10, CA-11), barreras del profesional por SQL (CA-16),
 -- horario_con_asesorias y profesional_con_asesorias. La sala sigue igual (rf18_*.test.sql).
@@ -255,6 +255,22 @@ select lives_ok($$select public.marcar_inasistencia('aa000000-0000-0000-0000-000
 select lives_ok($$select public.aplicar_excepcion('aa000000-0000-0000-0000-000000000006', 'Fallo la conexion del profesional')$$, 'y "tratar como nivel 1" sigue disponible en no_asistio');
 reset role;
 select is((select tipo from public.credito where id_reserva = 'aa000000-0000-0000-0000-000000000006'), 'excepcion', 'con credito de excepcion');
+
+-- CA-16: su profesional ve el aviso y "a pedido de" de la cancelacion y las fechas de las reprogramaciones, sin dinero.
+insert into public.reprogramacion (id_reserva, anterior_inicio, nuevo_inicio, nivel, penalizacion, total_anterior, total_nuevo)
+  select id, inicio, inicio + interval '1 day', 2, 12.50, 50, 50 from public.reserva where id = 'aa000000-0000-0000-0000-000000000005';
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b1","role":"authenticated"}', true);
+select is((select cancelacion_por from public.asesoria_vista where id = 'aa000000-0000-0000-0000-000000000005'), 'inasistencia', 'su profesional ve a pedido de quien');
+select ok((select aviso_en is not null and nivel_cancelacion is null and retenido is null and credito_generado is null and nota_cancelacion is null
+  from public.asesoria_vista where id = 'aa000000-0000-0000-0000-000000000005'), 've el aviso, pero ni nivel, ni montos, ni nota');
+select is((select count(*)::int from public.reprogramaciones_visibles(array['aa000000-0000-0000-0000-000000000005'::uuid])), 1, 've las fechas de la reprogramacion');
+select is((select count(*)::int from information_schema.columns where table_name = 'reprogramaciones_visibles' and column_name in ('penalizacion', 'nivel', 'total_nuevo')), 0, 'la funcion no trae penalizacion ni nivel');
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', true);
+select is((select count(*)::int from public.reprogramaciones_visibles(array['aa000000-0000-0000-0000-000000000005'::uuid])), 0, 'otro profesional no ve nada');
+reset role;
 
 -- CA-11: cancelacion del estudio, tambien tras el inicio; el cliente elige devolucion integra.
 set local role authenticated;

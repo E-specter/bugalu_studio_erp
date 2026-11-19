@@ -19,6 +19,8 @@ from bugalu.compartido.errores import (
 )
 from bugalu.modulos.asesorias.dominio.asesoria import (
     Asesoria,
+    AvisoDeCancelacion,
+    CambioDeHorario,
     ContextoAsesoria,
     NuevaAsesoria,
     PersonaAsesoria,
@@ -44,10 +46,14 @@ from bugalu.modulos.reservas.infraestructura.salida.repositorio_postgres import 
 _TOPE_LISTA = 500
 
 
-def _cancelacion(f: Sequence[Any], nombres: Mapping[UUID, str | None]) -> CancelacionReserva | None:
+def _cancelacion(
+    f: Sequence[Any], nombres: Mapping[UUID, str | None]
+) -> CancelacionReserva | AvisoDeCancelacion | None:
     """Solo si se cancelo o se marco no asistio por la politica de RF-18."""
     if f[18] is None or f[2] not in ("cancelada", "no_asistio"):
         return None
+    if not f[15]:  # su profesional: solo cuando y a pedido de quien
+        return AvisoDeCancelacion(f[18], f[19])
 
     def quien(id_: UUID | None) -> Referencia | None:
         return Referencia(id_, nombres[id_]) if id_ is not None and id_ in nombres else None
@@ -199,7 +205,15 @@ class RepositorioAgendaPostgres:
             else {}
         )
         con_dinero = [f for f in filas if f[15]]
-        reprogramaciones = await self._reservas.reprogramaciones_de([f[0] for f in con_dinero])
+        reprogramaciones: dict[UUID, list[Any]] = await self._reservas.reprogramaciones_de(
+            [f[0] for f in con_dinero]
+        )
+        for f in await self._filas(  # las que no tienen dinero, solo las fechas
+            "select id_reserva, anterior_inicio, nuevo_inicio, en "
+            "from public.reprogramaciones_visibles(%s)",
+            ([f[0] for f in filas if not f[15]],),
+        ):
+            reprogramaciones.setdefault(f[0], []).append(CambioDeHorario(f[1], f[2], f[3]))
         devoluciones = await self._reservas.devoluciones_del_estudio_de([f[0] for f in con_dinero])
         nombres = await self._reservas.nombres_de_clientes(
             list({i for f in con_dinero for i in (f[24], f[26]) if i})
@@ -243,7 +257,7 @@ class RepositorioAgendaPostgres:
                     version_condiciones=version,
                     cliente=contactos.get(f[0]),
                     notas=notas,
-                    cancelacion=_cancelacion(f, nombres) if f[15] and detalle else None,
+                    cancelacion=_cancelacion(f, nombres) if detalle else None,
                     reprogramaciones=tuple(reprogramaciones.get(f[0], [])) if detalle else (),
                     eleccion_estudio=f[16] if detalle else None,
                     devolucion=devoluciones.get(f[0]) if detalle else None,

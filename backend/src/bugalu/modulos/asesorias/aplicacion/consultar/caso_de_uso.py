@@ -3,14 +3,35 @@ from datetime import datetime
 from uuid import UUID
 
 from bugalu.compartido.errores import DatosInvalidos, NoEncontrado, SinPermiso
-from bugalu.modulos.asesorias.dominio.asesoria import Asesoria, RepositorioAgenda
+from bugalu.modulos.asesorias.dominio.asesoria import (
+    Asesoria,
+    AvisoDeCancelacion,
+    CambioDeHorario,
+    RepositorioAgenda,
+)
 
 ESTADOS = ("pre_reservada", "confirmada", "realizada", "cancelada", "no_asistio")
 
 
 def para_su_profesional(a: Asesoria) -> Asesoria:
-    """CA-16: ni cuotas, ni pagado, ni condiciones; el contacto del cliente y las notas, si."""
-    return replace(a, cuotas=None, pagado=None, version_condiciones=None, notas=a.notas or "")
+    """CA-16: ni dinero, ni nivel, ni politica, ni devolucion; si aviso, fechas, contacto y notas.
+
+    El repositorio ya se las da sin dinero; aqui se recortan de nuevo."""
+    return replace(
+        a,
+        cuotas=None,
+        pagado=None,
+        politica=None,
+        devolucion=None,
+        version_condiciones=None,
+        notas=a.notas or "",
+        cancelacion=AvisoDeCancelacion(a.cancelacion.aviso_en, a.cancelacion.por)
+        if a.cancelacion
+        else None,
+        reprogramaciones=tuple(
+            CambioDeHorario(g.anterior_inicio, g.nuevo_inicio, g.en) for g in a.reprogramaciones
+        ),
+    )
 
 
 def para_su_cliente(a: Asesoria) -> Asesoria:
