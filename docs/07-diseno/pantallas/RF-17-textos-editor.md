@@ -1,7 +1,7 @@
 ---
 id: pantalla-rf-17-textos-editor
 titulo: Pantalla — Editor de textos legales (ver, prellenar, cargar Markdown y vista previa)
-estado: borrador
+estado: aprobado
 depende_de: [RF-17, pantalla-rf-17-textos-legales, diseno-brief, patron-estructura-app, patron-formularios, patron-estados-sistema, comp-encabezado-pantalla, comp-panel, comp-campo, comp-boton, comp-aviso, comp-barra-acciones, comp-etiqueta-tecnica, comp-carga-archivos]
 ---
 
@@ -63,7 +63,7 @@ Sin acción principal: es lectura. Estados: carga "Cargando…" con `aria-busy` 
 **Cargar archivo.** Al elegir, en este orden; la primera regla que falla da su error y CONTENIDO no cambia:
 
 1. Nombre terminado en `.md` (sin distinguir mayúsculas; el tipo MIME de `.md` no es fiable): "{nombre} no es un archivo .md. Elige un archivo Markdown."
-2. Hasta 200 000 bytes: "{nombre} pesa {350 KB}; el máximo es 200 KB." Así ningún archivo admitido supera los 200 000 caracteres del 422.
+2. Hasta 200 000 bytes: "{nombre} pesa {350 KB}; el máximo es 200 KB." Así ningún archivo admitido supera los 300 000 caracteres del 422.
 3. No vacío: "{nombre} está vacío."
 4. UTF-8 válido: "{nombre} no está en UTF-8. Guárdalo con codificación UTF-8 y vuelve a cargarlo."
 5. CONTENIDO con texto (sin contar espacios) → confirmar reemplazo; vacío → reemplaza sin preguntar.
@@ -74,7 +74,7 @@ Tras reemplazar: foco en CONTENIDO, la vista previa se actualiza sola y el input
 |---|---|
 | Cuándo se genera | Al cargar el prellenado, al cargar un archivo y con "Actualizar vista previa" |
 | Sin generar | "Pulsa «Actualizar vista previa» para ver el texto con su formato final." |
-| CONTENIDO vacío o de más de 200 000 caracteres | Sin llamada: "Escribe el contenido para ver la vista previa." · "El contenido supera los 200 000 caracteres. Acórtalo para verlo y publicarlo." (también 422 `datos_invalidos`) |
+| CONTENIDO vacío o de más de 300 000 caracteres | Sin llamada: "Escribe el contenido para ver la vista previa." · "El contenido supera los 300 000 caracteres. Acórtalo para verlo y publicarlo." (también 422 `datos_invalidos`) |
 | Actualizando | Botón en Carga "Actualizando…"; la vista anterior sigue, con `aria-busy="true"` |
 | Éxito | Se pinta y se quita DESACTUALIZADA |
 | 401 | Aviso Error en el bloque "Tu sesión no es válida. Inicia sesión y vuelve a intentarlo." + "Ir al acceso interno" (en otra pestaña, para no perder lo escrito) + "Reintentar" |
@@ -84,7 +84,7 @@ Tras reemplazar: foco en CONTENIDO, la vista previa se actualiza sola y el input
 
 ## Revisión (R1)
 
-"Revisar y publicar" valida como hoy (más "El contenido supera los 200 000 caracteres. Acórtalo para publicarlo.") y, si la vista previa no corresponde al CONTENIDO actual, la pide (Primario en Carga "Preparando revisión…"). R1 muestra `contenido_html` en el contenedor con desplazamiento de siempre. Si la vista previa falla, R1 no se abre: se publica solo lo que se ha visto. Aviso Error sobre el formulario con el texto de la tabla de arriba y foco en él; lo escrito se conserva.
+"Revisar y publicar" valida como hoy (más "El contenido supera los 300 000 caracteres. Acórtalo para publicarlo.") y, si la vista previa no corresponde al CONTENIDO actual, la pide (Primario en Carga "Preparando revisión…"). R1 muestra `contenido_html` en el contenedor con desplazamiento de siempre. Si la vista previa falla, R1 no se abre: se publica solo lo que se ha visto. Aviso Error sobre el formulario con el texto de la tabla de arriba y foco en él; lo escrito se conserva.
 
 ## Accesibilidad
 
@@ -99,6 +99,6 @@ Tras reemplazar: foco en CONTENIDO, la vista previa se actualiza sola y el input
 
 - **leader:** RF-17 tenía ya un CA-14 (casos de rotura) y la ampliación numera CA-14 a CA-17: hay dos CA-14. Proponemos renumerar la ampliación como CA-15 a CA-18.
 - **leader:** con una versión programada, publicar da siempre 409 `version_programada`, así que prellenar desde ella no sirve hoy. Proponemos "Publicar versión de {texto}" deshabilitado con el motivo "Retira la versión programada para publicar otra."
-- **leader:** 200 KB se toma como 200 000 bytes (encaja con el límite de 200 000 caracteres). Confirmar.
+- Resuelto (2026-11-19): 200 KB = 200 000 bytes del archivo; el límite de la vista previa y de publicar es 300 000 caracteres (commit 433d476).
 - Informativo: `GET /textos-legales` solo trae la vigente y la programada, así que "Ver" no llega a versiones anteriores; harían falta `GET /textos-legales/{tipo}/versiones` y otra columna.
 - **disenador-ui:** si el control de carga sin adjunto se repite, pasarlo a una variante de [carga de archivos](../componentes/carga-archivos.md).

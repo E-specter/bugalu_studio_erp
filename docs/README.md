@@ -51,7 +51,7 @@ Orden de implementación (fase 7, revisado por el usuario el 2026-11-16): RF-01 
 | [RF-14](03-requerimientos/RF-14.md) | Generar reportes de operatividad y gestión | `reportes` | borrador |
 | [RF-15](03-requerimientos/RF-15.md) | Agendar asesoría artística | `asesorias` | borrador (etapa A implementada el 2026-11-18; etapa B pendiente) |
 | [RF-16](03-requerimientos/RF-16.md) | Libro de Reclamaciones virtual | `reclamaciones` | aprobado |
-| [RF-17](03-requerimientos/RF-17.md) | Registro reforzado de artistas y aceptación de textos legales | `identidad` | aprobado (etapa A implementada el 2026-11-17; etapa B pendiente) |
+| [RF-17](03-requerimientos/RF-17.md) | Registro reforzado de artistas y aceptación de textos legales | `identidad` | implementado (etapa A implementada el 2026-11-17; etapa B pendiente) |
 | [RF-18](03-requerimientos/RF-18.md) | Cancelar y reprogramar con política de niveles y créditos | `reservas` | aprobado |
 | [RF-19](03-requerimientos/RF-19.md) | Calendario de Google y videollamadas | `notificaciones` | borrador |
 | [RF-20](03-requerimientos/RF-20.md) | Parámetros sensibles con barreras y auditoría | `catalogo` | implementado |
