@@ -107,3 +107,5 @@ En [usuarios](RF-01-solicitudes.md#composición), la persona con rol Cliente sum
 
 1. `GET /creditos` no trae el disponible: ¿se acepta sumarlo en la isla (en céntimos, solo para mostrar) o se añade `disponible` a la respuesta?
 2. "30 días" y "7 días" del texto fijo salen de `dias_vigencia_credito`, que no llega al cliente. Si el Administrador lo cambia, el texto queda viejo; propuesta: exponerlo en `GET /creditos` o quitar las cifras.
+
+- **Ampliada por RF-15 B:** créditos nacidos de una asesoría: ORIGEN enlaza a su detalle y no ofrecen devolución ([mis asesorías](RF-15-mis-asesorias.md#créditos)).

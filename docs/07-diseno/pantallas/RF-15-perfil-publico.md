@@ -51,7 +51,7 @@ Secciones separadas por `espacio-20` (`espacio-12` < `punto-quiebre-tableta`).
 Decisión explícita: en la etapa A **no se puede agendar**. El botón se especifica ya para que la etapa B solo lo active, sin mover la composición:
 
 - [Botón](../componentes/boton.md) Primario grande "Agendar asesoría", con `aria-disabled="true"` (sigue enfocable, aspecto Deshabilitado de los [estados comunes](../componentes/README.md#estados-comunes)) y `aria-describedby` a la ayuda visible debajo: "Disponible pronto: muy pronto podrás agendar en línea desde aquí." Pulsarlo no hace nada.
-- **Etapa B (no se implementa ahora):** pasa a enlace Primario al flujo de agendar con `?profesional={id}`; la spec de B lo define. Para el rol `profesional`, que no agenda (CA-01), no se pinta.
+- **Etapa B (ampliada):** pasa a enlace Primario a `/asesorias/agendar?profesional={id}` y la ayuda desaparece ([agendar](RF-15-agendar.md#entrada)). Para el rol `profesional`, que no agenda (CA-01), no se pinta.
 
 ### Disponibilidad (modo Asesoría)
 
@@ -61,7 +61,7 @@ Extiende la [ficha del calendario](../componentes/calendario.md); lo no dicho aq
 |---|---|---|
 | Libre | Dentro de un `horarios[]`, fuera de `ocupados[]` y dentro de `limites` | LIBRE |
 | Ocupado | En `ocupados[]` con `propia = false` | OCUPADO (sin datos de quién) |
-| Propio | `ocupados[].propia = true` (cliente con sesión) | TU ASESORÍA (sin folio ni enlace hasta la etapa B) |
+| Propio | `ocupados[].propia = true` (cliente con sesión) | TU ASESORÍA; etapa B: folio y enlace a su [detalle](RF-15-mis-asesorias.md) (se casa por `inicio` con `GET /asesorias/mias`, como el modo Reserva) |
 | Pasado | Ya empezó | PASADO |
 | No reservable | Dentro de un horario pero fuera de `limites` (anticipación) | NO RESERVABLE |
 | Sin horario | Fuera de todo `horarios[]` | Celda vacía |
@@ -105,4 +105,5 @@ Permisos: el público solo recibe perfiles publicados y nunca datos de clientes 
 
 ## Pendientes
 
+- **Ampliada por RF-15 B:** "Agendar asesoría" activo y TU ASESORÍA enlazada ([agendar](RF-15-agendar.md)).
 - **leader:** registrar `<bugalu-directorio>` y el modo `asesoria` de `<bugalu-calendario>` en [frontend-islas](../../01-arquitectura/frontend-islas.md).

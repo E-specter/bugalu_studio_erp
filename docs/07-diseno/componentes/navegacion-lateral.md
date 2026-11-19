@@ -31,6 +31,8 @@ Destinos implementados (etiqueta ≤ 9 caracteres · icono · ruta):
 | Rol | Destinos |
 |---|---|
 | Cliente | INICIO (`house`, `/app/`) · RESERVAS (`calendar-check`, `/app/reservas/`) · PERFIL (menú de la cabecera) |
+| Cliente, desde RF-15 B | Tras RESERVAS: ASESORÍAS (`messages-square`, `/app/asesorias/mias`, [mis asesorías](../pantallas/RF-15-mis-asesorias.md)) |
+| Profesional | INICIO · FICHA (`id-card`, `/app/ficha/`) · HORARIOS (`calendar-cog`, `/app/horarios/`) · ASESORÍAS (`messages-square`, `/app/asesorias/agenda`, [agenda](../pantallas/RF-15-agenda.md); desde RF-15 B) |
 | Personal | INICIO · AGENDA (`calendar`, `/app/agenda/`) |
 | Administrador | INICIO · AGENDA · PAGOS (`receipt`, `/app/pagos/`, con contador) · ACCESOS (`user-plus`) · USUARIOS (`users`) · FRANJAS (`calendar-cog`, `/app/franjas/`) · TARIFAS (`tag`, `/app/tarifas/`; incluye IMPUESTOS) · CAMBIOS (`history`, `/app/cambios/`, [registro de cambios](../pantallas/RF-20-registro-cambios.md)) · TEXTOS (`file-text`, `/app/textos/`, [textos legales](../pantallas/RF-17-textos-legales.md)) · RECLAMOS (`book-open`, `/app/reclamos/`, [bandeja](../pantallas/RF-16-bandeja.md); sin contador: el correo diario de plazos ya avisa). En móvil, los cinco primeros van en la barra y FRANJAS, TARIFAS, CAMBIOS, TEXTOS y RECLAMOS (los de uso semanal o raro) al menú de la [cabecera](cabecera-app.md), con `aria-current="page"` cuando son la sección actual ([navegación táctil](navegacion-tactil.md)). PAGOS va tercero porque es trabajo diario y lleva contador (RF-05) |
 

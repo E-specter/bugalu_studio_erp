@@ -108,3 +108,4 @@ Consecuencias en V4: "Al aprobar, la cuota queda pagada{, la reserva se confirma
 - **dev-backend:** `GET /pagos/{id}/captura` no dice si es imagen o PDF; propuesta: añadir `tipo` (`imagen` | `pdf`). Sin él, la isla lo deduce de la extensión de la ruta firmada.
 - **Ampliada por RF-20:** V2 PAGO suma el desglose de IGV del pago ([cambios sensibles](RF-20-cambios-sensibles.md#desglose-de-igv)).
 - **Ampliada por RF-18:** acción "Devoluciones" y aviso de devoluciones por decidir o por hacer en la lista ([devoluciones](RF-18-devoluciones.md)).
+- **Ampliada por RF-15 B:** con `Pago.reserva.tipo = "asesoria"`, RESERVA se llama ASESORÍA en la fila y en V3, el folio `A-…` enlaza a `/app/asesorias/detalle?id=` y SESIÓN dice "Asesoría de {duración} con {profesional}". Aprobar el pago único confirma la asesoría (mismo aviso `reserva-confirmada`, con "asesoría").

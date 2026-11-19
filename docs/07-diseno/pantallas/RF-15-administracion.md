@@ -42,7 +42,7 @@ En [usuarios](RF-01-solicitudes.md#composición), sin pantalla nueva:
 - Filtros: se suma "Profesionales" (`?rol=profesional`) tras "Personal".
 - U2 suma la casilla Radio **Profesional artístico**, detalle "Da asesorías y publica sus horarios. Entra con correo y contraseña." Con ella marcada, ESPECIALIDAD se oculta (las de asesoría van en su ficha) y se envía `PATCH /usuarios/{id} {rol: "profesional"}`.
 - Éxito al asignar: redirige a `/app/asesorias/?aviso=profesional-asignado`. Quitar el rol: vuelve a Usuarios como hoy.
-- 409 `profesional_con_asesorias`: aviso Error "{Nombre} tiene asesorías pendientes o confirmadas. Cancélalas o espera a que terminen antes de quitarle el rol." Datos conservados.
+- 409 `profesional_con_asesorias`: aviso Error "{Nombre} tiene asesorías pendientes o confirmadas. Cancélalas o espera a que terminen antes de quitarle el rol." + enlace "Ver sus asesorías" (`/app/asesorias/agenda?profesional={id}`, etapa B). Datos conservados.
 - 409 `cliente_con_operaciones` (al asignar): aviso Error "{Nombre} tiene reservas, créditos, pagos o devoluciones vivos", detalle "Espera a que terminen o resuélvelos antes de asignarle el rol de profesional." Datos conservados.
 - "Crear mi ficha" (decisión 8, auditoría del frontend A): botón Secundario en las acciones de la cabecera de la lista, junto a Especialidades y Asignar rol, solo para el Administrador que aún no tiene ficha; hace `POST /profesionales {id_usuario}` con su id y abre su ficha.
 
@@ -100,6 +100,8 @@ Acciones de fila con objeto en el nombre accesible: "Editar ficha de {nombre}", 
 - Región `role="status"` estable de cada isla para la carga ("5 profesionales") y los resultados; al fallar un envío, el foco va al aviso.
 
 ## Pendientes
+
+- **Ampliada por RF-15 B:** el encabezado de la lista suma, primero, "Asesorías agendadas" ([agenda](RF-15-agenda.md)); el 409 `profesional_con_asesorias` enlaza a sus asesorías.
 
 - **leader / dev-backend:** `ProfesionalResumen` no trae `activo` ni `publicado`; para la lista proponemos sumarlos cuando quien pide es el Administrador.
 - **leader / dev-backend:** `POST /cambios-sensibles/previsualizar` no admite precios de asesoría: proponemos `recurso: "profesional"` con `id_recurso`, `cambios: {precios}`, ejemplos de 30 min y 1 h con su IGV y `operaciones_vigentes` = sus asesorías vivas; también como filtro del registro de cambios.

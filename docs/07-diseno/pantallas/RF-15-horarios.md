@@ -66,7 +66,7 @@ Retirar no pide confirmación (decisión de [franjas](RF-03-franjas.md#composici
 | H2 | 422 | Error bajo el campo si es de una fila; si no, aviso Error con el `mensaje` del servidor. Filas conservadas |
 | H2 | Éxito | Recarga H1; aviso Éxito "Horarios publicados. Ya se ven en tu perfil." (sin publicar: "Horarios publicados.") |
 | H1 | Éxito al retirar | Aviso Éxito "Bloque retirado." y H1 recargado |
-| H1 | 409 `horario_con_asesorias` | Aviso Error "Este bloque tiene asesorías agendadas. Pide al Administrador que las cancele o reprograme antes de retirarlo." (Administrador: "…Cancélalas o reprográmalas antes de retirarlo.") + `<ul>` de las asesorías (folio y fecha; el enlace a su detalle entra con la etapa B) |
+| H1 | 409 `horario_con_asesorias` | Aviso Error "Este bloque tiene asesorías agendadas. Pide al Administrador que las cancele o reprograme antes de retirarlo." (Administrador: "…Cancélalas o reprográmalas antes de retirarlo.") + `<ul>` de las asesorías (folio y fecha), cada una enlazada a su [detalle](RF-15-gestion.md) (etapa B). Administrador, etapa B: "Este bloque tiene asesorías agendadas. Cancélalas por el estudio antes de retirarlo: cada cliente elegirá reprogramar o la devolución." |
 | Carga | — | Paneles con "Cargando…", `aria-busy`; enviando: botón en Carga ("Publicando…", "Retirando…") y los demás envíos deshabilitados |
 | Todas | 401 | Aviso "Tu sesión no es válida. Inicia sesión para continuar." + "Ir al acceso interno" (`?volver=` con la vista) |
 | Todas | 403 | En lugar de la vista: `[403] SIN PERMISO` "Esta sección es para los profesionales de asesoría." (ruta del Administrador: "…solo para el Administrador.") + "Volver al inicio" |
@@ -93,6 +93,8 @@ Ayuda de H2: "Bloques en horas en punto o y media, de al menos 30 minutos y sin 
 - Región `role="status"` estable: "4 bloques publicados esta semana" y cada resultado; al fallar un envío, el foco va al aviso.
 
 ## Pendientes
+
+- **Ampliada por RF-15 B:** el 409 `horario_con_asesorias` enlaza cada asesoría a su detalle y cambia el texto del Administrador (arriba).
 
 - **leader / dev-backend:** `DisponibilidadProfesional.horarios[]` no trae `id` y sin él no hay `DELETE`; proponemos añadirlo (como `franjas[].id`). Y que el propio profesional y el Administrador reciban la disponibilidad aunque el perfil no esté publicado (hoy da 404 al público).
 - **leader / dev-backend:** forma de `detalles.asesorias` del 409: proponemos `[{id, folio, inicio}]`.

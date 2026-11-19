@@ -98,3 +98,5 @@ Respuestas de leader (2026-11-17): 1, resuelta con las precisiones 3 de RF-18; 2
 2. ¿El motivo es obligatorio también en la devolución parcial? El copy lo deja opcional (solo el rechazo lo exige).
 3. Largo de la nota de realizada y del motivo de decisión: el contrato no lo fija; se asume 1 a 500.
 4. El contador de la navegación solo cuenta pagos por validar; ¿deben sumar las devoluciones pendientes? Propuesta: no; basta el aviso de la lista y el correo.
+
+- **Ampliada por RF-15 B:** una devolución del estudio sobre una asesoría enlaza a `/app/asesorias/detalle?id=` (falta saber el tipo: [pregunta de gestión](RF-15-gestion.md#preguntas)).

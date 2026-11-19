@@ -31,18 +31,16 @@ Pre-reservada ──(cuota al_reservar validada)──► Confirmada ──► E
 
 ## Asesoría
 
-```
-Pendiente de pago ──(cuota validada)──► Confirmada ──► Realizada
-        │                                   │
-        └──────────► Cancelada ◄────────────┘
-```
+Es una fila de reserva con `tipo = asesoria` y sigue la política de la sala ([RF-15](../03-requerimientos/RF-15.md) CA-08 a CA-12), con estos estados:
 
 | Desde | Hacia | Condición |
 |---|---|---|
-| Pendiente de pago | Confirmada | El Administrador valida su cuota única ([RN-14](reglas-negocio.md)) |
-| Pendiente de pago | Cancelada | El Administrador la cancela; en v1 no caduca sola (D-06) |
-| Confirmada | Realizada | El profesional la marca como dada |
-| Confirmada | Cancelada | Cancelación; reembolso según D-11 |
+| Pre-reservada (pendiente de pago) | Confirmada | El Administrador valida su cuota única ([RN-14](reglas-negocio.md)) |
+| Pre-reservada | Cancelada | Vence sin pago registrado, como la sala; o la cancela el cliente o el estudio |
+| Pre-reservada | No asistió | Llega a su fin con el pago en validación, o se marca tras la tolerancia |
+| Confirmada | Realizada | El profesional o el Administrador la marca desde el inicio; no avanza sola ("Por cerrar") |
+| Confirmada | No asistió | Marca del profesional o del Administrador desde `inicio + minutos_tolerancia_inasistencia` |
+| Confirmada | Cancelada | Cancelación del cliente (política de [RF-18](../03-requerimientos/RF-18.md), sin devolución en dinero) o del estudio (mismo profesional o devolución total) |
 
 ## Comprobante de pago
 
