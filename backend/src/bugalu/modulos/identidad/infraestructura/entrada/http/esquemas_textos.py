@@ -57,12 +57,10 @@ class NuevoTexto(BaseModel):
 
 
 class NuevaVistaPrevia(BaseModel):
-    """RF-17 CA-18: hasta 200 000 caracteres (el limite de un archivo .md de 200 KB)."""
+    """Mismo limite que publicar: lo que se previsualiza se puede publicar."""
 
     model_config = ConfigDict(extra="forbid")
-    contenido: Annotated[
-        str, StringConstraints(max_length=200_000), AfterValidator(_sin_nul_ni_blanco)
-    ]
+    contenido: Markdown
 
 
 class VistaPrevia(BaseModel):

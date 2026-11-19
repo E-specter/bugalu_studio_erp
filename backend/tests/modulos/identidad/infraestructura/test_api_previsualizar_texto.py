@@ -85,10 +85,10 @@ async def test_html_crudo_y_enlaces_javascript_quedan_neutralizados(
     assert 'href="https://bugalu.pe"' in html
 
 
-async def test_el_limite_de_200000_caracteres_es_inclusivo(
+async def test_el_limite_de_300000_caracteres_es_inclusivo(
     cliente: AsyncClient, administrador: dict[str, str]
 ) -> None:
-    r = await cliente.post(RUTA, headers=administrador, json={"contenido": "a" * 200_000})
+    r = await cliente.post(RUTA, headers=administrador, json={"contenido": "a" * 300_000})
     assert r.status_code == 200, r.text
 
 
@@ -97,7 +97,7 @@ async def test_el_limite_de_200000_caracteres_es_inclusivo(
     [
         {"contenido": ""},
         {"contenido": "   \n "},
-        {"contenido": "a" * 200_001},
+        {"contenido": "a" * 300_001},
         {"contenido": "con\x00nul"},
         {"contenido": 5},
         {"contenido": None},
