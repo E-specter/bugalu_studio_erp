@@ -13,8 +13,12 @@ import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from bugalu.compartido.configuracion import obtener_configuracion
+from bugalu.compartido.base_datos import crear_pool
+from bugalu.compartido.configuracion import Configuracion, obtener_configuracion
 from bugalu.main import crear_app
+from bugalu.modulos.notificaciones.aplicacion.enviar_pendientes.caso_de_uso import enviar_pendientes
+from bugalu.modulos.notificaciones.dominio.correo import Correo
+from bugalu.modulos.notificaciones.infraestructura.salida.bandeja_postgres import BandejaPostgres
 from tests.conftest import UsuarioDePrueba
 from tests.modulos.asesorias.infraestructura.conftest import Ejecutar, con
 from tests.modulos.asesorias.infraestructura.test_api_asesorias import (
@@ -532,3 +536,62 @@ async def test_503_con_la_base_caida_nunca_500(
                 metodo,
                 ruta,
             )
+
+
+# --- correos reales al cliente: salen con los datos de la asesoria ---
+
+
+async def correos_del_cliente(configuracion: Configuracion, correo: str) -> list[Correo]:
+    class Recolector:
+        def __init__(self) -> None:
+            self.correos: list[Correo] = []
+
+        async def enviar(self, c: Correo) -> None:
+            self.correos.append(c)
+
+    recolector = Recolector()
+    async with crear_pool(configuracion.url_base_datos) as pool:
+        await enviar_pendientes(BandejaPostgres(pool), recolector, limite=500)
+    return [c for c in recolector.correos if c.destinatario == correo]
+
+
+async def test_los_correos_de_crear_y_de_aprobar_el_pago_traen_los_datos_de_la_asesoria(
+    cliente: AsyncClient,
+    cliente_a: UsuarioDePrueba,
+    listo: UsuarioDePrueba,
+    administrador: UsuarioDePrueba,
+    configuracion: Configuracion,
+    sql: Ejecutar,
+) -> None:
+    sql("update public.usuario set nombre = 'Pablo Ríos' where id = %s", str(listo.id))
+    a = (await agendar(cliente, cliente_a, listo, hora(10, 11))).json()
+    (creada,) = await correos_del_cliente(configuracion, cliente_a.correo)
+    assert creada.asunto.startswith(f"Asesoría {a['folio']}: paga antes del")
+    assert (
+        "Modalidad: Virtual (Google Meet)" in creada.cuerpo
+        and "Profesional: Pablo Ríos" in creada.cuerpo
+    )
+    cuota = a["cuotas"][0]["id"]
+    assert (
+        f"Registrar pago: http://127.0.0.1:4321/app/asesorias/pagar?id={a['id']}&cuota={cuota}"
+        in (creada.cuerpo)
+    )
+    r = await cliente.post(
+        "/api/v1/pagos",
+        data={
+            "id_cuota": cuota,
+            "metodo": "yape",
+            "monto": "50.00",
+            "numero_operacion": f"PRUEBA-{uuid4().hex[:10]}",
+        },
+        files={"captura": ("c.png", PNG, "image/png")},
+        headers=con(cliente_a),
+    )
+    assert r.status_code == 201, r.text
+    await cliente.post(f"/api/v1/pagos/{r.json()['id']}/aprobar", headers=con(administrador))
+    (aprobada,) = await correos_del_cliente(configuracion, cliente_a.correo)
+    assert aprobada.asunto == f"Asesoría {a['folio']} confirmada"
+    assert "Modalidad: Virtual" in aprobada.cuerpo and "asesoría con Pablo Ríos" in aprobada.cuerpo
+    assert f"Ver mi asesoría: http://127.0.0.1:4321/app/asesorias/detalle?id={a['id']}" in (
+        aprobada.cuerpo
+    )

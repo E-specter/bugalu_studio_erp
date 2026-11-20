@@ -79,3 +79,11 @@ def test_reprogramacion_al_profesional_lleva_request_con_el_horario_nuevo() -> N
     assert c.evento is not None and c.evento.metodo == "REQUEST"
     assert f"/app/asesorias/detalle?id={ID}" in c.cuerpo
     assert "Adjuntamos el evento con el nuevo horario" in c.cuerpo
+
+
+def test_pago_aprobado_de_una_asesoria_lleva_request_y_remite_a_su_detalle() -> None:
+    datos = {**BASE, "monto": 118, "hito": "al_reservar", "reserva_confirmada": True}
+    c = armar("pago_aprobado", datos, reserva("Por confirmar"))
+    assert c.evento is not None and c.evento.metodo == "REQUEST"
+    assert c.asunto == "Asesoría A-2027-00001 confirmada"
+    assert f"Ver mi asesoría: {URL}/app/asesorias/detalle?id={ID}" in c.cuerpo

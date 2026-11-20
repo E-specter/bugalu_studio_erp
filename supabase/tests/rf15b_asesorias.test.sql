@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(61);
+select plan(64);
 
 -- RF-15 etapa B (backend B1): la asesoria es una fila de `reserva` con tipo 'asesoria' mas la fila 1:1 de `asesoria`.
 -- CA-06 a CA-09, CA-16.
@@ -189,6 +189,11 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 select public.encolar_aviso_reserva((select id from t where k = 'a1'));
 reset role;
 select is((select datos ->> 'servicio' from public.notificacion where tipo = 'reserva_creada' and datos ->> 'id_reserva' = (select id::text from t where k = 'a1')), 'Asesoría artística', 'el aviso de creacion nombra la asesoria');
+
+-- El envio completa los avisos de la asesoria con sus datos (profesional, modalidad, horario, cuota); la sala no.
+select is((select datos ->> 'profesional' from public.datos_asesoria_para_correo(array(select id from public.notificacion where tipo = 'reserva_creada' and datos ->> 'id_reserva' = (select id::text from t where k = 'a1')))), 'Pablo Uno', 'datos para el correo: el profesional');
+select is((select (datos ->> 'inicio') is not null and (datos ->> 'modalidad') is not null from public.datos_asesoria_para_correo(array(select id from public.notificacion where tipo = 'reserva_creada' and datos ->> 'id_reserva' = (select id::text from t where k = 'a1')))), true, 'datos para el correo: horario y modalidad');
+select is((select count(*)::int from public.datos_asesoria_para_correo(array[gen_random_uuid()])), 0, 'datos para el correo: id desconocido sin filas');
 
 select * from finish();
 rollback;

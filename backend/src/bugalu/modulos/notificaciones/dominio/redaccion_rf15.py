@@ -122,6 +122,49 @@ def _caducada(datos: dict[str, Any]) -> tuple[str, str]:
     )
 
 
+def _aprobada(datos: dict[str, Any]) -> tuple[str, str]:
+    if not datos.get("reserva_confirmada"):  # pago parcial: aún no hay cita confirmada
+        return (
+            f"Pago aprobado de la asesoría {datos['folio']}",
+            f"Aprobamos tu pago de {_soles(datos['monto'])} de la asesoría {datos['folio']}.\n",
+        )
+    virtual = datos.get("modalidad") == "virtual"
+    aviso = ""
+    if not datos.get("enlace" if virtual else "lugar"):
+        aviso = (
+            "\nTe enviaremos el enlace de Google Meet antes de la cita.\n"
+            if virtual
+            else "\nTe confirmaremos el lugar antes de la cita.\n"
+        )
+    return (
+        f"Asesoría {datos['folio']} confirmada",
+        f"Validamos tu pago. Tu asesoría con {datos.get('profesional') or 'tu profesional'} "
+        "está confirmada.\n\n"
+        f"Folio: {datos['folio']}\n"
+        f"Fecha y hora: {_horario(datos)} (hora de Lima)\n"
+        f"Modalidad: {_modalidad(datos)}\n" + _encuentro(datos) + aviso,
+    )
+
+
+def _pago_rechazado(datos: dict[str, Any]) -> tuple[str, str]:
+    return (
+        f"Pago rechazado de la asesoría {datos['folio']}",
+        f"No pudimos aprobar tu pago de {_soles(datos['monto'])} de la asesoría "
+        f"{datos['folio']}.\n\n"
+        f"Motivo: {datos['motivo']}\n\n"
+        "Puedes registrar otro pago desde el detalle de tu asesoría.\n",
+    )
+
+
+def _inasistencia(datos: dict[str, Any]) -> tuple[str, str]:
+    return (
+        f"Asesoría {datos['folio']}: no asististe",
+        f"Registramos que no asististe a tu asesoría {datos['folio']} "
+        f"({_horario(datos)}, hora de Lima).\n\n"
+        f"Retenemos lo pagado ({_soles(datos['retenido'])}); no hay crédito ni cobro adicional.\n",
+    )
+
+
 def _dia_corto(iso: str) -> str:
     f = _lima(iso)
     return f"{f.day} {_MESES_CORTOS[f.month - 1]} a las {f:%H:%M}"
@@ -191,6 +234,9 @@ ASESORIA_DE_RESERVA: dict[str, Callable[[dict[str, Any]], tuple[str, str]]] = {
     "reserva_cancelada_estudio": _cancelada_estudio,
     "reserva_cancelada_con_pagos": _cancelada_con_pagos,
     "reserva_reprogramada": _reprogramada,
+    "pago_aprobado": _aprobada,
+    "pago_rechazado": _pago_rechazado,
+    "inasistencia_marcada": _inasistencia,
 }
 
 REDACTORES_RF15: dict[str, Callable[[dict[str, Any]], tuple[str, str]]] = {

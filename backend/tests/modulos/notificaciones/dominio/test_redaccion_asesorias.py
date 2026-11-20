@@ -109,3 +109,44 @@ def test_la_constancia_va_por_correo_sin_adjunto_ni_notas() -> None:
         "asesoria_realizada" not in TIPOS_CON_EVENTO
         and "recordatorio_asesoria" not in TIPOS_CON_EVENTO
     )
+
+
+CREADA = {
+    **BASE, "vence_pago": "2027-03-02T15:00:00+00:00", "servicio": "Asesoría artística",
+    "total": 118,
+}  # fmt: skip
+
+
+def test_creacion_de_una_asesoria_pide_pagar_con_los_datos_para_pagar() -> None:
+    asunto, cuerpo = redactar("reserva_creada", CREADA, (("yape", "999 888 777"),))
+    assert asunto == "Asesoría A-2027-00001: paga antes del martes 2 de marzo de 2027, 10:00"
+    assert "Agendaste una asesoría con Pablo" in cuerpo and "Duración: 30 min" in cuerpo
+    assert "Modalidad: Virtual" in cuerpo and "Total: S/ 118,00 (incluye IGV)" in cuerpo
+    assert "- Yape: 999 888 777" in cuerpo and "reserva" not in (asunto + cuerpo).lower()
+    asunto, _ = redactar("reserva_creada", {**CREADA, "folio": "R-2027-00001"})
+    assert asunto == "Reserva R-2027-00001 registrada"
+
+
+def test_pago_aprobado_de_una_asesoria_la_da_por_confirmada_con_lugar_o_enlace() -> None:
+    datos = {**BASE, "monto": 118, "hito": "al_reservar", "reserva_confirmada": True}
+    asunto, cuerpo = redactar("pago_aprobado", datos)
+    assert asunto == "Asesoría A-2027-00001 confirmada"
+    assert "Tu asesoría con Pablo está confirmada." in cuerpo
+    assert "Enlace: https://meet.google.com/abc" in cuerpo and "reserva" not in cuerpo.lower()
+    _, cuerpo = redactar("pago_aprobado", {**datos, "enlace": None})
+    assert "Te enviaremos el enlace de Google Meet antes de la cita." in cuerpo
+    _, cuerpo = redactar("pago_aprobado", {**datos, "modalidad": "presencial"})
+    assert "Lugar: Por confirmar" in cuerpo and "Te confirmaremos el lugar" in cuerpo
+    asunto, _ = redactar("pago_aprobado", {**datos, "folio": "R-2027-00001", "servicio": "x"})
+    assert asunto == "Pago aprobado de la reserva R-2027-00001"
+
+
+def test_pago_rechazado_e_inasistencia_de_una_asesoria_hablan_de_asesoria() -> None:
+    asunto, cuerpo = redactar(
+        "pago_rechazado", {**BASE, "monto": 118, "hito": "al_reservar", "motivo": "Borroso"}
+    )
+    assert "asesoría" in asunto and "Motivo: Borroso" in cuerpo
+    assert "reserva" not in (asunto + cuerpo).lower()
+    asunto, cuerpo = redactar("inasistencia_marcada", {**BASE, "retenido": 50})
+    assert asunto == "Asesoría A-2027-00001: no asististe"
+    assert "reserva" not in (asunto + cuerpo).lower() and "S/ 50,00" in cuerpo

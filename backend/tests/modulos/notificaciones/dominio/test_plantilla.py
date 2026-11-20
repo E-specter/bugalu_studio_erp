@@ -206,6 +206,9 @@ def test_destino_y_etiqueta_del_boton_por_tipo(
         ("reserva_caducada", {"folio": "A-2027-00001", "id_reserva": "x1"}, "Ver mi asesoría", "ASESORÍA"),
         ("recordatorio_asesoria", {"para": "cliente", "id_reserva": "x1"}, "Ver mi asesoría", "ASESORÍA"),
         ("recordatorio_asesoria", {"para": "profesional", "id_reserva": "x1"}, "Ver la asesoría", "ASESORÍA"),
+        ("pago_aprobado", {"folio": "A-2027-00001", "id_reserva": "x1"}, "Ver mi asesoría", "ASESORÍA"),
+        ("pago_rechazado", {"folio": "A-2027-00001", "id_reserva": "x1"}, "Ver mi asesoría", "ASESORÍA"),
+        ("inasistencia_marcada", {"folio": "A-2027-00001", "id_reserva": "x1"}, "Ver mi asesoría", "ASESORÍA"),
     ],
 )  # fmt: skip
 def test_botones_de_asesoria_a_su_detalle(
@@ -214,3 +217,13 @@ def test_botones_de_asesoria_a_su_detalle(
     texto, _ = componer(tipo, datos, "A", "x", URL, None)
     assert f"{boton}: {URL}/app/asesorias/detalle?id=x1" in texto and f"// {etiqueta}" in texto
     assert "/reservar/" not in texto
+
+
+def test_el_aviso_de_creacion_de_una_asesoria_lleva_a_pagar_la_cuota() -> None:
+    datos = {"folio": "A-2027-00001", "id_reserva": "x1", "id_cuota": "c1"}
+    texto, html = componer("reserva_creada", datos, "A", "x", URL, None)
+    destino = f"{URL}/app/asesorias/pagar?id=x1&cuota=c1"
+    assert f"Registrar pago: {destino}" in texto and destino.replace("&", "&amp;") in html
+    assert "// ASESORÍA" in texto
+    sala, _ = componer("reserva_creada", {**datos, "folio": "R-2027-00001"}, "A", "x", URL, None)
+    assert f"Ver mi reserva: {URL}/app/reservas/detalle?id=x1" in sala

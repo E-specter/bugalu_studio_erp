@@ -43,6 +43,28 @@ def _reserva_creada(datos: dict[str, Any], instrucciones: Instrucciones = ()) ->
     )
 
 
+def _asesoria_creada(datos: dict[str, Any], instrucciones: Instrucciones = ()) -> tuple[str, str]:
+    limite = _lima(datos["vence_pago"])
+    vence = f"{_fecha(limite)}, {limite:%H:%M}"
+    minutos = int((_lima(datos["fin"]) - _lima(datos["inicio"])).total_seconds() // 60)
+    modalidad = "Virtual (Google Meet)" if datos.get("modalidad") == "virtual" else "Presencial"
+    total = formatear_soles(Decimal(str(datos["total"])))
+    return (
+        f"Asesoría {datos['folio']}: paga antes del {vence}",
+        f"Agendaste una asesoría con {datos.get('profesional') or 'tu profesional'}. "
+        "Queda apartada mientras pagas.\n\n"
+        f"Folio: {datos['folio']}\n"
+        f"Profesional: {datos.get('profesional') or 'sin nombre'}\n"
+        f"Fecha y hora: {_horario(datos)} (hora de Lima)\n"
+        f"Duración: {minutos} min\n"
+        f"Modalidad: {modalidad}\n"
+        f"Total: {total} (incluye IGV)\n\n"
+        f"Paga antes del {vence} (hora de Lima) y registra tu comprobante desde tu asesoría. "
+        "Si vence sin pago, se cancela y el horario se libera.\n"
+        + _datos_para_pagar(instrucciones),
+    )
+
+
 def _reserva_caducada(datos: dict[str, Any]) -> tuple[str, str]:
     return (
         f"Reserva {datos['folio']} caducada",
@@ -166,11 +188,14 @@ def redactar(
     tipo: str, datos: dict[str, Any], instrucciones: Instrucciones = ()
 ) -> tuple[str, str]:
     """Devuelve (asunto, cuerpo) del tipo de notificacion."""
+    asesoria = str(datos.get("folio", "")).startswith("A-")
+    if tipo == "reserva_creada" and asesoria:
+        return _asesoria_creada(datos, instrucciones)
     if tipo == "reserva_creada":
         return _reserva_creada(datos, instrucciones)
     if tipo == "reserva_finalizada_saldo":
         return _reserva_finalizada_saldo(datos, instrucciones)
-    if tipo in ASESORIA_DE_RESERVA and str(datos.get("folio", "")).startswith("A-"):
+    if tipo in ASESORIA_DE_RESERVA and asesoria:
         return ASESORIA_DE_RESERVA[tipo](datos)
     if tipo in REDACTORES_RF15:
         return REDACTORES_RF15[tipo](datos)

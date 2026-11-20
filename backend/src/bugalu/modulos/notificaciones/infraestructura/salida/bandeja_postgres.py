@@ -1,6 +1,8 @@
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from dataclasses import replace
+from typing import Any
 from uuid import UUID
 
 import psycopg
@@ -12,6 +14,13 @@ from bugalu.modulos.notificaciones.dominio.puertos import DatosReserva, Pendient
 
 registro = logging.getLogger(__name__)
 _CON_DATOS_PARA_PAGAR = ("reserva_creada", "reserva_finalizada_saldo")
+# Avisos de reserva que, si la reserva es una asesoria, se completan con sus datos al leerlos.
+_CON_DATOS_DE_ASESORIA = (
+    "reserva_creada",
+    "pago_aprobado",
+    "pago_rechazado",
+    "inasistencia_marcada",
+)
 
 
 class LotePostgres:
@@ -57,6 +66,18 @@ class BandejaPostgres:
                 (max_intentos, limite),
             )
             pendientes = [Pendiente(*fila) for fila in await cursor.fetchall()]
+            por_completar = [p.id for p in pendientes if p.tipo in _CON_DATOS_DE_ASESORIA]
+            if por_completar:
+                cursor = await conexion.execute(
+                    "select id_notificacion, datos from public.datos_asesoria_para_correo(%s)",
+                    (por_completar,),
+                )
+                de_asesoria: dict[UUID, dict[str, Any]] = dict(await cursor.fetchall())
+                # Los datos del aviso mandan sobre los vigentes de la asesoria.
+                pendientes = [
+                    replace(p, datos={**de_asesoria[p.id], **p.datos}) if p.id in de_asesoria else p
+                    for p in pendientes
+                ]
             instrucciones: list[tuple[str, str]] = []
             if any(p.tipo in _CON_DATOS_PARA_PAGAR for p in pendientes):
                 cursor = await conexion.execute(
