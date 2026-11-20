@@ -38,7 +38,7 @@ Es una fila de reserva con `tipo = asesoria` y sigue la política de la sala ([R
 | Pre-reservada (pendiente de pago) | Confirmada | El Administrador valida su cuota única ([RN-14](reglas-negocio.md)) |
 | Pre-reservada | Cancelada | Vence sin pago registrado, como la sala; o la cancela el cliente o el estudio |
 | Pre-reservada | No asistió | Llega a su fin con el pago en validación, o se marca tras la tolerancia |
-| Confirmada | Realizada | El profesional o el Administrador la marca desde el inicio; no avanza sola ("Por cerrar") |
+| Confirmada | Realizada | El profesional o el Administrador la marca desde el inicio y emite la constancia de asistencia (CA-13); no avanza sola ("Por cerrar") |
 | Confirmada | No asistió | Marca del profesional o del Administrador desde `inicio + minutos_tolerancia_inasistencia` |
 | Confirmada | Cancelada | Cancelación del cliente (política de [RF-18](../03-requerimientos/RF-18.md), sin devolución en dinero) o del estudio (mismo profesional o devolución total) |
 

@@ -61,5 +61,6 @@ frontend/
 | Mis reclamos del cliente y bandeja de reclamaciones del Administrador (`<bugalu-reclamos>`, `islas/Reclamos.astro`) | [RF-16](../03-requerimientos/RF-16.md) |
 | Agendar asesoría por pasos: profesional, duración, horario, cuenta, confirmar y listo (`<bugalu-agendar>`, `islas/Agendar.astro`, páginas `/asesorias/agendar/`, `horario/`, `cuenta/`, `confirmar/` y `listo/`) | [RF-15](../03-requerimientos/RF-15.md) |
 | Mis asesorías, detalle, pago, reprogramar y agenda del profesional o del Administrador (`<bugalu-agenda>`, `islas/Agenda.astro`, páginas `/app/asesorias/{mias,detalle,pagar,reprogramar,agenda}`) | [RF-15](../03-requerimientos/RF-15.md) |
+| Constancia de asistencia de una asesoría realizada, lista para imprimir o guardar en PDF (`<bugalu-constancia>`, `islas/Constancia.astro`, página `/app/asesorias/constancia?id=`) | [RF-15](../03-requerimientos/RF-15.md) |
 
 El contador de PAGOS de la navegación no es isla: lo pinta el script de `LayoutApp` que ya carga el perfil ([navegación lateral](../07-diseno/componentes/navegacion-lateral.md#variantes)).
