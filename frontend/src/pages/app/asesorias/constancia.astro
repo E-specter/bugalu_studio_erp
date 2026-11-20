@@ -1,0 +1,16 @@
+---
+import LayoutApp from '../../../layouts/LayoutApp.astro';
+import EncabezadoPantalla from '../../../componentes/EncabezadoPantalla.astro';
+import Constancia from '../../../islas/Constancia.astro';
+---
+
+<!-- La isla pone el folio en el título y en la ruta, y apunta "Asesorías" y "Volver" según quién mira. -->
+<LayoutApp titulo="Constancia">
+  <EncabezadoPantalla
+    titulo="Constancia"
+    indice="[P5] ASESORÍAS / CONSTANCIA"
+    ruta={[{ etiqueta: 'Inicio', href: '/app/' }, { etiqueta: 'Asesorías', href: '/app/asesorias/mias' }, { etiqueta: 'Asesoría', href: '/app/asesorias/mias' }, { etiqueta: 'Constancia' }]}
+    descripcion="Constancia de asistencia a la asesoría."
+  />
+  <Constancia />
+</LayoutApp>

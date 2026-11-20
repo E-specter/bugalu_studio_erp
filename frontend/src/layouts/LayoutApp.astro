@@ -78,7 +78,7 @@ const actual = destinos.map((d) => d.href).filter((href) => href === Astro.url.p
   let rol: string | null = null;
   let avisos = 0;
   // Dos destinos se llaman ASESORÍAS (cliente y profesional; el Administrador entra por /app/asesorias/): el actual se calcula solo entre los visibles para el rol. El detalle, el pago y reprogramar son subrutas del destino del cliente o del profesional.
-  const SUBRUTAS: Record<string, string[]> = { '/app/asesorias/mias': ['/app/asesorias/detalle', '/app/asesorias/pagar', '/app/asesorias/reprogramar'], '/app/asesorias/agenda': ['/app/asesorias/detalle'] };
+  const SUBRUTAS: Record<string, string[]> = { '/app/asesorias/mias': ['/app/asesorias/detalle', '/app/asesorias/pagar', '/app/asesorias/reprogramar', '/app/asesorias/constancia'], '/app/asesorias/agenda': ['/app/asesorias/detalle', '/app/asesorias/constancia'] };
   function marcarActual() {
     const barra = (x: string) => x.replace(/\/?$/, '/');
     const ruta = barra(location.pathname);

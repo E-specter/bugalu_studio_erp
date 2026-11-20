@@ -261,7 +261,7 @@ const principal = { codigo: 'E3', titulo: 'Asesorías' };
         const [texto, variante] = ESTADOS_ASESORIA[a.estado] ?? [a.estado, 'neutra'];
         fila.querySelector('[data-estado-fila]').append(this.sello(variante, texto), ...(a.por_cerrar ? [this.sello('aviso', 'Por cerrar')] : []));
         const enlace = fila.querySelector('[data-accion]');
-        const cerrar = false; // shortcut: "Cerrar asesoría" llega con la etapa C; mientras, solo se ve la asesoría.
+        const cerrar = a.por_cerrar === true;
         enlace.firstChild.textContent = cerrar ? 'Cerrar asesoría' : 'Ver asesoría';
         enlace.href = `/app/asesorias/detalle?id=${encodeURIComponent(a.id)}${cerrar ? '&accion=cerrar' : ''}`;
         fila.querySelector('[data-objeto]').textContent = ` ${a.folio}`;

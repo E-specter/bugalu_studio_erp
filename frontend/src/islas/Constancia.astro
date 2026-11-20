@@ -1,0 +1,200 @@
+---
+import Panel from '../componentes/Panel.astro';
+import Aviso from '../componentes/Aviso.astro';
+import Boton from '../componentes/Boton.astro';
+import EstadosIsla from '../componentes/internos/EstadosIsla.astro';
+import EstilosGestion from '../componentes/internos/EstilosGestion.astro';
+---
+
+<EstilosGestion />
+
+<!-- Constancia de asistencia (RF-15 CA-13, spec RF-15-cierre): inmutable, sin nada editable; se imprime solo el panel. -->
+<bugalu-constancia class="constancia" data-gestion vista="constancia">
+  <div data-avisos></div>
+  <p class="visualmente-oculto" role="status" data-anuncio></p>
+  <EstadosIsla principal={{ titulo: 'Constancia de asistencia' }} noEncontrada={{ etiqueta: 'Volver a mis asesorías', href: '/app/asesorias/mias' }} />
+  <template data-estado="datos">
+    <Panel variante="destacado" titulo="Constancia de asistencia">
+      <div class="constancia-cuerpo">
+        <p class="constancia-folio" data-folio></p>
+        <p data-texto></p>
+        <dl class="gestion-datos">
+          <div><dt>Cliente</dt><dd data-dato="cliente"></dd></div>
+          <div><dt>Profesional</dt><dd data-dato="profesional"></dd></div>
+          <div><dt>Especialidades</dt><dd data-dato="especialidades"></dd></div>
+          <div><dt>Fecha</dt><dd data-dato="fecha"></dd></div>
+          <div><dt>Horario</dt><dd data-dato="horario"></dd></div>
+          <div><dt>Duración</dt><dd data-dato="duracion"></dd></div>
+          <div><dt>Modalidad</dt><dd data-dato="modalidad"></dd></div>
+          <div><dt>Emitida el</dt><dd data-dato="emitida"></dd></div>
+        </dl>
+        <p class="constancia-pie" data-pie></p>
+      </div>
+    </Panel>
+    <div class="constancia-acciones" data-no-imprimir>
+      <Boton data-imprimir>Imprimir o guardar en PDF</Boton>
+      <Boton variante="secundario" href="#" data-volver>Volver a la asesoría</Boton>
+    </div>
+  </template>
+  <template data-estado="no-disponible">
+    <Panel titulo="Constancia de asistencia">
+      <Aviso variante="informacion" titulo=" " texto=" " accion={{ etiqueta: 'Volver a la asesoría', href: '#' }} />
+    </Panel>
+  </template>
+  <div data-salida><Panel titulo="Constancia de asistencia" cargando /></div>
+</bugalu-constancia>
+
+<script>
+  // @ts-nocheck
+  import { IslaGestion } from '../servicios/isla-gestion.js';
+  import { obtenerConstancia, MODALIDADES, duracionTexto } from '../servicios/asesorias.js';
+  import { obtenerPerfil } from '../servicios/api.js';
+  import { fechaDe, horaDe, diaMesAnio } from '../servicios/formatos.js';
+  import { llenarAviso } from '../servicios/formulario.js';
+
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  // Artístico y, entre paréntesis, el nombre; sin artístico, el nombre.
+  const nombres = (p) => (p.nombre_artistico ? `${p.nombre_artistico} (${p.nombre})` : p.nombre);
+  const fechaHora = (iso) => `${diaMesAnio(fechaDe(iso))}, ${horaDe(iso)}`;
+
+  class BugaluConstancia extends IslaGestion {
+    noEncontrada = ['No encontramos esta constancia.', ''];
+
+    iniciar() {
+      this.addEventListener('click', (e) => e.target.closest('[data-imprimir]') && window.print());
+      // El pie de la hoja lleva el momento de imprimir (solo se ve al imprimir).
+      addEventListener('beforeprint', () => {
+        const pie = this.querySelector('[data-pie]');
+        if (pie) pie.textContent = `Constancia impresa desde la plataforma de Bugalú Studio el ${fechaHora(new Date().toISOString())}`;
+      });
+    }
+
+    mostrar(estado) {
+      super.mostrar(estado);
+      const aviso = this.querySelector('[data-salida] .aviso');
+      if (estado === 'no-autenticado') {
+        llenarAviso(aviso, 'Tu sesión no es válida', 'Inicia sesión para ver tu constancia.');
+        const enlace = aviso.querySelector('.aviso-accion');
+        enlace.textContent = 'Ir al acceso';
+        enlace.href = `/acceso?${new URLSearchParams({ volver: location.pathname + location.search })}`;
+      } else if (estado === 'sin-permiso') {
+        aviso.querySelector('.aviso-titulo').textContent = 'Esta constancia no es tuya.';
+        aviso.querySelector('.aviso-texto')?.remove();
+      }
+    }
+
+    // Quién mira decide a dónde vuelve: el cliente a Mis asesorías; el profesional y el Administrador, a la agenda.
+    rutas(id, yo, folio) {
+      const staff = Boolean(yo) && yo.rol !== 'cliente';
+      const lista = staff ? '/app/asesorias/agenda' : '/app/asesorias/mias';
+      const detalle = `/app/asesorias/detalle?id=${encodeURIComponent(id)}`;
+      const enlaces = document.querySelectorAll('.encabezado-ruta a');
+      if (enlaces[1]) enlaces[1].href = lista;
+      if (enlaces[2]) Object.assign(enlaces[2], { href: detalle, textContent: folio ?? 'Asesoría' });
+      return { lista, detalle, staff };
+    }
+
+    async constancia() {
+      const id = new URLSearchParams(location.search).get('id') ?? '';
+      if (!UUID.test(id)) return this.mostrar('no-encontrada');
+      const perfil = obtenerPerfil().catch(() => null);
+      let c;
+      try {
+        c = await obtenerConstancia(id);
+      } catch (error) {
+        const yo = error.estado === 404 || error.estado === 409 ? await perfil : null;
+        if (error.estado === 404) {
+          this.mostrar('no-encontrada');
+          const r = this.rutas(id, yo);
+          if (r.staff) Object.assign(this.querySelector('[data-salida] .aviso-accion'), { textContent: 'Volver a asesorías', href: r.lista });
+          return null;
+        }
+        if (error.estado === 409 && error.codigo === 'constancia_no_disponible') {
+          this.mostrar('no-disponible');
+          const r = this.rutas(id, yo);
+          const aviso = this.querySelector('[data-salida] .aviso');
+          llenarAviso(aviso, `La constancia estará lista cuando ${yo?.rol === 'profesional' ? 'tú marques' : 'el profesional marque'} la asesoría como realizada.`);
+          Object.assign(aviso.querySelector('.aviso-accion'), { href: r.detalle });
+          return 'La constancia aún no está disponible.';
+        }
+        throw error;
+      }
+      const r = this.rutas(id, await perfil, c.folio);
+      this.mostrar('datos');
+      const dato = (clave, texto) => (this.querySelector(`[data-dato="${clave}"]`).textContent = texto);
+      this.querySelector('[data-folio]').textContent = `N.º ${c.folio}`;
+      this.querySelector('[data-texto]').textContent = `Bugalú Studio deja constancia de que ${nombres(c.cliente)} asistió a una asesoría artística con ${nombres(c.profesional)}.`;
+      dato('cliente', nombres(c.cliente));
+      dato('profesional', nombres(c.profesional));
+      dato('especialidades', (c.profesional.especialidades ?? []).map((e) => e.nombre ?? e).join(', ') || '—');
+      dato('fecha', diaMesAnio(fechaDe(c.inicio)));
+      dato('horario', `${horaDe(c.inicio)}–${horaDe(c.fin)}`);
+      dato('duracion', duracionTexto(c.duracion ?? Math.round((Date.parse(c.fin) - Date.parse(c.inicio)) / 6e4)));
+      dato('modalidad', MODALIDADES[c.modalidad] ?? c.modalidad);
+      dato('emitida', fechaHora(c.emitida_en));
+      this.querySelector('[data-volver]').href = r.detalle;
+      document.querySelector('.encabezado-titulo').textContent = `Constancia ${c.folio}`;
+      return `Constancia ${c.folio}`;
+    }
+  }
+
+  if (!customElements.get('bugalu-constancia')) customElements.define('bugalu-constancia', BugaluConstancia);
+</script>
+
+<style>
+  .constancia {
+    display: block;
+  }
+  .constancia-cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+  }
+  .constancia-cuerpo p {
+    margin: 0;
+    color: var(--color-texto-cuerpo);
+  }
+  .constancia-cuerpo .constancia-folio {
+    color: var(--color-texto-principal);
+    font-family: var(--fuente-familia-tecnica);
+    font-weight: var(--fuente-peso-medio);
+  }
+  .constancia-pie {
+    display: none;
+  }
+  .constancia-acciones {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    margin-block-start: var(--espacio-5);
+  }
+  @media (min-width: 37.5em) { /* punto-quiebre-tableta */
+    .constancia-acciones {
+      flex-direction: row;
+    }
+  }
+  /* Impresión (spec RF-15-cierre): solo el panel, sin sombra, sobre blanco, en A4 y sin partir los datos. */
+  @page {
+    size: A4;
+  }
+  @media print {
+    .constancia :global(.panel) {
+      padding: 0;
+      background: none;
+      border: 0;
+      box-shadow: none;
+      break-inside: avoid;
+    }
+    .constancia :global(.gestion-datos) {
+      break-inside: avoid;
+    }
+    .constancia-cuerpo .constancia-pie {
+      display: block;
+    }
+    :global(.encabezado),
+    :global(.aviso),
+    :global(.boton) {
+      display: none !important; /* shortcut: gana a los display de cada componente */
+    }
+  }
+</style>

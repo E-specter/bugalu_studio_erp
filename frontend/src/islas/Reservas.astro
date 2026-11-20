@@ -175,7 +175,20 @@ const filtros = [
               <p class="reservas-nota" data-nota-estudio hidden></p>
               <div data-menos-hora hidden><Aviso variante="aviso" titulo=" " texto=" " /></div>
             </div>
+            <!-- Cerrar la asesoria (CA-12), solo profesional y Administrador: realizada y, debajo, no asistio; antes de tiempo, deshabilitados con su ayuda. -->
+            {asesoria && (
+              <div class="reservas-estado" data-boton="realizada" hidden>
+                <Boton data-abrir="realizada" aria-describedby="reservas-ayuda-realizada">Marcar realizada</Boton>
+                <p class="gestion-ayuda" id="reservas-ayuda-realizada" data-ayuda-rz hidden></p>
+              </div>
+            )}
+            <div class="reservas-estado" data-boton="inasistencia" hidden>
+              <Boton variante="peligro" data-abrir="inasistencia">Marcar no asistió</Boton>
+              <p class="gestion-ayuda" id="reservas-ayuda-inasistencia" data-ayuda-na hidden></p>
+            </div>
             <div data-pagar hidden><Boton href="#">Registrar pago</Boton></div>
+            <!-- Constancia emitida: el cliente la tiene de Primario; el profesional y el Administrador, de Secundario. -->
+            {asesoria && <div data-constancia hidden><Boton href="#">Ver constancia</Boton></div>}
             <!-- Asesoría virtual con enlace: entrar a la videollamada (pestaña nueva); si falta el lugar o el enlace, quién lo confirma. -->
             <div data-videollamada hidden><Boton href="#" target="_blank" rel="noopener noreferrer">Entrar a la videollamada<span class="visualmente-oculto"> (se abre en otra pestaña)</span><Icono nombre="external-link" /></Boton></div>
             <div class="reservas-estado" data-lugar-nota hidden>
@@ -242,10 +255,6 @@ const filtros = [
             </div>
 
             <!-- Acciones del lateral: un botón por acción; al abrirla, su panel lo sustituye (una sola a la vez). -->
-            <div class="reservas-estado" data-boton="inasistencia" hidden>
-              <Boton variante="peligro" data-abrir="inasistencia">Marcar no asistió</Boton>
-              <p class="gestion-ayuda" id="reservas-ayuda-inasistencia" data-ayuda-na hidden></p>
-            </div>
             <div data-boton="excepcion" hidden><Boton variante="secundario" data-abrir="excepcion">Tratar como nivel 1</Boton></div>
             <div data-boton="cancelar" hidden><Boton variante="peligro" data-abrir="cancelar">Solicitar cancelación</Boton></div>
 
@@ -260,6 +269,21 @@ const filtros = [
                 </form>
               </Panel>
             </div>
+
+            {asesoria && (
+              <div data-panel="realizada" hidden>
+                <Panel titulo="Marcar realizada" variante="lateral" id="realizada">
+                  <form novalidate class="gestion-formulario" data-accion="realizada">
+                    <p class="reservas-resumen" data-resumen-rz></p>
+                    <p data-consecuencia></p>
+                    <BarraAcciones variante="decision">
+                      <Boton slot="secundaria" variante="secundario" data-envio data-volver>Volver a la asesoría</Boton>
+                      <Boton slot="principal" tipo="submit" data-envio>Marcar realizada</Boton>
+                    </BarraAcciones>
+                  </form>
+                </Panel>
+              </div>
+            )}
 
             <div data-panel="inasistencia" hidden>
               <Panel titulo="Marcar inasistencia" variante="lateral" id="inasistencia">
@@ -391,6 +415,21 @@ const filtros = [
                 <Tabla titulo="Reprogramaciones" columnas={asesoria ? ['Fecha del cambio', 'Antes', 'Ahora', 'Nivel', 'Penalización'] : ['Fecha del cambio', 'Antes', 'Ahora', 'Nivel', 'Penalización', 'Total']} numericas={asesoria ? [4] : [4, 5]} />
               </Panel>
             </div>
+            <!-- N1: notas internas (CA-13), solo su profesional y el Administrador; el cliente nunca las recibe. -->
+            {asesoria && (
+              <div data-n1 hidden>
+                <Panel codigo="N1" titulo="Notas internas">
+                  <form novalidate class="gestion-formulario" data-accion="notas">
+                    <div data-notas-aviso></div>
+                    <p class="reservas-nota" id="notas-ayuda" data-ayuda-notas></p>
+                    <Campo tipo="area" id="notas-texto" nombre="notas" etiqueta="Notas" maxlength="5000" rows="8" aria-describedby="notas-ayuda notas-contador" />
+                    <p class="gestion-ayuda" id="notas-contador" data-contador>0 / 5000</p>
+                    <p class="visualmente-oculto" aria-live="polite" data-contador-vivo></p>
+                    <div><Boton variante="secundario" tipo="submit" data-envio data-guardar-notas>Guardar notas</Boton></div>
+                  </form>
+                </Panel>
+              </div>
+            )}
           </div>
         </div>
       </template>
@@ -420,7 +459,7 @@ const filtros = [
 <script>
   // @ts-nocheck
   import { IslaGestion, mensajeError } from '../servicios/isla-gestion.js';
-  import { listarMisAsesorias, obtenerAsesoria, actualizarEncuentro, ESTADOS_ASESORIA, MODALIDADES, textoCuotaAsesoria, duracionTexto, pintarPartidasAsesoria } from '../servicios/asesorias.js';
+  import { listarMisAsesorias, obtenerAsesoria, actualizarEncuentro, marcarRealizada, guardarNotas, ESTADOS_ASESORIA, MODALIDADES, textoCuotaAsesoria, duracionTexto, pintarPartidasAsesoria } from '../servicios/asesorias.js';
   import { enlaceTexto } from '../servicios/aceptaciones.js';
   import { obtenerContacto } from '../servicios/pagos.js';
   import { listarMisReservas, obtenerReserva, cancelarReserva, verCancelacion, marcarInasistencia, aplicarExcepcion, simularReprogramacion, reprogramarReserva, elegirDevolucionEstudio, absoluta, faltan, textoCuota, ultimoRechazo, tienePagos } from '../servicios/reservas.js';
@@ -450,7 +489,7 @@ const filtros = [
   const PROXIMAS = ['pre_reservada', 'confirmada', 'en_curso'];
   const CUOTAS = { pendiente: ['Pendiente', 'aviso'], en_validacion: ['En validación', 'aviso'], pagada: ['Pagada', 'exito'], anulada: ['Anulada', 'neutra'] };
   // Panel de acción -> título (el folio se suma aparte, sin partirse).
-  const TITULOS = { cancelar: 'Cancelar reserva ', inasistencia: 'Marcar inasistencia · ', excepcion: 'Tratar como nivel 1 · ', devolucion: 'Devolución íntegra · ', lugar: 'Lugar o enlace · ' };
+  const TITULOS = { realizada: 'Marcar realizada · ', cancelar: 'Cancelar reserva ', inasistencia: 'Marcar inasistencia · ', excepcion: 'Tratar como nivel 1 · ', devolucion: 'Devolución íntegra · ', lugar: 'Lugar o enlace · ' };
   const ENLACE_INVALIDO = 'Pega un enlace de Google Meet que empiece por https://meet.google.com/.';
   const ENLACE_MEET = /^https:\/\/meet\.google\.com\/[A-Za-z0-9/_?=&.%-]{1,200}$/;
   const AVISO_INVALIDO = 'El aviso no puede ser futuro ni anterior a cuando se hizo la reserva.';
@@ -508,7 +547,7 @@ const filtros = [
     nodo.hidden = !texto;
     nodo.textContent = texto ?? '';
   };
-  const folioTitulo = (folio) => Object.assign(document.createElement('span'), { className: 'reservas-folio-titulo', textContent: folio });
+  const folioTitulo = (folio) => Object.assign(document.createElement('span'), { className: ASES ? 'reservas-folio-titulo reservas-folio-titulo-asesoria' : 'reservas-folio-titulo', textContent: folio });
 
   class BugaluReservas extends IslaGestion {
     noEncontrada = ['No encontramos esta reserva.', ''];
@@ -526,6 +565,9 @@ const filtros = [
     minutos = 0; // duración de la reserva que se reprograma
     inicioR = null; // inicio elegido en el calendario
     vistaR = null; // VistaReprogramacion mostrada (la última que llegó)
+    avisoRz = false; // "Marcar realizada" se pulsó antes del inicio (o la API dijo que aún no)
+    accionNotas = false; // el envío en curso es el de las notas
+    nivelNotas = 0; // tramo del contador que ya se anunció
     avisoNa = false; // el botón de inasistencia se pulsó antes de tiempo (o la API dijo que aún no)
 
     connectedCallback() {
@@ -545,6 +587,7 @@ const filtros = [
         else if (e.target.closest('[data-reintentar-previa]')) this.pedirVista(this.avisoReintento);
         else if (e.target.closest('[data-volver-reprog]') && this.ocupado) e.preventDefault();
       });
+      this.addEventListener('input', (e) => e.target.matches('#notas-texto') && this.contarNotas(true));
       this.addEventListener('calendario-inicio', (e) => this.alInicio(e.detail));
       this.addEventListener('change', (e) => {
         if (e.target.matches('input[name="por"]')) this.cambiarOpcion();
@@ -560,7 +603,10 @@ const filtros = [
 
     alEnviar(formulario) {
       const accion = formulario.dataset.accion;
+      this.accionNotas = accion === 'notas';
       if (accion === 'cancelar') this.cancelar();
+      else if (accion === 'notas') this.notas();
+      else if (accion === 'realizada') this.realizada();
       else if (accion === 'reprogramar') this.confirmarReprogramacion();
       else if (accion === 'devolucion') this.devolucion();
       else if (accion === 'inasistencia') this.inasistencia();
@@ -769,6 +815,9 @@ const filtros = [
       history.replaceState(null, '', url);
       const boton = this.querySelector('[data-abrir="inasistencia"]');
       if (accion === 'inasistencia' && boton && !boton.closest('[data-boton]').hidden && boton.getAttribute('aria-disabled') !== 'true') this.abrir('inasistencia', boton);
+      // ?accion=cerrar (POR CERRAR de la agenda): el foco va a "Marcar realizada".
+      const realizada = this.querySelector('[data-abrir="realizada"]');
+      if (accion === 'cerrar' && realizada && !realizada.closest('[data-boton]').hidden) realizada.focus();
       const lugar = this.querySelector('[data-abrir="lugar"]');
       if (accion === 'lugar' && lugar && !lugar.closest('[data-boton]').hidden) this.abrir('lugar', lugar);
     }
@@ -838,6 +887,7 @@ const filtros = [
       this.pintarReprogramaciones(r);
       for (const [panel, texto] of Object.entries(TITULOS)) this.querySelector(`[data-panel="${panel}"] .panel-titulo`)?.replaceChildren(T(texto), folioTitulo(r.folio));
       this.pintarEstado();
+      this.pintarNotas(r);
     }
 
     // D0: los datos de contacto del cliente, para su profesional y el Administrador (CA-16).
@@ -983,7 +1033,7 @@ const filtros = [
       // Profesional y Administrador: lo mismo, dicho desde el estudio.
       if (this.rol !== 'cliente') {
         if (r.estado === 'pre_reservada') return porValidar(r) ? ['pendiente', 'Pago en validación', 'El cliente registró su pago; el estudio lo revisa y la cita no caduca mientras tanto.'] : ms > 0 ? ['pendiente', 'Pendiente de pago', `El cliente paga antes del ${absoluta(r.vence_pago)} · ${faltan(ms)}`] : null;
-        if (r.estado === 'confirmada') return Date.parse(r.fin) < Date.now() ? ['pendiente', 'Por cerrar', 'Marca si se realizó o si el cliente no asistió.'] : ['correcto', 'Confirmada', `Cita el ${diaMes(fechaDe(r.inicio))}, a las ${horaDe(r.inicio)}.`];
+        if (r.estado === 'confirmada') return Date.parse(r.fin) < Date.now() ? ['pendiente', 'Por cerrar', 'Marca si se realizó o si el cliente no asistió.'] : Date.parse(r.inicio) <= Date.now() ? ['neutro', 'En horario de la asesoría', 'Márcala como realizada cuando termine.'] : ['correcto', 'Confirmada', `Cita el ${diaMes(fechaDe(r.inicio))}, a las ${horaDe(r.inicio)}.`];
         if (r.estado === 'realizada') return ['correcto', 'Realizada', ''];
         if (r.estado === 'no_asistio') return ['problema', 'No asistió', 'El cliente no asistió.'];
         return null;
@@ -1009,7 +1059,7 @@ const filtros = [
         const a = videollamada.querySelector('a');
         a.href = r.enlace;
         const conPago = !this.querySelector('[data-pagar]').hidden;
-        a.className = a.className.replace(/boton-(primario|secundario)/, conPago ? 'boton-secundario' : 'boton-primario');
+        a.className = a.className.replace(/boton-(primario|secundario)/, conPago || this.rol !== 'cliente' ? 'boton-secundario' : 'boton-primario'); // el primario del profesional es cerrar la asesoría
       }
       const vivo = ['pre_reservada', 'confirmada'].includes(r.estado) && !caducada(r);
       nota.hidden = !(vivo && this.rol === 'cliente');
@@ -1054,17 +1104,41 @@ const filtros = [
       // Inasistencia: desde el inicio hasta el fin; habilitada pasada la tolerancia.
       const t = tolerancia(r);
       const habil = inicio + (t ?? 0) * MINUTO;
-      const enVentana = !ASES && staff && vivo && ['pre_reservada', 'confirmada', 'en_curso'].includes(r.estado) && ahora >= inicio && ahora < Date.parse(r.fin);
+      // Asesoría (CA-12): su profesional o el Administrador, en pendiente de pago o confirmada y sin límite posterior; antes de tiempo, el botón se ve deshabilitado.
+      const gestiona = ASES && (admin || this.rol === 'profesional');
+      const enVentana = ASES ? gestiona && vivo && ['pre_reservada', 'confirmada'].includes(r.estado) : staff && vivo && ['pre_reservada', 'confirmada', 'en_curso'].includes(r.estado) && ahora >= inicio && ahora < Date.parse(r.fin);
       const esperar = enVentana && ahora < habil;
       const boton = this.querySelector('[data-abrir="inasistencia"]');
       const ayuda = this.querySelector('[data-ayuda-na]');
-      const hora = horaDe(new Date(habil).toISOString());
-      boton.toggleAttribute('aria-disabled', esperar);
+      const desde = (ms) => {
+        const iso = new Date(ms).toISOString();
+        return horaDe(iso) + (ASES && fechaDe(iso) !== fechaDe(new Date(ahora).toISOString()) ? ` del ${diaMes(fechaDe(iso))}` : '');
+      };
+      const hora = desde(habil);
       if (esperar) boton.setAttribute('aria-disabled', 'true');
+      else boton.removeAttribute('aria-disabled');
       oculto(ayuda, esperar || this.avisoNa ? (this.avisoNa ? `Aún no pasaron ${t} minutos desde el inicio. Podrás marcarlo desde las ${hora}.` : `Podrás marcarlo desde las ${hora}, ${t} minutos después del inicio.`) : null);
       if (ayuda.hidden) boton.removeAttribute('aria-describedby');
       else boton.setAttribute('aria-describedby', ayuda.id);
       this.alternar('inasistencia', enVentana);
+      if (ASES) {
+        const rz = gestiona && vivo && r.estado === 'confirmada';
+        const esperarRz = rz && ahora < inicio;
+        const botonRz = this.querySelector('[data-abrir="realizada"]');
+        const ayudaRz = this.querySelector('[data-ayuda-rz]');
+        if (esperarRz) botonRz.setAttribute('aria-disabled', 'true');
+        else botonRz.removeAttribute('aria-disabled');
+        oculto(ayudaRz, esperarRz || (rz && this.avisoRz) ? (this.avisoRz ? `La asesoría aún no empieza. Podrás marcarla desde las ${desde(inicio)}.` : `Podrás marcarla desde las ${desde(inicio)}, cuando empiece.`) : null);
+        if (ayudaRz.hidden) botonRz.removeAttribute('aria-describedby');
+        else botonRz.setAttribute('aria-describedby', ayudaRz.id);
+        this.alternar('realizada', rz);
+        // Constancia emitida: Primario del cliente; Secundario de quien la cerró.
+        const constancia = this.querySelector('[data-constancia]');
+        constancia.hidden = !(r.estado === 'realizada' && r.constancia_disponible !== false);
+        const enlaceC = constancia.querySelector('a');
+        enlaceC.href = `/app/asesorias/constancia?id=${encodeURIComponent(r.id)}`;
+        enlaceC.className = enlaceC.className.replace(/boton-(primario|secundario)/, this.rol === 'cliente' ? 'boton-primario' : 'boton-secundario');
+      }
       // Tratar como nivel 1: solo el Administrador, una vez por reserva.
       const excepcion = admin && ((r.estado === 'cancelada' && c?.por === 'cliente' && [2, 3].includes(c.nivel) && positivo(c.retenido) && !c.excepcion) || (r.estado === 'no_asistio' && c?.por === 'inasistencia' && positivo(c.retenido) && !c.excepcion));
       this.alternar('excepcion', excepcion);
@@ -1149,9 +1223,11 @@ const filtros = [
       if (this.ocupado) return;
       if (boton?.getAttribute('aria-disabled') === 'true') {
         // Deshabilitado pero enfocable: explica por qué en lugar de abrir.
-        this.avisoNa = true;
+        const cerrar = boton.dataset.abrir === 'realizada';
+        if (cerrar) this.avisoRz = true;
+        else this.avisoNa = true;
         this.pintarAcciones();
-        this.querySelector('[data-anuncio]').textContent = this.querySelector('[data-ayuda-na]').textContent;
+        this.querySelector('[data-anuncio]').textContent = this.querySelector(cerrar ? '[data-ayuda-rz]' : '[data-ayuda-na]').textContent;
         return;
       }
       limpiarAvisos(this);
@@ -1163,6 +1239,7 @@ const filtros = [
       if (nombre === 'cancelar') this.prepararCancelar();
       else if (nombre === 'devolucion') this.prepararDevolucion();
       else if (nombre === 'inasistencia') this.prepararInasistencia();
+      else if (nombre === 'realizada') this.prepararRealizada();
       else if (nombre === 'lugar') this.prepararLugar();
       else this.prepararExcepcion();
     }
@@ -1206,6 +1283,16 @@ const filtros = [
         this.sustituir('no-encontrada');
         return true;
       }
+      if (this.accionNotas) return this.errorNotas(error);
+      if (accion === 'realizada' && error.estado === 409) {
+        if (error.codigo === 'antes_del_inicio') {
+          this.abierto = null;
+          this.avisoRz = true;
+          this.pintarAcciones();
+          this.querySelector('[data-abrir="realizada"]').focus();
+        } else this.cambio((estado) => `Esta asesoría ya está cerrada: está ${estado}.`);
+        return true;
+      }
       if (accion === 'cancelar') return this.errorCancelar(error);
       if (accion === 'lugar') return this.errorLugar(error);
       if (accion === 'devolucion' && error.estado === 409) {
@@ -1213,12 +1300,12 @@ const filtros = [
         return true;
       }
       if (accion === 'inasistencia' && error.estado === 409) {
-        if (error.codigo === 'tolerancia_no_cumplida') {
+        if (error.codigo === 'tolerancia_no_cumplida' || (ASES && error.codigo === 'antes_del_inicio')) {
           this.abierto = null;
           this.avisoNa = true;
           this.pintarAcciones();
           this.querySelector('[data-abrir="inasistencia"]').focus();
-        } else this.cambio((estado) => `Esta reserva ya no admite marcar la inasistencia: está ${estado}.`);
+        } else this.cambio((estado) => (ASES ? `Esta asesoría ya está cerrada: está ${estado}.` : `Esta reserva ya no admite marcar la inasistencia: está ${estado}.`));
         return true;
       }
       if (accion === 'excepcion') {
@@ -1796,15 +1883,95 @@ const filtros = [
     prepararInasistencia() {
       const r = this.reserva;
       const t = tolerancia(r);
-      this.querySelector('[data-resumen-na]').textContent = `${r.cliente ? nombre(r.cliente) : 'El cliente'} no llegó${t === null ? ' a la sesión' : ` en los primeros ${t} minutos`}.`;
+      this.querySelector('[data-resumen-na]').textContent = `${r.cliente ? (ASES ? persona(r.cliente) : nombre(r.cliente)) : 'El cliente'} no llegó${t === null ? ' a la sesión' : ` en los primeros ${t} minutos`}.`;
+      // Asesoría: el profesional no ve cifras (CA-08); el Administrador es el único que puede tratarla después como nivel 1.
+      if (ASES) {
+        this.querySelector('[data-panel="inasistencia"] [data-consecuencia]').textContent = this.admin ? `Se retiene lo pagado (${soles(r.pagado ?? '0.00')}), se anula el saldo y no hay devolución en dinero. Avisamos a ${persona(r.cliente)} por correo. No se puede deshacer. Solo tú puedes tratarla después como nivel 1.` : `La asesoría queda como No asistió y lo pagado no se devuelve. Avisamos a ${persona(r.cliente)} por correo. No se puede deshacer.`;
+        return;
+      }
       this.querySelector('[data-panel="inasistencia"] [data-consecuencia]').textContent = `Se retiene lo pagado (${soles(r.pagado ?? '0.00')}), se anula el saldo y no hay crédito ni cobro adicional. El horario sigue ocupado. Avisamos al cliente por correo. No se puede deshacer: solo el Administrador puede tratarla después como nivel 1.`;
     }
 
     inasistencia() {
+      const quien = ASES ? persona(this.reserva.cliente) : 'al cliente';
       this.enviar(this.querySelector('[data-panel="inasistencia"] [type="submit"]'), 'Marcando…', () => marcarInasistencia(this.reserva.id), (nueva) => {
         this.avisoNa = false;
-        this.despues(nueva, 'Inasistencia registrada', 'Avisamos al cliente por correo.');
+        this.despues(nueva, 'Inasistencia registrada', ASES ? `Avisamos a ${quien} por correo.` : 'Avisamos al cliente por correo.');
       });
+    }
+
+    // --- Marcar realizada (CA-12) ---
+
+    prepararRealizada() {
+      const r = this.reserva;
+      this.querySelector('[data-resumen-rz]').textContent = `${persona(r.cliente)} tuvo su asesoría de ${duracion(r)} el ${diaMes(fechaDe(r.inicio))}, a las ${horaDe(r.inicio)}.`;
+      this.querySelector('[data-panel="realizada"] [data-consecuencia]').textContent = `Se emite la constancia de asistencia y se la enviamos a ${persona(r.cliente)} por correo. No se puede deshacer.`;
+    }
+
+    realizada() {
+      const quien = persona(this.reserva.cliente);
+      this.enviar(this.querySelector('[data-panel="realizada"] [type="submit"]'), 'Marcando…', () => marcarRealizada(this.reserva.id), (nueva) => {
+        this.avisoRz = false;
+        this.despues(nueva, 'Asesoría marcada como realizada', `Enviamos la constancia a ${quien}.`);
+      });
+    }
+
+    // --- Notas internas (CA-13): N1, solo su profesional y el Administrador ---
+
+    pintarNotas(r) {
+      const bloque = this.querySelector('[data-n1]');
+      if (!bloque) return;
+      bloque.hidden = !(this.rol === 'profesional' || this.admin);
+      if (bloque.hidden) return;
+      this.querySelector('#notas-texto').value = r.notas ?? '';
+      this.querySelector('[data-ayuda-notas]').textContent = `Solo las ven ${nombreProf(r.profesional)} y el Administrador. ${persona(r.cliente)} nunca las ve. Útiles para la cotización: qué necesita, qué acordaron.`;
+      this.bloquearNotas(r.estado === 'cancelada');
+      this.contarNotas(false);
+    }
+
+    // Cancelada (o el 409 no_editable): el texto queda para copiarlo, sin guardar.
+    bloquearNotas(si) {
+      this.querySelector('#notas-texto').readOnly = si;
+      this.querySelector('[data-guardar-notas]').hidden = si;
+      if (si) mostrarAviso(this, 'informacion', 'Ya no se pueden editar las notas de esta asesoría.', '', { destino: this.querySelector('[data-notas-aviso]') });
+    }
+
+    // El contador visible cambia en cada tecla; el lector oye solo cada 500 caracteres, al pasar 4500 y al llegar a 5000.
+    contarNotas(anunciar) {
+      const n = this.querySelector('#notas-texto').value.length;
+      this.querySelector('[data-contador]').textContent = `${n} / 5000`;
+      const nivel = n >= 4500 ? 10 : Math.floor(n / 500);
+      const cambio = nivel !== this.nivelNotas;
+      this.nivelNotas = nivel;
+      if (anunciar && (cambio || n === 5000)) this.querySelector('[data-contador-vivo]').textContent = `${n} de 5000 caracteres.`;
+    }
+
+    notas() {
+      const campo = this.querySelector('#notas-texto');
+      quitarError(campo);
+      const texto = campo.value;
+      if (!this.validar(texto.length > 5000 ? [{ entrada: campo, mensaje: 'Las notas admiten hasta 5000 caracteres.', texto: 'Notas' }] : [])) return;
+      this.querySelector('[data-notas-aviso]').replaceChildren();
+      this.enviar(this.querySelector('[data-guardar-notas]'), 'Guardando…', () => guardarNotas(this.reserva.id, texto), (nueva) => {
+        this.accionNotas = false;
+        this.reserva = { ...this.reserva, ...validar(nueva) };
+        mostrarAviso(this, 'exito', 'Notas guardadas.', '', { destino: this.querySelector('[data-notas-aviso]') });
+      });
+    }
+
+    errorNotas(error) {
+      this.accionNotas = false;
+      if (error.estado === 409) {
+        this.bloquearNotas(true);
+        return true;
+      }
+      if (error.estado === 422) {
+        this.validar([{ entrada: this.querySelector('#notas-texto'), mensaje: 'Las notas admiten hasta 5000 caracteres.', texto: 'Notas' }]);
+        return true;
+      }
+      const [titulo] = mensajeError(error);
+      enfocarAviso(mostrarAviso(this, 'error', titulo, 'Tus notas siguen aquí; inténtalo de nuevo.', { destino: this.querySelector('[data-notas-aviso]') }));
+      return true;
     }
 
     // --- Tratar como nivel 1 ---
@@ -1869,6 +2036,12 @@ const filtros = [
   .reservas :global(.reservas-folio-titulo),
   :global(.reservas-folio-titulo) {
     white-space: nowrap;
+  }
+  /* A 320 px el título "Asesoría A-2026-00001" no cabe con el folio entero: en móvil, el folio de una asesoría baja un paso y sigue sin partirse. */
+  @media (max-width: 37.5em) { /* punto-quiebre-tableta */
+    :global(.reservas-folio-titulo-asesoria) {
+      font-size: var(--fuente-tamano-titulo-md);
+    }
   }
   /* El lateral (lo que toca y cancelar) va antes en el DOM: debajo del escritorio queda arriba; en escritorio, a la derecha. */
   @media (min-width: 64em) { /* punto-quiebre-escritorio */

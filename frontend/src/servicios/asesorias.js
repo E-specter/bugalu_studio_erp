@@ -45,6 +45,12 @@ export const listarAsesorias = (filtros = {}) => {
 // {modalidad?, lugar?, enlace?}
 export const actualizarEncuentro = (id, cuerpo) => pedir(`/api/v1/asesorias/${r(id)}/encuentro`, { method: 'PATCH', cuerpo });
 
+// --- Etapa C: cerrar, notas y constancia. "No asistio" usa POST /reservas/{id}/inasistencia (servicios/reservas.js). ---
+export const marcarRealizada = (id) => pedir(`/api/v1/asesorias/${r(id)}/realizada`, { method: 'POST' });
+// Notas internas (solo su profesional y el Administrador): 0 a 5000 caracteres; vacio las borra.
+export const guardarNotas = (id, texto) => pedir(`/api/v1/asesorias/${r(id)}/notas`, { method: 'PUT', cuerpo: { texto } });
+export const obtenerConstancia = (id) => pedir(`/api/v1/asesorias/${r(id)}/constancia`);
+
 // --- Formatos compartidos ---
 export const ESTADOS_ASESORIA = { pre_reservada: ['Pendiente de pago', 'aviso'], confirmada: ['Confirmada', 'exito'], realizada: ['Realizada', 'exito'], cancelada: ['Cancelada', 'alerta'], no_asistio: ['No asistió', 'alerta'] };
 export const MODALIDADES = { presencial: 'Presencial', virtual: 'Virtual (Google Meet)' };
