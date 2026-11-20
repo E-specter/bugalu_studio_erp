@@ -1923,17 +1923,24 @@ const filtros = [
       if (!bloque) return;
       bloque.hidden = !(this.rol === 'profesional' || this.admin);
       if (bloque.hidden) return;
-      this.querySelector('#notas-texto').value = r.notas ?? '';
+      // Lo escrito sin guardar sobrevive a los repintados (cerrar, 409): solo se reescribe si el campo no tiene cambios.
+      const campo = this.querySelector('#notas-texto');
+      if (campo.dataset.guardadas === undefined || campo.value === campo.dataset.guardadas) {
+        campo.value = r.notas ?? '';
+        campo.dataset.guardadas = campo.value;
+      }
       this.querySelector('[data-ayuda-notas]').textContent = `Solo las ven ${nombreProf(r.profesional)} y el Administrador. ${persona(r.cliente)} nunca las ve. Útiles para la cotización: qué necesita, qué acordaron.`;
       this.bloquearNotas(r.estado === 'cancelada');
       this.contarNotas(false);
     }
 
     // Cancelada (o el 409 no_editable): el texto queda para copiarlo, sin guardar.
-    bloquearNotas(si) {
+    bloquearNotas(si, enfocar = false) {
       this.querySelector('#notas-texto').readOnly = si;
       this.querySelector('[data-guardar-notas]').hidden = si;
-      if (si) mostrarAviso(this, 'informacion', 'Ya no se pueden editar las notas de esta asesoría.', '', { destino: this.querySelector('[data-notas-aviso]') });
+      if (!si) return;
+      const aviso = mostrarAviso(this, 'informacion', 'Ya no se pueden editar las notas de esta asesoría.', '', { destino: this.querySelector('[data-notas-aviso]') });
+      if (enfocar) enfocarAviso(aviso);
     }
 
     // El contador visible cambia en cada tecla; el lector oye solo cada 500 caracteres, al pasar 4500 y al llegar a 5000.
@@ -1955,6 +1962,7 @@ const filtros = [
       this.enviar(this.querySelector('[data-guardar-notas]'), 'Guardando…', () => guardarNotas(this.reserva.id, texto), (nueva) => {
         this.accionNotas = false;
         this.reserva = { ...this.reserva, ...validar(nueva) };
+        campo.dataset.guardadas = texto;
         mostrarAviso(this, 'exito', 'Notas guardadas.', '', { destino: this.querySelector('[data-notas-aviso]') });
       });
     }
@@ -1962,7 +1970,7 @@ const filtros = [
     errorNotas(error) {
       this.accionNotas = false;
       if (error.estado === 409) {
-        this.bloquearNotas(true);
+        this.bloquearNotas(true, true);
         return true;
       }
       if (error.estado === 422) {

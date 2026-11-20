@@ -345,6 +345,22 @@ test.describe('notas internas', () => {
     await page.screenshot({ path: 'pruebas/capturas/rf15-cierre-notas.png', fullPage: true });
   });
 
+  test('escribir notas y cerrar (realizada, o 409 antes_del_inicio): el texto sigue', async ({ page }) => {
+    await comoCliente(page, 'profesional');
+    await ver(page, paraProfesional(cita(-120, -60, { notas: 'guardadas' })));
+    await notas(page).fill('guardadas y algo más sin guardar');
+    await simular(page, 'POST', `/asesorias/${AID}/realizada`, errorApi(409, 'antes_del_inicio'));
+    await botonRealizada(page).click();
+    await panelRealizada(page).getByRole('button', { name: 'Marcar realizada' }).click();
+    await expect(page.locator('#reservas-ayuda-realizada')).toBeVisible();
+    await expect(notas(page)).toHaveValue('guardadas y algo más sin guardar');
+    await simular(page, 'POST', `/asesorias/${AID}/realizada`, json(200, paraProfesional(realizadaDe(cita(-120, -60, { notas: 'guardadas' })))));
+    await botonRealizada(page).click();
+    await panelRealizada(page).getByRole('button', { name: 'Marcar realizada' }).click();
+    await expect(aviso(page)).toContainText('Asesoría marcada como realizada');
+    await expect(notas(page)).toHaveValue('guardadas y algo más sin guardar');
+  });
+
   test('texto vacío borra las notas', async ({ page }) => {
     await comoCliente(page, 'profesional');
     const base = cita(180, 240);
@@ -388,6 +404,7 @@ test.describe('notas internas', () => {
     await notas(page).fill('mis notas');
     await guardar(page).click();
     await expect(avisoNotas(page)).toContainText('Ya no se pueden editar las notas de esta asesoría.');
+    await expect(avisoNotas(page)).toBeFocused();
     await expect(notas(page)).toHaveValue('mis notas');
     await expect(notas(page)).toHaveJSProperty('readOnly', true);
     await expect(guardar(page)).toBeHidden();
