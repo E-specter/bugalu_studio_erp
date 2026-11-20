@@ -408,9 +408,11 @@ class RepositorioReservasPostgres:
     async def tiene_servicio_previo(self) -> bool:
         filas = await self._filas(
             "select exists (select 1 from public.reserva r "
-            "join public.servicio s on s.id = r.id_servicio "
+            "left join public.servicio s on s.id = r.id_servicio "
             "where r.id_cliente = (select auth.uid()) "
-            "and r.estado in ('confirmada', 'en_curso', 'finalizada') and s.categoria <> 'ensayo')"
+            "and ((r.tipo = 'sala' and r.estado in ('confirmada', 'en_curso', 'finalizada') "
+            "and s.categoria <> 'ensayo') "
+            "or (r.tipo = 'asesoria' and r.estado in ('confirmada', 'realizada'))))"
         )
         return bool(filas[0][0])
 

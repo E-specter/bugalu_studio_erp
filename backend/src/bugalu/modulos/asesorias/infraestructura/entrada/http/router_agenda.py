@@ -8,6 +8,11 @@ from bugalu.compartido.autenticacion import obtener_claims
 from bugalu.compartido.base_datos import transaccion_con_identidad
 from bugalu.compartido.esquemas import RespuestaError
 from bugalu.modulos.asesorias.aplicacion.agendar.caso_de_uso import AgendarAsesoria
+from bugalu.modulos.asesorias.aplicacion.cierre.caso_de_uso import (
+    GuardarNotas,
+    MarcarRealizada,
+    ObtenerConstancia,
+)
 from bugalu.modulos.asesorias.aplicacion.consultar.caso_de_uso import (
     ListarAsesorias,
     ListarMisAsesorias,
@@ -131,3 +136,48 @@ async def cambiar_encuentro(
             UUID(str(claims["sub"])), id_asesoria, cuerpo.cambios()
         )
     return e.Asesoria.desde_dominio(a)
+
+
+@router.post(
+    "/asesorias/{id_asesoria}/realizada",
+    response_model=e.Asesoria,
+    response_model_exclude_none=True,
+    summary="Marca la asesoria como realizada y emite la constancia (profesional o administrador)",
+    responses=_respuestas(401, 403, 404, 409),
+)
+async def marcar_realizada(request: Request, claims: Claims, id_asesoria: UUID) -> e.Asesoria:
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        a = await MarcarRealizada(RepositorioAgendaPostgres(conexion)).ejecutar(
+            UUID(str(claims["sub"])), id_asesoria
+        )
+    return e.Asesoria.desde_dominio(a)
+
+
+@router.put(
+    "/asesorias/{id_asesoria}/notas",
+    response_model=e.Asesoria,
+    response_model_exclude_none=True,
+    summary="Notas internas (profesional o administrador); texto vacio las borra",
+    responses=_respuestas(401, 403, 404, 409, 422),
+)
+async def guardar_notas(
+    request: Request, claims: Claims, id_asesoria: UUID, cuerpo: e.NotasAsesoria
+) -> e.Asesoria:
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        a = await GuardarNotas(RepositorioAgendaPostgres(conexion)).ejecutar(
+            UUID(str(claims["sub"])), id_asesoria, cuerpo.texto
+        )
+    return e.Asesoria.desde_dominio(a)
+
+
+@router.get(
+    "/asesorias/{id_asesoria}/constancia",
+    response_model=e.Constancia,
+    response_model_exclude_none=True,
+    summary="Constancia de asistencia: su dueno, su profesional o el administrador",
+    responses=_respuestas(401, 404, 409),
+)
+async def obtener_constancia(request: Request, claims: Claims, id_asesoria: UUID) -> e.Constancia:
+    async with transaccion_con_identidad(_pool(request), claims) as conexion:
+        c = await ObtenerConstancia(RepositorioAgendaPostgres(conexion)).ejecutar(id_asesoria)
+    return e.Constancia.desde_dominio(c)

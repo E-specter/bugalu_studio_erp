@@ -3,7 +3,8 @@
 from collections.abc import Callable
 from typing import Any
 
-from bugalu.modulos.notificaciones.dominio.formato import _fecha, _horario, _lima
+from bugalu.modulos.notificaciones.dominio.formato import _fecha, _horario, _lima, _soles
+from bugalu.modulos.notificaciones.dominio.redaccion_rf16 import _MESES as _MESES_CORTOS
 from bugalu.modulos.notificaciones.dominio.redaccion_rf18 import (
     _costo_reprogramacion,
     _detalle_cancelacion,
@@ -112,7 +113,81 @@ def _reprogramada(datos: dict[str, Any]) -> tuple[str, str]:
     )
 
 
+def _caducada(datos: dict[str, Any]) -> tuple[str, str]:
+    return (
+        f"Asesoría {datos['folio']} caducada",
+        f"Tu asesoría {datos['folio']} caducó porque no se registró el pago a tiempo.\n\n"
+        f"El horario ({_horario(datos)}, hora de Lima) se liberó. "
+        "Puedes agendar otra asesoría cuando quieras.\n",
+    )
+
+
+def _dia_corto(iso: str) -> str:
+    f = _lima(iso)
+    return f"{f.day} {_MESES_CORTOS[f.month - 1]} a las {f:%H:%M}"
+
+
+def _recordatorio_asesoria(datos: dict[str, Any]) -> tuple[str, str]:
+    al_profesional = datos.get("para") == "profesional"
+    virtual = datos.get("modalidad") == "virtual"
+    quien = datos.get("cliente") if al_profesional else datos.get("profesional")
+    tabla = (
+        f"Folio: {datos['folio']}\n"
+        f"Fecha y hora: {_horario(datos)} (hora de Lima)\n"
+        f"Duración: {datos['duracion']} min\n"
+        f"Modalidad: {_modalidad(datos)}\n" + _encuentro(datos)
+    )
+    pie = ""
+    if al_profesional:
+        if not (datos.get("enlace") if virtual else datos.get("lugar")):
+            falta = "el enlace de Google Meet" if virtual else "el lugar"
+            pie = f"\nAún falta registrar {falta}.\n"
+    else:
+        llegada = "Entra al enlace a la hora" if virtual else "Llega unos minutos antes"
+        verbo = "te conectas" if virtual else "llegas"
+        pie = (
+            f"\n{llegada}. Si no {verbo} en los primeros {datos['tolerancia']} minutos, "
+            "cuenta como inasistencia.\n"
+        )
+    return (
+        f"Recordatorio: asesoría del {_dia_corto(datos['inicio'])}",
+        f"Te recordamos tu asesoría con {quien or 'sin nombre'}.\n\n{tabla}{pie}",
+    )
+
+
+def _recordatorio_reserva(datos: dict[str, Any]) -> tuple[str, str]:
+    saldo = (
+        f"\nEl resto ({_soles(datos['saldo'])}) se paga al terminar la sesión.\n"
+        if datos.get("saldo")
+        else ""
+    )
+    return (
+        f"Recordatorio: tu sesión del {_dia_corto(datos['inicio'])}",
+        "Te recordamos tu sesión en Bugalú Studio.\n\n"
+        f"Folio: {datos['folio']}\n"
+        f"Servicio: {datos['servicio']}\n"
+        f"Sala: {datos['sala']}\n"
+        f"Fecha y hora: {_horario(datos)} (hora de Lima)\n\n"
+        f"Si no llegas en los primeros {datos['tolerancia']} minutos, cuenta como inasistencia.\n"
+        + saldo,
+    )
+
+
+def _asesoria_realizada(datos: dict[str, Any]) -> tuple[str, str]:
+    return (
+        f"Tu constancia de asistencia · {datos['folio']}",
+        f"Gracias por tu asesoría con {datos.get('profesional') or 'tu profesional'}. "
+        "Tu constancia de asistencia está lista: ábrela para verla, imprimirla o guardarla "
+        "en PDF.\n\n"
+        f"Folio: {datos['folio']}\n"
+        f"Fecha: {_fecha(_lima(datos['inicio']))}\n"
+        f"Duración: {datos['duracion']} min\n"
+        f"Modalidad: {_modalidad(datos)}\n",
+    )
+
+
 ASESORIA_DE_RESERVA: dict[str, Callable[[dict[str, Any]], tuple[str, str]]] = {
+    "reserva_caducada": _caducada,
     "reserva_cancelada_estudio": _cancelada_estudio,
     "reserva_cancelada_con_pagos": _cancelada_con_pagos,
     "reserva_reprogramada": _reprogramada,
@@ -123,4 +198,7 @@ REDACTORES_RF15: dict[str, Callable[[dict[str, Any]], tuple[str, str]]] = {
     "asesoria_encuentro_cambiado": _asesoria_encuentro_cambiado,
     "asesoria_cancelada_profesional": _asesoria_cancelada_profesional,
     "asesoria_reprogramada_profesional": _asesoria_reprogramada_profesional,
+    "recordatorio_asesoria": _recordatorio_asesoria,
+    "recordatorio_reserva": _recordatorio_reserva,
+    "asesoria_realizada": _asesoria_realizada,
 }

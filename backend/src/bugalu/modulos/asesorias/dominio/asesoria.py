@@ -92,6 +92,20 @@ class Asesoria:
 
 
 @dataclass(frozen=True)
+class Constancia:
+    """Instantanea inmutable de la asistencia (CA-13); nombra solo al titular de la cuenta."""
+
+    folio: str
+    cliente: dict[str, Any]
+    profesional: dict[str, Any]
+    inicio: datetime
+    fin: datetime
+    duracion: int
+    modalidad: str
+    emitida_en: datetime
+
+
+@dataclass(frozen=True)
 class ContextoAsesoria:
     """Lo que se conserva al reprogramar: mismo profesional, duracion y precio."""
 
@@ -151,6 +165,18 @@ class RepositorioAgenda(Protocol):
         self, id_asesoria: UUID, modalidad: str, lugar: str | None, enlace: str | None
     ) -> None:
         """Lanza NoEncontrado, SinPermiso o NoEditable (la base lo decide)."""
+        ...
+
+    async def marcar_realizada(self, id_asesoria: UUID) -> None:
+        """Lanza NoEncontrado, SinPermiso, NoAplicable o AntesDelInicio (la base)."""
+        ...
+
+    async def guardar_notas(self, id_asesoria: UUID, texto: str) -> None:
+        """Lanza NoEncontrado, SinPermiso o NoEditable (la base)."""
+        ...
+
+    async def obtener_constancia(self, id_asesoria: UUID) -> Constancia:
+        """Lanza NoEncontrado o ConstanciaNoDisponible (la base)."""
         ...
 
     async def tipo_de_reserva(self, id_reserva: UUID) -> str | None: ...

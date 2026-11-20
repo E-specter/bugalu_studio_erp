@@ -8,9 +8,13 @@ from psycopg import AsyncConnection, errors
 from psycopg.types.json import Jsonb
 
 from bugalu.compartido.errores import (
+    AntesDelInicio,
+    ConstanciaNoDisponible,
     DuracionNoOfrecida,
+    ErrorDeNegocio,
     FueraDeHorario,
     HorarioNoDisponible,
+    NoAplicable,
     NoEditable,
     NoEncontrado,
     SinPermiso,
@@ -21,6 +25,7 @@ from bugalu.modulos.asesorias.dominio.asesoria import (
     Asesoria,
     AvisoDeCancelacion,
     CambioDeHorario,
+    Constancia,
     ContextoAsesoria,
     NuevaAsesoria,
     PersonaAsesoria,
@@ -80,6 +85,30 @@ _BARRERA = {
     "duracion_no_ofrecida": (DuracionNoOfrecida, "El profesional no ofrece esa duracion."),
     "profesional_no_publicado": (NoEncontrado, "No existe el profesional."),
 }
+
+
+_CIERRE = {  # mensaje de la base (P0001) a su error de negocio
+    "no_aplicable": (NoAplicable, "La asesoria ya esta cerrada o no se puede cerrar."),
+    "antes_del_inicio": (AntesDelInicio, "La asesoria aun no empieza."),
+    "no_editable": (NoEditable, "Ya no se pueden editar las notas de esta asesoria."),
+    "constancia_no_disponible": (
+        ConstanciaNoDisponible,
+        "La constancia estara lista cuando la asesoria se marque como realizada.",
+    ),
+}
+
+
+def _cierre(error: Exception) -> ErrorDeNegocio:
+    if isinstance(error, errors.NoDataFound):
+        return NoEncontrado("No existe la asesoria.")
+    if isinstance(error, errors.InsufficientPrivilege):
+        return SinPermiso("Solo su profesional o un administrador cierra la asesoria.")
+    clase, mensaje = _CIERRE.get(
+        getattr(getattr(error, "diag", None), "message_primary", None) or "", (None, "")
+    )
+    if clase is None:
+        raise error
+    return clase(mensaje)
 
 
 class RepositorioAgendaPostgres:
@@ -311,6 +340,40 @@ class RepositorioAgendaPostgres:
             if error.diag.message_primary == "no_editable":
                 raise NoEditable("La asesoria ya no admite cambios de encuentro.") from None
             raise
+
+    # --- cierre (CA-12, CA-13): la base decide permisos, ventana y estado ---
+
+    async def marcar_realizada(self, id_asesoria: UUID) -> None:
+        try:
+            await self._conexion.execute(
+                "select public.marcar_asesoria_realizada(%s)", (id_asesoria,)
+            )
+        except (errors.NoDataFound, errors.InsufficientPrivilege, errors.RaiseException) as e:
+            raise _cierre(e) from None
+
+    async def guardar_notas(self, id_asesoria: UUID, texto: str) -> None:
+        try:
+            await self._conexion.execute(
+                "select public.guardar_notas_asesoria(%s, %s)", (id_asesoria, texto)
+            )
+        except (errors.NoDataFound, errors.InsufficientPrivilege, errors.RaiseException) as e:
+            raise _cierre(e) from None
+
+    async def obtener_constancia(self, id_asesoria: UUID) -> Constancia:
+        try:
+            [(c,)] = await self._filas("select public.constancia_de_asesoria(%s)", (id_asesoria,))
+        except (errors.NoDataFound, errors.RaiseException) as e:
+            raise _cierre(e) from None
+        return Constancia(
+            folio=c["folio"],
+            cliente=c["cliente"],
+            profesional=c["profesional"],
+            inicio=datetime.fromisoformat(c["inicio"]),
+            fin=datetime.fromisoformat(c["fin"]),
+            duracion=c["duracion"],
+            modalidad=c["modalidad"],
+            emitida_en=datetime.fromisoformat(c["emitida_en"]),
+        )
 
     # --- politica de RF-18 (reutiliza las funciones y el traductor de errores de reservas) ---
 

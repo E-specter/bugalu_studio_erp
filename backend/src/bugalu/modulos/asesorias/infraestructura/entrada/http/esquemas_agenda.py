@@ -15,6 +15,7 @@ from bugalu.modulos.asesorias.dominio.asesoria import (
 from bugalu.modulos.asesorias.dominio.asesoria import (
     CambioDeHorario as CambioDeHorarioDominio,
 )
+from bugalu.modulos.asesorias.dominio.asesoria import Constancia as ConstanciaDominio
 from bugalu.modulos.asesorias.dominio.asesoria import PersonaAsesoria
 from bugalu.modulos.catalogo.infraestructura.entrada.http.esquemas import Impuesto
 from bugalu.modulos.reservas.dominio.disponibilidad import LIMA
@@ -68,6 +69,46 @@ class Persona(BaseModel):
 class Cliente(Persona):
     telefono: str | None
     correo: str | None
+
+
+class NotasAsesoria(BaseModel):
+    """`texto` vacio borra las notas; hasta 5000 caracteres (CA-13)."""
+
+    model_config = ConfigDict(extra="forbid")
+    texto: Annotated[str, StringConstraints(max_length=5000)]
+
+
+class PersonaConstancia(BaseModel):
+    nombre: str | None
+    nombre_artistico: str | None = None
+
+
+class ProfesionalConstancia(PersonaConstancia):
+    especialidades: list[str]
+
+
+class Constancia(BaseModel):
+    folio: str
+    cliente: PersonaConstancia
+    profesional: ProfesionalConstancia
+    inicio: datetime
+    fin: datetime
+    duracion: int
+    modalidad: str
+    emitida_en: datetime
+
+    @classmethod
+    def desde_dominio(cls, c: ConstanciaDominio) -> Constancia:
+        return cls(
+            folio=c.folio,
+            cliente=PersonaConstancia(**c.cliente),
+            profesional=ProfesionalConstancia(**c.profesional),
+            inicio=c.inicio.astimezone(LIMA),
+            fin=c.fin.astimezone(LIMA),
+            duracion=c.duracion,
+            modalidad=c.modalidad,
+            emitida_en=c.emitida_en.astimezone(LIMA),
+        )
 
 
 class PrecioAsesoria(BaseModel):

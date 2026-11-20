@@ -63,6 +63,11 @@ AVISOS: dict[str, Aviso] = {
         "ASESORÍA", "Ver mis asesorías", "/app/asesorias/agenda"
     ),
     "asesoria_reprogramada_profesional": _aviso("ASESORÍA", "Ver la asesoría", _DETALLE_ASESORIA),
+    "recordatorio_asesoria": _aviso("ASESORÍA", "Ver la asesoría", _DETALLE_ASESORIA),
+    "recordatorio_reserva": _VER_MI,
+    "asesoria_realizada": _aviso(
+        "ASESORÍA", "Ver mi constancia", "/app/asesorias/constancia?id={id_reserva}"
+    ),
     "eleccion_estudio_resuelta": _aviso("RESERVA", "Ver la reserva", _DETALLE, True),
     "credito_por_vencer": _aviso("CRÉDITO", "Ver mis créditos", _CREDITOS),
     "devolucion_solicitada": _aviso(

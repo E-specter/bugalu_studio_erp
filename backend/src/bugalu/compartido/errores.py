@@ -408,3 +408,11 @@ class NoEditable(Conflicto):
 
 class EnlaceInvalido(DatosInvalidos):
     codigo = "enlace_invalido"
+
+
+class AntesDelInicio(Conflicto):
+    codigo = "antes_del_inicio"
+
+
+class ConstanciaNoDisponible(Conflicto):
+    codigo = "constancia_no_disponible"
