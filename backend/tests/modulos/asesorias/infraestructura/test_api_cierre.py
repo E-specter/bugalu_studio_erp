@@ -216,6 +216,8 @@ async def test_notas_422_409_y_ajenas(
     ):
         r = await notas(cliente, u, id_, "intruso")
         assert r.status_code == esperado, (u, r.text)
+        if esperado == 403:
+            assert "cierra" not in r.json()["error"]["mensaje"]
     assert sql("select notas from public.asesoria where id_reserva = %s", UUID(id_)) == [(None,)]
     r = await notas(cliente, prof, str(UUID(int=1)), "x")
     assert r.status_code == 404

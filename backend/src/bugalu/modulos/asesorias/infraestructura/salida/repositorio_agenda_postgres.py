@@ -356,7 +356,9 @@ class RepositorioAgendaPostgres:
             await self._conexion.execute(
                 "select public.guardar_notas_asesoria(%s, %s)", (id_asesoria, texto)
             )
-        except (errors.NoDataFound, errors.InsufficientPrivilege, errors.RaiseException) as e:
+        except errors.InsufficientPrivilege:
+            raise SinPermiso("Solo su profesional o un administrador escribe las notas.") from None
+        except (errors.NoDataFound, errors.RaiseException) as e:
             raise _cierre(e) from None
 
     async def obtener_constancia(self, id_asesoria: UUID) -> Constancia:

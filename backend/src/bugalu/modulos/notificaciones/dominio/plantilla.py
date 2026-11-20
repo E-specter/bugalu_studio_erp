@@ -45,6 +45,7 @@ _SIN_CUENTA = Aviso(_LIBRO, False, "Escribirnos por WhatsApp", "https://wa.me/51
 
 
 _VER_MI = _aviso("RESERVA", "Ver mi reserva", _DETALLE)
+_VER_MI_ASESORIA = _aviso("ASESORÍA", "Ver mi asesoría", _DETALLE_ASESORIA)
 AVISOS: dict[str, Aviso] = {
     "reserva_creada": _VER_MI,
     "reserva_caducada": _aviso("RESERVA", "Reservar otro horario", "/reservar/"),
@@ -93,6 +94,10 @@ def _aviso_de(tipo: str, datos: dict[str, Any]) -> Aviso:
     """Quien reclama puede no tener cuenta: la copia y la respuesta lo mandan a WhatsApp."""
     if tipo in _SIN_CUENTA_SI_FALTA and not datos.get("con_cuenta"):
         return _SIN_CUENTA
+    if tipo == "reserva_caducada" and str(datos.get("folio", "")).startswith("A-"):
+        return _VER_MI_ASESORIA
+    if tipo == "recordatorio_asesoria" and datos.get("para") == "cliente":
+        return _VER_MI_ASESORIA
     return AVISOS.get(tipo, _GENERICO)
 
 

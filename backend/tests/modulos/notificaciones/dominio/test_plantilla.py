@@ -198,3 +198,19 @@ def test_destino_y_etiqueta_del_boton_por_tipo(
 ) -> None:
     texto, html = componer(tipo, datos, "A", "x", URL, None)
     assert f"{URL}{ruta}" in texto and f"{URL}{ruta}" in html and f"// {etiqueta}" in texto
+
+
+@pytest.mark.parametrize(
+    ("tipo", "datos", "boton", "etiqueta"),
+    [
+        ("reserva_caducada", {"folio": "A-2027-00001", "id_reserva": "x1"}, "Ver mi asesoría", "ASESORÍA"),
+        ("recordatorio_asesoria", {"para": "cliente", "id_reserva": "x1"}, "Ver mi asesoría", "ASESORÍA"),
+        ("recordatorio_asesoria", {"para": "profesional", "id_reserva": "x1"}, "Ver la asesoría", "ASESORÍA"),
+    ],
+)  # fmt: skip
+def test_botones_de_asesoria_a_su_detalle(
+    tipo: str, datos: dict[str, str], boton: str, etiqueta: str
+) -> None:
+    texto, _ = componer(tipo, datos, "A", "x", URL, None)
+    assert f"{boton}: {URL}/app/asesorias/detalle?id=x1" in texto and f"// {etiqueta}" in texto
+    assert "/reservar/" not in texto

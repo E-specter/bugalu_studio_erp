@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(63);
+select plan(67);
 
 -- RF-15 etapa C (backend C1): cerrar la asesoria (CA-12), notas y constancia (CA-13), recordatorio de 24 h (CA-14) y el
 -- aviso de reprogramacion al profesional (pendiente de B6).
@@ -199,6 +199,22 @@ select ok(public.enviar_recordatorios() >= 2, 'tras reprogramar vuelve a tocar')
 select is((select count(*)::int from public.notificacion where tipo = 'recordatorio_asesoria' and datos ->> 'id_reserva' = 'aa000000-0000-0000-0000-000000000011'), 4,
           'uno por horario y destinatario');
 select is(public.enviar_recordatorios(), 0, 'y de nuevo una sola vez');
+
+-- Reprogramacion por eleccion del cliente: cancelada -> confirmada con el horario a menos de 24 h si recibe recordatorio.
+select pg_temp.mk('000000000015', 'c2', 'b2', interval '12 hours', 30, 'cancelada');
+update public.reserva set estado = 'confirmada', motivo_cancelacion = null where id = 'aa000000-0000-0000-0000-000000000015';
+select ok(public.enviar_recordatorios() >= 2, 'una confirmada desde cancelada (no por pago) con menos de 24 h recibe su recordatorio');
+select is((select count(*)::int from public.notificacion where tipo = 'recordatorio_asesoria' and datos ->> 'id_reserva' = 'aa000000-0000-0000-0000-000000000015'), 2,
+          'a cliente y profesional');
+-- El saldo de la sala suma sus cuotas `al_terminar` pendientes: dos no rompen la corrida.
+insert into public.reserva (id, id_cliente, id_sala, id_servicio, inicio, fin, total, estado, vence_pago)
+select 'bbbbbbbb-0000-0000-0000-000000000002', '00000000-0000-0000-0000-0000000000c2', '5a5a5a5a-0000-0000-0000-000000000001', se.id,
+       (select h0 from h) + interval '12 hours', (select h0 from h) + interval '14 hours', 200, 'confirmada', '2099-01-01'
+from public.servicio se where se.nombre = 'Ensayo';
+insert into public.cuota (id_reserva, hito, monto) values ('bbbbbbbb-0000-0000-0000-000000000002', 'al_terminar', 10), ('bbbbbbbb-0000-0000-0000-000000000002', 'al_terminar', 15);
+select lives_ok($$select public.enviar_recordatorios()$$, 'dos cuotas al_terminar no rompen la corrida');
+select is((select (datos ->> 'saldo')::numeric from public.notificacion where tipo = 'recordatorio_reserva'
+           and datos ->> 'id_reserva' = 'bbbbbbbb-0000-0000-0000-000000000002'), 25::numeric, 'el saldo es la suma');
 
 -- Pendiente de B6: el aviso de reprogramacion al profesional.
 select pg_temp.mk('000000000021', 'c1', 'b1', interval '36 hours', 30, 'confirmada');
