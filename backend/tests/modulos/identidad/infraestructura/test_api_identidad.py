@@ -3,7 +3,8 @@
 import base64
 import json
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from typing import Any
 from uuid import uuid4
 
@@ -94,16 +95,28 @@ def _admin(crear: CrearUsuario, poner_rol: PonerRol) -> UsuarioDePrueba:
     return u
 
 
+@contextmanager
 def _unico_administrador(
     crear: CrearUsuario, poner_rol: PonerRol, configuracion: Configuracion
-) -> UsuarioDePrueba:
+) -> Iterator[UsuarioDePrueba]:
+    """Deja un solo administrador de prueba y restaura a los reales al salir."""
     admin = _admin(crear, poner_rol)
     with psycopg.connect(configuracion.url_base_datos_admin) as conexion:
-        conexion.execute(
-            "update public.usuario set rol = 'cliente' where rol = 'administrador' and id <> %s",
-            (admin.id,),
-        )
-    return admin
+        reales = [
+            fila[0]
+            for fila in conexion.execute(
+                "update public.usuario set rol = 'cliente' "
+                "where rol = 'administrador' and id <> %s returning id",
+                (admin.id,),
+            )
+        ]
+    try:
+        yield admin
+    finally:
+        with psycopg.connect(configuracion.url_base_datos_admin) as conexion:
+            conexion.execute(
+                "update public.usuario set rol = 'administrador' where id = any(%s)", (reales,)
+            )
 
 
 def _fila(configuracion: Configuracion, sql: str, *args: Any) -> tuple[Any, ...] | None:
@@ -401,24 +414,24 @@ async def test_si_asignar_el_rol_falla_la_solicitud_sigue_pendiente(
     configuracion: Configuracion,
 ) -> None:
     # El unico administrador tiene una solicitud pendiente y se aprueba a si mismo como personal.
-    admin = _unico_administrador(crear_usuario, poner_rol, configuracion)
-    with psycopg.connect(configuracion.url_base_datos_admin) as conexion:
-        id_solicitud = conexion.execute(
-            "insert into public.solicitud_acceso (id_usuario, especialidad) "
-            "values (%s, 'x') returning id",
-            (admin.id,),
-        ).fetchone()
-    assert id_solicitud is not None
-    r = await _llamar(
-        cliente, "POST", f"/solicitudes-acceso/{id_solicitud[0]}/aprobar", admin,
-        {"rol": "personal", "especialidad": "x"},
-    )  # fmt: skip
-    assert r.status_code == 409 and r.json()["error"]["codigo"] == "ultimo_administrador"
-    assert _fila(
-        configuracion,
-        "select estado, revisada_en from public.solicitud_acceso where id = %s",
-        id_solicitud[0],
-    ) == ("pendiente", None)
+    with _unico_administrador(crear_usuario, poner_rol, configuracion) as admin:
+        with psycopg.connect(configuracion.url_base_datos_admin) as conexion:
+            id_solicitud = conexion.execute(
+                "insert into public.solicitud_acceso (id_usuario, especialidad) "
+                "values (%s, 'x') returning id",
+                (admin.id,),
+            ).fetchone()
+        assert id_solicitud is not None
+        r = await _llamar(
+            cliente, "POST", f"/solicitudes-acceso/{id_solicitud[0]}/aprobar", admin,
+            {"rol": "personal", "especialidad": "x"},
+        )  # fmt: skip
+        assert r.status_code == 409 and r.json()["error"]["codigo"] == "ultimo_administrador"
+        assert _fila(
+            configuracion,
+            "select estado, revisada_en from public.solicitud_acceso where id = %s",
+            id_solicitud[0],
+        ) == ("pendiente", None)
 
 
 # ---------- usuarios ----------
@@ -483,15 +496,15 @@ async def test_el_ultimo_administrador_no_puede_quitarse_el_rol(
     poner_rol: PonerRol,
     configuracion: Configuracion,
 ) -> None:
-    admin = _unico_administrador(crear_usuario, poner_rol, configuracion)
-    r = await _llamar(cliente, "PATCH", f"/usuarios/{admin.id}", admin, {"rol": "cliente"})
-    assert r.status_code == 409 and r.json()["error"]["codigo"] == "ultimo_administrador"
-    assert _fila(configuracion, "select rol from public.usuario where id = %s", admin.id) == (
-        "administrador",
-    )
-    segundo = _admin(crear_usuario, poner_rol)
-    ok = await _llamar(cliente, "PATCH", f"/usuarios/{admin.id}", segundo, {"rol": "cliente"})
-    assert ok.status_code == 200 and ok.json()["rol"] == "cliente"
+    with _unico_administrador(crear_usuario, poner_rol, configuracion) as admin:
+        r = await _llamar(cliente, "PATCH", f"/usuarios/{admin.id}", admin, {"rol": "cliente"})
+        assert r.status_code == 409 and r.json()["error"]["codigo"] == "ultimo_administrador"
+        assert _fila(configuracion, "select rol from public.usuario where id = %s", admin.id) == (
+            "administrador",
+        )
+        segundo = _admin(crear_usuario, poner_rol)
+        ok = await _llamar(cliente, "PATCH", f"/usuarios/{admin.id}", segundo, {"rol": "cliente"})
+        assert ok.status_code == 200 and ok.json()["rol"] == "cliente"
 
 
 # ---------- OpenAPI ----------
