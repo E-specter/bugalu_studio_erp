@@ -36,6 +36,10 @@ Todos usan cabecera, etiqueta y título (el asunto), saludo, cuerpo, botón y pi
 | `reclamacion_recibida` | Administrador | Administración | LIBRO DE RECLAMACIONES | Párrafo y tabla | Revisar la hoja → `{url}/app/reclamos/detalle?id={id}` | No |
 | `reclamacion_respondida` | Consumidor | Reclamo | LIBRO DE RECLAMACIONES | Párrafos y tabla | Como `reclamacion_registrada` | No |
 | `reclamaciones_por_vencer` | Administrador | Administración | LIBRO DE RECLAMACIONES | Párrafo y lista | Ver hojas pendientes → `{url}/app/reclamos/?estado=pendiente` | No |
+| `asesoria_confirmada_profesional` | Profesional | Cuenta | ASESORÍA | Párrafo y tabla | Ver la asesoría → `{url}/app/asesorias/detalle?id={id_reserva}` | `REQUEST` |
+| `asesoria_encuentro_cambiado` | Cliente y profesional | Cuenta | ASESORÍA | Párrafo y tabla | Ver mi asesoría / Ver la asesoría → `{url}/app/asesorias/detalle?id={id_reserva}` | `REQUEST` si tiene evento |
+| `asesoria_reprogramada_profesional` | Profesional | Cuenta | ASESORÍA | Párrafo y tabla | Ver la asesoría → `{url}/app/asesorias/detalle?id={id_reserva}` | `REQUEST` si tiene evento |
+| `asesoria_cancelada_profesional` | Profesional | Cuenta | ASESORÍA | Párrafos y tabla | Ver mis asesorías → `{url}/app/asesorias/agenda` | `CANCEL` |
 
 - "Detalle" es `{url}/app/reservas/detalle?id={id_reserva}`; el personal y el Administrador también lo abren ([mis reservas](../pantallas/RF-04-mis-reservas.md)).
 - `texto_legal_nuevo`, `{ruta}` según `tipo`: `terminos_uso` → `terminos-de-uso`, `politica_privacidad` → `privacidad`, `condiciones_contratacion` → `condiciones-de-contratacion`, `declaracion_agrupacion` → `declaracion-de-agrupacion` ([textos legales](../pantallas/RF-17-textos-legales.md)).
